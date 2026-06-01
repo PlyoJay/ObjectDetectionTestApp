@@ -45,12 +45,19 @@ android {
 
 dependencies {
     implementation(libs.androidx.appcompat)
-    val cameraxVersion = "1.3.4"
 
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.11.0")
+
+    val cameraxVersion = "1.3.4"
     implementation("androidx.camera:camera-core:${cameraxVersion}")
     implementation("androidx.camera:camera-camera2:${cameraxVersion}")
     implementation("androidx.camera:camera-lifecycle:${cameraxVersion}")
     implementation("androidx.camera:camera-view:${cameraxVersion}")
+
+    // Google ML Kit (안정 버전)
+    implementation("com.google.mlkit:object-detection:17.0.0")
+    implementation("com.google.mlkit:face-detection:16.1.6")
+    implementation("com.google.mlkit:image-labeling:17.0.7")
 
     implementation("androidx.lifecycle:lifecycle-service:2.8.4")
 
