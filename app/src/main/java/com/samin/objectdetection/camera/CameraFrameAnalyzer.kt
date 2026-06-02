@@ -6,6 +6,8 @@ import android.graphics.Rect
 import android.util.Log
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
+import com.samin.objectdetection.detector.ObjectDetector
+import com.samin.objectdetection.detector.mapToOriginalFrame
 import com.samin.objectdetection.dto.DetectionEvent
 import com.samin.objectdetection.dto.RoiInfo
 import java.io.File

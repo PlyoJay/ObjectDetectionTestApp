@@ -12,6 +12,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleService
 import com.samin.objectdetection.R
+import com.samin.objectdetection.detector.ObjectDetector
 import com.samin.objectdetection.detector.VisionStyleYoloDetector
 import java.util.concurrent.Executors
 

@@ -8,7 +8,7 @@ import android.graphics.Paint
 import android.graphics.Typeface
 import android.util.AttributeSet
 import android.view.View
-import com.samin.objectdetection.camera.DetectionResult
+import com.samin.objectdetection.detector.DetectionResult
 
 class BoundingBoxOverlay @JvmOverloads constructor(
     context: Context,

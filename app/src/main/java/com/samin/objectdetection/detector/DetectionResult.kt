@@ -1,4 +1,4 @@
-package com.samin.objectdetection.camera
+package com.samin.objectdetection.detector
 
 import android.graphics.Bitmap
 import android.graphics.Rect

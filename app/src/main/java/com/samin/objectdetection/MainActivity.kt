@@ -21,12 +21,15 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
-import com.samin.objectdetection.camera.DetectionResult
-import com.samin.objectdetection.camera.ObjectDetector
+import com.samin.objectdetection.detector.DetectionResult
+import com.samin.objectdetection.detector.ObjectDetector
 import com.samin.objectdetection.camera.toBitmapSafe
 import com.samin.objectdetection.detector.VisionStyleYoloDetector
 import com.samin.objectdetection.mlkit.MlKitObjectDetector
+import com.samin.objectdetection.policy.YoloDefaultPolicyRegistry
 import com.samin.objectdetection.ui.BoundingBoxOverlay
+import com.samin.objectdetection.warning.WarningDecisionMaker
+import com.samin.objectdetection.warning.WarningMessageBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.concurrent.Executors
@@ -70,7 +73,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        detector = VisionStyleYoloDetector(this, "yolo11n_float32.tflite")
+        val yoloDetector = VisionStyleYoloDetector(this, "yolo11n_float32.tflite").apply {
+            confidenceThreshold = 0.35f
+        }
+        detector = yoloDetector
         mlKitDetector = MlKitObjectDetector()
 
         setupUi()
@@ -229,24 +235,39 @@ class MainActivity : ComponentActivity() {
             )
         }
 
+        val filtered = mapped.filter { detection ->
+            val policy = YoloDefaultPolicyRegistry.get(detection.label)
+            policy != null && detection.confidence >= policy.minConfidence
+        }
+
         val inferenceTime = System.currentTimeMillis() - start
-        val topObject = mapped.maxByOrNull { it.confidence }
+        val topObject = filtered.maxByOrNull { it.confidence }
+        val warningCandidate = WarningDecisionMaker.selectBest(
+            detections = filtered,
+            frameWidth = width,
+            frameHeight = height
+        )
+        val warningMessage = warningCandidate?.let {
+            WarningMessageBuilder.build(it)
+        } ?: "안내 대상 없음"
 
         runOnUiThread {
-            overlayView.updateDetections(mapped, width, height, inferenceTime, currentFps)
+            overlayView.updateDetections(filtered, width, height, inferenceTime, currentFps)
             debugTextView.text = buildString {
                 appendLine("Frame: ${width}x$height / crop: ${cropRect.width()}x${cropRect.height()}")
-                appendLine("Detect: ${mapped.size} / ${inferenceTime}ms / FPS=$currentFps")
+                appendLine("Detect: ${filtered.size} / ${inferenceTime}ms / FPS=$currentFps")
                 appendLine("ML Kit: $lastMlKitCount / ${lastMlKitTimeMs}ms")
                 if (topObject != null) {
                     append("Top: ${topObject.label} ${String.format("%.2f", topObject.confidence)}")
                 } else {
                     append("Top: none")
                 }
+                appendLine()
+                append("Guide: $warningMessage")
             }
         }
 
-        Log.d(TAG, "frame=${width}x$height, detections=${mapped.size}, time=${inferenceTime}ms")
+        Log.d(TAG, "frame=${width}x$height, detections=${filtered.size}, time=${inferenceTime}ms")
     }
 
     private fun maybeRunMlKitDetection(bitmap: Bitmap, frameWidth: Int, frameHeight: Int) {

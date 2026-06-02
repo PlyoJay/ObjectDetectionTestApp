@@ -1,6 +1,6 @@
 package com.samin.objectdetection.dto
 
-import com.samin.objectdetection.camera.DetectionResult
+import com.samin.objectdetection.detector.DetectionResult
 
 data class DetectionEvent(
     val deviceId: String,
