@@ -34,8 +34,8 @@ class VisionStyleYoloDetector(
         context.assets.open("labels.txt").bufferedReader().readLines().filter { it.isNotBlank() }
     }.getOrDefault(listOf("object"))
 
-    var confidenceThreshold: Float = 0.25f
-    var nmsThreshold: Float = 0.45f
+    var confidenceThreshold: Float = 0.65f
+    var nmsThreshold: Float = 0.55f
     var maxCandidates: Int = 100
 
     @Volatile

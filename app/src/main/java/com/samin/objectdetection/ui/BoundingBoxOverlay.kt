@@ -16,6 +16,7 @@ class BoundingBoxOverlay @JvmOverloads constructor(
 ) : View(context, attrs) {
 
     private var detections: List<DetectionResult> = emptyList()
+    private var mlKitDetections: List<DetectionResult> = emptyList()
     private var frameWidth: Int = 1
     private var frameHeight: Int = 1
     private var inferenceTimeMs: Long = 0L
@@ -24,6 +25,14 @@ class BoundingBoxOverlay @JvmOverloads constructor(
 
     private val boxPaint = Paint().apply {
         color = Color.parseColor("#00BFFF")
+        style = Paint.Style.STROKE
+        strokeWidth = 6f
+        pathEffect = CornerPathEffect(15f)
+        isAntiAlias = true
+    }
+
+    private val mlKitBoxPaint = Paint().apply {
+        color = Color.YELLOW
         style = Paint.Style.STROKE
         strokeWidth = 6f
         pathEffect = CornerPathEffect(15f)
@@ -66,6 +75,17 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         invalidate()
     }
 
+    fun updateMlKitDetections(
+        detections: List<DetectionResult>,
+        frameWidth: Int,
+        frameHeight: Int
+    ) {
+        this.mlKitDetections = detections
+        this.frameWidth = frameWidth.coerceAtLeast(1)
+        this.frameHeight = frameHeight.coerceAtLeast(1)
+        invalidate()
+    }
+
     fun setDrawingEnabled(enabled: Boolean) {
         this.enabled = enabled
         invalidate()
@@ -77,13 +97,13 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         canvas.drawText("연산: ${inferenceTimeMs}ms | FPS: $fps | 객체: ${detections.size}", 40f, 70f, infoPaint)
 
         // 중앙 감시 구역 가이드
-        val guidePaint = Paint().apply {
-            color = Color.parseColor("#00E676")
-            strokeWidth = 5f
-            alpha = 180
-        }
-        canvas.drawLine(width * 0.33f, 0f, width * 0.33f, height.toFloat(), guidePaint)
-        canvas.drawLine(width * 0.67f, 0f, width * 0.67f, height.toFloat(), guidePaint)
+//        val guidePaint = Paint().apply {
+//            color = Color.parseColor("#00E676")
+//            strokeWidth = 5f
+//            alpha = 180
+//        }
+//        canvas.drawLine(width * 0.33f, 0f, width * 0.33f, height.toFloat(), guidePaint)
+//        canvas.drawLine(width * 0.67f, 0f, width * 0.67f, height.toFloat(), guidePaint)
 
         if (!enabled) return
 
@@ -109,6 +129,18 @@ class BoundingBoxOverlay @JvmOverloads constructor(
             val bgTop = (top - 56f).coerceAtLeast(0f)
             canvas.drawRoundRect(left, bgTop, left + textWidth + 28f, bgTop + 52f, 10f, 10f, bgPaint)
             canvas.drawText(label, left + 14f, bgTop + 38f, textPaint)
+        }
+
+        mlKitDetections.forEach { res ->
+            val left = res.left * scaleX
+            val top = res.top * scaleY
+            val right = res.right * scaleX
+            val bottom = res.bottom * scaleY
+
+            canvas.drawRoundRect(left, top, right, bottom, 20f, 20f, mlKitBoxPaint)
+
+            val label = "MLKit"
+            canvas.drawText(label, left + 10f, top.coerceAtLeast(40f), textPaint)
         }
     }
 }

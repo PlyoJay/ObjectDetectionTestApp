@@ -12,7 +12,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleService
 import com.samin.objectdetection.R
-import com.samin.objectdetection.detector.TfliteYoloDetector
+import com.samin.objectdetection.detector.VisionStyleYoloDetector
 import java.util.concurrent.Executors
 
 class CameraService : LifecycleService() {
@@ -23,7 +23,7 @@ class CameraService : LifecycleService() {
     override fun onCreate() {
         super.onCreate()
 
-        detector = TfliteYoloDetector(this)
+        detector = VisionStyleYoloDetector(this, "yolo11n_float32.tflite")
 
         startForeground(
             NOTIFICATION_ID,

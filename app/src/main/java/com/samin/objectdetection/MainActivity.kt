@@ -20,11 +20,15 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.samin.objectdetection.camera.DetectionResult
 import com.samin.objectdetection.camera.ObjectDetector
 import com.samin.objectdetection.camera.toBitmapSafe
 import com.samin.objectdetection.detector.VisionStyleYoloDetector
+import com.samin.objectdetection.mlkit.MlKitObjectDetector
 import com.samin.objectdetection.ui.BoundingBoxOverlay
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -37,11 +41,19 @@ class MainActivity : ComponentActivity() {
 
     private val cameraExecutor = Executors.newSingleThreadExecutor()
     private lateinit var detector: ObjectDetector
+    private lateinit var mlKitDetector: MlKitObjectDetector
 
     @Volatile
     private var isProcessing = AtomicBoolean(false)
+    private val isMlKitProcessing = AtomicBoolean(false)
+    @Volatile
+    private var lastMlKitCount = 0
+
+    @Volatile
+    private var lastMlKitTimeMs = 0L
 
     private var lastFpsTime = 0L
+    private var lastMlKitDetectionTime = 0L
     private var frameCount = 0
     private var currentFps = 0
     private var overlayEnabled = true
@@ -59,6 +71,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         detector = VisionStyleYoloDetector(this, "yolo11n_float32.tflite")
+        mlKitDetector = MlKitObjectDetector()
 
         setupUi()
         checkPermissionAndStart()
@@ -200,6 +213,8 @@ class MainActivity : ComponentActivity() {
         val top = (height - size) / 2
         val cropRect = Rect(left, top, left + size, top + size)
 
+        maybeRunMlKitDetection(bitmap, width, height)
+
         val cropped = Bitmap.createBitmap(bitmap, cropRect.left, cropRect.top, cropRect.width(), cropRect.height())
         val croppedResults = detector.detect(cropped)
 
@@ -222,6 +237,7 @@ class MainActivity : ComponentActivity() {
             debugTextView.text = buildString {
                 appendLine("Frame: ${width}x$height / crop: ${cropRect.width()}x${cropRect.height()}")
                 appendLine("Detect: ${mapped.size} / ${inferenceTime}ms / FPS=$currentFps")
+                appendLine("ML Kit: $lastMlKitCount / ${lastMlKitTimeMs}ms")
                 if (topObject != null) {
                     append("Top: ${topObject.label} ${String.format("%.2f", topObject.confidence)}")
                 } else {
@@ -231,6 +247,67 @@ class MainActivity : ComponentActivity() {
         }
 
         Log.d(TAG, "frame=${width}x$height, detections=${mapped.size}, time=${inferenceTime}ms")
+    }
+
+    private fun maybeRunMlKitDetection(bitmap: Bitmap, frameWidth: Int, frameHeight: Int) {
+        val now = System.currentTimeMillis()
+
+        if (now - lastMlKitDetectionTime < ML_KIT_DETECT_INTERVAL_MS) return
+        if (!isMlKitProcessing.compareAndSet(false, true)) return
+
+        lastMlKitDetectionTime = now
+
+        lifecycleScope.launch(Dispatchers.Default) {
+            try {
+                val mlInputWidth = 640
+                val mlInputHeight = 360
+
+                // ML Kit 연산량 줄이기 위해 작은 Bitmap으로 축소
+                val mlBitmap = Bitmap.createScaledBitmap(
+                    bitmap,
+                    mlInputWidth,
+                    mlInputHeight,
+                    true
+                )
+
+                val mlStart = System.currentTimeMillis()
+
+                val mlKitResults = mlKitDetector.detect(mlBitmap)
+
+                lastMlKitTimeMs = System.currentTimeMillis() - mlStart
+                lastMlKitCount = mlKitResults.size
+
+                // 작은 Bitmap 기준 bbox를 원본 프레임 기준 좌표로 복원
+                val scaleX = frameWidth / mlInputWidth.toFloat()
+                val scaleY = frameHeight / mlInputHeight.toFloat()
+
+                val results = mlKitResults.map { detection ->
+                    val box = detection.boundingBox
+
+                    DetectionResult(
+                        label = "ML Kit",
+                        confidence = 1f,
+                        left = box.left * scaleX,
+                        top = box.top * scaleY,
+                        right = box.right * scaleX,
+                        bottom = box.bottom * scaleY
+                    )
+                }
+
+                runOnUiThread {
+                    overlayView.updateMlKitDetections(
+                        results,
+                        frameWidth,
+                        frameHeight
+                    )
+                }
+
+            } catch (e: Exception) {
+                Log.e(TAG, "ML Kit detection error", e)
+            } finally {
+                isMlKitProcessing.set(false)
+            }
+        }
     }
 
     private fun calculateFps() {
@@ -246,10 +323,12 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         cameraExecutor.shutdown()
+        mlKitDetector.close()
         detector.close()
     }
 
     companion object {
         private const val TAG = "ObjectDetectionVision"
+        private const val ML_KIT_DETECT_INTERVAL_MS = 1500L
     }
 }

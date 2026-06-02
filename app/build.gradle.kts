@@ -55,9 +55,8 @@ dependencies {
     implementation("androidx.camera:camera-view:${cameraxVersion}")
 
     // Google ML Kit (안정 버전)
-    implementation("com.google.mlkit:object-detection:17.0.0")
-    implementation("com.google.mlkit:face-detection:16.1.6")
-    implementation("com.google.mlkit:image-labeling:17.0.7")
+    implementation("com.google.mlkit:object-detection:17.0.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.11.0")
 
     implementation("androidx.lifecycle:lifecycle-service:2.8.4")
 

@@ -82,6 +82,8 @@ class CameraFrameAnalyzer(
                 true
             )
 
+            Log.d(TAG, "resized created: ${resized.width} x ${resized.height}")
+
             if (config.saveDebugImage) {
                 saveBitmap(resized)
             }

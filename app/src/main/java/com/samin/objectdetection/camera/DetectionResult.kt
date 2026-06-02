@@ -17,25 +17,6 @@ interface ObjectDetector {
     fun close()
 }
 
-class FakeDetector : ObjectDetector {
-
-    override fun detect(bitmap: Bitmap): List<DetectionResult> {
-        return listOf(
-            DetectionResult(
-                label = "bollard",
-                confidence = 0.87f,
-                left = 220f,
-                top = 260f,
-                right = 420f,
-                bottom = 560f
-            )
-        )
-    }
-
-    override fun close() {
-    }
-}
-
 fun DetectionResult.mapToOriginalFrame(
     roi: Rect,
     modelInputSize: Int = 640
