@@ -12,6 +12,7 @@ import com.samin.objectdetection.dto.DetectionEvent
 import com.samin.objectdetection.dto.RoiInfo
 import java.io.File
 import java.io.FileOutputStream
+import java.util.concurrent.atomic.AtomicBoolean
 
 class CameraFrameAnalyzer(
     private val context: Context,
@@ -20,6 +21,8 @@ class CameraFrameAnalyzer(
 ) : ImageAnalysis.Analyzer {
 
     private var lastSaveTime = 0L
+    private val isDetecting = AtomicBoolean(false)
+    private var skippedFrameCount = 0L
 
     init {
         clearDebugRoiDirectory()
@@ -41,15 +44,41 @@ class CameraFrameAnalyzer(
 
     override fun analyze(imageProxy: ImageProxy) {
         Log.d(TAG, "analyze called: ${imageProxy.width} x ${imageProxy.height}")
+        val frameReceivedTimeMs = System.currentTimeMillis()
+        var detectionStarted = false
 
         try {
-            val now = System.currentTimeMillis()
+            val now = frameReceivedTimeMs
+            Log.d(
+                DETECTION_TIMING_TAG,
+                "frameReceived=$frameReceivedTimeMs isDetecting=${isDetecting.get()}"
+            )
 
             if (now - lastSaveTime < config.detectIntervalMs) {
+                skippedFrameCount++
+                Log.d(
+                    DETECTION_TIMING_TAG,
+                    "skipFrameByInterval skipped=$skippedFrameCount intervalMs=${config.detectIntervalMs}"
+                )
                 return
             }
 
+            if (!isDetecting.compareAndSet(false, true)) {
+                skippedFrameCount++
+                Log.d(
+                    DETECTION_TIMING_TAG,
+                    "skipFrameByDetecting skipped=$skippedFrameCount isDetecting=${isDetecting.get()}"
+                )
+                return
+            }
+            detectionStarted = true
+
             lastSaveTime = now
+            val detectionStartTimeMs = System.currentTimeMillis()
+            Log.d(
+                DETECTION_TIMING_TAG,
+                "detectionStart=$detectionStartTimeMs frameReceived=$frameReceivedTimeMs isDetecting=${isDetecting.get()}"
+            )
 
             val bitmap = imageProxy.toBitmapSafe()
             if (bitmap == null) {
@@ -91,6 +120,11 @@ class CameraFrameAnalyzer(
             }
 
             val results = detector.detect(resized)
+            val detectionEndTimeMs = System.currentTimeMillis()
+            Log.d(
+                DETECTION_TIMING_TAG,
+                "detectionEnd=$detectionEndTimeMs inference=${detectionEndTimeMs - detectionStartTimeMs}ms skipped=$skippedFrameCount"
+            )
 
             results.forEach {
                 val mapped = it.mapToOriginalFrame(roi, modelInputSize = config.inputSize)
@@ -127,6 +161,9 @@ class CameraFrameAnalyzer(
         } catch (e: Exception) {
             e.printStackTrace()
         } finally {
+            if (detectionStarted) {
+                isDetecting.set(false)
+            }
             imageProxy.close()
         }
     }
@@ -154,5 +191,6 @@ class CameraFrameAnalyzer(
 
     companion object {
         private const val TAG = "CameraFrameAnalyzer"
+        private const val DETECTION_TIMING_TAG = "DetectionTiming"
     }
 }

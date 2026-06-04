@@ -22,6 +22,8 @@ class BoundingBoxOverlay @JvmOverloads constructor(
     private var inferenceTimeMs: Long = 0L
     private var fps: Int = 0
     private var enabled = true
+    private var lastDetectionUpdatedAtMs: Long = 0L
+    private var lastMlKitUpdatedAtMs: Long = 0L
 
     private val boxPaint = Paint().apply {
         color = Color.parseColor("#00BFFF")
@@ -72,6 +74,9 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         this.frameHeight = frameHeight.coerceAtLeast(1)
         this.inferenceTimeMs = inferenceTimeMs
         this.fps = fps
+        lastDetectionUpdatedAtMs = System.currentTimeMillis()
+        logOverlayAge(this.detections)
+        postDelayed({ clearStaleDetectionsIfNeeded() }, MAX_OVERLAY_AGE_MS)
         invalidate()
     }
 
@@ -83,6 +88,8 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         this.mlKitDetections = detections
         this.frameWidth = frameWidth.coerceAtLeast(1)
         this.frameHeight = frameHeight.coerceAtLeast(1)
+        lastMlKitUpdatedAtMs = System.currentTimeMillis()
+        postDelayed({ clearStaleDetectionsIfNeeded() }, MAX_OVERLAY_AGE_MS)
         invalidate()
     }
 
@@ -93,6 +100,8 @@ class BoundingBoxOverlay @JvmOverloads constructor(
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
+
+        clearStaleDetectionsIfNeeded()
 
         canvas.drawText("연산: ${inferenceTimeMs}ms | FPS: $fps | 객체: ${detections.size}", 40f, 70f, infoPaint)
 
@@ -109,8 +118,11 @@ class BoundingBoxOverlay @JvmOverloads constructor(
 
         val scaleX = width / frameWidth.toFloat()
         val scaleY = height / frameHeight.toFloat()
+        val now = System.currentTimeMillis()
+        val freshDetections = detections.filter { now - it.frameTimestampMs <= MAX_OVERLAY_AGE_MS }
+        val freshMlKitDetections = mlKitDetections.filter { now - it.frameTimestampMs <= MAX_OVERLAY_AGE_MS }
 
-        detections.forEach { res ->
+        freshDetections.forEach { res ->
             val left = res.left * scaleX
             val top = res.top * scaleY
             val right = res.right * scaleX
@@ -131,7 +143,7 @@ class BoundingBoxOverlay @JvmOverloads constructor(
             canvas.drawText(label, left + 14f, bgTop + 38f, textPaint)
         }
 
-        mlKitDetections.forEach { res ->
+        freshMlKitDetections.forEach { res ->
             val left = res.left * scaleX
             val top = res.top * scaleY
             val right = res.right * scaleX
@@ -142,5 +154,43 @@ class BoundingBoxOverlay @JvmOverloads constructor(
             val label = "MLKit"
             canvas.drawText(label, left + 10f, top.coerceAtLeast(40f), textPaint)
         }
+    }
+
+    private fun clearStaleDetectionsIfNeeded() {
+        val now = System.currentTimeMillis()
+        var changed = false
+
+        if (detections.isNotEmpty() && now - lastDetectionUpdatedAtMs > MAX_OVERLAY_AGE_MS) {
+            detections = emptyList()
+            changed = true
+        }
+
+        if (mlKitDetections.isNotEmpty() && now - lastMlKitUpdatedAtMs > MAX_OVERLAY_AGE_MS) {
+            mlKitDetections = emptyList()
+            changed = true
+        }
+
+        if (changed) {
+            android.util.Log.d(
+                DETECTION_TIMING_TAG,
+                "overlay stale cleared ageMs=${now - lastDetectionUpdatedAtMs}"
+            )
+            invalidate()
+        }
+    }
+
+    private fun logOverlayAge(detections: List<DetectionResult>) {
+        val now = System.currentTimeMillis()
+        val newestTimestamp = detections.maxOfOrNull { it.frameTimestampMs } ?: now
+        val ageMs = now - newestTimestamp
+        android.util.Log.d(
+            DETECTION_TIMING_TAG,
+            "overlayAge=${ageMs}ms detectionCount=${detections.size}"
+        )
+    }
+
+    companion object {
+        private const val MAX_OVERLAY_AGE_MS = 1000L
+        private const val DETECTION_TIMING_TAG = "DetectionTiming"
     }
 }

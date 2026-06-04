@@ -28,8 +28,6 @@ import com.samin.objectdetection.detector.VisionStyleYoloDetector
 import com.samin.objectdetection.mlkit.MlKitObjectDetector
 import com.samin.objectdetection.policy.YoloDefaultPolicyRegistry
 import com.samin.objectdetection.ui.BoundingBoxOverlay
-import com.samin.objectdetection.warning.WarningDecisionMaker
-import com.samin.objectdetection.warning.WarningMessageBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.concurrent.Executors
@@ -60,6 +58,7 @@ class MainActivity : ComponentActivity() {
     private var frameCount = 0
     private var currentFps = 0
     private var overlayEnabled = true
+    private var skippedFrameCount = 0L
 
     private val permissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
@@ -173,9 +172,19 @@ class MainActivity : ComponentActivity() {
                     .build()
 
                 analysis.setAnalyzer(cameraExecutor) { imageProxy ->
+                    val frameReceivedTimeMs = System.currentTimeMillis()
+                    Log.d(
+                        DETECTION_TIMING_TAG,
+                        "frameReceived=$frameReceivedTimeMs isDetecting=${isProcessing.get()}"
+                    )
                     calculateFps()
 
                     if (!isProcessing.compareAndSet(false, true)) {
+                        skippedFrameCount++
+                        Log.d(
+                            DETECTION_TIMING_TAG,
+                            "skipFrame skipped=$skippedFrameCount isDetecting=${isProcessing.get()}"
+                        )
                         imageProxy.close()
                         return@setAnalyzer
                     }
@@ -188,7 +197,7 @@ class MainActivity : ComponentActivity() {
                             return@setAnalyzer
                         }
 
-                        processBitmap(bitmap)
+                        processBitmap(bitmap, frameReceivedTimeMs)
                     } catch (e: Exception) {
                         Log.e(TAG, "analyze error", e)
                     } finally {
@@ -208,8 +217,12 @@ class MainActivity : ComponentActivity() {
         }, ContextCompat.getMainExecutor(this))
     }
 
-    private fun processBitmap(bitmap: Bitmap) {
+    private fun processBitmap(bitmap: Bitmap, frameReceivedTimeMs: Long) {
         val start = System.currentTimeMillis()
+        Log.d(
+            DETECTION_TIMING_TAG,
+            "detectionStart=$start frameReceived=$frameReceivedTimeMs isDetecting=${isProcessing.get()}"
+        )
 
         // vision-mlkit-lab 방식: 중앙 정방형 crop으로 모델 입력 왜곡을 줄임
         val width = bitmap.width
@@ -223,6 +236,7 @@ class MainActivity : ComponentActivity() {
 
         val cropped = Bitmap.createBitmap(bitmap, cropRect.left, cropRect.top, cropRect.width(), cropRect.height())
         val croppedResults = detector.detect(cropped)
+        val detectionEndTimeMs = System.currentTimeMillis()
 
         val mapped = croppedResults.map { res ->
             DetectionResult(
@@ -231,7 +245,8 @@ class MainActivity : ComponentActivity() {
                 left = res.left + cropRect.left,
                 top = res.top + cropRect.top,
                 right = res.right + cropRect.left,
-                bottom = res.bottom + cropRect.top
+                bottom = res.bottom + cropRect.top,
+                frameTimestampMs = start
             )
         }
 
@@ -240,18 +255,22 @@ class MainActivity : ComponentActivity() {
             policy != null && detection.confidence >= policy.minConfidence
         }
 
-        val inferenceTime = System.currentTimeMillis() - start
+        val inferenceTime = detectionEndTimeMs - start
         val topObject = filtered.maxByOrNull { it.confidence }
-        val warningCandidate = WarningDecisionMaker.selectBest(
-            detections = filtered,
-            frameWidth = width,
-            frameHeight = height
+        val warningMessage = "안내 대상 없음"
+        Log.d(
+            DETECTION_TIMING_TAG,
+            "detectionEnd=$detectionEndTimeMs inference=${inferenceTime}ms skipped=$skippedFrameCount"
         )
-        val warningMessage = warningCandidate?.let {
-            WarningMessageBuilder.build(it)
-        } ?: "안내 대상 없음"
 
         runOnUiThread {
+            val overlayUpdateTimeMs = System.currentTimeMillis()
+            val newestDetectionTimestamp = filtered.maxOfOrNull { it.frameTimestampMs } ?: overlayUpdateTimeMs
+            val resultAgeMs = overlayUpdateTimeMs - newestDetectionTimestamp
+            Log.d(
+                DETECTION_TIMING_TAG,
+                "overlayUpdate=$overlayUpdateTimeMs resultAge=${resultAgeMs}ms detectionCount=${filtered.size}"
+            )
             overlayView.updateDetections(filtered, width, height, inferenceTime, currentFps)
             debugTextView.text = buildString {
                 appendLine("Frame: ${width}x$height / crop: ${cropRect.width()}x${cropRect.height()}")
@@ -350,6 +369,7 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         private const val TAG = "ObjectDetectionVision"
+        private const val DETECTION_TIMING_TAG = "DetectionTiming"
         private const val ML_KIT_DETECT_INTERVAL_MS = 1500L
     }
 }
