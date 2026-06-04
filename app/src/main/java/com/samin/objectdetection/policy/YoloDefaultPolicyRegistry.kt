@@ -94,14 +94,6 @@ object YoloDefaultPolicyRegistry {
             shouldVoiceGuide = false
         ),
 
-        "suitcase" to DetectionPolicy(
-            label = "suitcase",
-            category = ObjectCategory.OBSTACLE,
-            priority = WarningPriority.LOW,
-            minConfidence = 0.45f,
-            shouldVoiceGuide = false
-        ),
-
         "umbrella" to DetectionPolicy(
             label = "umbrella",
             category = ObjectCategory.OBSTACLE,

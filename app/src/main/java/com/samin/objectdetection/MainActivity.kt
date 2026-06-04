@@ -21,6 +21,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import com.samin.objectdetection.camera.DetectionConfig
 import com.samin.objectdetection.detector.DetectionResult
 import com.samin.objectdetection.detector.ObjectDetector
 import com.samin.objectdetection.camera.toBitmapSafe
@@ -43,6 +44,7 @@ class MainActivity : ComponentActivity() {
     private val cameraExecutor = Executors.newSingleThreadExecutor()
     private lateinit var detector: ObjectDetector
     private lateinit var mlKitDetector: MlKitObjectDetector
+    private val detectionConfig = DetectionConfig()
 
     @Volatile
     private var isProcessing = AtomicBoolean(false)
@@ -237,8 +239,13 @@ class MainActivity : ComponentActivity() {
         val cropped = Bitmap.createBitmap(bitmap, cropRect.left, cropRect.top, cropRect.width(), cropRect.height())
         val croppedResults = detector.detect(cropped)
         val detectionEndTimeMs = System.currentTimeMillis()
+        val visibleCroppedResults = filterSmallBoxes(
+            detections = croppedResults,
+            inputSize = detectionConfig.inputSize,
+            minBoxAreaRatio = detectionConfig.minBoxAreaRatio
+        )
 
-        val mapped = croppedResults.map { res ->
+        val mapped = visibleCroppedResults.map { res ->
             DetectionResult(
                 label = res.label,
                 confidence = res.confidence,
@@ -287,6 +294,42 @@ class MainActivity : ComponentActivity() {
         }
 
         Log.d(TAG, "frame=${width}x$height, detections=${filtered.size}, time=${inferenceTime}ms")
+    }
+
+    private fun filterSmallBoxes(
+        detections: List<DetectionResult>,
+        inputSize: Int,
+        minBoxAreaRatio: Float
+    ): List<DetectionResult> {
+        val kept = mutableListOf<DetectionResult>()
+
+        detections.forEach { detection ->
+            val areaRatio = getBoxAreaRatio(detection, inputSize)
+            if (areaRatio >= minBoxAreaRatio) {
+                kept.add(detection)
+            } else {
+                Log.d(
+                    DETECTION_FILTER_TAG,
+                    "skip small box label=${detection.label}, conf=${detection.confidence}, " +
+                        "areaRatio=$areaRatio, box=${formatBox(detection)}"
+                )
+            }
+        }
+
+        Log.d(DETECTION_FILTER_TAG, "before=${detections.size}, after=${kept.size}")
+        return kept
+    }
+
+    private fun getBoxAreaRatio(detection: DetectionResult, inputSize: Int): Float {
+        val boxWidth = (detection.right - detection.left).coerceAtLeast(0f)
+        val boxHeight = (detection.bottom - detection.top).coerceAtLeast(0f)
+        val boxArea = boxWidth * boxHeight
+        val imageArea = inputSize * inputSize.toFloat()
+        return boxArea / imageArea
+    }
+
+    private fun formatBox(detection: DetectionResult): String {
+        return "left=${detection.left}, top=${detection.top}, right=${detection.right}, bottom=${detection.bottom}"
     }
 
     private fun maybeRunMlKitDetection(bitmap: Bitmap, frameWidth: Int, frameHeight: Int) {
@@ -370,6 +413,7 @@ class MainActivity : ComponentActivity() {
     companion object {
         private const val TAG = "ObjectDetectionVision"
         private const val DETECTION_TIMING_TAG = "DetectionTiming"
+        private const val DETECTION_FILTER_TAG = "DetectionFilter"
         private const val ML_KIT_DETECT_INTERVAL_MS = 1500L
     }
 }

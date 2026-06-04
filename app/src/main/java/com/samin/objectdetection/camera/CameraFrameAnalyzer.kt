@@ -6,6 +6,7 @@ import android.graphics.Rect
 import android.util.Log
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
+import com.samin.objectdetection.detector.DetectionResult
 import com.samin.objectdetection.detector.ObjectDetector
 import com.samin.objectdetection.detector.mapToOriginalFrame
 import com.samin.objectdetection.dto.DetectionEvent
@@ -125,8 +126,9 @@ class CameraFrameAnalyzer(
                 DETECTION_TIMING_TAG,
                 "detectionEnd=$detectionEndTimeMs inference=${detectionEndTimeMs - detectionStartTimeMs}ms skipped=$skippedFrameCount"
             )
+            val visibleResults = filterSmallBoxes(results)
 
-            results.forEach {
+            visibleResults.forEach {
                 val mapped = it.mapToOriginalFrame(roi, modelInputSize = config.inputSize)
 
                 Log.d(
@@ -140,7 +142,7 @@ class CameraFrameAnalyzer(
                 )
             }
 
-            val mappedResults = results.map { it.mapToOriginalFrame(roi, modelInputSize = config.inputSize) }
+            val mappedResults = visibleResults.map { it.mapToOriginalFrame(roi, modelInputSize = config.inputSize) }
 
             val event = DetectionEvent(
                 deviceId = "GOTORO-001",
@@ -189,8 +191,41 @@ class CameraFrameAnalyzer(
         }
     }
 
+    private fun filterSmallBoxes(detections: List<DetectionResult>): List<DetectionResult> {
+        val kept = mutableListOf<DetectionResult>()
+
+        detections.forEach { detection ->
+            val areaRatio = getBoxAreaRatio(detection)
+            if (areaRatio >= config.minBoxAreaRatio) {
+                kept.add(detection)
+            } else {
+                Log.d(
+                    DETECTION_FILTER_TAG,
+                    "skip small box label=${detection.label}, conf=${detection.confidence}, " +
+                        "areaRatio=$areaRatio, box=${formatBox(detection)}"
+                )
+            }
+        }
+
+        Log.d(DETECTION_FILTER_TAG, "before=${detections.size}, after=${kept.size}")
+        return kept
+    }
+
+    private fun getBoxAreaRatio(detection: DetectionResult): Float {
+        val boxWidth = (detection.right - detection.left).coerceAtLeast(0f)
+        val boxHeight = (detection.bottom - detection.top).coerceAtLeast(0f)
+        val boxArea = boxWidth * boxHeight
+        val imageArea = config.inputSize * config.inputSize.toFloat()
+        return boxArea / imageArea
+    }
+
+    private fun formatBox(detection: DetectionResult): String {
+        return "left=${detection.left}, top=${detection.top}, right=${detection.right}, bottom=${detection.bottom}"
+    }
+
     companion object {
         private const val TAG = "CameraFrameAnalyzer"
         private const val DETECTION_TIMING_TAG = "DetectionTiming"
+        private const val DETECTION_FILTER_TAG = "DetectionFilter"
     }
 }
