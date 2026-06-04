@@ -244,6 +244,10 @@ class MainActivity : ComponentActivity() {
             inputSize = detectionConfig.inputSize,
             minBoxAreaRatio = detectionConfig.minBoxAreaRatio
         )
+        val guideDetections = filterGuideDetections(
+            detections = visibleCroppedResults,
+            config = detectionConfig
+        )
 
         val mapped = visibleCroppedResults.map { res ->
             DetectionResult(
@@ -264,7 +268,7 @@ class MainActivity : ComponentActivity() {
 
         val inferenceTime = detectionEndTimeMs - start
         val topObject = filtered.maxByOrNull { it.confidence }
-        val warningMessage = "안내 대상 없음"
+        val warningMessage = buildGuideMessage(guideDetections)
         Log.d(
             DETECTION_TIMING_TAG,
             "detectionEnd=$detectionEndTimeMs inference=${inferenceTime}ms skipped=$skippedFrameCount"
@@ -294,6 +298,58 @@ class MainActivity : ComponentActivity() {
         }
 
         Log.d(TAG, "frame=${width}x$height, detections=${filtered.size}, time=${inferenceTime}ms")
+    }
+
+    private fun filterGuideDetections(
+        detections: List<DetectionResult>,
+        config: DetectionConfig
+    ): List<DetectionResult> {
+        val scored = mutableListOf<Pair<DetectionResult, Float>>()
+        var guideTargetCount = 0
+
+        detections.forEach { detection ->
+            val areaRatio = getBoxAreaRatio(detection, config.inputSize)
+            val centerY = getBoxCenterY(detection)
+            val isGuideTarget = detection.label in GUIDE_TARGET_LABELS
+            val enoughConfidence = detection.confidence >= config.confidenceThreshold
+            val enoughSize = areaRatio >= config.minBoxAreaRatio
+            val notTopArea = centerY >= config.inputSize * config.ignoreTopRatioForGuide
+
+            if (isGuideTarget) {
+                guideTargetCount++
+            }
+
+            if (isGuideTarget && enoughConfidence && enoughSize && notTopArea) {
+                val score = getGuideScore(detection, areaRatio, config.inputSize)
+                scored.add(detection to score)
+            } else {
+                Log.d(
+                    GUIDE_FILTER_TAG,
+                    "excluded label=${detection.label}, conf=${detection.confidence}, " +
+                        "areaRatio=$areaRatio, centerY=$centerY, target=$isGuideTarget, " +
+                        "confOk=$enoughConfidence, sizeOk=$enoughSize, topOk=$notTopArea"
+                )
+            }
+        }
+
+        val selected = scored
+            .sortedByDescending { it.second }
+            .take(config.maxGuideObjectCount)
+
+        selected.forEach { (detection, score) ->
+            val areaRatio = getBoxAreaRatio(detection, config.inputSize)
+            Log.d(
+                GUIDE_FILTER_TAG,
+                "selected label=${detection.label}, conf=${detection.confidence}, " +
+                    "areaRatio=$areaRatio, score=$score"
+            )
+        }
+
+        Log.d(
+            GUIDE_FILTER_TAG,
+            "all=${detections.size}, guideTargets=$guideTargetCount, selected=${selected.size}"
+        )
+        return selected.map { it.first }
     }
 
     private fun filterSmallBoxes(
@@ -326,6 +382,26 @@ class MainActivity : ComponentActivity() {
         val boxArea = boxWidth * boxHeight
         val imageArea = inputSize * inputSize.toFloat()
         return boxArea / imageArea
+    }
+
+    private fun getBoxCenterY(detection: DetectionResult): Float {
+        return detection.top + (detection.bottom - detection.top) / 2f
+    }
+
+    private fun getGuideScore(
+        detection: DetectionResult,
+        areaRatio: Float,
+        inputSize: Int
+    ): Float {
+        val bottomProximity = detection.bottom / inputSize
+        return detection.confidence * 0.4f + areaRatio * 0.3f + bottomProximity * 0.3f
+    }
+
+    private fun buildGuideMessage(guideDetections: List<DetectionResult>): String {
+        if (guideDetections.isEmpty()) return "감지된 위험 객체 없음"
+        return guideDetections.joinToString(separator = ", ") { detection ->
+            "${detection.label} ${String.format("%.2f", detection.confidence)}"
+        }
     }
 
     private fun formatBox(detection: DetectionResult): String {
@@ -414,6 +490,18 @@ class MainActivity : ComponentActivity() {
         private const val TAG = "ObjectDetectionVision"
         private const val DETECTION_TIMING_TAG = "DetectionTiming"
         private const val DETECTION_FILTER_TAG = "DetectionFilter"
+        private const val GUIDE_FILTER_TAG = "GuideFilter"
         private const val ML_KIT_DETECT_INTERVAL_MS = 1500L
+        private val GUIDE_TARGET_LABELS = setOf(
+            "person",
+            "bicycle",
+            "car",
+            "motorcycle",
+            "bus",
+            "truck",
+            "traffic light",
+            "stop sign",
+            "bench"
+        )
     }
 }
