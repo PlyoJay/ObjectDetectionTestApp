@@ -8,6 +8,8 @@ data class DetectionConfig(
     val inputSize: Int = 640,
     val confidenceThreshold: Float = 0.60f,
     val minBoxAreaRatio: Float = 0.03f,
+    val minBoxWidthRatio: Float = 0.04f,
+    val minBoxHeightRatio: Float = 0.08f,
     val ignoreTopRatioForGuide: Float = 0.25f,
     val maxGuideObjectCount: Int = 2,
     val saveDebugImage: Boolean = true

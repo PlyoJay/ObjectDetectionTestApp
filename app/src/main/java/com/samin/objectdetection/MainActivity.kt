@@ -243,12 +243,7 @@ class MainActivity : ComponentActivity() {
         val cropped = Bitmap.createBitmap(bitmap, cropRect.left, cropRect.top, cropRect.width(), cropRect.height())
         val croppedResults = detector.detect(cropped)
         val detectionEndTimeMs = System.currentTimeMillis()
-        val visibleCroppedResults = filterSmallBoxes(
-            detections = croppedResults,
-            inputSize = detectionConfig.inputSize,
-            minBoxAreaRatio = detectionConfig.minBoxAreaRatio
-        )
-        val mapped = visibleCroppedResults.map { res ->
+        val mapped = croppedResults.map { res ->
             DetectionResult(
                 label = res.label,
                 confidence = res.confidence,
@@ -259,8 +254,14 @@ class MainActivity : ComponentActivity() {
                 frameTimestampMs = start
             )
         }
+        val visibleMapped = filterSmallBoxes(
+            detections = mapped,
+            frameWidth = width,
+            frameHeight = height,
+            config = detectionConfig
+        )
 
-        val filtered = mapped.filter { detection ->
+        val filtered = visibleMapped.filter { detection ->
             val policy = YoloDefaultPolicyRegistry.get(detection.label)
             policy != null && detection.confidence >= policy.minConfidence
         }
@@ -309,20 +310,30 @@ class MainActivity : ComponentActivity() {
 
     private fun filterSmallBoxes(
         detections: List<DetectionResult>,
-        inputSize: Int,
-        minBoxAreaRatio: Float
+        frameWidth: Int,
+        frameHeight: Int,
+        config: DetectionConfig
     ): List<DetectionResult> {
         val kept = mutableListOf<DetectionResult>()
 
         detections.forEach { detection ->
-            val areaRatio = getBoxAreaRatio(detection, inputSize)
-            if (areaRatio >= minBoxAreaRatio) {
+            val boxWidth = (detection.right - detection.left).coerceAtLeast(0f)
+            val boxHeight = (detection.bottom - detection.top).coerceAtLeast(0f)
+            val areaRatio = getBoxAreaRatio(boxWidth, boxHeight, frameWidth, frameHeight)
+            val widthRatio = boxWidth / frameWidth.coerceAtLeast(1).toFloat()
+            val heightRatio = boxHeight / frameHeight.coerceAtLeast(1).toFloat()
+            val keep = areaRatio >= config.minBoxAreaRatio &&
+                widthRatio >= config.minBoxWidthRatio &&
+                heightRatio >= config.minBoxHeightRatio
+
+            if (keep) {
                 kept.add(detection)
             } else {
                 Log.d(
                     DETECTION_FILTER_TAG,
                     "skip small box label=${detection.label}, conf=${detection.confidence}, " +
-                        "areaRatio=$areaRatio, box=${formatBox(detection)}"
+                        "areaRatio=$areaRatio, widthRatio=$widthRatio, heightRatio=$heightRatio, " +
+                        "box=${formatBox(detection)}"
                 )
             }
         }
@@ -331,12 +342,14 @@ class MainActivity : ComponentActivity() {
         return kept
     }
 
-    private fun getBoxAreaRatio(detection: DetectionResult, inputSize: Int): Float {
-        val boxWidth = (detection.right - detection.left).coerceAtLeast(0f)
-        val boxHeight = (detection.bottom - detection.top).coerceAtLeast(0f)
-        val boxArea = boxWidth * boxHeight
-        val imageArea = inputSize * inputSize.toFloat()
-        return boxArea / imageArea
+    private fun getBoxAreaRatio(
+        boxWidth: Float,
+        boxHeight: Float,
+        frameWidth: Int,
+        frameHeight: Int
+    ): Float {
+        val imageArea = frameWidth.coerceAtLeast(1) * frameHeight.coerceAtLeast(1).toFloat()
+        return boxWidth * boxHeight / imageArea
     }
 
     private fun formatBox(detection: DetectionResult): String {

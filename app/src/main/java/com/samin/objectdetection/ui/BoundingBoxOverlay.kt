@@ -7,6 +7,7 @@ import android.graphics.CornerPathEffect
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.util.AttributeSet
+import android.util.Log
 import android.view.View
 import com.samin.objectdetection.detector.DetectionResult
 
@@ -116,17 +117,21 @@ class BoundingBoxOverlay @JvmOverloads constructor(
 
         if (!enabled) return
 
-        val scaleX = width / frameWidth.toFloat()
-        val scaleY = height / frameHeight.toFloat()
+        val transform = calculateFitCenterTransform(
+            frameWidth = frameWidth,
+            frameHeight = frameHeight,
+            viewWidth = width,
+            viewHeight = height
+        )
         val now = System.currentTimeMillis()
         val freshDetections = detections.filter { now - it.frameTimestampMs <= MAX_OVERLAY_AGE_MS }
         val freshMlKitDetections = mlKitDetections.filter { now - it.frameTimestampMs <= MAX_OVERLAY_AGE_MS }
 
         freshDetections.forEach { res ->
-            val left = res.left * scaleX
-            val top = res.top * scaleY
-            val right = res.right * scaleX
-            val bottom = res.bottom * scaleY
+            val left = transform.offsetX + res.left * transform.scale
+            val top = transform.offsetY + res.top * transform.scale
+            val right = transform.offsetX + res.right * transform.scale
+            val bottom = transform.offsetY + res.bottom * transform.scale
 
             boxPaint.color = if (res.label == "person" || res.label == "사람") {
                 Color.parseColor("#FF69B4")
@@ -144,15 +149,76 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         }
 
         freshMlKitDetections.forEach { res ->
-            val left = res.left * scaleX
-            val top = res.top * scaleY
-            val right = res.right * scaleX
-            val bottom = res.bottom * scaleY
+            val left = transform.offsetX + res.left * transform.scale
+            val top = transform.offsetY + res.top * transform.scale
+            val right = transform.offsetX + res.right * transform.scale
+            val bottom = transform.offsetY + res.bottom * transform.scale
 
             canvas.drawRoundRect(left, top, right, bottom, 20f, 20f, mlKitBoxPaint)
 
             val label = "MLKit"
             canvas.drawText(label, left + 10f, top.coerceAtLeast(40f), textPaint)
+        }
+    }
+
+    private fun calculateFitCenterTransform(
+        frameWidth: Int,
+        frameHeight: Int,
+        viewWidth: Int,
+        viewHeight: Int
+    ): PreviewTransform {
+        val safeFrameWidth = frameWidth.coerceAtLeast(1)
+        val safeFrameHeight = frameHeight.coerceAtLeast(1)
+        val safeViewWidth = viewWidth.coerceAtLeast(1)
+        val safeViewHeight = viewHeight.coerceAtLeast(1)
+        val scale = minOf(
+            safeViewWidth / safeFrameWidth.toFloat(),
+            safeViewHeight / safeFrameHeight.toFloat()
+        )
+        val displayedWidth = safeFrameWidth * scale
+        val displayedHeight = safeFrameHeight * scale
+        val offsetX = (safeViewWidth - displayedWidth) / 2f
+        val offsetY = (safeViewHeight - displayedHeight) / 2f
+
+        logTransformIfAspectMismatch(
+            safeFrameWidth,
+            safeFrameHeight,
+            safeViewWidth,
+            safeViewHeight,
+            scale,
+            offsetX,
+            offsetY
+        )
+
+        return PreviewTransform(
+            scale = scale,
+            offsetX = offsetX,
+            offsetY = offsetY,
+            displayedWidth = displayedWidth,
+            displayedHeight = displayedHeight
+        )
+    }
+
+    private fun logTransformIfAspectMismatch(
+        frameWidth: Int,
+        frameHeight: Int,
+        viewWidth: Int,
+        viewHeight: Int,
+        scale: Float,
+        offsetX: Float,
+        offsetY: Float
+    ) {
+        val frameAspect = frameWidth / frameHeight.toFloat()
+        val viewAspect = viewWidth / viewHeight.toFloat()
+        val swappedFrameAspect = frameHeight / frameWidth.toFloat()
+        val currentDelta = kotlin.math.abs(frameAspect - viewAspect)
+        val swappedDelta = kotlin.math.abs(swappedFrameAspect - viewAspect)
+        if (currentDelta > 0.05f || swappedDelta < currentDelta) {
+            Log.d(
+                TRANSFORM_TAG,
+                "fitCenter frame=${frameWidth}x$frameHeight view=${viewWidth}x$viewHeight " +
+                    "scale=$scale offsetX=$offsetX offsetY=$offsetY swapSuggested=${swappedDelta < currentDelta}"
+            )
         }
     }
 
@@ -190,7 +256,16 @@ class BoundingBoxOverlay @JvmOverloads constructor(
     }
 
     companion object {
-        private const val MAX_OVERLAY_AGE_MS = 1000L
+        private const val MAX_OVERLAY_AGE_MS = 500L
         private const val DETECTION_TIMING_TAG = "DetectionTiming"
+        private const val TRANSFORM_TAG = "OverlayTransform"
     }
+
+    private data class PreviewTransform(
+        val scale: Float,
+        val offsetX: Float,
+        val offsetY: Float,
+        val displayedWidth: Float,
+        val displayedHeight: Float
+    )
 }
