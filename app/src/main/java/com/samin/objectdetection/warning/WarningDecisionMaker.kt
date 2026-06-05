@@ -1,8 +1,19 @@
 package com.samin.objectdetection.warning
 
+import com.samin.objectdetection.model.DetectedObject
+import com.samin.objectdetection.model.DetectionPriority
 import com.samin.objectdetection.policy.WarningPriority
 
 class WarningDecisionMaker {
+
+    fun shouldWarn(detectedObject: DetectedObject): Boolean {
+        if (detectedObject.confidence < MIN_WARNING_CONFIDENCE) return false
+        if (detectedObject.boundingBox.width() * detectedObject.boundingBox.height() < MIN_BBOX_AREA) return false
+        if (detectedObject.priority == DetectionPriority.IGNORE) return false
+
+        return detectedObject.priority == DetectionPriority.HIGH ||
+            detectedObject.priority == DetectionPriority.MEDIUM
+    }
 
     fun decide(obstacles: List<ForwardObstacle>): WarningDecision {
         val obstacle = obstacles.sortedWith(
@@ -83,5 +94,10 @@ class WarningDecisionMaker {
         val last = label.last()
         if (last !in '가'..'힣') return "가"
         return if ((last.code - 0xAC00) % 28 == 0) "가" else "이"
+    }
+
+    companion object {
+        const val MIN_BBOX_AREA = 1_000f
+        private const val MIN_WARNING_CONFIDENCE = 0.5f
     }
 }

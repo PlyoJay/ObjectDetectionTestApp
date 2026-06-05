@@ -10,6 +10,8 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.View
 import com.samin.objectdetection.detector.DetectionResult
+import com.samin.objectdetection.model.DetectionSource
+import com.samin.objectdetection.model.toDetectedObject
 
 class BoundingBoxOverlay @JvmOverloads constructor(
     context: Context,
@@ -141,7 +143,7 @@ class BoundingBoxOverlay @JvmOverloads constructor(
 
             canvas.drawRoundRect(left, top, right, bottom, 20f, 20f, boxPaint)
 
-            val label = "${res.label} ${String.format("%.2f", res.confidence)}"
+            val label = buildDebugLabel(res, DetectionSource.YOLO)
             val textWidth = textPaint.measureText(label)
             val bgTop = (top - 56f).coerceAtLeast(0f)
             canvas.drawRoundRect(left, bgTop, left + textWidth + 28f, bgTop + 52f, 10f, 10f, bgPaint)
@@ -156,9 +158,21 @@ class BoundingBoxOverlay @JvmOverloads constructor(
 
             canvas.drawRoundRect(left, top, right, bottom, 20f, 20f, mlKitBoxPaint)
 
-            val label = "MLKit"
-            canvas.drawText(label, left + 10f, top.coerceAtLeast(40f), textPaint)
+            val label = buildDebugLabel(res, DetectionSource.ML_KIT)
+            val textWidth = textPaint.measureText(label)
+            val bgTop = (top - 56f).coerceAtLeast(0f)
+            canvas.drawRoundRect(left, bgTop, left + textWidth + 28f, bgTop + 52f, 10f, 10f, bgPaint)
+            canvas.drawText(label, left + 14f, bgTop + 38f, textPaint)
         }
+    }
+
+    private fun buildDebugLabel(
+        detection: DetectionResult,
+        source: DetectionSource
+    ): String {
+        val detectedObject = detection.toDetectedObject(source)
+        return "${detectedObject.label} ${String.format("%.2f", detectedObject.confidence)} " +
+            "${detectedObject.category}/${detectedObject.priority}/${detectedObject.source}"
     }
 
     private fun calculateFitCenterTransform(
