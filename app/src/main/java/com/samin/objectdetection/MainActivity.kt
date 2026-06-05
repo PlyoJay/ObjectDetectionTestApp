@@ -30,7 +30,9 @@ import com.samin.objectdetection.mlkit.MlKitObjectDetector
 import com.samin.objectdetection.policy.YoloDefaultPolicyRegistry
 import com.samin.objectdetection.ui.BoundingBoxOverlay
 import com.samin.objectdetection.warning.ForwardObstacleSelector
+import com.samin.objectdetection.warning.VibrationWarningPlayer
 import com.samin.objectdetection.warning.WarningDecisionMaker
+import com.samin.objectdetection.warning.WarningPlayer
 import com.samin.objectdetection.warning.WarningStabilizer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -51,6 +53,7 @@ class MainActivity : ComponentActivity() {
     private val forwardObstacleSelector = ForwardObstacleSelector()
     private val warningDecisionMaker = WarningDecisionMaker()
     private val warningStabilizer = WarningStabilizer()
+    private lateinit var warningPlayer: WarningPlayer
 
     @Volatile
     private var isProcessing = AtomicBoolean(false)
@@ -87,6 +90,7 @@ class MainActivity : ComponentActivity() {
         }
         detector = yoloDetector
         mlKitDetector = MlKitObjectDetector()
+        warningPlayer = VibrationWarningPlayer(this)
 
         setupUi()
         checkPermissionAndStart()
@@ -295,6 +299,7 @@ class MainActivity : ComponentActivity() {
         val warningMessage = stabilizedDecision.message
         val shouldVoiceGuide = stabilizedDecision.shouldVoiceGuide
         val shouldVibrate = stabilizedDecision.shouldVibrate
+        warningPlayer.playIfNeeded(stabilizedDecision)
         Log.d(
             DETECTION_TIMING_TAG,
             "detectionEnd=$detectionEndTimeMs inference=${inferenceTime}ms skipped=$skippedFrameCount"
