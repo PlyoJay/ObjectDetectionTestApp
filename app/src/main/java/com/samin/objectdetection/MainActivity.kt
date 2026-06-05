@@ -22,15 +22,16 @@ import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.samin.objectdetection.camera.DetectionConfig
+import com.samin.objectdetection.camera.toBitmapSafe
 import com.samin.objectdetection.detector.DetectionResult
 import com.samin.objectdetection.detector.ObjectDetector
-import com.samin.objectdetection.camera.toBitmapSafe
 import com.samin.objectdetection.detector.VisionStyleYoloDetector
 import com.samin.objectdetection.mlkit.MlKitObjectDetector
 import com.samin.objectdetection.policy.YoloDefaultPolicyRegistry
 import com.samin.objectdetection.ui.BoundingBoxOverlay
 import com.samin.objectdetection.warning.ForwardObstacleSelector
 import com.samin.objectdetection.warning.WarningDecisionMaker
+import com.samin.objectdetection.warning.WarningStabilizer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.concurrent.Executors
@@ -49,6 +50,7 @@ class MainActivity : ComponentActivity() {
     private val detectionConfig = DetectionConfig()
     private val forwardObstacleSelector = ForwardObstacleSelector()
     private val warningDecisionMaker = WarningDecisionMaker()
+    private val warningStabilizer = WarningStabilizer()
 
     @Volatile
     private var isProcessing = AtomicBoolean(false)
@@ -65,6 +67,7 @@ class MainActivity : ComponentActivity() {
     private var currentFps = 0
     private var overlayEnabled = true
     private var skippedFrameCount = 0L
+    private var lastDetectionStartTimeMs = 0L
 
     private val permissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
@@ -80,6 +83,7 @@ class MainActivity : ComponentActivity() {
 
         val yoloDetector = VisionStyleYoloDetector(this, "yolo11n_float32.tflite").apply {
             confidenceThreshold = 0.35f
+            enableDebugImageSaving = detectionConfig.enableDetectorDebugImage
         }
         detector = yoloDetector
         mlKitDetector = MlKitObjectDetector()
@@ -185,6 +189,16 @@ class MainActivity : ComponentActivity() {
                     )
                     calculateFps()
 
+                    if (frameReceivedTimeMs - lastDetectionStartTimeMs < detectionConfig.detectIntervalMs) {
+                        skippedFrameCount++
+                        Log.d(
+                            DETECTION_TIMING_TAG,
+                            "skipFrameByInterval skipped=$skippedFrameCount intervalMs=${detectionConfig.detectIntervalMs}"
+                        )
+                        imageProxy.close()
+                        return@setAnalyzer
+                    }
+
                     if (!isProcessing.compareAndSet(false, true)) {
                         skippedFrameCount++
                         Log.d(
@@ -194,6 +208,7 @@ class MainActivity : ComponentActivity() {
                         imageProxy.close()
                         return@setAnalyzer
                     }
+                    lastDetectionStartTimeMs = frameReceivedTimeMs
 
                     try {
                         val bitmap = imageProxy.toBitmapSafe()
@@ -273,10 +288,13 @@ class MainActivity : ComponentActivity() {
             config = detectionConfig
         )
         val warningDecision = warningDecisionMaker.decide(forwardObstacles)
+        val stabilizedDecision = warningStabilizer.stabilize(warningDecision)
 
         val inferenceTime = detectionEndTimeMs - start
         val topObject = filtered.maxByOrNull { it.confidence }
-        val warningMessage = warningDecision.message
+        val warningMessage = stabilizedDecision.message
+        val shouldVoiceGuide = stabilizedDecision.shouldVoiceGuide
+        val shouldVibrate = stabilizedDecision.shouldVibrate
         Log.d(
             DETECTION_TIMING_TAG,
             "detectionEnd=$detectionEndTimeMs inference=${inferenceTime}ms skipped=$skippedFrameCount"
@@ -302,6 +320,8 @@ class MainActivity : ComponentActivity() {
                 }
                 appendLine()
                 append("Guide: $warningMessage")
+                appendLine()
+                append("Action: voice=$shouldVoiceGuide / vibrate=$shouldVibrate")
             }
         }
 

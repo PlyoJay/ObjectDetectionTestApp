@@ -1,7 +1,6 @@
 package com.samin.objectdetection.camera
 
 import android.graphics.Rect
-import com.samin.objectdetection.camera.DetectionConfig
 
 object RoiCalculator {
 

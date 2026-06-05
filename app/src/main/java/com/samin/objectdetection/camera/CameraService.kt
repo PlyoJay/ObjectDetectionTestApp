@@ -19,12 +19,15 @@ import java.util.concurrent.Executors
 class CameraService : LifecycleService() {
 
     private val cameraExecutor = Executors.newSingleThreadExecutor()
+    private val detectionConfig = DetectionConfig()
     private lateinit var detector: ObjectDetector
 
     override fun onCreate() {
         super.onCreate()
 
-        detector = VisionStyleYoloDetector(this, "yolo11n_float32.tflite")
+        detector = VisionStyleYoloDetector(this, "yolo11n_float32.tflite").apply {
+            enableDebugImageSaving = detectionConfig.enableDetectorDebugImage
+        }
 
         startForeground(
             NOTIFICATION_ID,
@@ -49,7 +52,7 @@ class CameraService : LifecycleService() {
 
                 analysis.setAnalyzer(
                     cameraExecutor,
-                    CameraFrameAnalyzer(this, DetectionConfig(), detector)
+                    CameraFrameAnalyzer(this, detectionConfig, detector)
                 )
 
                 cameraProvider.unbindAll()

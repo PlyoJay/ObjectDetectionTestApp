@@ -44,6 +44,7 @@ class VisionStyleYoloDetector(
     var confidenceThreshold: Float = 0.65f
     var nmsThreshold: Float = 0.55f
     var maxCandidates: Int = 100
+    var enableDebugImageSaving: Boolean = false
 
     @Volatile
     private var isProcessing = false
@@ -116,7 +117,9 @@ class VisionStyleYoloDetector(
             outputBuffer.rewind()
 
             parseOutput(outputBuffer, bitmap.width, bitmap.height).also { results ->
-                saveDebugImages(scaled, results)
+                if (enableDebugImageSaving) {
+                    saveDebugImages(scaled, results)
+                }
                 if (results.isNotEmpty()) {
                     val top = results.maxByOrNull { it.confidence }
                     Log.d(TAG, "detected=${results.size}, top=${top?.label}, conf=${top?.confidence}")

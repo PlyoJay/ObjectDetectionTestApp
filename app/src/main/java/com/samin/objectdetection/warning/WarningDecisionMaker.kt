@@ -1,7 +1,6 @@
 package com.samin.objectdetection.warning
 
 import com.samin.objectdetection.policy.WarningPriority
-import com.samin.objectdetection.policy.YoloDefaultPolicyRegistry
 
 class WarningDecisionMaker {
 
@@ -21,10 +20,9 @@ class WarningDecisionMaker {
             )
         }
 
-        val policy = YoloDefaultPolicyRegistry.get(obstacle.detection.label)
-        val shouldVoiceGuide = policy?.shouldVoiceGuide == true &&
+        val shouldVoiceGuide =
             (obstacle.priority == WarningPriority.CRITICAL || obstacle.priority == WarningPriority.HIGH) &&
-            proximityRank(obstacle.proximityLevel) <= proximityRank(ProximityLevel.NEAR)
+                proximityRank(obstacle.proximityLevel) <= proximityRank(ProximityLevel.NEAR)
 
         return WarningDecision(
             obstacle = obstacle,

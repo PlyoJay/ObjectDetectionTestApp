@@ -9,5 +9,8 @@ data class ForwardObstacle(
     val category: ObjectCategory,
     val priority: WarningPriority,
     val proximityLevel: ProximityLevel,
+    val areaRatio: Float,
+    val bottomProximity: Float,
+    val centerProximity: Float,
     val score: Float
 )
