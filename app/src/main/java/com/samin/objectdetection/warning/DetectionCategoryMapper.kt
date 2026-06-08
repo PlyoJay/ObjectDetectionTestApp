@@ -14,9 +14,9 @@ object DetectionCategoryMapper {
             "truck",
             "motorcycle",
             "bicycle" -> DetectionCategory.VEHICLE
+            "chair",
             "bench",
-            "fire hydrant",
-            "parking meter" -> DetectionCategory.OBSTACLE
+            "fire hydrant" -> DetectionCategory.OBSTACLE
             "person" -> DetectionCategory.HUMAN
             else -> DetectionCategory.ETC
         }

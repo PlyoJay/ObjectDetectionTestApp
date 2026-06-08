@@ -86,22 +86,6 @@ object YoloDefaultPolicyRegistry {
             shouldVoiceGuide = false
         ),
 
-        "potted plant" to DetectionPolicy(
-            label = "potted plant",
-            category = ObjectCategory.OBSTACLE,
-            priority = WarningPriority.LOW,
-            minConfidence = 0.45f,
-            shouldVoiceGuide = false
-        ),
-
-        "umbrella" to DetectionPolicy(
-            label = "umbrella",
-            category = ObjectCategory.OBSTACLE,
-            priority = WarningPriority.LOW,
-            minConfidence = 0.45f,
-            shouldVoiceGuide = false
-        ),
-
         // Human
         "person" to DetectionPolicy(
             label = "person",

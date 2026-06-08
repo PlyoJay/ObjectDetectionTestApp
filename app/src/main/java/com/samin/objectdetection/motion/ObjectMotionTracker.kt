@@ -6,8 +6,9 @@ import kotlin.math.hypot
 class ObjectMotionTracker(
     private val maxHistorySize: Int = 5,
     private val minHistorySize: Int = 3,
-    private val areaChangeThreshold: Float = 0.015f,
+    private val areaChangeThreshold: Float = 0.01f,
     private val maxMatchDistanceRatio: Float = 0.18f,
+    private val minSampleIntervalMs: Long = 500L,
     private val staleTrackTimeoutMs: Long = 2_000L
 ) {
     private val tracks = mutableListOf<TrackedObject>()
@@ -37,10 +38,7 @@ class ObjectMotionTracker(
                 ?: createTrack(snapshot)
 
             matchedTrackIds.add(track.id)
-            track.records.add(snapshot)
-            while (track.records.size > maxHistorySize) {
-                track.records.removeAt(0)
-            }
+            addSnapshotIfNeeded(track, snapshot)
             track.lastUpdatedAtMs = timestampMs
 
             detection.copy(motionDirection = estimateDirection(track.records))
@@ -69,7 +67,22 @@ class ObjectMotionTracker(
             id = nextTrackId++,
             label = snapshot.label,
             lastUpdatedAtMs = snapshot.timestampMs
-        ).also { tracks.add(it) }
+        ).also { track ->
+            track.records.add(snapshot)
+            tracks.add(track)
+        }
+    }
+
+    private fun addSnapshotIfNeeded(track: TrackedObject, snapshot: MotionSnapshot) {
+        val lastSnapshot = track.records.lastOrNull()
+        if (lastSnapshot != null && snapshot.timestampMs - lastSnapshot.timestampMs < minSampleIntervalMs) {
+            return
+        }
+
+        track.records.add(snapshot)
+        while (track.records.size > maxHistorySize) {
+            track.records.removeAt(0)
+        }
     }
 
     private fun estimateDirection(records: List<MotionSnapshot>): MotionDirection {
