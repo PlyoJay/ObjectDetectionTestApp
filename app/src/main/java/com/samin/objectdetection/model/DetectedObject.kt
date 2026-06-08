@@ -2,6 +2,7 @@ package com.samin.objectdetection.model
 
 import android.graphics.RectF
 import com.samin.objectdetection.detector.DetectionResult
+import com.samin.objectdetection.motion.MotionDirection
 import com.samin.objectdetection.warning.DetectionCategoryMapper
 
 data class DetectedObject(
@@ -11,7 +12,8 @@ data class DetectedObject(
     val source: DetectionSource,
     val category: DetectionCategory,
     val priority: DetectionPriority,
-    val timestampMs: Long
+    val timestampMs: Long,
+    val motionDirection: MotionDirection
 )
 
 fun DetectionResult.toDetectedObject(
@@ -26,6 +28,7 @@ fun DetectionResult.toDetectedObject(
         source = source,
         category = category,
         priority = priority,
-        timestampMs = frameTimestampMs
+        timestampMs = frameTimestampMs,
+        motionDirection = motionDirection
     )
 }

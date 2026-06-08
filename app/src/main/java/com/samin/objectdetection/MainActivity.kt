@@ -31,6 +31,7 @@ import com.samin.objectdetection.mlkit.MlKitObjectDetector
 import com.samin.objectdetection.model.DetectedObject
 import com.samin.objectdetection.model.DetectionSource
 import com.samin.objectdetection.model.toDetectedObject
+import com.samin.objectdetection.motion.ObjectMotionTracker
 import com.samin.objectdetection.policy.YoloDefaultPolicyRegistry
 import com.samin.objectdetection.ui.BoundingBoxOverlay
 import com.samin.objectdetection.warning.ForwardObstacleSelector
@@ -63,6 +64,7 @@ class MainActivity : ComponentActivity() {
     private val warningSelector = WarningSelector(warningDecisionMaker)
     private val warningThrottle = WarningThrottle()
     private val warningStabilizer = WarningStabilizer()
+    private val objectMotionTracker = ObjectMotionTracker()
     private lateinit var warningPlayer: WarningPlayer
 
     @Volatile
@@ -313,8 +315,14 @@ class MainActivity : ComponentActivity() {
             frameHeight = height,
             config = detectionConfig
         )
+        val motionTracked = objectMotionTracker.update(
+            detections = visibleMapped,
+            frameWidth = width,
+            frameHeight = height,
+            timestampMs = start
+        )
 
-        val filtered = visibleMapped.filter { detection ->
+        val filtered = motionTracked.filter { detection ->
             val policy = YoloDefaultPolicyRegistry.get(detection.label)
             policy != null && detection.confidence >= policy.minConfidence
         }

@@ -2,6 +2,7 @@ package com.samin.objectdetection.detector
 
 import android.graphics.Bitmap
 import android.graphics.Rect
+import com.samin.objectdetection.motion.MotionDirection
 
 data class DetectionResult(
     val label: String,
@@ -10,7 +11,8 @@ data class DetectionResult(
     val top: Float,
     val right: Float,
     val bottom: Float,
-    val frameTimestampMs: Long = System.currentTimeMillis()
+    val frameTimestampMs: Long = System.currentTimeMillis(),
+    val motionDirection: MotionDirection = MotionDirection.UNKNOWN
 )
 
 interface ObjectDetector {
