@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.util.Log
 import android.util.Size
 import android.view.Gravity
+import android.view.View
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.TextView
@@ -27,13 +28,19 @@ import com.samin.objectdetection.detector.DetectionResult
 import com.samin.objectdetection.detector.ObjectDetector
 import com.samin.objectdetection.detector.VisionStyleYoloDetector
 import com.samin.objectdetection.mlkit.MlKitObjectDetector
+import com.samin.objectdetection.model.DetectedObject
+import com.samin.objectdetection.model.DetectionSource
+import com.samin.objectdetection.model.toDetectedObject
 import com.samin.objectdetection.policy.YoloDefaultPolicyRegistry
 import com.samin.objectdetection.ui.BoundingBoxOverlay
 import com.samin.objectdetection.warning.ForwardObstacleSelector
 import com.samin.objectdetection.warning.VibrationWarningPlayer
 import com.samin.objectdetection.warning.WarningDecisionMaker
+import com.samin.objectdetection.warning.WarningMessageBuilder
 import com.samin.objectdetection.warning.WarningPlayer
+import com.samin.objectdetection.warning.WarningSelector
 import com.samin.objectdetection.warning.WarningStabilizer
+import com.samin.objectdetection.warning.WarningThrottle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.concurrent.Executors
@@ -44,6 +51,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var previewView: PreviewView
     private lateinit var overlayView: BoundingBoxOverlay
     private lateinit var debugTextView: TextView
+    private lateinit var warningMessageTextView: TextView
     private lateinit var toggleButton: Button
 
     private val cameraExecutor = Executors.newSingleThreadExecutor()
@@ -52,6 +60,8 @@ class MainActivity : ComponentActivity() {
     private val detectionConfig = DetectionConfig()
     private val forwardObstacleSelector = ForwardObstacleSelector()
     private val warningDecisionMaker = WarningDecisionMaker()
+    private val warningSelector = WarningSelector(warningDecisionMaker)
+    private val warningThrottle = WarningThrottle()
     private val warningStabilizer = WarningStabilizer()
     private lateinit var warningPlayer: WarningPlayer
 
@@ -63,6 +73,8 @@ class MainActivity : ComponentActivity() {
 
     @Volatile
     private var lastMlKitTimeMs = 0L
+    @Volatile
+    private var lastMlKitDetectedObjects: List<DetectedObject> = emptyList()
 
     private var lastFpsTime = 0L
     private var lastMlKitDetectionTime = 0L
@@ -114,6 +126,16 @@ class MainActivity : ComponentActivity() {
             setPadding(24, 24, 24, 24)
         }
 
+        warningMessageTextView = TextView(this).apply {
+            id = View.generateViewId()
+            visibility = View.GONE
+            textSize = 22f
+            gravity = Gravity.CENTER
+            setTextColor(android.graphics.Color.WHITE)
+            setBackgroundColor(android.graphics.Color.argb(190, 0, 0, 0))
+            setPadding(32, 20, 32, 20)
+        }
+
         toggleButton = Button(this).apply {
             text = "Overlay ON"
             setOnClickListener {
@@ -148,8 +170,20 @@ class MainActivity : ComponentActivity() {
             }
         )
 
+        root.addView(
+            warningMessageTextView,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+                setMargins(20, 20, 20, 150)
+            }
+        )
+
         overlayView.bringToFront()
         debugTextView.bringToFront()
+        warningMessageTextView.bringToFront()
         toggleButton.bringToFront()
 
         setContentView(root)
@@ -284,6 +318,12 @@ class MainActivity : ComponentActivity() {
             val policy = YoloDefaultPolicyRegistry.get(detection.label)
             policy != null && detection.confidence >= policy.minConfidence
         }
+        val yoloDetectedObjects = filtered.map { it.toDetectedObject(DetectionSource.YOLO) }
+        val freshMlKitDetectedObjects = lastMlKitDetectedObjects.filter {
+            start - it.timestampMs <= ML_KIT_WARNING_MAX_AGE_MS
+        }
+        val selectedWarningObject = warningSelector.select(yoloDetectedObjects + freshMlKitDetectedObjects)
+        val selectedWarningMessage = selectedWarningObject?.let { WarningMessageBuilder.build(it) }
 
         val forwardObstacles = forwardObstacleSelector.select(
             detections = filtered,
@@ -314,6 +354,13 @@ class MainActivity : ComponentActivity() {
                 "overlayUpdate=$overlayUpdateTimeMs resultAge=${resultAgeMs}ms detectionCount=${filtered.size}"
             )
             overlayView.updateDetections(filtered, width, height, inferenceTime, currentFps)
+            if (selectedWarningMessage == null) {
+                warningMessageTextView.text = ""
+                warningMessageTextView.visibility = View.GONE
+            } else if (warningThrottle.canShow(selectedWarningMessage, overlayUpdateTimeMs)) {
+                warningMessageTextView.text = selectedWarningMessage
+                warningMessageTextView.visibility = View.VISIBLE
+            }
             debugTextView.text = buildString {
                 appendLine("Frame: ${width}x$height / crop: ${cropRect.width()}x${cropRect.height()}")
                 appendLine("Detect: ${filtered.size} / ${inferenceTime}ms / FPS=$currentFps")
@@ -422,9 +469,11 @@ class MainActivity : ComponentActivity() {
                         left = box.left * scaleX,
                         top = box.top * scaleY,
                         right = box.right * scaleX,
-                        bottom = box.bottom * scaleY
+                        bottom = box.bottom * scaleY,
+                        frameTimestampMs = mlStart
                     )
                 }
+                lastMlKitDetectedObjects = results.map { it.toDetectedObject(DetectionSource.ML_KIT) }
 
                 runOnUiThread {
                     overlayView.updateMlKitDetections(
@@ -464,5 +513,6 @@ class MainActivity : ComponentActivity() {
         private const val DETECTION_TIMING_TAG = "DetectionTiming"
         private const val DETECTION_FILTER_TAG = "DetectionFilter"
         private const val ML_KIT_DETECT_INTERVAL_MS = 1500L
+        private const val ML_KIT_WARNING_MAX_AGE_MS = 3000L
     }
 }

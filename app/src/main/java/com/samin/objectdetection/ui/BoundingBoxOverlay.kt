@@ -106,8 +106,6 @@ class BoundingBoxOverlay @JvmOverloads constructor(
 
         clearStaleDetectionsIfNeeded()
 
-        canvas.drawText("연산: ${inferenceTimeMs}ms | FPS: $fps | 객체: ${detections.size}", 40f, 70f, infoPaint)
-
         // 중앙 감시 구역 가이드
 //        val guidePaint = Paint().apply {
 //            color = Color.parseColor("#00E676")
