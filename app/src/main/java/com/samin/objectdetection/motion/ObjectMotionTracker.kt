@@ -6,7 +6,8 @@ import kotlin.math.hypot
 class ObjectMotionTracker(
     private val maxHistorySize: Int = 5,
     private val minHistorySize: Int = 3,
-    private val areaChangeThreshold: Float = 0.015f,
+    private val minAbsoluteAreaChange: Float = 0.005f,
+    private val minRelativeAreaChangeRatio: Float = 0.15f,
     private val maxMatchDistanceRatio: Float = 0.18f,
     private val minSampleIntervalMs: Long = 500L,
     private val staleTrackTimeoutMs: Long = 2_000L
@@ -94,11 +95,15 @@ class ObjectMotionTracker(
 
         val first = records.first()
         val last = records.last()
-        val delta = last.areaRatio - first.areaRatio
+        val areaDelta = last.areaRatio - first.areaRatio
+        val relativeChangeRatio = areaDelta / first.areaRatio.coerceAtLeast(MIN_RELATIVE_AREA_BASE)
 
+        // Require both absolute and relative area changes to reduce false motion from YOLO bbox jitter.
         return when {
-            delta >= areaChangeThreshold -> MotionDirection.APPROACHING
-            delta <= -areaChangeThreshold -> MotionDirection.LEAVING
+            areaDelta >= minAbsoluteAreaChange &&
+                relativeChangeRatio >= minRelativeAreaChangeRatio -> MotionDirection.APPROACHING
+            areaDelta <= -minAbsoluteAreaChange &&
+                relativeChangeRatio <= -minRelativeAreaChangeRatio -> MotionDirection.LEAVING
             else -> MotionDirection.STABLE
         }
     }
@@ -171,3 +176,4 @@ class ObjectMotionTracker(
 private const val FAST_AREA_VELOCITY = 0.05f
 private const val MEDIUM_AREA_VELOCITY = 0.02f
 private const val SLOW_AREA_VELOCITY = 0.005f
+private const val MIN_RELATIVE_AREA_BASE = 0.0001f
