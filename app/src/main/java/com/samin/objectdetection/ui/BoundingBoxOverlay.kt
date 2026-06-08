@@ -170,6 +170,7 @@ class BoundingBoxOverlay @JvmOverloads constructor(
     ): String {
         val detectedObject = detection.toDetectedObject(source)
         return "${detectedObject.label} ${detectedObject.motionDirection} " +
+            "${detection.approachSpeedLevel} " +
             "${String.format("%.2f", detectedObject.confidence)} " +
             "${detectedObject.category}/${detectedObject.priority}/${detectedObject.source}"
     }

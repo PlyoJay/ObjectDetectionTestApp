@@ -6,7 +6,7 @@ import kotlin.math.hypot
 class ObjectMotionTracker(
     private val maxHistorySize: Int = 5,
     private val minHistorySize: Int = 3,
-    private val areaChangeThreshold: Float = 0.01f,
+    private val areaChangeThreshold: Float = 0.015f,
     private val maxMatchDistanceRatio: Float = 0.18f,
     private val minSampleIntervalMs: Long = 500L,
     private val staleTrackTimeoutMs: Long = 2_000L
@@ -41,7 +41,11 @@ class ObjectMotionTracker(
             addSnapshotIfNeeded(track, snapshot)
             track.lastUpdatedAtMs = timestampMs
 
-            detection.copy(motionDirection = estimateDirection(track.records))
+            val motionDirection = estimateDirection(track.records)
+            detection.copy(
+                motionDirection = motionDirection,
+                approachSpeedLevel = estimateApproachSpeedLevel(track.records, motionDirection)
+            )
         }
 
         removeStaleTracks(timestampMs)
@@ -99,6 +103,30 @@ class ObjectMotionTracker(
         }
     }
 
+    private fun estimateApproachSpeedLevel(
+        records: List<MotionSnapshot>,
+        motionDirection: MotionDirection
+    ): ApproachSpeedLevel {
+        if (motionDirection != MotionDirection.APPROACHING) return ApproachSpeedLevel.NONE
+        if (records.size < minHistorySize) return ApproachSpeedLevel.UNKNOWN
+
+        val areaVelocity = calculateAreaVelocity(records)
+        return when {
+            areaVelocity >= FAST_AREA_VELOCITY -> ApproachSpeedLevel.FAST
+            areaVelocity >= MEDIUM_AREA_VELOCITY -> ApproachSpeedLevel.MEDIUM
+            areaVelocity >= SLOW_AREA_VELOCITY -> ApproachSpeedLevel.SLOW
+            else -> ApproachSpeedLevel.NONE
+        }
+    }
+
+    // Relative approach speed from bbox areaRatio changes, not a real m/s speed.
+    private fun calculateAreaVelocity(records: List<MotionSnapshot>): Float {
+        val first = records.first()
+        val last = records.last()
+        val deltaTimeSec = ((last.timestampMs - first.timestampMs) / 1_000f).coerceAtLeast(0.001f)
+        return (last.areaRatio - first.areaRatio) / deltaTimeSec
+    }
+
     private fun removeStaleTracks(nowMs: Long) {
         tracks.removeAll { nowMs - it.lastUpdatedAtMs > staleTrackTimeoutMs }
     }
@@ -139,3 +167,7 @@ class ObjectMotionTracker(
         }
     }
 }
+
+private const val FAST_AREA_VELOCITY = 0.05f
+private const val MEDIUM_AREA_VELOCITY = 0.02f
+private const val SLOW_AREA_VELOCITY = 0.005f
