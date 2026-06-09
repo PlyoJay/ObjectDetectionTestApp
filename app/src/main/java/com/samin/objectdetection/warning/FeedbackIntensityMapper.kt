@@ -22,7 +22,7 @@ class FeedbackIntensityMapper {
             RiskLevel.LOW -> FeedbackIntensity(
                 beepLevel = FeedbackLevel.NONE,
                 voiceLevel = FeedbackLevel.NONE,
-                vibrationLevel = FeedbackLevel.LOW
+                vibrationLevel = FeedbackLevel.NONE
             )
             RiskLevel.NONE -> FeedbackIntensity(
                 beepLevel = FeedbackLevel.NONE,

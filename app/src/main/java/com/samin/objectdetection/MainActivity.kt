@@ -351,6 +351,8 @@ class MainActivity : ComponentActivity() {
         val vibrationLevel = stabilizedDecision.vibrationLevel
         val warningMotionDirection = stabilizedDecision.obstacle?.detection?.motionDirection
         val warningApproachSpeedLevel = stabilizedDecision.obstacle?.detection?.approachSpeedLevel
+        val warningCategory = stabilizedDecision.obstacle?.category
+        val warningProximityLevel = stabilizedDecision.obstacle?.proximityLevel
         warningPlayer.playIfNeeded(stabilizedDecision)
         Log.d(
             DETECTION_TIMING_TAG,
@@ -387,7 +389,8 @@ class MainActivity : ComponentActivity() {
                 appendLine()
                 appendLine("Risk: $riskLevel")
                 appendLine("Feedback: beep=$beepLevel / voice=$voiceLevel / vibrate=$vibrationLevel")
-                append("Motion: direction=$warningMotionDirection / approachSpeed=$warningApproachSpeedLevel")
+                appendLine("Motion: direction=$warningMotionDirection / approachSpeed=$warningApproachSpeedLevel")
+                append("Policy: category=$warningCategory / proximity=$warningProximityLevel")
             }
         }
 

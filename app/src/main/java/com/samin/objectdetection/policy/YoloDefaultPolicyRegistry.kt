@@ -53,6 +53,14 @@ object YoloDefaultPolicyRegistry {
             shouldVoiceGuide = true
         ),
 
+        "stop sign" to DetectionPolicy(
+            label = "stop sign",
+            category = ObjectCategory.SAFETY,
+            priority = WarningPriority.HIGH,
+            minConfidence = 0.45f,
+            shouldVoiceGuide = true
+        ),
+
         // Obstacle
         "fire hydrant" to DetectionPolicy(
             label = "fire hydrant",
@@ -62,16 +70,32 @@ object YoloDefaultPolicyRegistry {
             shouldVoiceGuide = true
         ),
 
-        "stop sign" to DetectionPolicy(
-            label = "stop sign",
+        "bench" to DetectionPolicy(
+            label = "bench",
             category = ObjectCategory.OBSTACLE,
             priority = WarningPriority.MEDIUM,
             minConfidence = 0.45f,
             shouldVoiceGuide = true
         ),
 
-        "bench" to DetectionPolicy(
-            label = "bench",
+        "parking meter" to DetectionPolicy(
+            label = "parking meter",
+            category = ObjectCategory.OBSTACLE,
+            priority = WarningPriority.MEDIUM,
+            minConfidence = 0.45f,
+            shouldVoiceGuide = true
+        ),
+
+        "backpack" to DetectionPolicy(
+            label = "backpack",
+            category = ObjectCategory.OBSTACLE,
+            priority = WarningPriority.MEDIUM,
+            minConfidence = 0.45f,
+            shouldVoiceGuide = true
+        ),
+
+        "umbrella" to DetectionPolicy(
+            label = "umbrella",
             category = ObjectCategory.OBSTACLE,
             priority = WarningPriority.MEDIUM,
             minConfidence = 0.45f,
