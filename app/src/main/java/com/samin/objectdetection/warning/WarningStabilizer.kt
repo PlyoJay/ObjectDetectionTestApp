@@ -51,6 +51,10 @@ class WarningStabilizer(
         val currentObstacle = current.obstacle ?: return false
         val previousObstacle = previous.obstacle ?: return true
 
+        if (current.riskLevel != previous.riskLevel) {
+            return current.riskLevel > previous.riskLevel
+        }
+
         val currentPriority = priorityRank(currentObstacle.priority)
         val previousPriority = priorityRank(previousObstacle.priority)
         if (currentPriority != previousPriority) return currentPriority < previousPriority

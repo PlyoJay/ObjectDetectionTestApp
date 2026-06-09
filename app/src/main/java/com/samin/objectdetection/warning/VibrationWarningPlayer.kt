@@ -22,17 +22,16 @@ class VibrationWarningPlayer(
     private var lastPlayedAtMs = 0L
 
     override fun playIfNeeded(decision: WarningDecision) {
-        if (!decision.shouldVibrate) return
-        val obstacle = decision.obstacle ?: return
+        if (decision.vibrationLevel == FeedbackLevel.NONE) return
 
         val now = System.currentTimeMillis()
         if (now - lastPlayedAtMs < cooldownMs) return
 
-        val pattern = when (obstacle.proximityLevel) {
-            ProximityLevel.VERY_NEAR -> VERY_NEAR_PATTERN
-            ProximityLevel.NEAR -> NEAR_PATTERN
-            ProximityLevel.MID,
-            ProximityLevel.FAR -> return
+        val (pattern, amplitudes) = when (decision.vibrationLevel) {
+            FeedbackLevel.LOW -> LOW_PATTERN to LOW_AMPLITUDES
+            FeedbackLevel.MEDIUM -> MEDIUM_PATTERN to MEDIUM_AMPLITUDES
+            FeedbackLevel.HIGH -> HIGH_PATTERN to HIGH_AMPLITUDES
+            FeedbackLevel.NONE -> return
         }
 
         val currentVibrator = vibrator ?: return
@@ -41,7 +40,7 @@ class VibrationWarningPlayer(
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 currentVibrator.vibrate(
-                    VibrationEffect.createWaveform(pattern, NO_REPEAT)
+                    VibrationEffect.createWaveform(pattern, amplitudes, NO_REPEAT)
                 )
             } else {
                 @Suppress("DEPRECATION")
@@ -56,7 +55,11 @@ class VibrationWarningPlayer(
     companion object {
         private const val TAG = "VibrationWarningPlayer"
         private const val NO_REPEAT = -1
-        private val VERY_NEAR_PATTERN = longArrayOf(0, 250, 100, 250)
-        private val NEAR_PATTERN = longArrayOf(0, 180)
+        private val LOW_PATTERN = longArrayOf(0, 120)
+        private val MEDIUM_PATTERN = longArrayOf(0, 180, 100, 180)
+        private val HIGH_PATTERN = longArrayOf(0, 250, 80, 250, 80, 250)
+        private val LOW_AMPLITUDES = intArrayOf(0, 90)
+        private val MEDIUM_AMPLITUDES = intArrayOf(0, 170, 0, 170)
+        private val HIGH_AMPLITUDES = intArrayOf(0, 255, 0, 255, 0, 255)
     }
 }

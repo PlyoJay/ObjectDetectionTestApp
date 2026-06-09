@@ -2,9 +2,13 @@ package com.samin.objectdetection.warning
 
 import com.samin.objectdetection.model.DetectedObject
 import com.samin.objectdetection.model.DetectionPriority
+import com.samin.objectdetection.motion.ApproachSpeedLevel
 import com.samin.objectdetection.policy.WarningPriority
 
-class WarningDecisionMaker {
+class WarningDecisionMaker(
+    private val riskEvaluator: RiskEvaluator = RiskEvaluator(),
+    private val feedbackIntensityMapper: FeedbackIntensityMapper = FeedbackIntensityMapper()
+) {
 
     fun shouldWarn(detectedObject: DetectedObject): Boolean {
         if (detectedObject.confidence < MIN_WARNING_CONFIDENCE) return false
@@ -16,41 +20,57 @@ class WarningDecisionMaker {
     }
 
     fun decide(obstacles: List<ForwardObstacle>): WarningDecision {
-        val obstacle = obstacles.sortedWith(
-            compareBy<ForwardObstacle> { priorityRank(it.priority) }
-                .thenBy { proximityRank(it.proximityLevel) }
-                .thenByDescending { it.score }
-        ).firstOrNull()
+        val obstacle = obstacles
+            .sortedWith(
+                compareByDescending<ForwardObstacle> { riskEvaluator.evaluate(it) }
+                    .thenBy { priorityRank(it.priority) }
+                    .thenBy { proximityRank(it.proximityLevel) }
+                    .thenByDescending { it.score }
+            )
+            .firstOrNull()
 
         if (obstacle == null) {
+            val intensity = feedbackIntensityMapper.map(RiskLevel.NONE)
             return WarningDecision(
                 obstacle = null,
                 message = "감지된 위험 객체 없음",
-                shouldVoiceGuide = false,
-                shouldVibrate = false
+                riskLevel = RiskLevel.NONE,
+                beepLevel = intensity.beepLevel,
+                voiceLevel = intensity.voiceLevel,
+                vibrationLevel = intensity.vibrationLevel
             )
         }
 
-        val shouldVoiceGuide =
-            (obstacle.priority == WarningPriority.CRITICAL || obstacle.priority == WarningPriority.HIGH) &&
-                proximityRank(obstacle.proximityLevel) <= proximityRank(ProximityLevel.NEAR)
+        val riskLevel = riskEvaluator.evaluate(obstacle)
+        val intensity = feedbackIntensityMapper.map(riskLevel)
 
         return WarningDecision(
             obstacle = obstacle,
             message = buildMessage(obstacle),
-            shouldVoiceGuide = shouldVoiceGuide,
-            shouldVibrate = obstacle.proximityLevel == ProximityLevel.VERY_NEAR
+            riskLevel = riskLevel,
+            beepLevel = intensity.beepLevel,
+            voiceLevel = intensity.voiceLevel,
+            vibrationLevel = intensity.vibrationLevel
         )
     }
 
     private fun buildMessage(obstacle: ForwardObstacle): String {
         val label = toKoreanLabel(obstacle.detection.label)
         val subject = "$label${subjectParticle(label)}"
+        val approachingFast =
+            obstacle.detection.approachSpeedLevel == ApproachSpeedLevel.FAST
+        val suffix = if (approachingFast) " 빠르게 접근 중입니다" else " 있습니다"
         return when (obstacle.proximityLevel) {
-            ProximityLevel.VERY_NEAR -> "전방 가까이에 $subject 있습니다"
-            ProximityLevel.NEAR -> "전방에 $subject 있습니다"
+            ProximityLevel.VERY_NEAR -> "전방 가까이에 $subject$suffix"
+            ProximityLevel.NEAR -> "전방에 $subject$suffix"
             ProximityLevel.MID,
-            ProximityLevel.FAR -> "전방에 $label 감지"
+            ProximityLevel.FAR -> {
+                if (approachingFast) {
+                    "전방에 $label 빠르게 접근 중입니다"
+                } else {
+                    "전방에 $label 감지"
+                }
+            }
         }
     }
 
