@@ -34,6 +34,8 @@ import com.samin.objectdetection.model.toDetectedObject
 import com.samin.objectdetection.motion.ObjectMotionTracker
 import com.samin.objectdetection.policy.YoloDefaultPolicyRegistry
 import com.samin.objectdetection.ui.BoundingBoxOverlay
+import com.samin.objectdetection.warning.BeepWarningPlayer
+import com.samin.objectdetection.warning.CompositeWarningPlayer
 import com.samin.objectdetection.warning.ForwardObstacleSelector
 import com.samin.objectdetection.warning.VibrationWarningPlayer
 import com.samin.objectdetection.warning.WarningDecisionMaker
@@ -104,7 +106,12 @@ class MainActivity : ComponentActivity() {
         }
         detector = yoloDetector
         mlKitDetector = MlKitObjectDetector()
-        warningPlayer = VibrationWarningPlayer(this)
+        warningPlayer = CompositeWarningPlayer(
+            listOf(
+                BeepWarningPlayer(),
+                VibrationWarningPlayer(this)
+            )
+        )
 
         setupUi()
         checkPermissionAndStart()
@@ -523,6 +530,7 @@ class MainActivity : ComponentActivity() {
         cameraExecutor.shutdown()
         mlKitDetector.close()
         detector.close()
+        warningPlayer.release()
     }
 
     companion object {
