@@ -2,7 +2,6 @@ package com.samin.objectdetection.warning
 
 import com.samin.objectdetection.motion.ApproachSpeedLevel
 import com.samin.objectdetection.motion.MotionDirection
-import com.samin.objectdetection.policy.ObjectCategory
 import com.samin.objectdetection.policy.WarningPriority
 
 class RiskEvaluator {
@@ -12,45 +11,22 @@ class RiskEvaluator {
 
         var riskLevel = baseRisk(obstacle)
 
+        if (obstacle.priority == WarningPriority.CRITICAL) {
+            riskLevel = increase(riskLevel)
+        }
+
         if (
-            obstacle.priority == WarningPriority.CRITICAL &&
+            obstacle.priority == WarningPriority.HIGH &&
             obstacle.proximityLevel.isAtLeast(ProximityLevel.NEAR)
         ) {
-            riskLevel = RiskLevel.CRITICAL
-        }
-
-        if (
-            obstacle.priority == WarningPriority.HIGH &&
-            obstacle.proximityLevel == ProximityLevel.VERY_NEAR
-        ) {
-            riskLevel = RiskLevel.CRITICAL
-        }
-
-        if (
-            obstacle.priority == WarningPriority.HIGH &&
-            obstacle.proximityLevel == ProximityLevel.NEAR
-        ) {
-            riskLevel = maxOf(riskLevel, RiskLevel.HIGH)
-        }
-
-        if (
-            obstacle.category == ObjectCategory.HUMAN ||
-            obstacle.category == ObjectCategory.VEHICLE
-        ) {
-            if (obstacle.proximityLevel.isAtLeast(ProximityLevel.NEAR)) {
-                riskLevel = increase(riskLevel)
-            }
+            riskLevel = increase(riskLevel)
         }
 
         if (obstacle.detection.motionDirection == MotionDirection.APPROACHING) {
             riskLevel = when (obstacle.detection.approachSpeedLevel) {
                 ApproachSpeedLevel.FAST -> increase(riskLevel)
                 ApproachSpeedLevel.MEDIUM -> {
-                    if (
-                        obstacle.proximityLevel.isAtLeast(ProximityLevel.NEAR) ||
-                        obstacle.priority == WarningPriority.CRITICAL ||
-                        obstacle.priority == WarningPriority.HIGH
-                    ) {
+                    if (obstacle.proximityLevel.isAtLeast(ProximityLevel.MID)) {
                         increase(riskLevel)
                     } else {
                         riskLevel
@@ -67,19 +43,10 @@ class RiskEvaluator {
 
     private fun baseRisk(obstacle: ForwardObstacle): RiskLevel {
         return when (obstacle.proximityLevel) {
-            ProximityLevel.VERY_NEAR -> RiskLevel.HIGH
-            ProximityLevel.NEAR -> RiskLevel.MEDIUM
-            ProximityLevel.MID -> RiskLevel.LOW
-            ProximityLevel.FAR -> {
-                if (
-                    obstacle.priority == WarningPriority.CRITICAL ||
-                    obstacle.priority == WarningPriority.HIGH
-                ) {
-                    RiskLevel.LOW
-                } else {
-                    RiskLevel.NONE
-                }
-            }
+            ProximityLevel.FAR -> RiskLevel.LOW
+            ProximityLevel.MID -> RiskLevel.MEDIUM
+            ProximityLevel.NEAR -> RiskLevel.HIGH
+            ProximityLevel.VERY_NEAR -> RiskLevel.CRITICAL
         }
     }
 

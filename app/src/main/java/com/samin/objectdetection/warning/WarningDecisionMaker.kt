@@ -20,14 +20,11 @@ class WarningDecisionMaker(
     }
 
     fun decide(obstacles: List<ForwardObstacle>): WarningDecision {
-        val obstacle = obstacles
-            .sortedWith(
-                compareByDescending<ForwardObstacle> { riskEvaluator.evaluate(it) }
-                    .thenBy { priorityRank(it.priority) }
-                    .thenBy { proximityRank(it.proximityLevel) }
-                    .thenByDescending { it.score }
-            )
-            .firstOrNull()
+        val obstacle = obstacles.sortedWith(
+            compareBy<ForwardObstacle> { priorityRank(it.priority) }
+                .thenBy { proximityRank(it.proximityLevel) }
+                .thenByDescending { it.score }
+        ).firstOrNull()
 
         if (obstacle == null) {
             val intensity = feedbackIntensityMapper.map(RiskLevel.NONE)

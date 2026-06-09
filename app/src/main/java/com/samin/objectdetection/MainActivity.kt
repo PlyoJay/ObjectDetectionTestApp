@@ -34,11 +34,8 @@ import com.samin.objectdetection.model.toDetectedObject
 import com.samin.objectdetection.motion.ObjectMotionTracker
 import com.samin.objectdetection.policy.YoloDefaultPolicyRegistry
 import com.samin.objectdetection.ui.BoundingBoxOverlay
-import com.samin.objectdetection.warning.BeepWarningPlayer
-import com.samin.objectdetection.warning.CompositeWarningPlayer
 import com.samin.objectdetection.warning.ForwardObstacleSelector
 import com.samin.objectdetection.warning.VibrationWarningPlayer
-import com.samin.objectdetection.warning.VoiceWarningPlayer
 import com.samin.objectdetection.warning.WarningDecisionMaker
 import com.samin.objectdetection.warning.WarningMessageBuilder
 import com.samin.objectdetection.warning.WarningPlayer
@@ -107,13 +104,7 @@ class MainActivity : ComponentActivity() {
         }
         detector = yoloDetector
         mlKitDetector = MlKitObjectDetector()
-        warningPlayer = CompositeWarningPlayer(
-            listOf(
-                BeepWarningPlayer(),
-                VoiceWarningPlayer(this),
-                VibrationWarningPlayer(this)
-            )
-        )
+        warningPlayer = VibrationWarningPlayer(this)
 
         setupUi()
         checkPermissionAndStart()
@@ -358,6 +349,8 @@ class MainActivity : ComponentActivity() {
         val beepLevel = stabilizedDecision.beepLevel
         val voiceLevel = stabilizedDecision.voiceLevel
         val vibrationLevel = stabilizedDecision.vibrationLevel
+        val warningMotionDirection = stabilizedDecision.obstacle?.detection?.motionDirection
+        val warningApproachSpeedLevel = stabilizedDecision.obstacle?.detection?.approachSpeedLevel
         warningPlayer.playIfNeeded(stabilizedDecision)
         Log.d(
             DETECTION_TIMING_TAG,
@@ -393,7 +386,8 @@ class MainActivity : ComponentActivity() {
                 append("Guide: $warningMessage")
                 appendLine()
                 appendLine("Risk: $riskLevel")
-                append("Feedback: beep=$beepLevel / voice=$voiceLevel / vibrate=$vibrationLevel")
+                appendLine("Feedback: beep=$beepLevel / voice=$voiceLevel / vibrate=$vibrationLevel")
+                append("Motion: direction=$warningMotionDirection / approachSpeed=$warningApproachSpeedLevel")
             }
         }
 
@@ -526,7 +520,6 @@ class MainActivity : ComponentActivity() {
         cameraExecutor.shutdown()
         mlKitDetector.close()
         detector.close()
-        warningPlayer.close()
     }
 
     companion object {

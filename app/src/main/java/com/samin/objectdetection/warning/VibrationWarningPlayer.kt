@@ -57,7 +57,7 @@ class VibrationWarningPlayer(
         private const val NO_REPEAT = -1
         private val LOW_PATTERN = longArrayOf(0, 120)
         private val MEDIUM_PATTERN = longArrayOf(0, 180, 100, 180)
-        private val HIGH_PATTERN = longArrayOf(0, 250, 80, 250, 80, 250)
+        private val HIGH_PATTERN = longArrayOf(0, 230, 80, 230, 80, 230)
         private val LOW_AMPLITUDES = intArrayOf(0, 90)
         private val MEDIUM_AMPLITUDES = intArrayOf(0, 170, 0, 170)
         private val HIGH_AMPLITUDES = intArrayOf(0, 255, 0, 255, 0, 255)
