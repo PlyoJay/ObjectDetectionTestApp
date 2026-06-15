@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import android.util.Log
 import java.util.Locale
 
@@ -19,6 +20,10 @@ class TtsWarningPlayer(
     private var isReady = false
     @Volatile
     private var isReleased = false
+    private var isSpeaking = false
+    private var pendingSpeech: PendingSpeech? = null
+    private var currentUtteranceId: String? = null
+    private var lastSpeechStartedAtMs = 0L
     private lateinit var textToSpeech: TextToSpeech
 
     init {
@@ -29,6 +34,7 @@ class TtsWarningPlayer(
                     isReady = result != TextToSpeech.LANG_MISSING_DATA &&
                         result != TextToSpeech.LANG_NOT_SUPPORTED
                     textToSpeech.setSpeechRate(SPEECH_RATE)
+                    textToSpeech.setOnUtteranceProgressListener(createUtteranceProgressListener())
                     Log.d(TAG, "TextToSpeech ready=$isReady, languageResult=$result")
                 } else {
                     isReady = false
@@ -44,33 +50,10 @@ class TtsWarningPlayer(
 
         val now = System.currentTimeMillis()
         val cooldownKey = buildCooldownKey(decision)
-        synchronized(lastSpokenAtMsByKey) {
-            val lastSpokenAtMs = lastSpokenAtMsByKey[cooldownKey] ?: 0L
-            if (now - lastSpokenAtMs < cooldownMs) {
-                Log.d(TAG, "skip TTS: cooldown key=$cooldownKey")
-                return
-            }
-            lastSpokenAtMsByKey[cooldownKey] = now
-        }
-
         val message = buildMessage(decision)
 
         mainHandler.post {
-            if (!isReady || isReleased) {
-                Log.d(TAG, "skip TTS: ready=$isReady, released=$isReleased")
-                return@post
-            }
-
-            try {
-                textToSpeech.speak(
-                    message,
-                    TextToSpeech.QUEUE_FLUSH,
-                    Bundle.EMPTY,
-                    cooldownKey
-                )
-            } catch (e: Exception) {
-                Log.w(TAG, "TTS speak failed", e)
-            }
+            handleSpeechRequest(decision, message, cooldownKey, now)
         }
     }
 
@@ -78,15 +61,183 @@ class TtsWarningPlayer(
         mainHandler.post {
             isReleased = true
             isReady = false
-            synchronized(lastSpokenAtMsByKey) {
-                lastSpokenAtMsByKey.clear()
-            }
+            isSpeaking = false
+            pendingSpeech = null
+            currentUtteranceId = null
+            lastSpeechStartedAtMs = 0L
+            mainHandler.removeCallbacksAndMessages(null)
+            lastSpokenAtMsByKey.clear()
             try {
+                textToSpeech.setOnUtteranceProgressListener(null)
                 textToSpeech.stop()
                 textToSpeech.shutdown()
             } catch (e: Exception) {
                 Log.w(TAG, "TTS release failed", e)
             }
+        }
+    }
+
+    private fun handleSpeechRequest(
+        decision: WarningDecision,
+        message: String,
+        cooldownKey: String,
+        requestedAtMs: Long
+    ) {
+        if (!isReady || isReleased) {
+            Log.d(TAG, "skip TTS: ready=$isReady, released=$isReleased")
+            return
+        }
+
+        val lastSpokenAtMs = lastSpokenAtMsByKey[cooldownKey] ?: 0L
+        if (requestedAtMs - lastSpokenAtMs < cooldownMs) {
+            Log.d(TAG, "skip TTS: cooldown key=$cooldownKey")
+            return
+        }
+
+        val speech = PendingSpeech(
+            decision = decision,
+            message = message,
+            key = cooldownKey,
+            createdAtMs = requestedAtMs
+        )
+
+        if (decision.riskLevel == RiskLevel.CRITICAL) {
+            interruptAndSpeakNow(speech)
+            return
+        }
+
+        val elapsedSinceLastSpeechMs = requestedAtMs - lastSpeechStartedAtMs
+        if (!isSpeaking && elapsedSinceLastSpeechMs >= GLOBAL_TTS_INTERVAL_MS) {
+            speakNow(speech, TextToSpeech.QUEUE_ADD)
+            return
+        }
+
+        keepHigherPriorityPending(speech)
+        schedulePendingAfterInterval()
+    }
+
+    private fun interruptAndSpeakNow(speech: PendingSpeech) {
+        pendingSpeech = null
+        try {
+            textToSpeech.stop()
+        } catch (e: Exception) {
+            Log.w(TAG, "TTS stop failed", e)
+        }
+        isSpeaking = false
+        speakNow(speech, TextToSpeech.QUEUE_FLUSH)
+    }
+
+    private fun speakNow(speech: PendingSpeech, queueMode: Int) {
+        if (isReleased || !isReady) return
+
+        try {
+            val result = textToSpeech.speak(
+                speech.message,
+                queueMode,
+                Bundle.EMPTY,
+                speech.utteranceId
+            )
+            if (result == TextToSpeech.ERROR) {
+                isSpeaking = false
+                currentUtteranceId = null
+                Log.w(TAG, "TTS speak returned ERROR")
+                return
+            }
+            isSpeaking = true
+            currentUtteranceId = speech.utteranceId
+            lastSpeechStartedAtMs = System.currentTimeMillis()
+            lastSpokenAtMsByKey[speech.key] = lastSpeechStartedAtMs
+        } catch (e: Exception) {
+            isSpeaking = false
+            currentUtteranceId = null
+            Log.w(TAG, "TTS speak failed", e)
+        }
+    }
+
+    private fun keepHigherPriorityPending(speech: PendingSpeech) {
+        val current = pendingSpeech
+        if (current == null ||
+            isPendingExpired(current, speech.createdAtMs) ||
+            riskRank(speech.decision.riskLevel) > riskRank(current.decision.riskLevel)
+        ) {
+            pendingSpeech = speech
+            lastSpokenAtMsByKey[speech.key] = speech.createdAtMs
+        }
+    }
+
+    private fun trySpeakPending() {
+        if (isReleased || !isReady || isSpeaking) return
+
+        val now = System.currentTimeMillis()
+        val pending = pendingSpeech ?: return
+        if (isPendingExpired(pending, now)) {
+            pendingSpeech = null
+            return
+        }
+
+        val elapsedSinceLastSpeechMs = now - lastSpeechStartedAtMs
+        if (elapsedSinceLastSpeechMs < GLOBAL_TTS_INTERVAL_MS) {
+            schedulePendingAfterInterval()
+            return
+        }
+
+        pendingSpeech = null
+        speakNow(pending, TextToSpeech.QUEUE_ADD)
+    }
+
+    private fun schedulePendingAfterInterval() {
+        mainHandler.removeCallbacks(trySpeakPendingRunnable)
+        val delayMs = (GLOBAL_TTS_INTERVAL_MS - (System.currentTimeMillis() - lastSpeechStartedAtMs))
+            .coerceAtLeast(0L)
+        mainHandler.postDelayed(trySpeakPendingRunnable, delayMs)
+    }
+
+    private fun createUtteranceProgressListener(): UtteranceProgressListener {
+        return object : UtteranceProgressListener() {
+            override fun onStart(utteranceId: String?) {
+                mainHandler.post {
+                    if (!isReleased && utteranceId == currentUtteranceId) {
+                        isSpeaking = true
+                    }
+                }
+            }
+
+            override fun onDone(utteranceId: String?) {
+                onSpeechFinished(utteranceId)
+            }
+
+            @Deprecated("Deprecated in Java")
+            override fun onError(utteranceId: String?) {
+                onSpeechFinished(utteranceId)
+            }
+
+            override fun onError(utteranceId: String?, errorCode: Int) {
+                onSpeechFinished(utteranceId)
+            }
+        }
+    }
+
+    private fun onSpeechFinished(utteranceId: String?) {
+        mainHandler.post {
+            if (isReleased) return@post
+            if (utteranceId != null && utteranceId != currentUtteranceId) return@post
+            isSpeaking = false
+            currentUtteranceId = null
+            trySpeakPending()
+        }
+    }
+
+    private fun isPendingExpired(speech: PendingSpeech, nowMs: Long): Boolean {
+        return nowMs - speech.createdAtMs > PENDING_MAX_AGE_MS
+    }
+
+    private fun riskRank(riskLevel: RiskLevel): Int {
+        return when (riskLevel) {
+            RiskLevel.NONE -> 0
+            RiskLevel.LOW -> 1
+            RiskLevel.MEDIUM -> 2
+            RiskLevel.HIGH -> 3
+            RiskLevel.CRITICAL -> 4
         }
     }
 
@@ -157,5 +308,20 @@ class TtsWarningPlayer(
     companion object {
         private const val TAG = "TtsWarningPlayer"
         private const val SPEECH_RATE = 1.05f
+        private const val PENDING_MAX_AGE_MS = 2_500L
+        private const val GLOBAL_TTS_INTERVAL_MS = 1_500L
+    }
+
+    private data class PendingSpeech(
+        val decision: WarningDecision,
+        val message: String,
+        val key: String,
+        val createdAtMs: Long
+    ) {
+        val utteranceId: String = "$key:$createdAtMs"
+    }
+
+    private val trySpeakPendingRunnable = Runnable {
+        trySpeakPending()
     }
 }
