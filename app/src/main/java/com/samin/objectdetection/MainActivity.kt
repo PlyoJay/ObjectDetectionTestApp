@@ -37,6 +37,7 @@ import com.samin.objectdetection.ui.BoundingBoxOverlay
 import com.samin.objectdetection.warning.BeepWarningPlayer
 import com.samin.objectdetection.warning.CompositeWarningPlayer
 import com.samin.objectdetection.warning.ForwardObstacleSelector
+import com.samin.objectdetection.warning.TtsWarningPlayer
 import com.samin.objectdetection.warning.VibrationWarningPlayer
 import com.samin.objectdetection.warning.WarningDecisionMaker
 import com.samin.objectdetection.warning.WarningMessageBuilder
@@ -109,7 +110,8 @@ class MainActivity : ComponentActivity() {
         warningPlayer = CompositeWarningPlayer(
             listOf(
                 BeepWarningPlayer(),
-                VibrationWarningPlayer(this)
+                VibrationWarningPlayer(this),
+                TtsWarningPlayer(this)
             )
         )
 
