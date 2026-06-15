@@ -12,7 +12,7 @@ class BeepWarningPlayer(
 
     private val handler = Handler(Looper.getMainLooper())
     private val toneGenerator: ToneGenerator? = try {
-        ToneGenerator(AudioManager.STREAM_NOTIFICATION, TONE_VOLUME)
+        ToneGenerator(AudioManager.STREAM_MUSIC, TONE_VOLUME)
     } catch (e: RuntimeException) {
         Log.w(TAG, "ToneGenerator init failed", e)
         null
@@ -20,11 +20,22 @@ class BeepWarningPlayer(
     private var lastPlayedAtMs = 0L
 
     override fun playIfNeeded(decision: WarningDecision) {
-        if (decision.beepLevel == FeedbackLevel.NONE) return
-        val toneGenerator = toneGenerator ?: return
+        if (decision.beepLevel == FeedbackLevel.NONE) {
+            Log.d(TAG, "skip beep: level=NONE")
+            return
+        }
+        val toneGenerator = toneGenerator
+        if (toneGenerator == null) {
+            Log.w(TAG, "skip beep: ToneGenerator is null")
+            return
+        }
 
         val now = System.currentTimeMillis()
-        if (now - lastPlayedAtMs < cooldownMs) return
+        val elapsedMs = now - lastPlayedAtMs
+        if (elapsedMs < cooldownMs) {
+            Log.d(TAG, "skip beep: cooldown remaining=${cooldownMs - elapsedMs}ms")
+            return
+        }
 
         val delays = when (decision.beepLevel) {
             FeedbackLevel.LOW -> longArrayOf(0L)
@@ -36,7 +47,11 @@ class BeepWarningPlayer(
         delays.forEach { delayMs ->
             handler.postDelayed({
                 try {
-                    toneGenerator.startTone(ToneGenerator.TONE_PROP_BEEP, BEEP_DURATION_MS)
+                    Log.d(
+                        TAG,
+                        "play beep: level=${decision.beepLevel}, delay=${delayMs}ms, duration=${BEEP_DURATION_MS}ms"
+                    )
+                    toneGenerator.startTone(TONE_TYPE, BEEP_DURATION_MS)
                 } catch (e: Exception) {
                     Log.w(TAG, "beep failed", e)
                 }
@@ -52,7 +67,8 @@ class BeepWarningPlayer(
 
     companion object {
         private const val TAG = "BeepWarningPlayer"
-        private const val TONE_VOLUME = 80
+        private const val TONE_VOLUME = 100
+        private const val TONE_TYPE = ToneGenerator.TONE_PROP_BEEP
         private const val BEEP_DURATION_MS = 120
         private const val MEDIUM_INTERVAL_MS = 240L
         private const val HIGH_INTERVAL_MS = 200L
