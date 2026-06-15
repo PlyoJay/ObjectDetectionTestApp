@@ -161,7 +161,6 @@ class TtsWarningPlayer(
             riskRank(speech.decision.riskLevel) > riskRank(current.decision.riskLevel)
         ) {
             pendingSpeech = speech
-            lastSpokenAtMsByKey[speech.key] = speech.createdAtMs
         }
     }
 
