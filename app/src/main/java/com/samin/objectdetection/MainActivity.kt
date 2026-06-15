@@ -232,7 +232,7 @@ class MainActivity : ComponentActivity() {
 
                 analysis.setAnalyzer(cameraExecutor) { imageProxy ->
                     val frameReceivedTimeMs = System.currentTimeMillis()
-                    Log.d(
+                    verboseLog(
                         DETECTION_TIMING_TAG,
                         "frameReceived=$frameReceivedTimeMs isDetecting=${isProcessing.get()}"
                     )
@@ -240,7 +240,7 @@ class MainActivity : ComponentActivity() {
 
                     if (frameReceivedTimeMs - lastDetectionStartTimeMs < detectionConfig.detectIntervalMs) {
                         skippedFrameCount++
-                        Log.d(
+                        verboseLog(
                             DETECTION_TIMING_TAG,
                             "skipFrameByInterval skipped=$skippedFrameCount intervalMs=${detectionConfig.detectIntervalMs}"
                         )
@@ -250,7 +250,7 @@ class MainActivity : ComponentActivity() {
 
                     if (!isProcessing.compareAndSet(false, true)) {
                         skippedFrameCount++
-                        Log.d(
+                        verboseLog(
                             DETECTION_TIMING_TAG,
                             "skipFrame skipped=$skippedFrameCount isDetecting=${isProcessing.get()}"
                         )
@@ -289,7 +289,7 @@ class MainActivity : ComponentActivity() {
 
     private fun processBitmap(bitmap: Bitmap, frameReceivedTimeMs: Long) {
         val start = System.currentTimeMillis()
-        Log.d(
+        verboseLog(
             DETECTION_TIMING_TAG,
             "detectionStart=$start frameReceived=$frameReceivedTimeMs isDetecting=${isProcessing.get()}"
         )
@@ -363,7 +363,7 @@ class MainActivity : ComponentActivity() {
         val warningCategory = stabilizedDecision.obstacle?.category
         val warningProximityLevel = stabilizedDecision.obstacle?.proximityLevel
         warningPlayer.playIfNeeded(stabilizedDecision)
-        Log.d(
+        verboseLog(
             DETECTION_TIMING_TAG,
             "detectionEnd=$detectionEndTimeMs inference=${inferenceTime}ms skipped=$skippedFrameCount"
         )
@@ -372,7 +372,7 @@ class MainActivity : ComponentActivity() {
             val overlayUpdateTimeMs = System.currentTimeMillis()
             val newestDetectionTimestamp = filtered.maxOfOrNull { it.frameTimestampMs } ?: overlayUpdateTimeMs
             val resultAgeMs = overlayUpdateTimeMs - newestDetectionTimestamp
-            Log.d(
+            verboseLog(
                 DETECTION_TIMING_TAG,
                 "overlayUpdate=$overlayUpdateTimeMs resultAge=${resultAgeMs}ms detectionCount=${filtered.size}"
             )
@@ -384,26 +384,45 @@ class MainActivity : ComponentActivity() {
                 warningMessageTextView.text = selectedWarningMessage
                 warningMessageTextView.visibility = View.VISIBLE
             }
-            debugTextView.text = buildString {
-                appendLine("Frame: ${width}x$height / crop: ${cropRect.width()}x${cropRect.height()}")
-                appendLine("Detect: ${filtered.size} / ${inferenceTime}ms / FPS=$currentFps")
-                appendLine("ML Kit: $lastMlKitCount / ${lastMlKitTimeMs}ms")
-                if (topObject != null) {
-                    append("Top: ${topObject.label} ${String.format("%.2f", topObject.confidence)}")
-                } else {
-                    append("Top: none")
+            debugTextView.text = if (SHOW_DEBUG_INFO) {
+                buildString {
+                    appendLine("Frame: ${width}x$height / crop: ${cropRect.width()}x${cropRect.height()}")
+                    appendLine("Detect: ${filtered.size} / ${inferenceTime}ms / FPS=$currentFps")
+                    appendLine("ML Kit: $lastMlKitCount / ${lastMlKitTimeMs}ms")
+                    if (topObject != null) {
+                        append("Top: ${topObject.label} ${String.format("%.2f", topObject.confidence)}")
+                    } else {
+                        append("Top: none")
+                    }
+                    appendLine()
+                    append("Guide: $warningMessage")
+                    appendLine()
+                    appendLine("Risk: $riskLevel")
+                    appendLine("Feedback: beep=$beepLevel / voice=$voiceLevel / vibrate=$vibrationLevel")
+                    appendLine("Motion: direction=$warningMotionDirection / approachSpeed=$warningApproachSpeedLevel")
+                    append("Policy: category=$warningCategory / proximity=$warningProximityLevel")
                 }
-                appendLine()
-                append("Guide: $warningMessage")
-                appendLine()
-                appendLine("Risk: $riskLevel")
-                appendLine("Feedback: beep=$beepLevel / voice=$voiceLevel / vibrate=$vibrationLevel")
-                appendLine("Motion: direction=$warningMotionDirection / approachSpeed=$warningApproachSpeedLevel")
-                append("Policy: category=$warningCategory / proximity=$warningProximityLevel")
+            } else {
+                buildString {
+                    if (topObject != null) {
+                        append("Top: ${topObject.label} ${String.format("%.2f", topObject.confidence)}")
+                    } else {
+                        append("Top: none")
+                    }
+                    appendLine()
+                    appendLine("Risk: $riskLevel")
+                    append("Guide: $warningMessage")
+                }
             }
         }
 
-        Log.d(TAG, "frame=${width}x$height, detections=${filtered.size}, time=${inferenceTime}ms")
+        verboseLog(TAG, "frame=${width}x$height, detections=${filtered.size}, time=${inferenceTime}ms")
+    }
+
+    private fun verboseLog(tag: String, message: String) {
+        if (ENABLE_VERBOSE_LOG) {
+            Log.d(tag, message)
+        }
     }
 
     private fun filterSmallBoxes(
@@ -427,7 +446,7 @@ class MainActivity : ComponentActivity() {
             if (keep) {
                 kept.add(detection)
             } else {
-                Log.d(
+                verboseLog(
                     DETECTION_FILTER_TAG,
                     "skip small box label=${detection.label}, conf=${detection.confidence}, " +
                         "areaRatio=$areaRatio, widthRatio=$widthRatio, heightRatio=$heightRatio, " +
@@ -436,7 +455,7 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        Log.d(DETECTION_FILTER_TAG, "before=${detections.size}, after=${kept.size}")
+        verboseLog(DETECTION_FILTER_TAG, "before=${detections.size}, after=${kept.size}")
         return kept
     }
 
@@ -536,6 +555,8 @@ class MainActivity : ComponentActivity() {
     }
 
     companion object {
+        private const val SHOW_DEBUG_INFO = false
+        private const val ENABLE_VERBOSE_LOG = false
         private const val TAG = "ObjectDetectionVision"
         private const val DETECTION_TIMING_TAG = "DetectionTiming"
         private const val DETECTION_FILTER_TAG = "DetectionFilter"
