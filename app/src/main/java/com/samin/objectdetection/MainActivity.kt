@@ -27,6 +27,7 @@ import com.samin.objectdetection.camera.toBitmapSafe
 import com.samin.objectdetection.detector.DetectionResult
 import com.samin.objectdetection.detector.ObjectDetector
 import com.samin.objectdetection.detector.VisionStyleYoloDetector
+import com.samin.objectdetection.location.UserLocationTracker
 import com.samin.objectdetection.metrics.DetectionMetricsCollector
 import com.samin.objectdetection.mlkit.MlKitObjectDetector
 import com.samin.objectdetection.model.DetectedObject
@@ -48,6 +49,7 @@ import com.samin.objectdetection.warning.WarningStabilizer
 import com.samin.objectdetection.warning.WarningThrottle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.util.Locale
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -70,6 +72,7 @@ class MainActivity : ComponentActivity() {
     private val warningStabilizer = WarningStabilizer()
     private val objectMotionTracker = ObjectMotionTracker()
     private val metricsCollector = DetectionMetricsCollector()
+    private lateinit var userLocationTracker: UserLocationTracker
     private lateinit var warningPlayer: WarningPlayer
 
     @Volatile
@@ -92,8 +95,11 @@ class MainActivity : ComponentActivity() {
     private var lastDetectionStartTimeMs = 0L
 
     private val permissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
-            if (result[Manifest.permission.CAMERA] == true) {
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+            if (hasCameraPermission()) {
+                if (hasLocationPermission()) {
+                    userLocationTracker.start()
+                }
                 startCamera()
             } else {
                 debugTextView.text = "카메라 권한이 필요합니다."
@@ -109,6 +115,7 @@ class MainActivity : ComponentActivity() {
         }
         detector = yoloDetector
         mlKitDetector = MlKitObjectDetector()
+        userLocationTracker = UserLocationTracker(this)
         warningPlayer = CompositeWarningPlayer(
             listOf(
                 BeepWarningPlayer(),
@@ -203,16 +210,31 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun checkPermissionAndStart() {
-        val permissions = mutableListOf(Manifest.permission.CAMERA)
+        val permissions = mutableListOf<String>()
+        if (!hasCameraPermission()) {
+            permissions.add(Manifest.permission.CAMERA)
+        }
+        if (!hasLocationPermission()) {
+            permissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
+            permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+            if (
+                ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+            }
         }
 
-        val denied = permissions.filter {
-            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+        if (permissions.isEmpty()) {
+            userLocationTracker.start()
+            startCamera()
+        } else {
+            permissionLauncher.launch(permissions.toTypedArray())
         }
-
-        if (denied.isEmpty()) startCamera() else permissionLauncher.launch(denied.toTypedArray())
     }
 
     private fun startCamera() {
@@ -331,11 +353,13 @@ class MainActivity : ComponentActivity() {
             frameHeight = height,
             config = detectionConfig
         )
+        val userLocationSnapshot = userLocationTracker.currentSnapshot
         val motionTracked = objectMotionTracker.update(
             detections = visibleMapped,
             frameWidth = width,
             frameHeight = height,
-            timestampMs = start
+            timestampMs = start,
+            userMotionState = userLocationSnapshot.motionState
         )
 
         val filtered = motionTracked.filter { detection ->
@@ -374,6 +398,7 @@ class MainActivity : ComponentActivity() {
         val vibrationLevel = stabilizedDecision.vibrationLevel
         val warningMotionDirection = stabilizedDecision.obstacle?.detection?.motionDirection
         val warningApproachSpeedLevel = stabilizedDecision.obstacle?.detection?.approachSpeedLevel
+        val warningObjectMovementState = stabilizedDecision.obstacle?.detection?.objectMovementState
         val warningCategory = stabilizedDecision.obstacle?.category
         val warningProximityLevel = stabilizedDecision.obstacle?.proximityLevel
         metricsCollector.recordWarning(riskLevel)
@@ -415,6 +440,12 @@ class MainActivity : ComponentActivity() {
                     appendLine("Risk: $riskLevel")
                     appendLine("Feedback: beep=$beepLevel / voice=$voiceLevel / vibrate=$vibrationLevel")
                     appendLine("Motion: direction=$warningMotionDirection / approachSpeed=$warningApproachSpeedLevel")
+                    appendLine("ObjectMovement: $warningObjectMovementState")
+                    appendLine(
+                        "UserMotion: ${userLocationSnapshot.motionState} / " +
+                            "speed=${formatSpeed(userLocationSnapshot.speedMps)} / " +
+                            "accuracy=${formatAccuracy(userLocationSnapshot.accuracyMeters)}"
+                    )
                     append("Policy: category=$warningCategory / proximity=$warningProximityLevel")
                     appendLine()
                     append(metricsCollector.buildSummary())
@@ -565,8 +596,43 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun hasCameraPermission(): Boolean {
+        return ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.CAMERA
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun hasLocationPermission(): Boolean {
+        return ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun formatSpeed(speedMps: Float?): String {
+        return if (speedMps == null) {
+            "unknown"
+        } else {
+            "${String.format(Locale.US, "%.2f", speedMps)}m/s"
+        }
+    }
+
+    private fun formatAccuracy(accuracyMeters: Float?): String {
+        return if (accuracyMeters == null) {
+            "unknown"
+        } else {
+            "${String.format(Locale.US, "%.1f", accuracyMeters)}m"
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
+        userLocationTracker.stop()
         cameraExecutor.shutdown()
         mlKitDetector.close()
         detector.close()

@@ -1,6 +1,7 @@
 package com.samin.objectdetection.motion
 
 import com.samin.objectdetection.detector.DetectionResult
+import com.samin.objectdetection.location.UserMotionState
 import kotlin.math.hypot
 
 class ObjectMotionTracker(
@@ -19,7 +20,8 @@ class ObjectMotionTracker(
         detections: List<DetectionResult>,
         frameWidth: Int,
         frameHeight: Int,
-        timestampMs: Long = System.currentTimeMillis()
+        timestampMs: Long = System.currentTimeMillis(),
+        userMotionState: UserMotionState = UserMotionState.UNKNOWN
     ): List<DetectionResult> {
         if (detections.isEmpty()) {
             removeStaleTracks(timestampMs)
@@ -42,10 +44,11 @@ class ObjectMotionTracker(
             addSnapshotIfNeeded(track, snapshot)
             track.lastUpdatedAtMs = timestampMs
 
-            val motionDirection = estimateDirection(track.records)
+            val motionDirection = estimateDirection(track.records, userMotionState)
             detection.copy(
                 motionDirection = motionDirection,
-                approachSpeedLevel = estimateApproachSpeedLevel(track.records, motionDirection)
+                approachSpeedLevel = estimateApproachSpeedLevel(track.records, motionDirection),
+                objectMovementState = estimateObjectMovementState(track.records, motionDirection, userMotionState)
             )
         }
 
@@ -90,22 +93,52 @@ class ObjectMotionTracker(
         }
     }
 
-    private fun estimateDirection(records: List<MotionSnapshot>): MotionDirection {
+    private fun estimateDirection(
+        records: List<MotionSnapshot>,
+        userMotionState: UserMotionState
+    ): MotionDirection {
         if (records.size < minHistorySize) return MotionDirection.UNKNOWN
 
+        val areaChange = calculateAreaChange(records)
+        val bboxDirection = estimateDirectionFromAreaChange(areaChange)
+
+        if (userMotionState == UserMotionState.UNKNOWN) {
+            return bboxDirection
+        }
+
+        if (
+            areaChange.isIncreasing &&
+            (userMotionState == UserMotionState.MOVING || userMotionState == UserMotionState.STATIONARY)
+        ) {
+            return MotionDirection.APPROACHING
+        }
+
+        return bboxDirection
+    }
+
+    private fun estimateDirectionFromAreaChange(areaChange: AreaChange): MotionDirection {
+        // Require both absolute and relative area changes to reduce false motion from YOLO bbox jitter.
+        return when {
+            areaChange.isIncreasing -> MotionDirection.APPROACHING
+            areaChange.isDecreasing -> MotionDirection.LEAVING
+            else -> MotionDirection.STABLE
+        }
+    }
+
+    private fun calculateAreaChange(records: List<MotionSnapshot>): AreaChange {
         val first = records.first()
         val last = records.last()
         val areaDelta = last.areaRatio - first.areaRatio
         val relativeChangeRatio = areaDelta / first.areaRatio.coerceAtLeast(MIN_RELATIVE_AREA_BASE)
 
-        // Require both absolute and relative area changes to reduce false motion from YOLO bbox jitter.
-        return when {
-            areaDelta >= minAbsoluteAreaChange &&
-                relativeChangeRatio >= minRelativeAreaChangeRatio -> MotionDirection.APPROACHING
-            areaDelta <= -minAbsoluteAreaChange &&
-                relativeChangeRatio <= -minRelativeAreaChangeRatio -> MotionDirection.LEAVING
-            else -> MotionDirection.STABLE
-        }
+        return AreaChange(
+            areaDelta = areaDelta,
+            relativeChangeRatio = relativeChangeRatio,
+            isIncreasing = areaDelta >= minAbsoluteAreaChange &&
+                relativeChangeRatio >= minRelativeAreaChangeRatio,
+            isDecreasing = areaDelta <= -minAbsoluteAreaChange &&
+                relativeChangeRatio <= -minRelativeAreaChangeRatio
+        )
     }
 
     private fun estimateApproachSpeedLevel(
@@ -130,6 +163,34 @@ class ObjectMotionTracker(
         val last = records.last()
         val deltaTimeSec = ((last.timestampMs - first.timestampMs) / 1_000f).coerceAtLeast(0.001f)
         return (last.areaRatio - first.areaRatio) / deltaTimeSec
+    }
+
+    private fun estimateObjectMovementState(
+        records: List<MotionSnapshot>,
+        motionDirection: MotionDirection,
+        userMotionState: UserMotionState
+    ): ObjectMovementState {
+        if (records.size < minHistorySize) return ObjectMovementState.UNKNOWN
+        if (userMotionState == UserMotionState.UNKNOWN) return ObjectMovementState.UNKNOWN
+
+        val areaChange = calculateAreaChange(records)
+        return when (userMotionState) {
+            UserMotionState.STATIONARY -> {
+                if (motionDirection == MotionDirection.APPROACHING || areaChange.isDecreasing) {
+                    ObjectMovementState.MOVING_OBJECT
+                } else {
+                    ObjectMovementState.STATIC_OBJECT
+                }
+            }
+            UserMotionState.MOVING -> {
+                if (motionDirection == MotionDirection.STABLE || motionDirection == MotionDirection.APPROACHING) {
+                    ObjectMovementState.STATIC_OBJECT
+                } else {
+                    ObjectMovementState.UNKNOWN
+                }
+            }
+            UserMotionState.UNKNOWN -> ObjectMovementState.UNKNOWN
+        }
     }
 
     private fun removeStaleTracks(nowMs: Long) {
@@ -171,6 +232,13 @@ class ObjectMotionTracker(
             return hypot(centerX - other.centerX, centerY - other.centerY)
         }
     }
+
+    private data class AreaChange(
+        val areaDelta: Float,
+        val relativeChangeRatio: Float,
+        val isIncreasing: Boolean,
+        val isDecreasing: Boolean
+    )
 }
 
 private const val FAST_AREA_VELOCITY = 0.05f
