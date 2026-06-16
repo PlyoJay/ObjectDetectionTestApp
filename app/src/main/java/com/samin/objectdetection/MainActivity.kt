@@ -27,6 +27,7 @@ import com.samin.objectdetection.camera.toBitmapSafe
 import com.samin.objectdetection.detector.DetectionResult
 import com.samin.objectdetection.detector.ObjectDetector
 import com.samin.objectdetection.detector.VisionStyleYoloDetector
+import com.samin.objectdetection.metrics.DetectionMetricsCollector
 import com.samin.objectdetection.mlkit.MlKitObjectDetector
 import com.samin.objectdetection.model.DetectedObject
 import com.samin.objectdetection.model.DetectionSource
@@ -68,6 +69,7 @@ class MainActivity : ComponentActivity() {
     private val warningThrottle = WarningThrottle()
     private val warningStabilizer = WarningStabilizer()
     private val objectMotionTracker = ObjectMotionTracker()
+    private val metricsCollector = DetectionMetricsCollector()
     private lateinit var warningPlayer: WarningPlayer
 
     @Volatile
@@ -232,6 +234,7 @@ class MainActivity : ComponentActivity() {
 
                 analysis.setAnalyzer(cameraExecutor) { imageProxy ->
                     val frameReceivedTimeMs = System.currentTimeMillis()
+                    metricsCollector.recordFrameReceived()
                     verboseLog(
                         DETECTION_TIMING_TAG,
                         "frameReceived=$frameReceivedTimeMs isDetecting=${isProcessing.get()}"
@@ -240,6 +243,7 @@ class MainActivity : ComponentActivity() {
 
                     if (frameReceivedTimeMs - lastDetectionStartTimeMs < detectionConfig.detectIntervalMs) {
                         skippedFrameCount++
+                        metricsCollector.recordFrameSkipped()
                         verboseLog(
                             DETECTION_TIMING_TAG,
                             "skipFrameByInterval skipped=$skippedFrameCount intervalMs=${detectionConfig.detectIntervalMs}"
@@ -250,6 +254,7 @@ class MainActivity : ComponentActivity() {
 
                     if (!isProcessing.compareAndSet(false, true)) {
                         skippedFrameCount++
+                        metricsCollector.recordFrameSkipped()
                         verboseLog(
                             DETECTION_TIMING_TAG,
                             "skipFrame skipped=$skippedFrameCount isDetecting=${isProcessing.get()}"
@@ -262,6 +267,7 @@ class MainActivity : ComponentActivity() {
                     try {
                         val bitmap = imageProxy.toBitmapSafe()
                         if (bitmap == null) {
+                            metricsCollector.recordFrameSkipped()
                             imageProxy.close()
                             isProcessing.set(false)
                             return@setAnalyzer
@@ -289,6 +295,7 @@ class MainActivity : ComponentActivity() {
 
     private fun processBitmap(bitmap: Bitmap, frameReceivedTimeMs: Long) {
         val start = System.currentTimeMillis()
+        metricsCollector.recordFrameAnalyzed()
         verboseLog(
             DETECTION_TIMING_TAG,
             "detectionStart=$start frameReceived=$frameReceivedTimeMs isDetecting=${isProcessing.get()}"
@@ -335,6 +342,12 @@ class MainActivity : ComponentActivity() {
             val policy = YoloDefaultPolicyRegistry.get(detection.label)
             policy != null && detection.confidence >= policy.minConfidence
         }
+        metricsCollector.recordYoloDetections(
+            beforeFilter = mapped,
+            afterSmallBoxFilter = visibleMapped,
+            afterPolicyFilter = filtered,
+            timestampMs = start
+        )
         val yoloDetectedObjects = filtered.map { it.toDetectedObject(DetectionSource.YOLO) }
         val freshMlKitDetectedObjects = lastMlKitDetectedObjects.filter {
             start - it.timestampMs <= ML_KIT_WARNING_MAX_AGE_MS
@@ -352,6 +365,7 @@ class MainActivity : ComponentActivity() {
         val stabilizedDecision = warningStabilizer.stabilize(warningDecision)
 
         val inferenceTime = detectionEndTimeMs - start
+        metricsCollector.recordYoloInferenceTime(inferenceTime)
         val topObject = filtered.maxByOrNull { it.confidence }
         val warningMessage = stabilizedDecision.message
         val riskLevel = stabilizedDecision.riskLevel
@@ -362,6 +376,7 @@ class MainActivity : ComponentActivity() {
         val warningApproachSpeedLevel = stabilizedDecision.obstacle?.detection?.approachSpeedLevel
         val warningCategory = stabilizedDecision.obstacle?.category
         val warningProximityLevel = stabilizedDecision.obstacle?.proximityLevel
+        metricsCollector.recordWarning(riskLevel)
         warningPlayer.playIfNeeded(stabilizedDecision)
         verboseLog(
             DETECTION_TIMING_TAG,
@@ -401,6 +416,8 @@ class MainActivity : ComponentActivity() {
                     appendLine("Feedback: beep=$beepLevel / voice=$voiceLevel / vibrate=$vibrationLevel")
                     appendLine("Motion: direction=$warningMotionDirection / approachSpeed=$warningApproachSpeedLevel")
                     append("Policy: category=$warningCategory / proximity=$warningProximityLevel")
+                    appendLine()
+                    append(metricsCollector.buildSummary())
                 }
             } else {
                 buildString {
@@ -500,6 +517,7 @@ class MainActivity : ComponentActivity() {
 
                 lastMlKitTimeMs = System.currentTimeMillis() - mlStart
                 lastMlKitCount = mlKitResults.size
+                metricsCollector.recordMlKitResult(lastMlKitTimeMs, lastMlKitCount)
 
                 // 작은 Bitmap 기준 bbox를 원본 프레임 기준 좌표로 복원
                 val scaleX = frameWidth / mlInputWidth.toFloat()
@@ -541,6 +559,7 @@ class MainActivity : ComponentActivity() {
         val now = System.currentTimeMillis()
         if (now - lastFpsTime >= 1000) {
             currentFps = frameCount
+            metricsCollector.recordFps(currentFps)
             frameCount = 0
             lastFpsTime = now
         }
