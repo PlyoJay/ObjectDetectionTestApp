@@ -5,6 +5,7 @@ import android.graphics.Rect
 import com.samin.objectdetection.motion.ApproachSpeedLevel
 import com.samin.objectdetection.motion.MotionDirection
 import com.samin.objectdetection.motion.ObjectMovementState
+import com.samin.objectdetection.motion.UserObjectRelation
 
 data class DetectionResult(
     val label: String,
@@ -16,7 +17,8 @@ data class DetectionResult(
     val frameTimestampMs: Long = System.currentTimeMillis(),
     val motionDirection: MotionDirection = MotionDirection.UNKNOWN,
     val approachSpeedLevel: ApproachSpeedLevel = ApproachSpeedLevel.UNKNOWN,
-    val objectMovementState: ObjectMovementState = ObjectMovementState.UNKNOWN
+    val objectMovementState: ObjectMovementState = ObjectMovementState.UNKNOWN,
+    val userObjectRelation: UserObjectRelation = UserObjectRelation.UNKNOWN
 )
 
 interface ObjectDetector {

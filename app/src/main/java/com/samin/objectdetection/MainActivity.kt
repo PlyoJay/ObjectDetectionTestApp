@@ -399,6 +399,7 @@ class MainActivity : ComponentActivity() {
         val warningMotionDirection = stabilizedDecision.obstacle?.detection?.motionDirection
         val warningApproachSpeedLevel = stabilizedDecision.obstacle?.detection?.approachSpeedLevel
         val warningObjectMovementState = stabilizedDecision.obstacle?.detection?.objectMovementState
+        val warningUserObjectRelation = stabilizedDecision.obstacle?.detection?.userObjectRelation
         val warningCategory = stabilizedDecision.obstacle?.category
         val warningProximityLevel = stabilizedDecision.obstacle?.proximityLevel
         metricsCollector.recordWarning(riskLevel)
@@ -441,6 +442,7 @@ class MainActivity : ComponentActivity() {
                     appendLine("Feedback: beep=$beepLevel / voice=$voiceLevel / vibrate=$vibrationLevel")
                     appendLine("Motion: direction=$warningMotionDirection / approachSpeed=$warningApproachSpeedLevel")
                     appendLine("ObjectMovement: $warningObjectMovementState")
+                    appendLine("UserObjectRelation: $warningUserObjectRelation")
                     appendLine(
                         "UserMotion: ${userLocationSnapshot.motionState} / " +
                             "speed=${formatSpeed(userLocationSnapshot.speedMps)} / " +

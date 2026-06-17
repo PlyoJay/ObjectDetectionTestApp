@@ -44,11 +44,19 @@ class ObjectMotionTracker(
             addSnapshotIfNeeded(track, snapshot)
             track.lastUpdatedAtMs = timestampMs
 
-            val motionDirection = estimateDirection(track.records, userMotionState)
+            val areaChange = calculateAreaChange(track.records)
+            val userObjectRelation = estimateUserObjectRelation(areaChange, userMotionState)
+            val motionDirection = estimateDirection(areaChange, userMotionState, userObjectRelation)
             detection.copy(
                 motionDirection = motionDirection,
                 approachSpeedLevel = estimateApproachSpeedLevel(track.records, motionDirection),
-                objectMovementState = estimateObjectMovementState(track.records, motionDirection, userMotionState)
+                objectMovementState = estimateObjectMovementState(
+                    track.records,
+                    motionDirection,
+                    userMotionState,
+                    userObjectRelation
+                ),
+                userObjectRelation = userObjectRelation
             )
         }
 
@@ -94,29 +102,27 @@ class ObjectMotionTracker(
     }
 
     private fun estimateDirection(
-        records: List<MotionSnapshot>,
-        userMotionState: UserMotionState
+        areaChange: AreaChange,
+        userMotionState: UserMotionState,
+        userObjectRelation: UserObjectRelation
     ): MotionDirection {
-        if (records.size < minHistorySize) return MotionDirection.UNKNOWN
-
-        val areaChange = calculateAreaChange(records)
-        val bboxDirection = estimateDirectionFromAreaChange(areaChange)
-
         if (userMotionState == UserMotionState.UNKNOWN) {
-            return bboxDirection
+            return estimateDirectionFromAreaChange(areaChange)
         }
 
-        if (
-            areaChange.isIncreasing &&
-            (userMotionState == UserMotionState.MOVING || userMotionState == UserMotionState.STATIONARY)
-        ) {
-            return MotionDirection.APPROACHING
+        return when (userObjectRelation) {
+            UserObjectRelation.OBJECT_APPROACHING_USER -> MotionDirection.APPROACHING
+            UserObjectRelation.OBJECT_LEAVING_USER -> MotionDirection.LEAVING
+            UserObjectRelation.USER_APPROACHING_OBJECT,
+            UserObjectRelation.USER_LEAVING_OBJECT,
+            UserObjectRelation.STABLE_OR_DISTANT -> MotionDirection.STABLE
+            UserObjectRelation.UNKNOWN -> MotionDirection.UNKNOWN
         }
-
-        return bboxDirection
     }
 
     private fun estimateDirectionFromAreaChange(areaChange: AreaChange): MotionDirection {
+        if (!areaChange.hasEnoughSamples) return MotionDirection.UNKNOWN
+
         // Require both absolute and relative area changes to reduce false motion from YOLO bbox jitter.
         return when {
             areaChange.isIncreasing -> MotionDirection.APPROACHING
@@ -126,6 +132,16 @@ class ObjectMotionTracker(
     }
 
     private fun calculateAreaChange(records: List<MotionSnapshot>): AreaChange {
+        if (records.size < minHistorySize) {
+            return AreaChange(
+                areaDelta = 0f,
+                relativeChangeRatio = 0f,
+                isIncreasing = false,
+                isDecreasing = false,
+                hasEnoughSamples = false
+            )
+        }
+
         val first = records.first()
         val last = records.last()
         val areaDelta = last.areaRatio - first.areaRatio
@@ -137,8 +153,30 @@ class ObjectMotionTracker(
             isIncreasing = areaDelta >= minAbsoluteAreaChange &&
                 relativeChangeRatio >= minRelativeAreaChangeRatio,
             isDecreasing = areaDelta <= -minAbsoluteAreaChange &&
-                relativeChangeRatio <= -minRelativeAreaChangeRatio
+                relativeChangeRatio <= -minRelativeAreaChangeRatio,
+            hasEnoughSamples = true
         )
+    }
+
+    private fun estimateUserObjectRelation(
+        areaChange: AreaChange,
+        userMotionState: UserMotionState
+    ): UserObjectRelation {
+        if (!areaChange.hasEnoughSamples) return UserObjectRelation.UNKNOWN
+
+        return when (userMotionState) {
+            UserMotionState.MOVING -> when {
+                areaChange.isIncreasing -> UserObjectRelation.USER_APPROACHING_OBJECT
+                areaChange.isDecreasing -> UserObjectRelation.USER_LEAVING_OBJECT
+                else -> UserObjectRelation.STABLE_OR_DISTANT
+            }
+            UserMotionState.STATIONARY -> when {
+                areaChange.isIncreasing -> UserObjectRelation.OBJECT_APPROACHING_USER
+                areaChange.isDecreasing -> UserObjectRelation.OBJECT_LEAVING_USER
+                else -> UserObjectRelation.STABLE_OR_DISTANT
+            }
+            UserMotionState.UNKNOWN -> UserObjectRelation.UNKNOWN
+        }
     }
 
     private fun estimateApproachSpeedLevel(
@@ -168,28 +206,25 @@ class ObjectMotionTracker(
     private fun estimateObjectMovementState(
         records: List<MotionSnapshot>,
         motionDirection: MotionDirection,
-        userMotionState: UserMotionState
+        userMotionState: UserMotionState,
+        userObjectRelation: UserObjectRelation
     ): ObjectMovementState {
         if (records.size < minHistorySize) return ObjectMovementState.UNKNOWN
         if (userMotionState == UserMotionState.UNKNOWN) return ObjectMovementState.UNKNOWN
 
-        val areaChange = calculateAreaChange(records)
-        return when (userMotionState) {
-            UserMotionState.STATIONARY -> {
-                if (motionDirection == MotionDirection.APPROACHING || areaChange.isDecreasing) {
-                    ObjectMovementState.MOVING_OBJECT
-                } else {
-                    ObjectMovementState.STATIC_OBJECT
-                }
-            }
-            UserMotionState.MOVING -> {
-                if (motionDirection == MotionDirection.STABLE || motionDirection == MotionDirection.APPROACHING) {
-                    ObjectMovementState.STATIC_OBJECT
-                } else {
+        return when (userObjectRelation) {
+            UserObjectRelation.USER_APPROACHING_OBJECT,
+            UserObjectRelation.USER_LEAVING_OBJECT,
+            UserObjectRelation.STABLE_OR_DISTANT -> ObjectMovementState.STATIONARY_LIKELY
+            UserObjectRelation.OBJECT_APPROACHING_USER,
+            UserObjectRelation.OBJECT_LEAVING_USER -> {
+                if (motionDirection == MotionDirection.UNKNOWN) {
                     ObjectMovementState.UNKNOWN
+                } else {
+                    ObjectMovementState.MOVING_LIKELY
                 }
             }
-            UserMotionState.UNKNOWN -> ObjectMovementState.UNKNOWN
+            UserObjectRelation.UNKNOWN -> ObjectMovementState.UNKNOWN
         }
     }
 
@@ -237,7 +272,8 @@ class ObjectMotionTracker(
         val areaDelta: Float,
         val relativeChangeRatio: Float,
         val isIncreasing: Boolean,
-        val isDecreasing: Boolean
+        val isDecreasing: Boolean,
+        val hasEnoughSamples: Boolean
     )
 }
 

@@ -4,6 +4,7 @@ import com.samin.objectdetection.model.DetectedObject
 import com.samin.objectdetection.model.DetectionPriority
 import com.samin.objectdetection.motion.ApproachSpeedLevel
 import com.samin.objectdetection.motion.MotionDirection
+import com.samin.objectdetection.motion.UserObjectRelation
 import com.samin.objectdetection.policy.WarningPriority
 
 class WarningDecisionMaker(
@@ -59,11 +60,24 @@ class WarningDecisionMaker(
             obstacle.detection.approachSpeedLevel == ApproachSpeedLevel.FAST
         val approaching =
             obstacle.detection.motionDirection == MotionDirection.APPROACHING
+        val relation = obstacle.detection.userObjectRelation
         val prefix = when {
             obstacle.proximityLevel == ProximityLevel.VERY_NEAR ||
                 riskLevel == RiskLevel.CRITICAL -> "정지! "
             riskLevel == RiskLevel.HIGH -> "주의! "
             else -> ""
+        }
+
+        if (relation == UserObjectRelation.USER_APPROACHING_OBJECT) {
+            return when {
+                obstacle.proximityLevel == ProximityLevel.VERY_NEAR ||
+                    riskLevel == RiskLevel.CRITICAL -> "${prefix}전방 $label 가까워짐"
+                else -> "${prefix}전방 $label 주의"
+            }
+        }
+
+        if (relation == UserObjectRelation.USER_LEAVING_OBJECT) {
+            return "${prefix}전방 $label 주의"
         }
 
         val location = when {
@@ -72,8 +86,11 @@ class WarningDecisionMaker(
             else -> "전방에"
         }
         val suffix = when {
-            approachingFast -> "빠르게 접근 중입니다"
-            approaching -> "접근 중입니다"
+            (relation == UserObjectRelation.OBJECT_APPROACHING_USER ||
+                relation == UserObjectRelation.UNKNOWN) && approachingFast -> "빠르게 접근 중입니다"
+            (relation == UserObjectRelation.OBJECT_APPROACHING_USER ||
+                relation == UserObjectRelation.UNKNOWN) && approaching -> "접근 중입니다"
+            relation == UserObjectRelation.OBJECT_LEAVING_USER -> "멀어지고 있습니다"
             else -> "있습니다"
         }
 
