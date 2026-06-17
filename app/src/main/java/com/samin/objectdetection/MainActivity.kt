@@ -34,6 +34,7 @@ import com.samin.objectdetection.model.DetectedObject
 import com.samin.objectdetection.model.DetectionSource
 import com.samin.objectdetection.model.toDetectedObject
 import com.samin.objectdetection.motion.ObjectMotionTracker
+import com.samin.objectdetection.policy.OverlayObjectFilter
 import com.samin.objectdetection.policy.YoloDefaultPolicyRegistry
 import com.samin.objectdetection.ui.BoundingBoxOverlay
 import com.samin.objectdetection.warning.BeepWarningPlayer
@@ -353,17 +354,24 @@ class MainActivity : ComponentActivity() {
             frameHeight = height,
             config = detectionConfig
         )
+        val overlayCandidates = visibleMapped.filter { detection ->
+            OverlayObjectFilter.isAllowed(detection.label)
+        }
+        val ignoredLabels = visibleMapped
+            .filterNot { detection -> OverlayObjectFilter.isAllowed(detection.label) }
+            .map { detection -> OverlayObjectFilter.normalize(detection.label) }
+            .distinct()
+            .sorted()
         val userLocationSnapshot = userLocationTracker.currentSnapshot
-        val motionTracked = objectMotionTracker.update(
-            detections = visibleMapped,
+        val overlayDetections = objectMotionTracker.update(
+            detections = overlayCandidates,
             frameWidth = width,
             frameHeight = height,
             timestampMs = start,
             userMotionState = userLocationSnapshot.motionState
         )
 
-        val overlayDetections = motionTracked
-        val warningDetections = motionTracked.filter { detection ->
+        val warningDetections = overlayDetections.filter { detection ->
             val policy = YoloDefaultPolicyRegistry.get(detection.label)
             policy != null && detection.confidence >= policy.minConfidence
         }
@@ -410,9 +418,10 @@ class MainActivity : ComponentActivity() {
         warningPlayer.playIfNeeded(stabilizedDecision)
         logDetectionTiming(
             DETECTION_TIMING_TAG,
-            "detectionEnd=$detectionEndTimeMs inference=${inferenceTime}ms skipped=$skippedFrameCount " +
+                "detectionEnd=$detectionEndTimeMs inference=${inferenceTime}ms skipped=$skippedFrameCount " +
                 "rawCount=${mapped.size} visibleCount=${visibleMapped.size} " +
-                "policyFilteredCount=${warningDetections.size} overlayCount=${overlayDetections.size} " +
+                "overlayWhitelistCount=${overlayDetections.size} policyFilteredCount=${warningDetections.size} " +
+                "ignoredLabels=${formatIgnoredLabels(ignoredLabels)} " +
                 "emptyReason=${buildEmptyOverlayReason(mapped, visibleMapped, warningDetections, overlayDetections)}"
         )
 
@@ -422,9 +431,10 @@ class MainActivity : ComponentActivity() {
             val resultAgeMs = overlayUpdateTimeMs - newestDetectionTimestamp
             logDetectionTiming(
                 DETECTION_TIMING_TAG,
-                "overlayUpdate=$overlayUpdateTimeMs resultAge=${resultAgeMs}ms " +
+                    "overlayUpdate=$overlayUpdateTimeMs resultAge=${resultAgeMs}ms " +
                     "rawCount=${mapped.size} visibleCount=${visibleMapped.size} " +
-                    "policyFilteredCount=${warningDetections.size} overlayCount=${overlayDetections.size} " +
+                    "overlayWhitelistCount=${overlayDetections.size} policyFilteredCount=${warningDetections.size} " +
+                    "ignoredLabels=${formatIgnoredLabels(ignoredLabels)} " +
                     "emptyReason=${buildEmptyOverlayReason(mapped, visibleMapped, warningDetections, overlayDetections)}"
             )
             overlayView.updateDetections(overlayDetections, width, height, inferenceTime, currentFps)
@@ -440,8 +450,9 @@ class MainActivity : ComponentActivity() {
                     appendLine("Frame: ${width}x$height / crop: ${cropRect.width()}x${cropRect.height()}")
                     appendLine("YOLO raw detection count: ${mapped.size}")
                     appendLine("small box filter count: ${visibleMapped.size}")
-                    appendLine("overlay target count: ${overlayDetections.size}")
-                    appendLine("warning target count: ${warningDetections.size}")
+                    appendLine("overlay whitelist count: ${overlayDetections.size}")
+                    appendLine("warning policy count: ${warningDetections.size}")
+                    appendLine("Ignored: ${formatIgnoredLabels(ignoredLabels)}")
                     appendLine("selected warning object label: $selectedWarningLabel")
                     appendLine("proximity: $warningProximityLevel")
                     appendLine("object motion state: $warningObjectMovementState")
@@ -472,8 +483,9 @@ class MainActivity : ComponentActivity() {
                 buildString {
                     appendLine("YOLO raw detection count: ${mapped.size}")
                     appendLine("small box filter count: ${visibleMapped.size}")
-                    appendLine("overlay target count: ${overlayDetections.size}")
-                    appendLine("warning target count: ${warningDetections.size}")
+                    appendLine("overlay whitelist count: ${overlayDetections.size}")
+                    appendLine("warning policy count: ${warningDetections.size}")
+                    appendLine("Ignored: ${formatIgnoredLabels(ignoredLabels)}")
                     appendLine("selected warning object label: $selectedWarningLabel")
                     appendLine("proximity: $warningProximityLevel")
                     appendLine("object motion state: $warningObjectMovementState")
@@ -497,7 +509,8 @@ class MainActivity : ComponentActivity() {
         verboseLog(
             TAG,
             "frame=${width}x$height, warningDetections=${warningDetections.size}, " +
-                "overlayDetections=${overlayDetections.size}, time=${inferenceTime}ms"
+                "overlayDetections=${overlayDetections.size}, ignoredLabels=${formatIgnoredLabels(ignoredLabels)}, " +
+                "time=${inferenceTime}ms"
         )
     }
 
@@ -569,8 +582,16 @@ class MainActivity : ComponentActivity() {
             overlayDetections.isNotEmpty() -> "drawing"
             rawDetections.isEmpty() -> "raw detection none"
             visibleDetections.isEmpty() -> "removed by small box filter"
-            policyFilteredDetections.isEmpty() -> "policy filtered for warning only"
+            policyFilteredDetections.isEmpty() -> "removed by overlay whitelist"
             else -> "overlay stale or disabled"
+        }
+    }
+
+    private fun formatIgnoredLabels(labels: List<String>): String {
+        return if (labels.isEmpty()) {
+            "none"
+        } else {
+            labels.joinToString(", ")
         }
     }
 

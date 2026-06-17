@@ -124,18 +124,22 @@ object YoloDefaultPolicyRegistry {
     )
 
     // Ambiguous COCO classes intentionally not registered as warning targets for now:
-    // cell phone, laptop, cup, bottle, book, remote, tv, keyboard, mouse.
+    // clock, cell phone, laptop, cup, bottle, book, remote, tv, keyboard, mouse.
     // They can still appear in the overlay if YOLO detects them and they pass the display filters.
 
     fun get(label: String): DetectionPolicy? {
-        return policies[label]
+        return policies[normalize(label)]
     }
 
     fun isSupported(label: String): Boolean {
-        return policies.containsKey(label)
+        return policies.containsKey(normalize(label))
     }
 
     fun getAll(): List<DetectionPolicy> {
         return policies.values.toList()
+    }
+
+    private fun normalize(label: String): String {
+        return label.trim().lowercase()
     }
 }
