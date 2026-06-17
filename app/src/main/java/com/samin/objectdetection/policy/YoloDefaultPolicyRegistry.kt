@@ -2,8 +2,10 @@ package com.samin.objectdetection.policy
 
 object YoloDefaultPolicyRegistry {
 
+    // COCO labels.txt stays complete for YOLO recognition/debug overlay.
+    // Only labels registered here can become warningDetections for user guidance.
     private val policies = mapOf(
-        // Safety
+        // Explicit guidance target: pedestrian safety signal.
         "traffic light" to DetectionPolicy(
             label = "traffic light",
             category = ObjectCategory.SAFETY,
@@ -12,7 +14,7 @@ object YoloDefaultPolicyRegistry {
             shouldVoiceGuide = true
         ),
 
-        // Vehicle
+        // Explicit guidance targets: moving or parked vehicles in the walking path.
         "car" to DetectionPolicy(
             label = "car",
             category = ObjectCategory.VEHICLE,
@@ -61,7 +63,7 @@ object YoloDefaultPolicyRegistry {
             shouldVoiceGuide = true
         ),
 
-        // Obstacle
+        // Explicit guidance targets: fixed outdoor obstacles that can block a walking path.
         "fire hydrant" to DetectionPolicy(
             label = "fire hydrant",
             category = ObjectCategory.OBSTACLE,
@@ -102,6 +104,7 @@ object YoloDefaultPolicyRegistry {
             shouldVoiceGuide = true
         ),
 
+        // Ambiguous indoor/small object: keep as low-priority debug/selection data, no voice guide by default.
         "chair" to DetectionPolicy(
             label = "chair",
             category = ObjectCategory.OBSTACLE,
@@ -110,7 +113,7 @@ object YoloDefaultPolicyRegistry {
             shouldVoiceGuide = false
         ),
 
-        // Human
+        // Human is useful for visual/debug risk context, but voice guidance is disabled to reduce noisy alerts.
         "person" to DetectionPolicy(
             label = "person",
             category = ObjectCategory.HUMAN,
@@ -119,6 +122,10 @@ object YoloDefaultPolicyRegistry {
             shouldVoiceGuide = false
         )
     )
+
+    // Ambiguous COCO classes intentionally not registered as warning targets for now:
+    // cell phone, laptop, cup, bottle, book, remote, tv, keyboard, mouse.
+    // They can still appear in the overlay if YOLO detects them and they pass the display filters.
 
     fun get(label: String): DetectionPolicy? {
         return policies[label]

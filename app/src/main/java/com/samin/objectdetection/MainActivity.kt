@@ -362,18 +362,18 @@ class MainActivity : ComponentActivity() {
             userMotionState = userLocationSnapshot.motionState
         )
 
-        val filtered = motionTracked.filter { detection ->
+        val overlayDetections = motionTracked
+        val warningDetections = motionTracked.filter { detection ->
             val policy = YoloDefaultPolicyRegistry.get(detection.label)
             policy != null && detection.confidence >= policy.minConfidence
         }
-        val overlayDetections = motionTracked
         metricsCollector.recordYoloDetections(
             beforeFilter = mapped,
             afterSmallBoxFilter = visibleMapped,
-            afterPolicyFilter = filtered,
+            afterPolicyFilter = warningDetections,
             timestampMs = start
         )
-        val yoloDetectedObjects = filtered.map { it.toDetectedObject(DetectionSource.YOLO) }
+        val yoloDetectedObjects = warningDetections.map { it.toDetectedObject(DetectionSource.YOLO) }
         val freshMlKitDetectedObjects = lastMlKitDetectedObjects.filter {
             start - it.timestampMs <= ML_KIT_WARNING_MAX_AGE_MS
         }
@@ -381,7 +381,7 @@ class MainActivity : ComponentActivity() {
         val selectedWarningMessage = selectedWarningObject?.let { WarningMessageBuilder.build(it) }
 
         val forwardObstacles = forwardObstacleSelector.select(
-            detections = filtered,
+            detections = warningDetections,
             frameWidth = width,
             frameHeight = height,
             config = detectionConfig
@@ -391,7 +391,10 @@ class MainActivity : ComponentActivity() {
 
         val inferenceTime = detectionEndTimeMs - start
         metricsCollector.recordYoloInferenceTime(inferenceTime)
-        val topObject = filtered.maxByOrNull { it.confidence }
+        val topOverlayObject = overlayDetections.maxByOrNull { it.confidence }
+        val selectedWarningLabel = stabilizedDecision.obstacle?.detection?.label
+            ?: selectedWarningObject?.label
+            ?: "none"
         val warningMessage = stabilizedDecision.message
         val riskLevel = stabilizedDecision.riskLevel
         val beepLevel = stabilizedDecision.beepLevel
@@ -409,8 +412,8 @@ class MainActivity : ComponentActivity() {
             DETECTION_TIMING_TAG,
             "detectionEnd=$detectionEndTimeMs inference=${inferenceTime}ms skipped=$skippedFrameCount " +
                 "rawCount=${mapped.size} visibleCount=${visibleMapped.size} " +
-                "policyFilteredCount=${filtered.size} overlayCount=${overlayDetections.size} " +
-                "emptyReason=${buildEmptyOverlayReason(mapped, visibleMapped, filtered, overlayDetections)}"
+                "policyFilteredCount=${warningDetections.size} overlayCount=${overlayDetections.size} " +
+                "emptyReason=${buildEmptyOverlayReason(mapped, visibleMapped, warningDetections, overlayDetections)}"
         )
 
         runOnUiThread {
@@ -421,8 +424,8 @@ class MainActivity : ComponentActivity() {
                 DETECTION_TIMING_TAG,
                 "overlayUpdate=$overlayUpdateTimeMs resultAge=${resultAgeMs}ms " +
                     "rawCount=${mapped.size} visibleCount=${visibleMapped.size} " +
-                    "policyFilteredCount=${filtered.size} overlayCount=${overlayDetections.size} " +
-                    "emptyReason=${buildEmptyOverlayReason(mapped, visibleMapped, filtered, overlayDetections)}"
+                    "policyFilteredCount=${warningDetections.size} overlayCount=${overlayDetections.size} " +
+                    "emptyReason=${buildEmptyOverlayReason(mapped, visibleMapped, warningDetections, overlayDetections)}"
             )
             overlayView.updateDetections(overlayDetections, width, height, inferenceTime, currentFps)
             if (selectedWarningMessage == null) {
@@ -435,16 +438,22 @@ class MainActivity : ComponentActivity() {
             debugTextView.text = if (SHOW_DEBUG_INFO) {
                 buildString {
                     appendLine("Frame: ${width}x$height / crop: ${cropRect.width()}x${cropRect.height()}")
-                    appendLine("Raw YOLO count: ${mapped.size}")
-                    appendLine("after small box filter count: ${visibleMapped.size}")
-                    appendLine("after policy filter count: ${filtered.size}")
-                    appendLine("overlay drawing count: ${overlayDetections.size}")
-                    appendLine("Detect: ${filtered.size} / ${inferenceTime}ms / FPS=$currentFps")
-                    appendLine("ML Kit: $lastMlKitCount / ${lastMlKitTimeMs}ms")
-                    if (topObject != null) {
-                        append("Top: ${topObject.label} ${String.format("%.2f", topObject.confidence)}")
+                    appendLine("YOLO raw detection count: ${mapped.size}")
+                    appendLine("small box filter count: ${visibleMapped.size}")
+                    appendLine("overlay target count: ${overlayDetections.size}")
+                    appendLine("warning target count: ${warningDetections.size}")
+                    appendLine("selected warning object label: $selectedWarningLabel")
+                    appendLine("proximity: $warningProximityLevel")
+                    appendLine("object motion state: $warningObjectMovementState")
+                    appendLine("user-object relation: $warningUserObjectRelation")
+                    appendLine("user motion state: ${userLocationSnapshot.motionState}")
+                    appendLine("GPS speed: ${formatSpeed(userLocationSnapshot.speedMps)}")
+                    appendLine("YOLO inference time: ${inferenceTime}ms / FPS=$currentFps")
+                    appendLine("ML Kit detection count: $lastMlKitCount / ${lastMlKitTimeMs}ms")
+                    if (topOverlayObject != null) {
+                        append("Top overlay: ${topOverlayObject.label} ${String.format("%.2f", topOverlayObject.confidence)}")
                     } else {
-                        append("Top: none")
+                        append("Top overlay: none")
                     }
                     appendLine()
                     append("Guide: $warningMessage")
@@ -452,12 +461,8 @@ class MainActivity : ComponentActivity() {
                     appendLine("Risk: $riskLevel")
                     appendLine("Feedback: beep=$beepLevel / voice=$voiceLevel / vibrate=$vibrationLevel")
                     appendLine("Motion: direction=$warningMotionDirection / approachSpeed=$warningApproachSpeedLevel")
-                    appendLine("ObjectMovement: $warningObjectMovementState")
-                    appendLine("UserObjectRelation: $warningUserObjectRelation")
                     appendLine(
-                        "UserMotion: ${userLocationSnapshot.motionState} / " +
-                            "speed=${formatSpeed(userLocationSnapshot.speedMps)} / " +
-                            "accuracy=${formatAccuracy(userLocationSnapshot.accuracyMeters)}"
+                        "GPS accuracy: ${formatAccuracy(userLocationSnapshot.accuracyMeters)}"
                     )
                     append("Policy: category=$warningCategory / proximity=$warningProximityLevel")
                     appendLine()
@@ -465,14 +470,22 @@ class MainActivity : ComponentActivity() {
                 }
             } else {
                 buildString {
-                    appendLine(
-                        "YOLO raw/small/policy/overlay: " +
-                            "${mapped.size}/${visibleMapped.size}/${filtered.size}/${overlayDetections.size}"
-                    )
-                    if (topObject != null) {
-                        append("Top: ${topObject.label} ${String.format("%.2f", topObject.confidence)}")
+                    appendLine("YOLO raw detection count: ${mapped.size}")
+                    appendLine("small box filter count: ${visibleMapped.size}")
+                    appendLine("overlay target count: ${overlayDetections.size}")
+                    appendLine("warning target count: ${warningDetections.size}")
+                    appendLine("selected warning object label: $selectedWarningLabel")
+                    appendLine("proximity: $warningProximityLevel")
+                    appendLine("object motion state: $warningObjectMovementState")
+                    appendLine("user-object relation: $warningUserObjectRelation")
+                    appendLine("user motion state: ${userLocationSnapshot.motionState}")
+                    appendLine("GPS speed: ${formatSpeed(userLocationSnapshot.speedMps)}")
+                    appendLine("YOLO inference time: ${inferenceTime}ms")
+                    appendLine("ML Kit detection count: $lastMlKitCount")
+                    if (topOverlayObject != null) {
+                        append("Top overlay: ${topOverlayObject.label} ${String.format("%.2f", topOverlayObject.confidence)}")
                     } else {
-                        append("Top: none")
+                        append("Top overlay: none")
                     }
                     appendLine()
                     appendLine("Risk: $riskLevel")
@@ -483,7 +496,7 @@ class MainActivity : ComponentActivity() {
 
         verboseLog(
             TAG,
-            "frame=${width}x$height, warningDetections=${filtered.size}, " +
+            "frame=${width}x$height, warningDetections=${warningDetections.size}, " +
                 "overlayDetections=${overlayDetections.size}, time=${inferenceTime}ms"
         )
     }
