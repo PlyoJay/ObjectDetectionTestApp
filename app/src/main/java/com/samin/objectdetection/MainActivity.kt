@@ -111,7 +111,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val yoloDetector = VisionStyleYoloDetector(this, "yolo11n_float32.tflite").apply {
-            confidenceThreshold = 0.35f
+            confidenceThreshold = detectionConfig.confidenceThreshold
             enableDebugImageSaving = detectionConfig.enableDetectorDebugImage
         }
         detector = yoloDetector
@@ -124,6 +124,7 @@ class MainActivity : ComponentActivity() {
                 TtsWarningPlayer(this)
             )
         )
+        logWarningPolicyOverlayMismatch()
 
         setupUi()
         checkPermissionAndStart()
@@ -522,6 +523,22 @@ class MainActivity : ComponentActivity() {
 
     private fun logDetectionTiming(tag: String, message: String) {
         Log.d(tag, message)
+    }
+
+    private fun logWarningPolicyOverlayMismatch() {
+        val policyLabelsMissingFromOverlay = YoloDefaultPolicyRegistry.getAll()
+            .map { policy -> OverlayObjectFilter.normalize(policy.label) }
+            .filterNot { label -> OverlayObjectFilter.isAllowed(label) }
+            .distinct()
+            .sorted()
+
+        if (policyLabelsMissingFromOverlay.isNotEmpty()) {
+            Log.w(
+                TAG,
+                "Warning policy labels not reachable from overlayDetections: " +
+                    policyLabelsMissingFromOverlay.joinToString(", ")
+            )
+        }
     }
 
     private fun filterSmallBoxes(

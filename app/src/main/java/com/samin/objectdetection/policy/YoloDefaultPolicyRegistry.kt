@@ -2,8 +2,8 @@ package com.samin.objectdetection.policy
 
 object YoloDefaultPolicyRegistry {
 
-    // COCO labels.txt stays complete for YOLO recognition/debug overlay.
-    // Only labels registered here can become warningDetections for user guidance.
+    // COCO labels.txt stays complete for YOLO recognition.
+    // A label must pass both OverlayObjectFilter and this registry to become a warningDetection.
     private val policies = mapOf(
         // Explicit guidance target: pedestrian safety signal.
         "traffic light" to DetectionPolicy(
@@ -125,7 +125,7 @@ object YoloDefaultPolicyRegistry {
 
     // Ambiguous COCO classes intentionally not registered as warning targets for now:
     // clock, cell phone, laptop, cup, bottle, book, remote, tv, keyboard, mouse.
-    // They can still appear in the overlay if YOLO detects them and they pass the display filters.
+    // They are ignored by both overlay and warning flows unless the app-level filters are updated.
 
     fun get(label: String): DetectionPolicy? {
         return policies[normalize(label)]
