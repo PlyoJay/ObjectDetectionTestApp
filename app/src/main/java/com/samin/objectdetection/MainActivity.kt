@@ -366,6 +366,7 @@ class MainActivity : ComponentActivity() {
             val policy = YoloDefaultPolicyRegistry.get(detection.label)
             policy != null && detection.confidence >= policy.minConfidence
         }
+        val overlayDetections = motionTracked
         metricsCollector.recordYoloDetections(
             beforeFilter = mapped,
             afterSmallBoxFilter = visibleMapped,
@@ -404,20 +405,26 @@ class MainActivity : ComponentActivity() {
         val warningProximityLevel = stabilizedDecision.obstacle?.proximityLevel
         metricsCollector.recordWarning(riskLevel)
         warningPlayer.playIfNeeded(stabilizedDecision)
-        verboseLog(
+        logDetectionTiming(
             DETECTION_TIMING_TAG,
-            "detectionEnd=$detectionEndTimeMs inference=${inferenceTime}ms skipped=$skippedFrameCount"
+            "detectionEnd=$detectionEndTimeMs inference=${inferenceTime}ms skipped=$skippedFrameCount " +
+                "rawCount=${mapped.size} visibleCount=${visibleMapped.size} " +
+                "policyFilteredCount=${filtered.size} overlayCount=${overlayDetections.size} " +
+                "emptyReason=${buildEmptyOverlayReason(mapped, visibleMapped, filtered, overlayDetections)}"
         )
 
         runOnUiThread {
             val overlayUpdateTimeMs = System.currentTimeMillis()
-            val newestDetectionTimestamp = filtered.maxOfOrNull { it.frameTimestampMs } ?: overlayUpdateTimeMs
+            val newestDetectionTimestamp = overlayDetections.maxOfOrNull { it.frameTimestampMs } ?: overlayUpdateTimeMs
             val resultAgeMs = overlayUpdateTimeMs - newestDetectionTimestamp
-            verboseLog(
+            logDetectionTiming(
                 DETECTION_TIMING_TAG,
-                "overlayUpdate=$overlayUpdateTimeMs resultAge=${resultAgeMs}ms detectionCount=${filtered.size}"
+                "overlayUpdate=$overlayUpdateTimeMs resultAge=${resultAgeMs}ms " +
+                    "rawCount=${mapped.size} visibleCount=${visibleMapped.size} " +
+                    "policyFilteredCount=${filtered.size} overlayCount=${overlayDetections.size} " +
+                    "emptyReason=${buildEmptyOverlayReason(mapped, visibleMapped, filtered, overlayDetections)}"
             )
-            overlayView.updateDetections(filtered, width, height, inferenceTime, currentFps)
+            overlayView.updateDetections(overlayDetections, width, height, inferenceTime, currentFps)
             if (selectedWarningMessage == null) {
                 warningMessageTextView.text = ""
                 warningMessageTextView.visibility = View.GONE
@@ -428,6 +435,10 @@ class MainActivity : ComponentActivity() {
             debugTextView.text = if (SHOW_DEBUG_INFO) {
                 buildString {
                     appendLine("Frame: ${width}x$height / crop: ${cropRect.width()}x${cropRect.height()}")
+                    appendLine("Raw YOLO count: ${mapped.size}")
+                    appendLine("after small box filter count: ${visibleMapped.size}")
+                    appendLine("after policy filter count: ${filtered.size}")
+                    appendLine("overlay drawing count: ${overlayDetections.size}")
                     appendLine("Detect: ${filtered.size} / ${inferenceTime}ms / FPS=$currentFps")
                     appendLine("ML Kit: $lastMlKitCount / ${lastMlKitTimeMs}ms")
                     if (topObject != null) {
@@ -454,6 +465,10 @@ class MainActivity : ComponentActivity() {
                 }
             } else {
                 buildString {
+                    appendLine(
+                        "YOLO raw/small/policy/overlay: " +
+                            "${mapped.size}/${visibleMapped.size}/${filtered.size}/${overlayDetections.size}"
+                    )
                     if (topObject != null) {
                         append("Top: ${topObject.label} ${String.format("%.2f", topObject.confidence)}")
                     } else {
@@ -466,13 +481,21 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        verboseLog(TAG, "frame=${width}x$height, detections=${filtered.size}, time=${inferenceTime}ms")
+        verboseLog(
+            TAG,
+            "frame=${width}x$height, warningDetections=${filtered.size}, " +
+                "overlayDetections=${overlayDetections.size}, time=${inferenceTime}ms"
+        )
     }
 
     private fun verboseLog(tag: String, message: String) {
         if (ENABLE_VERBOSE_LOG) {
             Log.d(tag, message)
         }
+    }
+
+    private fun logDetectionTiming(tag: String, message: String) {
+        Log.d(tag, message)
     }
 
     private fun filterSmallBoxes(
@@ -521,6 +544,21 @@ class MainActivity : ComponentActivity() {
 
     private fun formatBox(detection: DetectionResult): String {
         return "left=${detection.left}, top=${detection.top}, right=${detection.right}, bottom=${detection.bottom}"
+    }
+
+    private fun buildEmptyOverlayReason(
+        rawDetections: List<DetectionResult>,
+        visibleDetections: List<DetectionResult>,
+        policyFilteredDetections: List<DetectionResult>,
+        overlayDetections: List<DetectionResult>
+    ): String {
+        return when {
+            overlayDetections.isNotEmpty() -> "drawing"
+            rawDetections.isEmpty() -> "raw detection none"
+            visibleDetections.isEmpty() -> "removed by small box filter"
+            policyFilteredDetections.isEmpty() -> "policy filtered for warning only"
+            else -> "overlay stale or disabled"
+        }
     }
 
     private fun maybeRunMlKitDetection(bitmap: Bitmap, frameWidth: Int, frameHeight: Int) {

@@ -80,7 +80,7 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         lastDetectionUpdatedAtMs = System.currentTimeMillis()
         logOverlayAge(this.detections)
         postDelayed({ clearStaleDetectionsIfNeeded() }, MAX_OVERLAY_AGE_MS)
-        invalidate()
+        postInvalidateOnAnimation()
     }
 
     fun updateMlKitDetections(
@@ -93,12 +93,12 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         this.frameHeight = frameHeight.coerceAtLeast(1)
         lastMlKitUpdatedAtMs = System.currentTimeMillis()
         postDelayed({ clearStaleDetectionsIfNeeded() }, MAX_OVERLAY_AGE_MS)
-        invalidate()
+        postInvalidateOnAnimation()
     }
 
     fun setDrawingEnabled(enabled: Boolean) {
         this.enabled = enabled
-        invalidate()
+        postInvalidateOnAnimation()
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -123,9 +123,8 @@ class BoundingBoxOverlay @JvmOverloads constructor(
             viewWidth = width,
             viewHeight = height
         )
-        val now = System.currentTimeMillis()
-        val freshDetections = detections.filter { now - it.frameTimestampMs <= MAX_OVERLAY_AGE_MS }
-        val freshMlKitDetections = mlKitDetections.filter { now - it.frameTimestampMs <= MAX_OVERLAY_AGE_MS }
+        val freshDetections = detections
+        val freshMlKitDetections = mlKitDetections
 
         freshDetections.forEach { res ->
             val left = transform.offsetX + res.left * transform.scale
@@ -241,36 +240,43 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         var changed = false
 
         if (detections.isNotEmpty() && now - lastDetectionUpdatedAtMs > MAX_OVERLAY_AGE_MS) {
+            Log.d(
+                DETECTION_TIMING_TAG,
+                "overlay stale clear source=YOLO ageMs=${now - lastDetectionUpdatedAtMs} " +
+                    "count=${detections.size}"
+            )
             detections = emptyList()
             changed = true
         }
 
         if (mlKitDetections.isNotEmpty() && now - lastMlKitUpdatedAtMs > MAX_OVERLAY_AGE_MS) {
+            Log.d(
+                DETECTION_TIMING_TAG,
+                "overlay stale clear source=ML_KIT ageMs=${now - lastMlKitUpdatedAtMs} " +
+                    "count=${mlKitDetections.size}"
+            )
             mlKitDetections = emptyList()
             changed = true
         }
 
         if (changed) {
-            android.util.Log.d(
-                DETECTION_TIMING_TAG,
-                "overlay stale cleared ageMs=${now - lastDetectionUpdatedAtMs}"
-            )
-            invalidate()
+            postInvalidateOnAnimation()
         }
     }
 
     private fun logOverlayAge(detections: List<DetectionResult>) {
         val now = System.currentTimeMillis()
-        val newestTimestamp = detections.maxOfOrNull { it.frameTimestampMs } ?: now
-        val ageMs = now - newestTimestamp
-        android.util.Log.d(
+        val updateAgeMs = now - lastDetectionUpdatedAtMs
+        val newestFrameTimestamp = detections.maxOfOrNull { it.frameTimestampMs } ?: now
+        val frameAgeMs = now - newestFrameTimestamp
+        Log.d(
             DETECTION_TIMING_TAG,
-            "overlayAge=${ageMs}ms detectionCount=${detections.size}"
+            "overlayUpdateAge=${updateAgeMs}ms overlayResultAge=${frameAgeMs}ms overlayCount=${detections.size}"
         )
     }
 
     companion object {
-        private const val MAX_OVERLAY_AGE_MS = 500L
+        private const val MAX_OVERLAY_AGE_MS = 1500L
         private const val DETECTION_TIMING_TAG = "DetectionTiming"
         private const val TRANSFORM_TAG = "OverlayTransform"
     }

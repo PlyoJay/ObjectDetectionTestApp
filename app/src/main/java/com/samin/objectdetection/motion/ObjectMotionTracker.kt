@@ -216,12 +216,18 @@ class ObjectMotionTracker(
             UserObjectRelation.USER_APPROACHING_OBJECT,
             UserObjectRelation.USER_LEAVING_OBJECT,
             UserObjectRelation.STABLE_OR_DISTANT -> ObjectMovementState.STATIONARY_LIKELY
-            UserObjectRelation.OBJECT_APPROACHING_USER,
+            UserObjectRelation.OBJECT_APPROACHING_USER -> {
+                if (motionDirection == MotionDirection.UNKNOWN) {
+                    ObjectMovementState.UNKNOWN
+                } else {
+                    ObjectMovementState.APPROACHING_USER
+                }
+            }
             UserObjectRelation.OBJECT_LEAVING_USER -> {
                 if (motionDirection == MotionDirection.UNKNOWN) {
                     ObjectMovementState.UNKNOWN
                 } else {
-                    ObjectMovementState.MOVING_LIKELY
+                    ObjectMovementState.LEAVING_USER
                 }
             }
             UserObjectRelation.UNKNOWN -> ObjectMovementState.UNKNOWN
