@@ -80,30 +80,6 @@ object YoloDefaultPolicyRegistry {
             shouldVoiceGuide = true
         ),
 
-        "parking meter" to DetectionPolicy(
-            label = "parking meter",
-            category = ObjectCategory.OBSTACLE,
-            priority = WarningPriority.MEDIUM,
-            minConfidence = 0.45f,
-            shouldVoiceGuide = true
-        ),
-
-        "backpack" to DetectionPolicy(
-            label = "backpack",
-            category = ObjectCategory.OBSTACLE,
-            priority = WarningPriority.MEDIUM,
-            minConfidence = 0.45f,
-            shouldVoiceGuide = true
-        ),
-
-        "umbrella" to DetectionPolicy(
-            label = "umbrella",
-            category = ObjectCategory.OBSTACLE,
-            priority = WarningPriority.MEDIUM,
-            minConfidence = 0.45f,
-            shouldVoiceGuide = true
-        ),
-
         // Ambiguous indoor/small object: keep as low-priority debug/selection data, no voice guide by default.
         "chair" to DetectionPolicy(
             label = "chair",
