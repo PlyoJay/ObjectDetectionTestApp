@@ -45,6 +45,8 @@ import com.samin.objectdetection.warning.GotoroVisionRiskPolicy
 import com.samin.objectdetection.warning.RiskLevel
 import com.samin.objectdetection.warning.TtsWarningPlayer
 import com.samin.objectdetection.warning.VibrationWarningPlayer
+import com.samin.objectdetection.warning.WarningCandidate
+import com.samin.objectdetection.warning.WarningCandidateSelector
 import com.samin.objectdetection.warning.WarningDecisionMaker
 import com.samin.objectdetection.warning.WarningCooldownManager
 import com.samin.objectdetection.warning.WarningFeedbackPolicy
@@ -73,6 +75,7 @@ class MainActivity : ComponentActivity() {
     private val warningDecisionMaker = WarningDecisionMaker()
     private val warningSelector = WarningSelector(warningDecisionMaker)
     private val warningCooldownManager = WarningCooldownManager()
+    private val warningCandidateSelector = WarningCandidateSelector()
     private val warningStabilizer = WarningStabilizer()
     private val objectMotionTracker = ObjectMotionTracker()
     private val metricsCollector = DetectionMetricsCollector()
@@ -356,11 +359,7 @@ class MainActivity : ComponentActivity() {
                 frameWidth = width,
                 frameHeight = height
             )
-            val feedback = WarningFeedbackPolicy.evaluate(
-                detection = evaluated,
-                cooldownManager = warningCooldownManager,
-                nowMs = start
-            )
+            val feedback = WarningFeedbackPolicy.evaluate(evaluated)
             evaluated.copy(warningFeedback = feedback).also { feedbackDetection ->
                 GotoroVisionRiskPolicy.logDebug(feedbackDetection)
             }
@@ -416,15 +415,30 @@ class MainActivity : ComponentActivity() {
         val inferenceTime = detectionEndTimeMs - start
         metricsCollector.recordYoloInferenceTime(inferenceTime)
         val topOverlayObject = overlayDetections.maxByOrNull { it.confidence }
-        val selectedFeedbackDetection = overlayDetections.maxWithOrNull(
-            compareBy<DetectionResult> { it.warningFeedback.riskLevel }
-                .thenBy { if (it.warningFeedback.shouldNotify) 1 else 0 }
-                .thenBy { it.confidence }
-        )
-        val selectedFeedback = selectedFeedbackDetection?.warningFeedback
+        val warningCandidates = overlayDetections.map { detection ->
+            WarningCandidate.fromDetection(
+                detection = detection,
+                warningKey = warningCooldownManager.buildKey(
+                    label = detection.label,
+                    priority = detection.objectPriority,
+                    proximityLevel = detection.proximityLevel,
+                    horizontalPosition = detection.horizontalPosition
+                )
+            )
+        }
+        val selectedCandidate = warningCandidateSelector.select(warningCandidates)
+        val selectedCandidateAfterCooldown = selectedCandidate?.let { candidate ->
+            WarningFeedbackPolicy.applyCooldown(
+                candidate = candidate,
+                cooldownManager = warningCooldownManager,
+                nowMs = start
+            )
+        }
+        logSelectedWarningCandidate(selectedCandidateAfterCooldown)
+        val selectedFeedback = selectedCandidateAfterCooldown?.feedback
         val selectedWarningLabel = stabilizedDecision.obstacle?.detection?.label
             ?: selectedWarningObject?.label
-            ?: selectedFeedbackDetection?.label
+            ?: selectedCandidateAfterCooldown?.label
             ?: "none"
         val warningMessage = stabilizedDecision.message
         val riskLevel = stabilizedDecision.riskLevel
@@ -437,7 +451,8 @@ class MainActivity : ComponentActivity() {
         val feedbackVibrationLevel = selectedFeedback?.vibrationLevel ?: FeedbackLevel.NONE
         val feedbackMessage = selectedFeedback?.message
         val feedbackShouldNotify = selectedFeedback?.shouldNotify ?: false
-        val feedbackPriority = selectedFeedbackDetection?.objectPriority
+        val feedbackPriority = selectedCandidateAfterCooldown?.priority
+        val feedbackWarningKey = selectedCandidateAfterCooldown?.warningKey
         val warningMotionDirection = stabilizedDecision.obstacle?.detection?.motionDirection
         val warningApproachSpeedLevel = stabilizedDecision.obstacle?.detection?.approachSpeedLevel
         val warningObjectMovementState = stabilizedDecision.obstacle?.detection?.objectMovementState
@@ -447,9 +462,9 @@ class MainActivity : ComponentActivity() {
         metricsCollector.recordWarning(riskLevel)
         Log.d(
             WARNING_FEEDBACK_TAG,
-            "actualOutputSuppressed label=${selectedFeedbackDetection?.label ?: selectedWarningLabel} " +
+            "actualOutputSuppressed label=${selectedCandidateAfterCooldown?.label ?: selectedWarningLabel} " +
                 "priority=$feedbackPriority risk=$feedbackRiskLevel beep=$feedbackBeepLevel voice=$feedbackVoiceLevel " +
-                "vibration=$feedbackVibrationLevel message=$feedbackMessage shouldNotify=$feedbackShouldNotify"
+                "vibration=$feedbackVibrationLevel message=$feedbackMessage shouldNotify=$feedbackShouldNotify key=$feedbackWarningKey"
         )
         logDetectionTiming(
             DETECTION_TIMING_TAG,
@@ -506,7 +521,7 @@ class MainActivity : ComponentActivity() {
                     appendLine()
                     appendLine("Risk: $riskLevel")
                     appendLine("Feedback: beep=$beepLevel / voice=$voiceLevel / vibrate=$vibrationLevel")
-                    appendLine("PolicyFeedback: priority=$feedbackPriority / risk=$feedbackRiskLevel / beep=$feedbackBeepLevel / voice=$feedbackVoiceLevel / vibrate=$feedbackVibrationLevel / notify=$feedbackShouldNotify")
+                    appendLine("PolicyFeedback: priority=$feedbackPriority / risk=$feedbackRiskLevel / beep=$feedbackBeepLevel / voice=$feedbackVoiceLevel / vibrate=$feedbackVibrationLevel / notify=$feedbackShouldNotify / key=$feedbackWarningKey")
                     appendLine("PolicyMessage: ${feedbackMessage ?: "none"}")
                     appendLine("Motion: direction=$warningMotionDirection / approachSpeed=$warningApproachSpeedLevel")
                     appendLine(
@@ -539,7 +554,7 @@ class MainActivity : ComponentActivity() {
                     appendLine()
                     appendLine("Risk: $riskLevel")
                     appendLine("Guide: $warningMessage")
-                    appendLine("PolicyFeedback: priority=$feedbackPriority / risk=$feedbackRiskLevel / beep=$feedbackBeepLevel / voice=$feedbackVoiceLevel / vibrate=$feedbackVibrationLevel / notify=$feedbackShouldNotify")
+                    appendLine("PolicyFeedback: priority=$feedbackPriority / risk=$feedbackRiskLevel / beep=$feedbackBeepLevel / voice=$feedbackVoiceLevel / vibrate=$feedbackVibrationLevel / notify=$feedbackShouldNotify / key=$feedbackWarningKey")
                     append("PolicyMessage: ${feedbackMessage ?: "none"}")
                 }
             }
@@ -561,6 +576,27 @@ class MainActivity : ComponentActivity() {
 
     private fun logDetectionTiming(tag: String, message: String) {
         Log.d(tag, message)
+    }
+
+    private fun logSelectedWarningCandidate(candidate: WarningCandidate?) {
+        if (candidate == null) {
+            Log.d(WARNING_SELECTED_TAG, "[WarningSelected] none")
+            return
+        }
+
+        Log.d(
+            WARNING_SELECTED_TAG,
+            "[WarningSelected]\n" +
+                "label=${candidate.label}\n" +
+                "priority=${candidate.priority}\n" +
+                "proximity=${candidate.proximityLevel}\n" +
+                "risk=${candidate.riskLevel}\n" +
+                "message=${candidate.feedback.message}\n" +
+                "beep=${candidate.feedback.beepLevel}\n" +
+                "vibration=${candidate.feedback.vibrationLevel}\n" +
+                "voice=${candidate.feedback.voiceLevel}\n" +
+                "cooldown=${candidate.feedback.shouldNotify}"
+        )
     }
 
     private fun logWarningPolicyOverlayMismatch() {
@@ -775,6 +811,7 @@ class MainActivity : ComponentActivity() {
         private const val DETECTION_TIMING_TAG = "DetectionTiming"
         private const val DETECTION_FILTER_TAG = "DetectionFilter"
         private const val WARNING_FEEDBACK_TAG = "WarningFeedback"
+        private const val WARNING_SELECTED_TAG = "WarningSelected"
         private const val ML_KIT_DETECT_INTERVAL_MS = 1500L
         private const val ML_KIT_WARNING_MAX_AGE_MS = 3000L
     }

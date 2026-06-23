@@ -6,6 +6,29 @@ import com.samin.objectdetection.detector.DetectionResult
 object WarningFeedbackPolicy {
 
     fun evaluate(
+        detection: DetectionResult
+    ): WarningFeedback {
+        val feedback = mapRiskToFeedback(
+            label = detection.label,
+            category = detection.riskObjectCategory,
+            priority = detection.objectPriority,
+            riskLevel = detection.riskLevel
+        )
+
+        Log.d(
+            TAG,
+            "label=${detection.label}, conf=${format(detection.confidence)}, " +
+                "priority=${detection.objectPriority}, " +
+                "proximityLevel=${detection.proximityLevel}, riskLevel=${detection.riskLevel}, " +
+                "beepLevel=${feedback.beepLevel}, vibrationLevel=${feedback.vibrationLevel}, " +
+                "voiceLevel=${feedback.voiceLevel}, message=${feedback.message}, " +
+                "cooldownPassed=pending, shouldNotify=${feedback.shouldNotify}"
+        )
+
+        return feedback
+    }
+
+    fun evaluateWithCooldown(
         detection: DetectionResult,
         cooldownManager: WarningCooldownManager,
         nowMs: Long = System.currentTimeMillis()
@@ -40,6 +63,25 @@ object WarningFeedbackPolicy {
         )
 
         return feedback
+    }
+
+    fun applyCooldown(
+        candidate: WarningCandidate,
+        cooldownManager: WarningCooldownManager,
+        nowMs: Long = System.currentTimeMillis()
+    ): WarningCandidate {
+        val cooldownPassed = cooldownManager.canNotify(
+            label = candidate.label,
+            priority = candidate.priority,
+            proximityLevel = candidate.proximityLevel,
+            horizontalPosition = candidate.horizontalPosition,
+            nowMs = nowMs
+        )
+        return candidate.copy(
+            feedback = candidate.feedback.copy(
+                shouldNotify = candidate.feedback.shouldNotify && cooldownPassed
+            )
+        )
     }
 
     fun buildWarningMessage(

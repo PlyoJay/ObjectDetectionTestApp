@@ -12,7 +12,6 @@ import com.samin.objectdetection.detector.mapToOriginalFrame
 import com.samin.objectdetection.dto.DetectionEvent
 import com.samin.objectdetection.dto.RoiInfo
 import com.samin.objectdetection.warning.GotoroVisionRiskPolicy
-import com.samin.objectdetection.warning.WarningCooldownManager
 import com.samin.objectdetection.warning.WarningFeedbackPolicy
 import java.io.File
 import java.io.FileOutputStream
@@ -26,7 +25,6 @@ class CameraFrameAnalyzer(
 
     private var lastSaveTime = 0L
     private val isDetecting = AtomicBoolean(false)
-    private val warningCooldownManager = WarningCooldownManager()
     private var skippedFrameCount = 0L
 
     init {
@@ -136,11 +134,7 @@ class CameraFrameAnalyzer(
                     frameWidth = bitmap.width,
                     frameHeight = bitmap.height
                 )
-                val feedback = WarningFeedbackPolicy.evaluate(
-                    detection = evaluated,
-                    cooldownManager = warningCooldownManager,
-                    nowMs = detectionStartTimeMs
-                )
+                val feedback = WarningFeedbackPolicy.evaluate(evaluated)
                 evaluated.copy(warningFeedback = feedback).also { feedbackDetection ->
                     GotoroVisionRiskPolicy.logDebug(feedbackDetection)
                 }
