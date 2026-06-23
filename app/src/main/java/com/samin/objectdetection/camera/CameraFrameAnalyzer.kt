@@ -11,6 +11,7 @@ import com.samin.objectdetection.detector.ObjectDetector
 import com.samin.objectdetection.detector.mapToOriginalFrame
 import com.samin.objectdetection.dto.DetectionEvent
 import com.samin.objectdetection.dto.RoiInfo
+import com.samin.objectdetection.warning.GotoroVisionRiskPolicy
 import java.io.File
 import java.io.FileOutputStream
 import java.util.concurrent.atomic.AtomicBoolean
@@ -126,7 +127,15 @@ class CameraFrameAnalyzer(
                 DETECTION_TIMING_TAG,
                 "detectionEnd=$detectionEndTimeMs inference=${detectionEndTimeMs - detectionStartTimeMs}ms skipped=$skippedFrameCount"
             )
-            val mappedResults = results.map { it.mapToOriginalFrame(roi, modelInputSize = config.inputSize) }
+            val mappedResults = results.map {
+                GotoroVisionRiskPolicy.evaluate(
+                    detection = it.mapToOriginalFrame(roi, modelInputSize = config.inputSize),
+                    frameWidth = bitmap.width,
+                    frameHeight = bitmap.height
+                ).also { evaluated ->
+                    GotoroVisionRiskPolicy.logDebug(evaluated)
+                }
+            }
             val visibleResults = filterSmallBoxes(
                 detections = mappedResults,
                 frameWidth = bitmap.width,
@@ -136,7 +145,11 @@ class CameraFrameAnalyzer(
             visibleResults.forEach { mapped ->
                 Log.d(
                     "Detection",
-                    "original=${mapped.label}, conf=${mapped.confidence}, frameBox=${mapped.left},${mapped.top},${mapped.right},${mapped.bottom}"
+                    "original=${mapped.label}, conf=${mapped.confidence}, " +
+                        "areaRatio=${mapped.bboxAreaRatio}, heightRatio=${mapped.bboxHeightRatio}, " +
+                        "proximity=${mapped.proximityLevel}, risk=${mapped.riskLevel}, " +
+                        "horizontal=${mapped.horizontalPosition}, ignored=${mapped.isIgnored}, " +
+                        "frameBox=${mapped.left},${mapped.top},${mapped.right},${mapped.bottom}"
                 )
             }
 

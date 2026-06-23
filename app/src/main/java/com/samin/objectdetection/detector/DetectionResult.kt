@@ -6,6 +6,10 @@ import com.samin.objectdetection.motion.ApproachSpeedLevel
 import com.samin.objectdetection.motion.MotionDirection
 import com.samin.objectdetection.motion.ObjectMovementState
 import com.samin.objectdetection.motion.UserObjectRelation
+import com.samin.objectdetection.warning.HorizontalPosition
+import com.samin.objectdetection.warning.ProximityLevel
+import com.samin.objectdetection.warning.RiskLevel
+import com.samin.objectdetection.warning.RiskObjectCategory
 
 data class DetectionResult(
     val label: String,
@@ -18,7 +22,18 @@ data class DetectionResult(
     val motionDirection: MotionDirection = MotionDirection.UNKNOWN,
     val approachSpeedLevel: ApproachSpeedLevel = ApproachSpeedLevel.UNKNOWN,
     val objectMovementState: ObjectMovementState = ObjectMovementState.UNKNOWN,
-    val userObjectRelation: UserObjectRelation = UserObjectRelation.UNKNOWN
+    val userObjectRelation: UserObjectRelation = UserObjectRelation.UNKNOWN,
+    val bboxWidth: Float = 0f,
+    val bboxHeight: Float = 0f,
+    val bboxAreaRatio: Float = 0f,
+    val bboxHeightRatio: Float = 0f,
+    val centerXRatio: Float = 0f,
+    val centerYRatio: Float = 0f,
+    val horizontalPosition: HorizontalPosition = HorizontalPosition.CENTER,
+    val riskObjectCategory: RiskObjectCategory = RiskObjectCategory.UNKNOWN,
+    val proximityLevel: ProximityLevel = ProximityLevel.FAR,
+    val riskLevel: RiskLevel = RiskLevel.NONE,
+    val isIgnored: Boolean = false
 )
 
 interface ObjectDetector {

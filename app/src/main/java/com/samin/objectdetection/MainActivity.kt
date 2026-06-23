@@ -40,6 +40,7 @@ import com.samin.objectdetection.ui.BoundingBoxOverlay
 import com.samin.objectdetection.warning.BeepWarningPlayer
 import com.samin.objectdetection.warning.CompositeWarningPlayer
 import com.samin.objectdetection.warning.ForwardObstacleSelector
+import com.samin.objectdetection.warning.GotoroVisionRiskPolicy
 import com.samin.objectdetection.warning.TtsWarningPlayer
 import com.samin.objectdetection.warning.VibrationWarningPlayer
 import com.samin.objectdetection.warning.WarningDecisionMaker
@@ -339,7 +340,7 @@ class MainActivity : ComponentActivity() {
         val croppedResults = detector.detect(cropped)
         val detectionEndTimeMs = System.currentTimeMillis()
         val mapped = croppedResults.map { res ->
-            DetectionResult(
+            val detection = DetectionResult(
                 label = res.label,
                 confidence = res.confidence,
                 left = res.left + cropRect.left,
@@ -348,6 +349,13 @@ class MainActivity : ComponentActivity() {
                 bottom = res.bottom + cropRect.top,
                 frameTimestampMs = start
             )
+            GotoroVisionRiskPolicy.evaluate(
+                detection = detection,
+                frameWidth = width,
+                frameHeight = height
+            ).also { evaluated ->
+                GotoroVisionRiskPolicy.logDebug(evaluated)
+            }
         }
         val visibleMapped = filterSmallBoxes(
             detections = mapped,
@@ -374,7 +382,7 @@ class MainActivity : ComponentActivity() {
 
         val warningDetections = overlayDetections.filter { detection ->
             val policy = YoloDefaultPolicyRegistry.get(detection.label)
-            policy != null && detection.confidence >= policy.minConfidence
+            !detection.isIgnored && policy != null && detection.confidence >= policy.minConfidence
         }
         metricsCollector.recordYoloDetections(
             beforeFilter = mapped,

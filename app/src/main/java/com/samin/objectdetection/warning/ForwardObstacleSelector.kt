@@ -18,6 +18,15 @@ class ForwardObstacleSelector {
         val candidates = mutableListOf<ForwardObstacle>()
 
         detections.forEach { detection ->
+            if (detection.isIgnored) {
+                Log.d(
+                    TAG,
+                    "excluded ignored label=${detection.label}, conf=${detection.confidence}, " +
+                        "areaRatio=${detection.bboxAreaRatio}, risk=${detection.riskLevel}"
+                )
+                return@forEach
+            }
+
             val policy = YoloDefaultPolicyRegistry.get(detection.label)
             val areaRatio = getBoxAreaRatio(detection, frameWidth, frameHeight)
             val widthRatio = getBoxWidthRatio(detection, frameWidth)

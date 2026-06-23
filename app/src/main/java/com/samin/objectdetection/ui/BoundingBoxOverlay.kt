@@ -11,7 +11,7 @@ import android.util.Log
 import android.view.View
 import com.samin.objectdetection.detector.DetectionResult
 import com.samin.objectdetection.model.DetectionSource
-import com.samin.objectdetection.model.toDetectedObject
+import java.util.Locale
 
 class BoundingBoxOverlay @JvmOverloads constructor(
     context: Context,
@@ -132,10 +132,10 @@ class BoundingBoxOverlay @JvmOverloads constructor(
             val right = transform.offsetX + res.right * transform.scale
             val bottom = transform.offsetY + res.bottom * transform.scale
 
-            boxPaint.color = if (res.label == "person" || res.label == "사람") {
-                Color.parseColor("#FF69B4")
-            } else {
-                Color.parseColor("#00BFFF")
+            boxPaint.color = when {
+                res.isIgnored -> Color.parseColor("#888888")
+                res.label == "person" || res.label == "사람" -> Color.parseColor("#FF69B4")
+                else -> Color.parseColor("#00BFFF")
             }
 
             canvas.drawRoundRect(left, top, right, bottom, 20f, 20f, boxPaint)
@@ -167,11 +167,12 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         detection: DetectionResult,
         source: DetectionSource
     ): String {
-        val detectedObject = detection.toDetectedObject(source)
-        return "${detectedObject.label} ${detectedObject.motionDirection} " +
-            "${detection.approachSpeedLevel} " +
-            "${String.format("%.2f", detectedObject.confidence)} " +
-            "${detectedObject.category}/${detectedObject.priority}/${detectedObject.source}"
+        return "${detection.label} ${source.name} " +
+            "c=${String.format(Locale.US, "%.2f", detection.confidence)} " +
+            "a=${String.format(Locale.US, "%.3f", detection.bboxAreaRatio)} " +
+            "h=${String.format(Locale.US, "%.3f", detection.bboxHeightRatio)} " +
+            "${detection.proximityLevel}/${detection.riskLevel}/${detection.horizontalPosition}" +
+            (if (detection.isIgnored) " IGNORED" else "")
     }
 
     private fun calculateFitCenterTransform(
