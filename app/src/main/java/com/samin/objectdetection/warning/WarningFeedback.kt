@@ -15,6 +15,26 @@ enum class FeedbackLevel {
     HIGH
 }
 
+data class WarningFeedback(
+    val riskLevel: RiskLevel,
+    val beepLevel: FeedbackLevel,
+    val vibrationLevel: FeedbackLevel,
+    val voiceLevel: FeedbackLevel,
+    val message: String?,
+    val shouldNotify: Boolean
+) {
+    companion object {
+        val NONE = WarningFeedback(
+            riskLevel = RiskLevel.NONE,
+            beepLevel = FeedbackLevel.NONE,
+            vibrationLevel = FeedbackLevel.NONE,
+            voiceLevel = FeedbackLevel.NONE,
+            message = null,
+            shouldNotify = false
+        )
+    }
+}
+
 data class FeedbackIntensity(
     val beepLevel: FeedbackLevel,
     val voiceLevel: FeedbackLevel,

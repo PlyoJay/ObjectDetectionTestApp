@@ -39,16 +39,18 @@ import com.samin.objectdetection.policy.YoloDefaultPolicyRegistry
 import com.samin.objectdetection.ui.BoundingBoxOverlay
 import com.samin.objectdetection.warning.BeepWarningPlayer
 import com.samin.objectdetection.warning.CompositeWarningPlayer
+import com.samin.objectdetection.warning.FeedbackLevel
 import com.samin.objectdetection.warning.ForwardObstacleSelector
 import com.samin.objectdetection.warning.GotoroVisionRiskPolicy
+import com.samin.objectdetection.warning.RiskLevel
 import com.samin.objectdetection.warning.TtsWarningPlayer
 import com.samin.objectdetection.warning.VibrationWarningPlayer
 import com.samin.objectdetection.warning.WarningDecisionMaker
-import com.samin.objectdetection.warning.WarningMessageBuilder
+import com.samin.objectdetection.warning.WarningCooldownManager
+import com.samin.objectdetection.warning.WarningFeedbackPolicy
 import com.samin.objectdetection.warning.WarningPlayer
 import com.samin.objectdetection.warning.WarningSelector
 import com.samin.objectdetection.warning.WarningStabilizer
-import com.samin.objectdetection.warning.WarningThrottle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -70,7 +72,7 @@ class MainActivity : ComponentActivity() {
     private val forwardObstacleSelector = ForwardObstacleSelector()
     private val warningDecisionMaker = WarningDecisionMaker()
     private val warningSelector = WarningSelector(warningDecisionMaker)
-    private val warningThrottle = WarningThrottle()
+    private val warningCooldownManager = WarningCooldownManager()
     private val warningStabilizer = WarningStabilizer()
     private val objectMotionTracker = ObjectMotionTracker()
     private val metricsCollector = DetectionMetricsCollector()
@@ -349,12 +351,18 @@ class MainActivity : ComponentActivity() {
                 bottom = res.bottom + cropRect.top,
                 frameTimestampMs = start
             )
-            GotoroVisionRiskPolicy.evaluate(
+            val evaluated = GotoroVisionRiskPolicy.evaluate(
                 detection = detection,
                 frameWidth = width,
                 frameHeight = height
-            ).also { evaluated ->
-                GotoroVisionRiskPolicy.logDebug(evaluated)
+            )
+            val feedback = WarningFeedbackPolicy.evaluate(
+                detection = evaluated,
+                cooldownManager = warningCooldownManager,
+                nowMs = start
+            )
+            evaluated.copy(warningFeedback = feedback).also { feedbackDetection ->
+                GotoroVisionRiskPolicy.logDebug(feedbackDetection)
             }
         }
         val visibleMapped = filterSmallBoxes(
@@ -395,7 +403,6 @@ class MainActivity : ComponentActivity() {
             start - it.timestampMs <= ML_KIT_WARNING_MAX_AGE_MS
         }
         val selectedWarningObject = warningSelector.select(yoloDetectedObjects + freshMlKitDetectedObjects)
-        val selectedWarningMessage = selectedWarningObject?.let { WarningMessageBuilder.build(it) }
 
         val forwardObstacles = forwardObstacleSelector.select(
             detections = warningDetections,
@@ -409,14 +416,27 @@ class MainActivity : ComponentActivity() {
         val inferenceTime = detectionEndTimeMs - start
         metricsCollector.recordYoloInferenceTime(inferenceTime)
         val topOverlayObject = overlayDetections.maxByOrNull { it.confidence }
+        val selectedFeedbackDetection = overlayDetections.maxWithOrNull(
+            compareBy<DetectionResult> { it.warningFeedback.riskLevel }
+                .thenBy { if (it.warningFeedback.shouldNotify) 1 else 0 }
+                .thenBy { it.confidence }
+        )
+        val selectedFeedback = selectedFeedbackDetection?.warningFeedback
         val selectedWarningLabel = stabilizedDecision.obstacle?.detection?.label
             ?: selectedWarningObject?.label
+            ?: selectedFeedbackDetection?.label
             ?: "none"
         val warningMessage = stabilizedDecision.message
         val riskLevel = stabilizedDecision.riskLevel
         val beepLevel = stabilizedDecision.beepLevel
         val voiceLevel = stabilizedDecision.voiceLevel
         val vibrationLevel = stabilizedDecision.vibrationLevel
+        val feedbackRiskLevel = selectedFeedback?.riskLevel ?: RiskLevel.NONE
+        val feedbackBeepLevel = selectedFeedback?.beepLevel ?: FeedbackLevel.NONE
+        val feedbackVoiceLevel = selectedFeedback?.voiceLevel ?: FeedbackLevel.NONE
+        val feedbackVibrationLevel = selectedFeedback?.vibrationLevel ?: FeedbackLevel.NONE
+        val feedbackMessage = selectedFeedback?.message
+        val feedbackShouldNotify = selectedFeedback?.shouldNotify ?: false
         val warningMotionDirection = stabilizedDecision.obstacle?.detection?.motionDirection
         val warningApproachSpeedLevel = stabilizedDecision.obstacle?.detection?.approachSpeedLevel
         val warningObjectMovementState = stabilizedDecision.obstacle?.detection?.objectMovementState
@@ -424,7 +444,12 @@ class MainActivity : ComponentActivity() {
         val warningCategory = stabilizedDecision.obstacle?.category
         val warningProximityLevel = stabilizedDecision.obstacle?.proximityLevel
         metricsCollector.recordWarning(riskLevel)
-        warningPlayer.playIfNeeded(stabilizedDecision)
+        Log.d(
+            WARNING_FEEDBACK_TAG,
+            "actualOutputSuppressed label=${selectedFeedbackDetection?.label ?: selectedWarningLabel} " +
+                "risk=$feedbackRiskLevel beep=$feedbackBeepLevel voice=$feedbackVoiceLevel " +
+                "vibration=$feedbackVibrationLevel message=$feedbackMessage shouldNotify=$feedbackShouldNotify"
+        )
         logDetectionTiming(
             DETECTION_TIMING_TAG,
                 "detectionEnd=$detectionEndTimeMs inference=${inferenceTime}ms skipped=$skippedFrameCount " +
@@ -447,11 +472,11 @@ class MainActivity : ComponentActivity() {
                     "emptyReason=${buildEmptyOverlayReason(mapped, visibleMapped, warningDetections, overlayDetections)}"
             )
             overlayView.updateDetections(overlayDetections, width, height, inferenceTime, currentFps)
-            if (selectedWarningMessage == null) {
+            if (feedbackMessage == null || !feedbackShouldNotify) {
                 warningMessageTextView.text = ""
                 warningMessageTextView.visibility = View.GONE
-            } else if (warningThrottle.canShow(selectedWarningMessage, overlayUpdateTimeMs)) {
-                warningMessageTextView.text = selectedWarningMessage
+            } else {
+                warningMessageTextView.text = feedbackMessage
                 warningMessageTextView.visibility = View.VISIBLE
             }
             debugTextView.text = if (SHOW_DEBUG_INFO) {
@@ -480,6 +505,8 @@ class MainActivity : ComponentActivity() {
                     appendLine()
                     appendLine("Risk: $riskLevel")
                     appendLine("Feedback: beep=$beepLevel / voice=$voiceLevel / vibrate=$vibrationLevel")
+                    appendLine("PolicyFeedback: risk=$feedbackRiskLevel / beep=$feedbackBeepLevel / voice=$feedbackVoiceLevel / vibrate=$feedbackVibrationLevel / notify=$feedbackShouldNotify")
+                    appendLine("PolicyMessage: ${feedbackMessage ?: "none"}")
                     appendLine("Motion: direction=$warningMotionDirection / approachSpeed=$warningApproachSpeedLevel")
                     appendLine(
                         "GPS accuracy: ${formatAccuracy(userLocationSnapshot.accuracyMeters)}"
@@ -510,7 +537,9 @@ class MainActivity : ComponentActivity() {
                     }
                     appendLine()
                     appendLine("Risk: $riskLevel")
-                    append("Guide: $warningMessage")
+                    appendLine("Guide: $warningMessage")
+                    appendLine("PolicyFeedback: risk=$feedbackRiskLevel / beep=$feedbackBeepLevel / voice=$feedbackVoiceLevel / vibrate=$feedbackVibrationLevel / notify=$feedbackShouldNotify")
+                    append("PolicyMessage: ${feedbackMessage ?: "none"}")
                 }
             }
         }
@@ -744,6 +773,7 @@ class MainActivity : ComponentActivity() {
         private const val TAG = "ObjectDetectionVision"
         private const val DETECTION_TIMING_TAG = "DetectionTiming"
         private const val DETECTION_FILTER_TAG = "DetectionFilter"
+        private const val WARNING_FEEDBACK_TAG = "WarningFeedback"
         private const val ML_KIT_DETECT_INTERVAL_MS = 1500L
         private const val ML_KIT_WARNING_MAX_AGE_MS = 3000L
     }

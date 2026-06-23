@@ -8,3 +8,5 @@ enum class RiskObjectCategory {
     TEMPORARY_OBSTACLE,
     UNKNOWN
 }
+
+typealias VisionObjectCategory = RiskObjectCategory

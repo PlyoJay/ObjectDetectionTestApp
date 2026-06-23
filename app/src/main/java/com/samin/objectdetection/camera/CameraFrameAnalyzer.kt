@@ -12,6 +12,8 @@ import com.samin.objectdetection.detector.mapToOriginalFrame
 import com.samin.objectdetection.dto.DetectionEvent
 import com.samin.objectdetection.dto.RoiInfo
 import com.samin.objectdetection.warning.GotoroVisionRiskPolicy
+import com.samin.objectdetection.warning.WarningCooldownManager
+import com.samin.objectdetection.warning.WarningFeedbackPolicy
 import java.io.File
 import java.io.FileOutputStream
 import java.util.concurrent.atomic.AtomicBoolean
@@ -24,6 +26,7 @@ class CameraFrameAnalyzer(
 
     private var lastSaveTime = 0L
     private val isDetecting = AtomicBoolean(false)
+    private val warningCooldownManager = WarningCooldownManager()
     private var skippedFrameCount = 0L
 
     init {
@@ -128,12 +131,18 @@ class CameraFrameAnalyzer(
                 "detectionEnd=$detectionEndTimeMs inference=${detectionEndTimeMs - detectionStartTimeMs}ms skipped=$skippedFrameCount"
             )
             val mappedResults = results.map {
-                GotoroVisionRiskPolicy.evaluate(
+                val evaluated = GotoroVisionRiskPolicy.evaluate(
                     detection = it.mapToOriginalFrame(roi, modelInputSize = config.inputSize),
                     frameWidth = bitmap.width,
                     frameHeight = bitmap.height
-                ).also { evaluated ->
-                    GotoroVisionRiskPolicy.logDebug(evaluated)
+                )
+                val feedback = WarningFeedbackPolicy.evaluate(
+                    detection = evaluated,
+                    cooldownManager = warningCooldownManager,
+                    nowMs = detectionStartTimeMs
+                )
+                evaluated.copy(warningFeedback = feedback).also { feedbackDetection ->
+                    GotoroVisionRiskPolicy.logDebug(feedbackDetection)
                 }
             }
             val visibleResults = filterSmallBoxes(
@@ -148,6 +157,9 @@ class CameraFrameAnalyzer(
                     "original=${mapped.label}, conf=${mapped.confidence}, " +
                         "areaRatio=${mapped.bboxAreaRatio}, heightRatio=${mapped.bboxHeightRatio}, " +
                         "proximity=${mapped.proximityLevel}, risk=${mapped.riskLevel}, " +
+                        "beep=${mapped.warningFeedback.beepLevel}, vibration=${mapped.warningFeedback.vibrationLevel}, " +
+                        "voice=${mapped.warningFeedback.voiceLevel}, message=${mapped.warningFeedback.message}, " +
+                        "cooldownPassed=${mapped.warningFeedback.shouldNotify}, " +
                         "horizontal=${mapped.horizontalPosition}, ignored=${mapped.isIgnored}, " +
                         "frameBox=${mapped.left},${mapped.top},${mapped.right},${mapped.bottom}"
                 )

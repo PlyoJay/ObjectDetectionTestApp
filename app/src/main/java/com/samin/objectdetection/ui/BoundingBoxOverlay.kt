@@ -171,7 +171,12 @@ class BoundingBoxOverlay @JvmOverloads constructor(
             "c=${String.format(Locale.US, "%.2f", detection.confidence)} " +
             "a=${String.format(Locale.US, "%.3f", detection.bboxAreaRatio)} " +
             "h=${String.format(Locale.US, "%.3f", detection.bboxHeightRatio)} " +
-            "${detection.proximityLevel}/${detection.riskLevel}/${detection.horizontalPosition}" +
+            "${detection.proximityLevel}/${detection.riskLevel}/${detection.horizontalPosition} " +
+            "b=${detection.warningFeedback.beepLevel} " +
+            "v=${detection.warningFeedback.vibrationLevel} " +
+            "voice=${detection.warningFeedback.voiceLevel} " +
+            "notify=${detection.warningFeedback.shouldNotify} " +
+            "msg=${detection.warningFeedback.message ?: "none"}" +
             (if (detection.isIgnored) " IGNORED" else "")
     }
 

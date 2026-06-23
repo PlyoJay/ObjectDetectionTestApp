@@ -10,6 +10,7 @@ import com.samin.objectdetection.warning.HorizontalPosition
 import com.samin.objectdetection.warning.ProximityLevel
 import com.samin.objectdetection.warning.RiskLevel
 import com.samin.objectdetection.warning.RiskObjectCategory
+import com.samin.objectdetection.warning.WarningFeedback
 
 data class DetectionResult(
     val label: String,
@@ -33,7 +34,8 @@ data class DetectionResult(
     val riskObjectCategory: RiskObjectCategory = RiskObjectCategory.UNKNOWN,
     val proximityLevel: ProximityLevel = ProximityLevel.FAR,
     val riskLevel: RiskLevel = RiskLevel.NONE,
-    val isIgnored: Boolean = false
+    val isIgnored: Boolean = false,
+    val warningFeedback: WarningFeedback = WarningFeedback.NONE
 )
 
 interface ObjectDetector {
