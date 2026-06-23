@@ -13,6 +13,14 @@ class WarningCooldownManager(
         nowMs: Long = System.currentTimeMillis()
     ): Boolean {
         val key = buildKey(label, priority, proximityLevel, horizontalPosition)
+        return canNotify(key, nowMs)
+    }
+
+    fun canNotify(
+        warningKey: String,
+        nowMs: Long = System.currentTimeMillis()
+    ): Boolean {
+        val key = warningKey.trim()
         val lastNotifiedAt = lastNotifiedAtByKey[key]
         if (lastNotifiedAt != null && nowMs - lastNotifiedAt < cooldownMs) {
             return false

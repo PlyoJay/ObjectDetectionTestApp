@@ -70,13 +70,7 @@ object WarningFeedbackPolicy {
         cooldownManager: WarningCooldownManager,
         nowMs: Long = System.currentTimeMillis()
     ): WarningCandidate {
-        val cooldownPassed = cooldownManager.canNotify(
-            label = candidate.label,
-            priority = candidate.priority,
-            proximityLevel = candidate.proximityLevel,
-            horizontalPosition = candidate.horizontalPosition,
-            nowMs = nowMs
-        )
+        val cooldownPassed = cooldownManager.canNotify(candidate.warningKey, nowMs)
         return candidate.copy(
             feedback = candidate.feedback.copy(
                 shouldNotify = candidate.feedback.shouldNotify && cooldownPassed

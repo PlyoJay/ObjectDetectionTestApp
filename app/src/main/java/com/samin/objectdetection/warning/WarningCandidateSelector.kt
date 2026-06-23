@@ -15,6 +15,29 @@ class WarningCandidateSelector {
             )
     }
 
+    fun selectWithCrowd(
+        candidates: List<WarningCandidate>,
+        crowdCandidate: WarningCandidate?
+    ): WarningCandidate? {
+        val selectedObjectCandidate = select(candidates)
+        if (crowdCandidate == null || !crowdCandidate.feedback.shouldNotify) {
+            return selectedObjectCandidate
+        }
+        if (hasHighPriorityUrgentCandidate(candidates)) {
+            return selectedObjectCandidate
+        }
+
+        return select(candidates + crowdCandidate)
+    }
+
+    private fun hasHighPriorityUrgentCandidate(candidates: List<WarningCandidate>): Boolean {
+        return candidates.any { candidate ->
+            candidate.feedback.shouldNotify &&
+                candidate.priority == ObjectPriority.HIGH &&
+                (candidate.riskLevel == RiskLevel.CRITICAL || candidate.riskLevel == RiskLevel.HIGH)
+        }
+    }
+
     private fun riskRank(riskLevel: RiskLevel): Int {
         return when (riskLevel) {
             RiskLevel.CRITICAL -> 4

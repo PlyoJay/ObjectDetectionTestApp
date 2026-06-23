@@ -39,6 +39,8 @@ import com.samin.objectdetection.policy.YoloDefaultPolicyRegistry
 import com.samin.objectdetection.ui.BoundingBoxOverlay
 import com.samin.objectdetection.warning.BeepWarningPlayer
 import com.samin.objectdetection.warning.CompositeWarningPlayer
+import com.samin.objectdetection.warning.CrowdDecision
+import com.samin.objectdetection.warning.CrowdDecisionEvaluator
 import com.samin.objectdetection.warning.FeedbackLevel
 import com.samin.objectdetection.warning.ForwardObstacleSelector
 import com.samin.objectdetection.warning.GotoroVisionRiskPolicy
@@ -426,7 +428,9 @@ class MainActivity : ComponentActivity() {
                 )
             )
         }
-        val selectedCandidate = warningCandidateSelector.select(warningCandidates)
+        val crowdDecision = CrowdDecisionEvaluator.evaluate(overlayDetections)
+        val crowdCandidate = crowdDecision.toWarningCandidate()
+        val selectedCandidate = warningCandidateSelector.selectWithCrowd(warningCandidates, crowdCandidate)
         val selectedCandidateAfterCooldown = selectedCandidate?.let { candidate ->
             WarningFeedbackPolicy.applyCooldown(
                 candidate = candidate,
@@ -434,6 +438,9 @@ class MainActivity : ComponentActivity() {
                 nowMs = start
             )
         }
+        val crowdCooldownPassed = selectedCandidateAfterCooldown?.warningKey == crowdDecision.warningKey &&
+            selectedCandidateAfterCooldown?.feedback?.shouldNotify == true
+        logCrowdDecision(crowdDecision, crowdCooldownPassed)
         logSelectedWarningCandidate(selectedCandidateAfterCooldown)
         val selectedFeedback = selectedCandidateAfterCooldown?.feedback
         val selectedWarningLabel = stabilizedDecision.obstacle?.detection?.label
@@ -523,6 +530,7 @@ class MainActivity : ComponentActivity() {
                     appendLine("Feedback: beep=$beepLevel / voice=$voiceLevel / vibrate=$vibrationLevel")
                     appendLine("PolicyFeedback: priority=$feedbackPriority / risk=$feedbackRiskLevel / beep=$feedbackBeepLevel / voice=$feedbackVoiceLevel / vibrate=$feedbackVibrationLevel / notify=$feedbackShouldNotify / key=$feedbackWarningKey")
                     appendLine("PolicyMessage: ${feedbackMessage ?: "none"}")
+                    appendLine("Crowd: total=${crowdDecision.totalPersonCount} / center=${crowdDecision.centerPersonCount} / near=${crowdDecision.nearPersonCount} / level=${crowdDecision.crowdLevel} / message=${crowdDecision.message ?: "none"} / cooldown=$crowdCooldownPassed")
                     appendLine("Motion: direction=$warningMotionDirection / approachSpeed=$warningApproachSpeedLevel")
                     appendLine(
                         "GPS accuracy: ${formatAccuracy(userLocationSnapshot.accuracyMeters)}"
@@ -555,6 +563,7 @@ class MainActivity : ComponentActivity() {
                     appendLine("Risk: $riskLevel")
                     appendLine("Guide: $warningMessage")
                     appendLine("PolicyFeedback: priority=$feedbackPriority / risk=$feedbackRiskLevel / beep=$feedbackBeepLevel / voice=$feedbackVoiceLevel / vibrate=$feedbackVibrationLevel / notify=$feedbackShouldNotify / key=$feedbackWarningKey")
+                    appendLine("Crowd: total=${crowdDecision.totalPersonCount} / center=${crowdDecision.centerPersonCount} / near=${crowdDecision.nearPersonCount} / level=${crowdDecision.crowdLevel} / message=${crowdDecision.message ?: "none"} / cooldown=$crowdCooldownPassed")
                     append("PolicyMessage: ${feedbackMessage ?: "none"}")
                 }
             }
@@ -596,6 +605,22 @@ class MainActivity : ComponentActivity() {
                 "vibration=${candidate.feedback.vibrationLevel}\n" +
                 "voice=${candidate.feedback.voiceLevel}\n" +
                 "cooldown=${candidate.feedback.shouldNotify}"
+        )
+    }
+
+    private fun logCrowdDecision(
+        crowdDecision: CrowdDecision,
+        cooldownPassed: Boolean
+    ) {
+        Log.d(
+            CROWD_DECISION_TAG,
+            "[CrowdDecision] " +
+                "totalPersonCount=${crowdDecision.totalPersonCount}, " +
+                "centerPersonCount=${crowdDecision.centerPersonCount}, " +
+                "nearPersonCount=${crowdDecision.nearPersonCount}, " +
+                "crowdLevel=${crowdDecision.crowdLevel}, " +
+                "message=${crowdDecision.message}, " +
+                "cooldownPassed=$cooldownPassed"
         )
     }
 
@@ -812,6 +837,7 @@ class MainActivity : ComponentActivity() {
         private const val DETECTION_FILTER_TAG = "DetectionFilter"
         private const val WARNING_FEEDBACK_TAG = "WarningFeedback"
         private const val WARNING_SELECTED_TAG = "WarningSelected"
+        private const val CROWD_DECISION_TAG = "CrowdDecision"
         private const val ML_KIT_DETECT_INTERVAL_MS = 1500L
         private const val ML_KIT_WARNING_MAX_AGE_MS = 3000L
     }
