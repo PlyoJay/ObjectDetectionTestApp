@@ -437,6 +437,7 @@ class MainActivity : ComponentActivity() {
         val feedbackVibrationLevel = selectedFeedback?.vibrationLevel ?: FeedbackLevel.NONE
         val feedbackMessage = selectedFeedback?.message
         val feedbackShouldNotify = selectedFeedback?.shouldNotify ?: false
+        val feedbackPriority = selectedFeedbackDetection?.objectPriority
         val warningMotionDirection = stabilizedDecision.obstacle?.detection?.motionDirection
         val warningApproachSpeedLevel = stabilizedDecision.obstacle?.detection?.approachSpeedLevel
         val warningObjectMovementState = stabilizedDecision.obstacle?.detection?.objectMovementState
@@ -447,7 +448,7 @@ class MainActivity : ComponentActivity() {
         Log.d(
             WARNING_FEEDBACK_TAG,
             "actualOutputSuppressed label=${selectedFeedbackDetection?.label ?: selectedWarningLabel} " +
-                "risk=$feedbackRiskLevel beep=$feedbackBeepLevel voice=$feedbackVoiceLevel " +
+                "priority=$feedbackPriority risk=$feedbackRiskLevel beep=$feedbackBeepLevel voice=$feedbackVoiceLevel " +
                 "vibration=$feedbackVibrationLevel message=$feedbackMessage shouldNotify=$feedbackShouldNotify"
         )
         logDetectionTiming(
@@ -505,7 +506,7 @@ class MainActivity : ComponentActivity() {
                     appendLine()
                     appendLine("Risk: $riskLevel")
                     appendLine("Feedback: beep=$beepLevel / voice=$voiceLevel / vibrate=$vibrationLevel")
-                    appendLine("PolicyFeedback: risk=$feedbackRiskLevel / beep=$feedbackBeepLevel / voice=$feedbackVoiceLevel / vibrate=$feedbackVibrationLevel / notify=$feedbackShouldNotify")
+                    appendLine("PolicyFeedback: priority=$feedbackPriority / risk=$feedbackRiskLevel / beep=$feedbackBeepLevel / voice=$feedbackVoiceLevel / vibrate=$feedbackVibrationLevel / notify=$feedbackShouldNotify")
                     appendLine("PolicyMessage: ${feedbackMessage ?: "none"}")
                     appendLine("Motion: direction=$warningMotionDirection / approachSpeed=$warningApproachSpeedLevel")
                     appendLine(
@@ -538,7 +539,7 @@ class MainActivity : ComponentActivity() {
                     appendLine()
                     appendLine("Risk: $riskLevel")
                     appendLine("Guide: $warningMessage")
-                    appendLine("PolicyFeedback: risk=$feedbackRiskLevel / beep=$feedbackBeepLevel / voice=$feedbackVoiceLevel / vibrate=$feedbackVibrationLevel / notify=$feedbackShouldNotify")
+                    appendLine("PolicyFeedback: priority=$feedbackPriority / risk=$feedbackRiskLevel / beep=$feedbackBeepLevel / voice=$feedbackVoiceLevel / vibrate=$feedbackVibrationLevel / notify=$feedbackShouldNotify")
                     append("PolicyMessage: ${feedbackMessage ?: "none"}")
                 }
             }

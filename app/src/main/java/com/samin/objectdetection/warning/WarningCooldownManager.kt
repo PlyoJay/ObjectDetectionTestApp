@@ -7,11 +7,12 @@ class WarningCooldownManager(
 
     fun canNotify(
         label: String,
+        priority: ObjectPriority,
         proximityLevel: ProximityLevel,
         horizontalPosition: HorizontalPosition,
         nowMs: Long = System.currentTimeMillis()
     ): Boolean {
-        val key = buildKey(label, proximityLevel, horizontalPosition)
+        val key = buildKey(label, priority, proximityLevel, horizontalPosition)
         val lastNotifiedAt = lastNotifiedAtByKey[key]
         if (lastNotifiedAt != null && nowMs - lastNotifiedAt < cooldownMs) {
             return false
@@ -23,10 +24,11 @@ class WarningCooldownManager(
 
     fun buildKey(
         label: String,
+        priority: ObjectPriority,
         proximityLevel: ProximityLevel,
         horizontalPosition: HorizontalPosition
     ): String {
-        return "${label.trim().lowercase()}_${proximityLevel.name}_${horizontalPosition.name}"
+        return "${label.trim().lowercase()}_${priority.name}_${proximityLevel.name}_${horizontalPosition.name}"
     }
 
     companion object {

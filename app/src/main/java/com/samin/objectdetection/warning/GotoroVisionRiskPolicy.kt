@@ -24,6 +24,7 @@ object GotoroVisionRiskPolicy {
         val centerYRatio = ((detection.top + bboxHeight / 2f) / safeFrameHeight).coerceIn(0f, 1f)
         val horizontalPosition = horizontalPosition(centerXRatio)
         val category = mapCategory(detection.label)
+        val priority = mapPriority(detection.label)
         val proximityLevel = estimateProximity(heightRatio, areaRatio)
         val isIgnored = detection.confidence < minConfidence || areaRatio < minAreaRatio
         val riskLevel = if (isIgnored) {
@@ -32,6 +33,7 @@ object GotoroVisionRiskPolicy {
             adjustRisk(
                 baseRisk = baseRisk(proximityLevel),
                 category = category,
+                priority = priority,
                 proximityLevel = proximityLevel,
                 horizontalPosition = horizontalPosition
             )
@@ -46,6 +48,7 @@ object GotoroVisionRiskPolicy {
             centerYRatio = centerYRatio,
             horizontalPosition = horizontalPosition,
             riskObjectCategory = category,
+            objectPriority = priority,
             proximityLevel = proximityLevel,
             riskLevel = riskLevel,
             isIgnored = isIgnored
@@ -60,6 +63,7 @@ object GotoroVisionRiskPolicy {
                 "heightRatio=${format(detection.bboxHeightRatio)}, " +
                 "proximityLevel=${detection.proximityLevel}, " +
                 "riskLevel=${detection.riskLevel}, " +
+                "priority=${detection.objectPriority}, " +
                 "horizontalPosition=${detection.horizontalPosition}, " +
                 "category=${detection.riskObjectCategory}, ignored=${detection.isIgnored}"
         )
@@ -86,8 +90,31 @@ object GotoroVisionRiskPolicy {
             "stop sign" -> RiskObjectCategory.TRAFFIC_CONTROL
             "bench",
             "fire hydrant" -> RiskObjectCategory.STATIC_OBSTACLE
-            "chair" -> RiskObjectCategory.TEMPORARY_OBSTACLE
+            "chair",
+            "stairs",
+            "curb",
+            "low_obstacle",
+            "bollard" -> RiskObjectCategory.TEMPORARY_OBSTACLE
             else -> RiskObjectCategory.UNKNOWN
+        }
+    }
+
+    private fun mapPriority(label: String): ObjectPriority {
+        return when (label.trim().lowercase()) {
+            "bicycle",
+            "motorcycle",
+            "car",
+            "bus",
+            "truck",
+            "stairs",
+            "curb",
+            "low_obstacle" -> ObjectPriority.HIGH
+            "person",
+            "bollard",
+            "bench",
+            "fire hydrant",
+            "chair" -> ObjectPriority.LOW
+            else -> ObjectPriority.LOW
         }
     }
 
@@ -111,6 +138,7 @@ object GotoroVisionRiskPolicy {
     private fun adjustRisk(
         baseRisk: RiskLevel,
         category: RiskObjectCategory,
+        priority: ObjectPriority,
         proximityLevel: ProximityLevel,
         horizontalPosition: HorizontalPosition
     ): RiskLevel {
@@ -124,10 +152,27 @@ object GotoroVisionRiskPolicy {
             return RiskLevel.NONE
         }
 
-        return if (horizontalPosition != HorizontalPosition.CENTER && proximityLevel != ProximityLevel.VERY_NEAR) {
+        val positionAdjustedRisk = if (horizontalPosition != HorizontalPosition.CENTER && proximityLevel != ProximityLevel.VERY_NEAR) {
             decrease(baseRisk)
         } else {
             baseRisk
+        }
+
+        return applyPriorityRisk(positionAdjustedRisk, priority, proximityLevel)
+    }
+
+    private fun applyPriorityRisk(
+        riskLevel: RiskLevel,
+        priority: ObjectPriority,
+        proximityLevel: ProximityLevel
+    ): RiskLevel {
+        if (priority != ObjectPriority.HIGH) return riskLevel
+
+        return when (proximityLevel) {
+            ProximityLevel.VERY_NEAR,
+            ProximityLevel.NEAR -> RiskLevel.CRITICAL
+            ProximityLevel.MID -> maxOf(riskLevel, RiskLevel.HIGH)
+            ProximityLevel.FAR -> riskLevel
         }
     }
 

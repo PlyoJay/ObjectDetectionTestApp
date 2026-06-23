@@ -13,7 +13,11 @@ object OverlayObjectFilter {
         "stop sign",
         "bench",
         "chair",
-        "fire hydrant"
+        "fire hydrant",
+        "bollard",
+        "stairs",
+        "curb",
+        "low_obstacle"
     )
 
     fun isAllowed(label: String): Boolean {

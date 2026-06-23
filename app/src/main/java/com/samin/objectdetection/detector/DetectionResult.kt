@@ -7,6 +7,7 @@ import com.samin.objectdetection.motion.MotionDirection
 import com.samin.objectdetection.motion.ObjectMovementState
 import com.samin.objectdetection.motion.UserObjectRelation
 import com.samin.objectdetection.warning.HorizontalPosition
+import com.samin.objectdetection.warning.ObjectPriority
 import com.samin.objectdetection.warning.ProximityLevel
 import com.samin.objectdetection.warning.RiskLevel
 import com.samin.objectdetection.warning.RiskObjectCategory
@@ -32,6 +33,7 @@ data class DetectionResult(
     val centerYRatio: Float = 0f,
     val horizontalPosition: HorizontalPosition = HorizontalPosition.CENTER,
     val riskObjectCategory: RiskObjectCategory = RiskObjectCategory.UNKNOWN,
+    val objectPriority: ObjectPriority = ObjectPriority.LOW,
     val proximityLevel: ProximityLevel = ProximityLevel.FAR,
     val riskLevel: RiskLevel = RiskLevel.NONE,
     val isIgnored: Boolean = false,

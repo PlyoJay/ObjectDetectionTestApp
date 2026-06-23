@@ -157,6 +157,7 @@ class CameraFrameAnalyzer(
                     "original=${mapped.label}, conf=${mapped.confidence}, " +
                         "areaRatio=${mapped.bboxAreaRatio}, heightRatio=${mapped.bboxHeightRatio}, " +
                         "proximity=${mapped.proximityLevel}, risk=${mapped.riskLevel}, " +
+                        "priority=${mapped.objectPriority}, " +
                         "beep=${mapped.warningFeedback.beepLevel}, vibration=${mapped.warningFeedback.vibrationLevel}, " +
                         "voice=${mapped.warningFeedback.voiceLevel}, message=${mapped.warningFeedback.message}, " +
                         "cooldownPassed=${mapped.warningFeedback.shouldNotify}, " +
