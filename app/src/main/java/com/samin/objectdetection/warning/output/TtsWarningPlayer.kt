@@ -1,4 +1,4 @@
-package com.samin.objectdetection.warning
+package com.samin.objectdetection.warning.output
 
 import android.content.Context
 import android.os.Bundle
@@ -7,6 +7,10 @@ import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.util.Log
+import com.samin.objectdetection.warning.FeedbackLevel
+import com.samin.objectdetection.warning.RiskLevel
+import com.samin.objectdetection.warning.WarningCandidate
+import com.samin.objectdetection.warning.WarningPolicy
 import java.util.Locale
 
 class TtsWarningPlayer(
@@ -44,16 +48,16 @@ class TtsWarningPlayer(
         }
     }
 
-    override fun playIfNeeded(decision: WarningDecision) {
-        if (decision.voiceLevel == FeedbackLevel.NONE) return
+    override fun playIfNeeded(candidate: WarningCandidate) {
+        if (candidate.feedback.voiceLevel == FeedbackLevel.NONE) return
         if (isReleased) return
 
         val now = System.currentTimeMillis()
-        val cooldownKey = buildCooldownKey(decision)
-        val message = buildMessage(decision)
+        val cooldownKey = candidate.warningKey
+        val message = buildMessage(candidate)
 
         mainHandler.post {
-            handleSpeechRequest(decision, message, cooldownKey, now)
+            handleSpeechRequest(candidate, message, cooldownKey, now)
         }
     }
 
@@ -78,7 +82,7 @@ class TtsWarningPlayer(
     }
 
     private fun handleSpeechRequest(
-        decision: WarningDecision,
+        candidate: WarningCandidate,
         message: String,
         cooldownKey: String,
         requestedAtMs: Long
@@ -95,13 +99,13 @@ class TtsWarningPlayer(
         }
 
         val speech = PendingSpeech(
-            decision = decision,
+            candidate = candidate,
             message = message,
             key = cooldownKey,
             createdAtMs = requestedAtMs
         )
 
-        if (decision.riskLevel == RiskLevel.CRITICAL) {
+        if (candidate.riskLevel == RiskLevel.CRITICAL) {
             interruptAndSpeakNow(speech)
             return
         }
@@ -158,7 +162,7 @@ class TtsWarningPlayer(
         val current = pendingSpeech
         if (current == null ||
             isPendingExpired(current, speech.createdAtMs) ||
-            riskRank(speech.decision.riskLevel) > riskRank(current.decision.riskLevel)
+            riskRank(speech.candidate.riskLevel) > riskRank(current.candidate.riskLevel)
         ) {
             pendingSpeech = speech
         }
@@ -240,68 +244,19 @@ class TtsWarningPlayer(
         }
     }
 
-    private fun buildMessage(decision: WarningDecision): String {
-        val objectName = decision.obstacle?.detection?.label
-            ?.trim()
-            ?.lowercase(Locale.US)
-            ?.let(::toKoreanObjectName)
-        val subject = objectName?.let { "$it${subjectParticle(it)}" }
+    private fun buildMessage(candidate: WarningCandidate): String {
+        candidate.feedback.message?.let { return it }
+        val objectName = WarningPolicy.labelToKorean(candidate.label)
 
         return when {
-            decision.riskLevel == RiskLevel.CRITICAL ||
-                decision.voiceLevel == FeedbackLevel.HIGH -> {
-                if (objectName == null) {
-                    "정지. 전방 위험."
-                } else {
-                    "정지. 전방 $objectName 위험."
-                }
-            }
-            decision.riskLevel == RiskLevel.HIGH ||
-                decision.voiceLevel == FeedbackLevel.MEDIUM -> {
-                if (subject == null) {
-                    "주의. 전방에 장애물이 있습니다."
-                } else {
-                    "주의. 전방에 $subject 있습니다."
-                }
-            }
-            decision.riskLevel == RiskLevel.MEDIUM ||
-                decision.voiceLevel == FeedbackLevel.LOW -> {
-                if (objectName == null) {
-                    "전방 장애물 주의."
-                } else {
-                    "전방 $objectName 주의."
-                }
-            }
+            candidate.riskLevel == RiskLevel.CRITICAL ||
+                candidate.feedback.voiceLevel == FeedbackLevel.HIGH -> "정지. 전방 $objectName 위험."
+            candidate.riskLevel == RiskLevel.HIGH ||
+                candidate.feedback.voiceLevel == FeedbackLevel.MEDIUM -> "주의. 전방 $objectName 주의."
+            candidate.riskLevel == RiskLevel.MEDIUM ||
+                candidate.feedback.voiceLevel == FeedbackLevel.LOW -> "전방 $objectName 주의."
             else -> "전방 장애물 주의."
         }
-    }
-
-    private fun buildCooldownKey(decision: WarningDecision): String {
-        val obstacle = decision.obstacle
-        val label = obstacle?.detection?.label
-            ?.trim()
-            ?.lowercase(Locale.US)
-            .orEmpty()
-        val proximityLevel = obstacle?.proximityLevel?.name.orEmpty()
-        return "$label:${decision.riskLevel}:${decision.voiceLevel}:$proximityLevel"
-    }
-
-    private fun toKoreanObjectName(label: String): String? {
-        return when (label) {
-            "car" -> "자동차"
-            "person" -> "사람"
-            "bicycle" -> "자전거"
-            "motorcycle" -> "오토바이"
-            "traffic light" -> "신호등"
-            else -> null
-        }
-    }
-
-    private fun subjectParticle(label: String): String {
-        if (label.isEmpty()) return "가"
-        val last = label.last()
-        if (last !in '가'..'힣') return "가"
-        return if ((last.code - 0xAC00) % 28 == 0) "가" else "이"
     }
 
     companion object {
@@ -312,7 +267,7 @@ class TtsWarningPlayer(
     }
 
     private data class PendingSpeech(
-        val decision: WarningDecision,
+        val candidate: WarningCandidate,
         val message: String,
         val key: String,
         val createdAtMs: Long

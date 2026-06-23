@@ -11,8 +11,7 @@ import com.samin.objectdetection.detector.ObjectDetector
 import com.samin.objectdetection.detector.mapToOriginalFrame
 import com.samin.objectdetection.dto.DetectionEvent
 import com.samin.objectdetection.dto.RoiInfo
-import com.samin.objectdetection.warning.GotoroVisionRiskPolicy
-import com.samin.objectdetection.warning.WarningFeedbackPolicy
+import com.samin.objectdetection.warning.WarningPolicy
 import java.io.File
 import java.io.FileOutputStream
 import java.util.concurrent.atomic.AtomicBoolean
@@ -129,14 +128,13 @@ class CameraFrameAnalyzer(
                 "detectionEnd=$detectionEndTimeMs inference=${detectionEndTimeMs - detectionStartTimeMs}ms skipped=$skippedFrameCount"
             )
             val mappedResults = results.map {
-                val evaluated = GotoroVisionRiskPolicy.evaluate(
+                val feedbackDetection = WarningPolicy.evaluate(
                     detection = it.mapToOriginalFrame(roi, modelInputSize = config.inputSize),
                     frameWidth = bitmap.width,
                     frameHeight = bitmap.height
                 )
-                val feedback = WarningFeedbackPolicy.evaluate(evaluated)
-                evaluated.copy(warningFeedback = feedback).also { feedbackDetection ->
-                    GotoroVisionRiskPolicy.logDebug(feedbackDetection)
+                feedbackDetection.also {
+                    WarningPolicy.logDebug(it)
                 }
             }
             val visibleResults = filterSmallBoxes(

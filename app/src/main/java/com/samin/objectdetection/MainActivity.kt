@@ -30,31 +30,17 @@ import com.samin.objectdetection.detector.VisionStyleYoloDetector
 import com.samin.objectdetection.location.UserLocationTracker
 import com.samin.objectdetection.metrics.DetectionMetricsCollector
 import com.samin.objectdetection.mlkit.MlKitObjectDetector
-import com.samin.objectdetection.model.DetectedObject
-import com.samin.objectdetection.model.DetectionSource
-import com.samin.objectdetection.model.toDetectedObject
 import com.samin.objectdetection.motion.ObjectMotionTracker
 import com.samin.objectdetection.policy.OverlayObjectFilter
 import com.samin.objectdetection.policy.YoloDefaultPolicyRegistry
 import com.samin.objectdetection.ui.BoundingBoxOverlay
-import com.samin.objectdetection.warning.BeepWarningPlayer
-import com.samin.objectdetection.warning.CompositeWarningPlayer
 import com.samin.objectdetection.warning.CrowdDecision
-import com.samin.objectdetection.warning.CrowdDecisionEvaluator
 import com.samin.objectdetection.warning.FeedbackLevel
-import com.samin.objectdetection.warning.ForwardObstacleSelector
-import com.samin.objectdetection.warning.GotoroVisionRiskPolicy
 import com.samin.objectdetection.warning.RiskLevel
-import com.samin.objectdetection.warning.TtsWarningPlayer
-import com.samin.objectdetection.warning.VibrationWarningPlayer
 import com.samin.objectdetection.warning.WarningCandidate
 import com.samin.objectdetection.warning.WarningCandidateSelector
-import com.samin.objectdetection.warning.WarningDecisionMaker
 import com.samin.objectdetection.warning.WarningCooldownManager
-import com.samin.objectdetection.warning.WarningFeedbackPolicy
-import com.samin.objectdetection.warning.WarningPlayer
-import com.samin.objectdetection.warning.WarningSelector
-import com.samin.objectdetection.warning.WarningStabilizer
+import com.samin.objectdetection.warning.WarningPolicy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -73,16 +59,11 @@ class MainActivity : ComponentActivity() {
     private lateinit var detector: ObjectDetector
     private lateinit var mlKitDetector: MlKitObjectDetector
     private val detectionConfig = DetectionConfig()
-    private val forwardObstacleSelector = ForwardObstacleSelector()
-    private val warningDecisionMaker = WarningDecisionMaker()
-    private val warningSelector = WarningSelector(warningDecisionMaker)
     private val warningCooldownManager = WarningCooldownManager()
     private val warningCandidateSelector = WarningCandidateSelector()
-    private val warningStabilizer = WarningStabilizer()
     private val objectMotionTracker = ObjectMotionTracker()
     private val metricsCollector = DetectionMetricsCollector()
     private lateinit var userLocationTracker: UserLocationTracker
-    private lateinit var warningPlayer: WarningPlayer
 
     @Volatile
     private var isProcessing = AtomicBoolean(false)
@@ -92,9 +73,6 @@ class MainActivity : ComponentActivity() {
 
     @Volatile
     private var lastMlKitTimeMs = 0L
-    @Volatile
-    private var lastMlKitDetectedObjects: List<DetectedObject> = emptyList()
-
     private var lastFpsTime = 0L
     private var lastMlKitDetectionTime = 0L
     private var frameCount = 0
@@ -125,13 +103,6 @@ class MainActivity : ComponentActivity() {
         detector = yoloDetector
         mlKitDetector = MlKitObjectDetector()
         userLocationTracker = UserLocationTracker(this)
-        warningPlayer = CompositeWarningPlayer(
-            listOf(
-                BeepWarningPlayer(),
-                VibrationWarningPlayer(this),
-                TtsWarningPlayer(this)
-            )
-        )
         logWarningPolicyOverlayMismatch()
 
         setupUi()
@@ -356,14 +327,13 @@ class MainActivity : ComponentActivity() {
                 bottom = res.bottom + cropRect.top,
                 frameTimestampMs = start
             )
-            val evaluated = GotoroVisionRiskPolicy.evaluate(
+            val feedbackDetection = WarningPolicy.evaluate(
                 detection = detection,
                 frameWidth = width,
                 frameHeight = height
             )
-            val feedback = WarningFeedbackPolicy.evaluate(evaluated)
-            evaluated.copy(warningFeedback = feedback).also { feedbackDetection ->
-                GotoroVisionRiskPolicy.logDebug(feedbackDetection)
+            feedbackDetection.also {
+                WarningPolicy.logDebug(it)
             }
         }
         val visibleMapped = filterSmallBoxes(
@@ -399,21 +369,6 @@ class MainActivity : ComponentActivity() {
             afterPolicyFilter = warningDetections,
             timestampMs = start
         )
-        val yoloDetectedObjects = warningDetections.map { it.toDetectedObject(DetectionSource.YOLO) }
-        val freshMlKitDetectedObjects = lastMlKitDetectedObjects.filter {
-            start - it.timestampMs <= ML_KIT_WARNING_MAX_AGE_MS
-        }
-        val selectedWarningObject = warningSelector.select(yoloDetectedObjects + freshMlKitDetectedObjects)
-
-        val forwardObstacles = forwardObstacleSelector.select(
-            detections = warningDetections,
-            frameWidth = width,
-            frameHeight = height,
-            config = detectionConfig
-        )
-        val warningDecision = warningDecisionMaker.decide(forwardObstacles)
-        val stabilizedDecision = warningStabilizer.stabilize(warningDecision)
-
         val inferenceTime = detectionEndTimeMs - start
         metricsCollector.recordYoloInferenceTime(inferenceTime)
         val topOverlayObject = overlayDetections.maxByOrNull { it.confidence }
@@ -428,7 +383,7 @@ class MainActivity : ComponentActivity() {
                 )
             )
         }
-        val crowdDecision = CrowdDecisionEvaluator.evaluate(overlayDetections)
+        val crowdDecision = WarningPolicy.resolveCrowdDecision(overlayDetections)
         val crowdCandidate = crowdDecision.toWarningCandidate()
         val selectedCandidateBeforeCooldown = warningCandidateSelector.selectWithCrowd(warningCandidates, crowdCandidate)
         val selectedCooldownPassed = selectedCandidateBeforeCooldown?.let { candidate ->
@@ -441,22 +396,13 @@ class MainActivity : ComponentActivity() {
                 )
             )
         }
-        // Actual output wiring should use selectedCandidate.feedback. WarningDecisionMaker/Stabilizer is kept for comparison logs.
+        // Actual output wiring should use selectedCandidate.feedback.
         // While output is suppressed, do not call warningCooldownManager.markNotified(); call it only after output succeeds.
         val actualOutputSuppressed = true
         val crowdCooldownPassed = selectedCandidate?.warningKey == crowdDecision.warningKey && selectedCooldownPassed
         logCrowdDecision(crowdDecision, crowdCooldownPassed)
         logSelectedWarningCandidate(selectedCandidate, selectedCooldownPassed, actualOutputSuppressed)
         val selectedFeedback = selectedCandidate?.feedback
-        val selectedWarningLabel = stabilizedDecision.obstacle?.detection?.label
-            ?: selectedWarningObject?.label
-            ?: selectedCandidate?.label
-            ?: "none"
-        val warningMessage = stabilizedDecision.message
-        val riskLevel = stabilizedDecision.riskLevel
-        val beepLevel = stabilizedDecision.beepLevel
-        val voiceLevel = stabilizedDecision.voiceLevel
-        val vibrationLevel = stabilizedDecision.vibrationLevel
         val feedbackRiskLevel = selectedFeedback?.riskLevel ?: RiskLevel.NONE
         val feedbackBeepLevel = selectedFeedback?.beepLevel ?: FeedbackLevel.NONE
         val feedbackVoiceLevel = selectedFeedback?.voiceLevel ?: FeedbackLevel.NONE
@@ -467,12 +413,21 @@ class MainActivity : ComponentActivity() {
         val feedbackWarningKey = selectedCandidate?.warningKey
         val feedbackLabel = selectedCandidate?.label ?: "none"
         val feedbackProximityLevel = selectedCandidate?.proximityLevel
-        val warningMotionDirection = stabilizedDecision.obstacle?.detection?.motionDirection
-        val warningApproachSpeedLevel = stabilizedDecision.obstacle?.detection?.approachSpeedLevel
-        val warningObjectMovementState = stabilizedDecision.obstacle?.detection?.objectMovementState
-        val warningUserObjectRelation = stabilizedDecision.obstacle?.detection?.userObjectRelation
-        val warningCategory = stabilizedDecision.obstacle?.category
-        val warningProximityLevel = stabilizedDecision.obstacle?.proximityLevel
+        val warningMotionDirection = selectedCandidate?.let { candidate ->
+            overlayDetections.firstOrNull { it.label == candidate.label }?.motionDirection
+        }
+        val warningApproachSpeedLevel = selectedCandidate?.let { candidate ->
+            overlayDetections.firstOrNull { it.label == candidate.label }?.approachSpeedLevel
+        }
+        val warningObjectMovementState = selectedCandidate?.let { candidate ->
+            overlayDetections.firstOrNull { it.label == candidate.label }?.objectMovementState
+        }
+        val warningUserObjectRelation = selectedCandidate?.let { candidate ->
+            overlayDetections.firstOrNull { it.label == candidate.label }?.userObjectRelation
+        }
+        val warningCategory = selectedCandidate?.let { candidate ->
+            overlayDetections.firstOrNull { it.label == candidate.label }?.riskObjectCategory
+        }
         metricsCollector.recordWarning(feedbackRiskLevel)
         Log.d(
             WARNING_FEEDBACK_TAG,
@@ -519,8 +474,8 @@ class MainActivity : ComponentActivity() {
                     appendLine("overlay whitelist count: ${overlayDetections.size}")
                     appendLine("warning policy count: ${warningDetections.size}")
                     appendLine("Ignored: ${formatIgnoredLabels(ignoredLabels)}")
-                    appendLine("selected warning object label: $selectedWarningLabel")
-                    appendLine("proximity: $warningProximityLevel")
+                    appendLine("selected warning object label: $feedbackLabel")
+                    appendLine("proximity: $feedbackProximityLevel")
                     appendLine("object motion state: $warningObjectMovementState")
                     appendLine("user-object relation: $warningUserObjectRelation")
                     appendLine("user motion state: ${userLocationSnapshot.motionState}")
@@ -533,10 +488,10 @@ class MainActivity : ComponentActivity() {
                         append("Top overlay: none")
                     }
                     appendLine()
-                    append("Guide: $warningMessage")
+                    append("Guide: ${feedbackMessage ?: "none"}")
                     appendLine()
-                    appendLine("Risk: $riskLevel")
-                    appendLine("Feedback: beep=$beepLevel / voice=$voiceLevel / vibrate=$vibrationLevel")
+                    appendLine("Risk: $feedbackRiskLevel")
+                    appendLine("Feedback: beep=$feedbackBeepLevel / voice=$feedbackVoiceLevel / vibrate=$feedbackVibrationLevel")
                     appendLine("PolicyFeedback: label=$feedbackLabel / priority=$feedbackPriority / proximity=$feedbackProximityLevel / risk=$feedbackRiskLevel / message=${feedbackMessage ?: "none"} / beep=$feedbackBeepLevel / voice=$feedbackVoiceLevel / vibrate=$feedbackVibrationLevel / cooldown=$selectedCooldownPassed / actualOutputSuppressed=$actualOutputSuppressed / notify=$feedbackShouldNotify / key=$feedbackWarningKey")
                     appendLine("PolicyMessage: ${feedbackMessage ?: "none"}")
                     appendLine("Crowd: total=${crowdDecision.totalPersonCount} / center=${crowdDecision.centerPersonCount} / near=${crowdDecision.nearPersonCount} / level=${crowdDecision.crowdLevel} / message=${crowdDecision.message ?: "none"} / cooldown=$crowdCooldownPassed")
@@ -544,7 +499,7 @@ class MainActivity : ComponentActivity() {
                     appendLine(
                         "GPS accuracy: ${formatAccuracy(userLocationSnapshot.accuracyMeters)}"
                     )
-                    append("Policy: category=$warningCategory / proximity=$warningProximityLevel")
+                    append("Policy: category=$warningCategory / proximity=$feedbackProximityLevel")
                     appendLine()
                     append(metricsCollector.buildSummary())
                 }
@@ -555,8 +510,8 @@ class MainActivity : ComponentActivity() {
                     appendLine("overlay whitelist count: ${overlayDetections.size}")
                     appendLine("warning policy count: ${warningDetections.size}")
                     appendLine("Ignored: ${formatIgnoredLabels(ignoredLabels)}")
-                    appendLine("selected warning object label: $selectedWarningLabel")
-                    appendLine("proximity: $warningProximityLevel")
+                    appendLine("selected warning object label: $feedbackLabel")
+                    appendLine("proximity: $feedbackProximityLevel")
                     appendLine("object motion state: $warningObjectMovementState")
                     appendLine("user-object relation: $warningUserObjectRelation")
                     appendLine("user motion state: ${userLocationSnapshot.motionState}")
@@ -569,8 +524,8 @@ class MainActivity : ComponentActivity() {
                         append("Top overlay: none")
                     }
                     appendLine()
-                    appendLine("Risk: $riskLevel")
-                    appendLine("Guide: $warningMessage")
+                    appendLine("Risk: $feedbackRiskLevel")
+                    appendLine("Guide: ${feedbackMessage ?: "none"}")
                     appendLine("PolicyFeedback: label=$feedbackLabel / priority=$feedbackPriority / proximity=$feedbackProximityLevel / risk=$feedbackRiskLevel / message=${feedbackMessage ?: "none"} / beep=$feedbackBeepLevel / voice=$feedbackVoiceLevel / vibrate=$feedbackVibrationLevel / cooldown=$selectedCooldownPassed / actualOutputSuppressed=$actualOutputSuppressed / notify=$feedbackShouldNotify / key=$feedbackWarningKey")
                     appendLine("Crowd: total=${crowdDecision.totalPersonCount} / center=${crowdDecision.centerPersonCount} / near=${crowdDecision.nearPersonCount} / level=${crowdDecision.crowdLevel} / message=${crowdDecision.message ?: "none"} / cooldown=$crowdCooldownPassed")
                     append("PolicyMessage: ${feedbackMessage ?: "none"}")
@@ -772,8 +727,6 @@ class MainActivity : ComponentActivity() {
                         frameTimestampMs = mlStart
                     )
                 }
-                lastMlKitDetectedObjects = results.map { it.toDetectedObject(DetectionSource.ML_KIT) }
-
                 runOnUiThread {
                     overlayView.updateMlKitDetections(
                         results,
@@ -841,7 +794,6 @@ class MainActivity : ComponentActivity() {
         cameraExecutor.shutdown()
         mlKitDetector.close()
         detector.close()
-        warningPlayer.release()
     }
 
     companion object {
@@ -854,6 +806,5 @@ class MainActivity : ComponentActivity() {
         private const val WARNING_SELECTED_TAG = "WarningSelected"
         private const val CROWD_DECISION_TAG = "CrowdDecision"
         private const val ML_KIT_DETECT_INTERVAL_MS = 1500L
-        private const val ML_KIT_WARNING_MAX_AGE_MS = 3000L
     }
 }

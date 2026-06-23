@@ -6,7 +6,7 @@ import com.samin.objectdetection.motion.ApproachSpeedLevel
 import com.samin.objectdetection.motion.MotionDirection
 import com.samin.objectdetection.motion.ObjectMovementState
 import com.samin.objectdetection.motion.UserObjectRelation
-import com.samin.objectdetection.warning.DetectionCategoryMapper
+import com.samin.objectdetection.warning.WarningPolicy
 
 data class DetectedObject(
     val label: String,
@@ -25,8 +25,8 @@ data class DetectedObject(
 fun DetectionResult.toDetectedObject(
     source: DetectionSource = DetectionSource.YOLO
 ): DetectedObject {
-    val category = DetectionCategoryMapper.mapCategory(label)
-    val priority = DetectionCategoryMapper.mapPriority(label)
+    val category = WarningPolicy.resolveDetectionCategory(label)
+    val priority = WarningPolicy.resolveDetectionPriority(label)
     return DetectedObject(
         label = label,
         confidence = confidence,

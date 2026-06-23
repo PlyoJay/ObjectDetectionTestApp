@@ -7,11 +7,11 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class CrowdDecisionEvaluatorTest {
+class WarningPolicyCrowdDecisionTest {
 
     @Test
     fun evaluate_returnsNone_whenPersonIsAbsent() {
-        val decision = CrowdDecisionEvaluator.evaluate(
+        val decision = WarningPolicy.resolveCrowdDecision(
             listOf(detection(label = "car"))
         )
 
@@ -23,7 +23,7 @@ class CrowdDecisionEvaluatorTest {
 
     @Test
     fun evaluate_returnsHigh_whenThreePeopleAreInCenter() {
-        val decision = CrowdDecisionEvaluator.evaluate(
+        val decision = WarningPolicy.resolveCrowdDecision(
             listOf(
                 detection(horizontalPosition = HorizontalPosition.CENTER),
                 detection(horizontalPosition = HorizontalPosition.CENTER),
@@ -39,7 +39,7 @@ class CrowdDecisionEvaluatorTest {
 
     @Test
     fun evaluate_returnsMedium_whenThreePeopleAreDetected() {
-        val decision = CrowdDecisionEvaluator.evaluate(
+        val decision = WarningPolicy.resolveCrowdDecision(
             listOf(
                 detection(horizontalPosition = HorizontalPosition.LEFT),
                 detection(horizontalPosition = HorizontalPosition.LEFT),
@@ -55,7 +55,7 @@ class CrowdDecisionEvaluatorTest {
 
     @Test
     fun evaluate_returnsLow_whenOnePersonIsNotCenter() {
-        val decision = CrowdDecisionEvaluator.evaluate(
+        val decision = WarningPolicy.resolveCrowdDecision(
             listOf(detection(horizontalPosition = HorizontalPosition.LEFT))
         )
 
