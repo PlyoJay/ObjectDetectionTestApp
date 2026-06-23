@@ -1,7 +1,7 @@
 package com.samin.objectdetection.warning
 
 class WarningCooldownManager(
-    private val cooldownMs: Long = DEFAULT_COOLDOWN_MS
+    private val defaultCooldownMs: Long = DEFAULT_COOLDOWN_MS
 ) {
     private val lastNotifiedAtByKey = mutableMapOf<String, Long>()
 
@@ -10,24 +10,29 @@ class WarningCooldownManager(
         priority: ObjectPriority,
         proximityLevel: ProximityLevel,
         horizontalPosition: HorizontalPosition,
-        nowMs: Long = System.currentTimeMillis()
+        nowMs: Long = System.currentTimeMillis(),
+        cooldownMs: Long = defaultCooldownMs
     ): Boolean {
         val key = buildKey(label, priority, proximityLevel, horizontalPosition)
-        return canNotify(key, nowMs)
+        return canNotify(key, nowMs, cooldownMs)
     }
 
     fun canNotify(
         warningKey: String,
-        nowMs: Long = System.currentTimeMillis()
+        nowMs: Long = System.currentTimeMillis(),
+        cooldownMs: Long = defaultCooldownMs
     ): Boolean {
         val key = warningKey.trim()
         val lastNotifiedAt = lastNotifiedAtByKey[key]
-        if (lastNotifiedAt != null && nowMs - lastNotifiedAt < cooldownMs) {
-            return false
-        }
+        return lastNotifiedAt == null || nowMs - lastNotifiedAt >= cooldownMs
+    }
 
+    fun markNotified(
+        warningKey: String,
+        nowMs: Long = System.currentTimeMillis()
+    ) {
+        val key = warningKey.trim()
         lastNotifiedAtByKey[key] = nowMs
-        return true
     }
 
     fun buildKey(

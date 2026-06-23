@@ -430,22 +430,27 @@ class MainActivity : ComponentActivity() {
         }
         val crowdDecision = CrowdDecisionEvaluator.evaluate(overlayDetections)
         val crowdCandidate = crowdDecision.toWarningCandidate()
-        val selectedCandidate = warningCandidateSelector.selectWithCrowd(warningCandidates, crowdCandidate)
-        val selectedCandidateAfterCooldown = selectedCandidate?.let { candidate ->
-            WarningFeedbackPolicy.applyCooldown(
-                candidate = candidate,
-                cooldownManager = warningCooldownManager,
-                nowMs = start
+        val selectedCandidateBeforeCooldown = warningCandidateSelector.selectWithCrowd(warningCandidates, crowdCandidate)
+        val selectedCooldownPassed = selectedCandidateBeforeCooldown?.let { candidate ->
+            candidate.feedback.shouldNotify && warningCooldownManager.canNotify(candidate.warningKey, start)
+        } ?: false
+        val selectedCandidate = selectedCandidateBeforeCooldown?.let { candidate ->
+            candidate.copy(
+                feedback = candidate.feedback.copy(
+                    shouldNotify = candidate.feedback.shouldNotify && selectedCooldownPassed
+                )
             )
         }
-        val crowdCooldownPassed = selectedCandidateAfterCooldown?.warningKey == crowdDecision.warningKey &&
-            selectedCandidateAfterCooldown?.feedback?.shouldNotify == true
+        // Actual output wiring should use selectedCandidate.feedback. WarningDecisionMaker/Stabilizer is kept for comparison logs.
+        // While output is suppressed, do not call warningCooldownManager.markNotified(); call it only after output succeeds.
+        val actualOutputSuppressed = true
+        val crowdCooldownPassed = selectedCandidate?.warningKey == crowdDecision.warningKey && selectedCooldownPassed
         logCrowdDecision(crowdDecision, crowdCooldownPassed)
-        logSelectedWarningCandidate(selectedCandidateAfterCooldown)
-        val selectedFeedback = selectedCandidateAfterCooldown?.feedback
+        logSelectedWarningCandidate(selectedCandidate, selectedCooldownPassed, actualOutputSuppressed)
+        val selectedFeedback = selectedCandidate?.feedback
         val selectedWarningLabel = stabilizedDecision.obstacle?.detection?.label
             ?: selectedWarningObject?.label
-            ?: selectedCandidateAfterCooldown?.label
+            ?: selectedCandidate?.label
             ?: "none"
         val warningMessage = stabilizedDecision.message
         val riskLevel = stabilizedDecision.riskLevel
@@ -458,20 +463,24 @@ class MainActivity : ComponentActivity() {
         val feedbackVibrationLevel = selectedFeedback?.vibrationLevel ?: FeedbackLevel.NONE
         val feedbackMessage = selectedFeedback?.message
         val feedbackShouldNotify = selectedFeedback?.shouldNotify ?: false
-        val feedbackPriority = selectedCandidateAfterCooldown?.priority
-        val feedbackWarningKey = selectedCandidateAfterCooldown?.warningKey
+        val feedbackPriority = selectedCandidate?.priority
+        val feedbackWarningKey = selectedCandidate?.warningKey
+        val feedbackLabel = selectedCandidate?.label ?: "none"
+        val feedbackProximityLevel = selectedCandidate?.proximityLevel
         val warningMotionDirection = stabilizedDecision.obstacle?.detection?.motionDirection
         val warningApproachSpeedLevel = stabilizedDecision.obstacle?.detection?.approachSpeedLevel
         val warningObjectMovementState = stabilizedDecision.obstacle?.detection?.objectMovementState
         val warningUserObjectRelation = stabilizedDecision.obstacle?.detection?.userObjectRelation
         val warningCategory = stabilizedDecision.obstacle?.category
         val warningProximityLevel = stabilizedDecision.obstacle?.proximityLevel
-        metricsCollector.recordWarning(riskLevel)
+        metricsCollector.recordWarning(feedbackRiskLevel)
         Log.d(
             WARNING_FEEDBACK_TAG,
-            "actualOutputSuppressed label=${selectedCandidateAfterCooldown?.label ?: selectedWarningLabel} " +
-                "priority=$feedbackPriority risk=$feedbackRiskLevel beep=$feedbackBeepLevel voice=$feedbackVoiceLevel " +
-                "vibration=$feedbackVibrationLevel message=$feedbackMessage shouldNotify=$feedbackShouldNotify key=$feedbackWarningKey"
+            "selectedCandidate label=$feedbackLabel priority=$feedbackPriority proximityLevel=$feedbackProximityLevel " +
+                "riskLevel=$feedbackRiskLevel message=$feedbackMessage beepLevel=$feedbackBeepLevel " +
+                "vibrationLevel=$feedbackVibrationLevel voiceLevel=$feedbackVoiceLevel " +
+                "cooldownPassed=$selectedCooldownPassed actualOutputSuppressed=$actualOutputSuppressed " +
+                "shouldNotify=$feedbackShouldNotify key=$feedbackWarningKey"
         )
         logDetectionTiming(
             DETECTION_TIMING_TAG,
@@ -528,7 +537,7 @@ class MainActivity : ComponentActivity() {
                     appendLine()
                     appendLine("Risk: $riskLevel")
                     appendLine("Feedback: beep=$beepLevel / voice=$voiceLevel / vibrate=$vibrationLevel")
-                    appendLine("PolicyFeedback: priority=$feedbackPriority / risk=$feedbackRiskLevel / beep=$feedbackBeepLevel / voice=$feedbackVoiceLevel / vibrate=$feedbackVibrationLevel / notify=$feedbackShouldNotify / key=$feedbackWarningKey")
+                    appendLine("PolicyFeedback: label=$feedbackLabel / priority=$feedbackPriority / proximity=$feedbackProximityLevel / risk=$feedbackRiskLevel / message=${feedbackMessage ?: "none"} / beep=$feedbackBeepLevel / voice=$feedbackVoiceLevel / vibrate=$feedbackVibrationLevel / cooldown=$selectedCooldownPassed / actualOutputSuppressed=$actualOutputSuppressed / notify=$feedbackShouldNotify / key=$feedbackWarningKey")
                     appendLine("PolicyMessage: ${feedbackMessage ?: "none"}")
                     appendLine("Crowd: total=${crowdDecision.totalPersonCount} / center=${crowdDecision.centerPersonCount} / near=${crowdDecision.nearPersonCount} / level=${crowdDecision.crowdLevel} / message=${crowdDecision.message ?: "none"} / cooldown=$crowdCooldownPassed")
                     appendLine("Motion: direction=$warningMotionDirection / approachSpeed=$warningApproachSpeedLevel")
@@ -562,7 +571,7 @@ class MainActivity : ComponentActivity() {
                     appendLine()
                     appendLine("Risk: $riskLevel")
                     appendLine("Guide: $warningMessage")
-                    appendLine("PolicyFeedback: priority=$feedbackPriority / risk=$feedbackRiskLevel / beep=$feedbackBeepLevel / voice=$feedbackVoiceLevel / vibrate=$feedbackVibrationLevel / notify=$feedbackShouldNotify / key=$feedbackWarningKey")
+                    appendLine("PolicyFeedback: label=$feedbackLabel / priority=$feedbackPriority / proximity=$feedbackProximityLevel / risk=$feedbackRiskLevel / message=${feedbackMessage ?: "none"} / beep=$feedbackBeepLevel / voice=$feedbackVoiceLevel / vibrate=$feedbackVibrationLevel / cooldown=$selectedCooldownPassed / actualOutputSuppressed=$actualOutputSuppressed / notify=$feedbackShouldNotify / key=$feedbackWarningKey")
                     appendLine("Crowd: total=${crowdDecision.totalPersonCount} / center=${crowdDecision.centerPersonCount} / near=${crowdDecision.nearPersonCount} / level=${crowdDecision.crowdLevel} / message=${crowdDecision.message ?: "none"} / cooldown=$crowdCooldownPassed")
                     append("PolicyMessage: ${feedbackMessage ?: "none"}")
                 }
@@ -587,7 +596,11 @@ class MainActivity : ComponentActivity() {
         Log.d(tag, message)
     }
 
-    private fun logSelectedWarningCandidate(candidate: WarningCandidate?) {
+    private fun logSelectedWarningCandidate(
+        candidate: WarningCandidate?,
+        cooldownPassed: Boolean,
+        actualOutputSuppressed: Boolean
+    ) {
         if (candidate == null) {
             Log.d(WARNING_SELECTED_TAG, "[WarningSelected] none")
             return
@@ -604,7 +617,9 @@ class MainActivity : ComponentActivity() {
                 "beep=${candidate.feedback.beepLevel}\n" +
                 "vibration=${candidate.feedback.vibrationLevel}\n" +
                 "voice=${candidate.feedback.voiceLevel}\n" +
-                "cooldown=${candidate.feedback.shouldNotify}"
+                "cooldownPassed=$cooldownPassed\n" +
+                "actualOutputSuppressed=$actualOutputSuppressed\n" +
+                "shouldNotify=${candidate.feedback.shouldNotify}"
         )
     }
 
