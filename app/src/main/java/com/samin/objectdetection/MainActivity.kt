@@ -42,6 +42,7 @@ import com.samin.objectdetection.warning.WarningCandidate
 import com.samin.objectdetection.warning.WarningCandidateSelector
 import com.samin.objectdetection.warning.WarningCooldownManager
 import com.samin.objectdetection.warning.WarningPolicy
+import com.samin.objectdetection.warning.output.BeepWarningPlayer
 import com.samin.objectdetection.warning.output.VibrationWarningPlayer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -67,9 +68,10 @@ class MainActivity : ComponentActivity() {
     private val metricsCollector = DetectionMetricsCollector()
     private lateinit var userLocationTracker: UserLocationTracker
     private lateinit var vibrationWarningPlayer: VibrationWarningPlayer
+    private lateinit var beepWarningPlayer: BeepWarningPlayer
 
     private val enableActualVibration = true
-    private val enableActualBeep = false
+    private val enableActualBeep = true
     private val enableActualTts = false
 
     @Volatile
@@ -111,6 +113,7 @@ class MainActivity : ComponentActivity() {
         mlKitDetector = MlKitObjectDetector()
         userLocationTracker = UserLocationTracker(this)
         vibrationWarningPlayer = VibrationWarningPlayer(this)
+        beepWarningPlayer = BeepWarningPlayer()
         logWarningPolicyOverlayMismatch()
 
         setupUi()
@@ -402,15 +405,21 @@ class MainActivity : ComponentActivity() {
         } ?: false
         val selectedFeedback = selectedCandidate?.feedback
         var vibrationExecuted = false
+        var beepExecuted = false
+        val ttsExecuted = false
         if (
             selectedCandidate != null &&
             selectedCandidate.feedback.shouldNotify &&
-            selectedCooldownPassed &&
-            enableActualVibration &&
-            selectedCandidate.feedback.vibrationLevel != FeedbackLevel.NONE
+            selectedCooldownPassed
         ) {
-            vibrationExecuted = vibrationWarningPlayer.play(selectedCandidate.feedback.vibrationLevel)
-            if (vibrationExecuted) {
+            val feedback = selectedCandidate.feedback
+            if (enableActualVibration && feedback.vibrationLevel != FeedbackLevel.NONE) {
+                vibrationExecuted = vibrationWarningPlayer.play(feedback.vibrationLevel)
+            }
+            if (enableActualBeep && shouldPlayBeep(feedback.beepLevel)) {
+                beepExecuted = beepWarningPlayer.play(feedback.beepLevel)
+            }
+            if (vibrationExecuted || beepExecuted || ttsExecuted) {
                 warningCooldownManager.markNotified(selectedCandidate.warningKey, start)
             }
         }
@@ -419,8 +428,11 @@ class MainActivity : ComponentActivity() {
             "label=${selectedCandidate?.label ?: "none"} vibration=${selectedCandidate?.feedback?.vibrationLevel ?: FeedbackLevel.NONE} " +
                 "executed=$vibrationExecuted cooldown=$selectedCooldownPassed enabled=$enableActualVibration"
         )
-        val beepExecuted = false
-        val ttsExecuted = false
+        Log.d(
+            BEEP_OUTPUT_TAG,
+            "label=${selectedCandidate?.label ?: "none"} beep=${selectedCandidate?.feedback?.beepLevel ?: FeedbackLevel.NONE} " +
+                "executed=$beepExecuted cooldown=$selectedCooldownPassed enabled=$enableActualBeep"
+        )
         val crowdCooldownPassed = selectedCandidate?.warningKey == crowdDecision.warningKey && selectedCooldownPassed
         logCrowdDecision(crowdDecision, crowdCooldownPassed)
         logSelectedWarningCandidate(selectedCandidate, selectedCooldownPassed, vibrationExecuted, beepExecuted, ttsExecuted)
@@ -552,6 +564,15 @@ class MainActivity : ComponentActivity() {
 
     private fun logDetectionTiming(tag: String, message: String) {
         Log.d(tag, message)
+    }
+
+    private fun shouldPlayBeep(level: FeedbackLevel): Boolean {
+        return when (level) {
+            FeedbackLevel.HIGH,
+            FeedbackLevel.MEDIUM -> true
+            FeedbackLevel.LOW,
+            FeedbackLevel.NONE -> false
+        }
     }
 
     private fun logSelectedWarningCandidate(
@@ -832,6 +853,7 @@ class MainActivity : ComponentActivity() {
         mlKitDetector.close()
         detector.close()
         vibrationWarningPlayer.release()
+        beepWarningPlayer.release()
     }
 
     companion object {
@@ -844,6 +866,7 @@ class MainActivity : ComponentActivity() {
         private const val WARNING_OUTPUT_TAG = "GotoroWarning"
         private const val CROWD_DECISION_TAG = "GotoroCrowd"
         private const val VIBRATION_OUTPUT_TAG = "GotoroVibration"
+        private const val BEEP_OUTPUT_TAG = "GotoroBeep"
         private const val ML_KIT_DETECT_INTERVAL_MS = 1500L
     }
 }

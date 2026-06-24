@@ -8,9 +8,7 @@ import android.util.Log
 import com.samin.objectdetection.warning.FeedbackLevel
 import com.samin.objectdetection.warning.WarningCandidate
 
-class BeepWarningPlayer(
-    private val cooldownMs: Long = 800L
-) : WarningPlayer {
+class BeepWarningPlayer : WarningPlayer {
 
     private val handler = Handler(Looper.getMainLooper())
     private val toneGenerator: ToneGenerator? = try {
@@ -19,45 +17,43 @@ class BeepWarningPlayer(
         Log.w(TAG, "ToneGenerator init failed", e)
         null
     }
-    private var lastPlayedAtMs = 0L
+    private var isPlaying = false
 
     override fun playIfNeeded(candidate: WarningCandidate) {
-        val beepLevel = candidate.feedback.beepLevel
-        if (beepLevel == FeedbackLevel.NONE) {
-            Log.d(TAG, "skip beep: level=NONE")
-            return
-        }
+        play(candidate.feedback.beepLevel)
+    }
+
+    fun play(beepLevel: FeedbackLevel): Boolean {
+        if (beepLevel == FeedbackLevel.NONE || beepLevel == FeedbackLevel.LOW) return false
+
         val toneGenerator = toneGenerator
         if (toneGenerator == null) {
             Log.w(TAG, "skip beep: ToneGenerator is null")
-            return
+            return false
         }
-
-        val now = System.currentTimeMillis()
-        val elapsedMs = now - lastPlayedAtMs
-        if (elapsedMs < cooldownMs) {
-            Log.d(TAG, "skip beep: cooldown remaining=${cooldownMs - elapsedMs}ms")
-            return
-        }
+        if (isPlaying) return false
 
         val delays = when (beepLevel) {
-            FeedbackLevel.LOW -> longArrayOf(0L)
             FeedbackLevel.MEDIUM -> longArrayOf(0L, MEDIUM_INTERVAL_MS)
             FeedbackLevel.HIGH -> longArrayOf(0L, HIGH_INTERVAL_MS, HIGH_INTERVAL_MS * 2)
-            FeedbackLevel.NONE -> return
+            FeedbackLevel.LOW,
+            FeedbackLevel.NONE -> return false
         }
 
+        isPlaying = true
         delays.forEach { delayMs ->
             handler.postDelayed({
                 try {
-                    Log.d(TAG, "play beep: level=$beepLevel, delay=${delayMs}ms, duration=${BEEP_DURATION_MS}ms")
-                    toneGenerator.startTone(TONE_TYPE, BEEP_DURATION_MS)
+                    val durationMs = if (beepLevel == FeedbackLevel.HIGH) HIGH_BEEP_DURATION_MS else MEDIUM_BEEP_DURATION_MS
+                    Log.d(TAG, "play beep: level=$beepLevel, delay=${delayMs}ms, duration=${durationMs}ms")
+                    toneGenerator.startTone(TONE_TYPE, durationMs)
                 } catch (e: Exception) {
                     Log.w(TAG, "beep failed", e)
                 }
             }, delayMs)
         }
-        lastPlayedAtMs = now
+        handler.postDelayed({ isPlaying = false }, delays.last() + BEEP_GUARD_RELEASE_DELAY_MS)
+        return true
     }
 
     override fun release() {
@@ -66,11 +62,13 @@ class BeepWarningPlayer(
     }
 
     companion object {
-        private const val TAG = "BeepWarningPlayer"
+        private const val TAG = "GotoroBeep"
         private const val TONE_VOLUME = 100
         private const val TONE_TYPE = ToneGenerator.TONE_PROP_BEEP
-        private const val BEEP_DURATION_MS = 120
-        private const val MEDIUM_INTERVAL_MS = 240L
-        private const val HIGH_INTERVAL_MS = 200L
+        private const val MEDIUM_BEEP_DURATION_MS = 120
+        private const val HIGH_BEEP_DURATION_MS = 100
+        private const val MEDIUM_INTERVAL_MS = 150L
+        private const val HIGH_INTERVAL_MS = 120L
+        private const val BEEP_GUARD_RELEASE_DELAY_MS = 180L
     }
 }
