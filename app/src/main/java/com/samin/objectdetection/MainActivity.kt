@@ -37,12 +37,14 @@ import com.samin.objectdetection.ui.BoundingBoxOverlay
 import com.samin.objectdetection.ui.OverlayDebugMode
 import com.samin.objectdetection.warning.CrowdDecision
 import com.samin.objectdetection.warning.FeedbackLevel
+import com.samin.objectdetection.warning.ObjectPriority
 import com.samin.objectdetection.warning.RiskLevel
 import com.samin.objectdetection.warning.WarningCandidate
 import com.samin.objectdetection.warning.WarningCandidateSelector
 import com.samin.objectdetection.warning.WarningCooldownManager
 import com.samin.objectdetection.warning.WarningPolicy
 import com.samin.objectdetection.warning.output.BeepWarningPlayer
+import com.samin.objectdetection.warning.output.TtsWarningPlayer
 import com.samin.objectdetection.warning.output.VibrationWarningPlayer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -69,10 +71,11 @@ class MainActivity : ComponentActivity() {
     private lateinit var userLocationTracker: UserLocationTracker
     private lateinit var vibrationWarningPlayer: VibrationWarningPlayer
     private lateinit var beepWarningPlayer: BeepWarningPlayer
+    private lateinit var ttsWarningPlayer: TtsWarningPlayer
 
     private val enableActualVibration = true
     private val enableActualBeep = true
-    private val enableActualTts = false
+    private val enableActualTts = true
 
     @Volatile
     private var isProcessing = AtomicBoolean(false)
@@ -114,6 +117,7 @@ class MainActivity : ComponentActivity() {
         userLocationTracker = UserLocationTracker(this)
         vibrationWarningPlayer = VibrationWarningPlayer(this)
         beepWarningPlayer = BeepWarningPlayer()
+        ttsWarningPlayer = TtsWarningPlayer(this)
         logWarningPolicyOverlayMismatch()
 
         setupUi()
@@ -406,7 +410,8 @@ class MainActivity : ComponentActivity() {
         val selectedFeedback = selectedCandidate?.feedback
         var vibrationExecuted = false
         var beepExecuted = false
-        val ttsExecuted = false
+        var ttsExecuted = false
+        var ttsSkippedReason: String? = null
         if (
             selectedCandidate != null &&
             selectedCandidate.feedback.shouldNotify &&
@@ -418,6 +423,27 @@ class MainActivity : ComponentActivity() {
             }
             if (enableActualBeep && shouldPlayBeep(feedback.beepLevel)) {
                 beepExecuted = beepWarningPlayer.play(feedback.beepLevel)
+            }
+            if (enableActualTts) {
+                val message = feedback.message
+                when {
+                    feedback.voiceLevel == FeedbackLevel.NONE -> {
+                        ttsSkippedReason = "voice_none"
+                    }
+                    message.isNullOrBlank() -> {
+                        ttsSkippedReason = "message_blank"
+                    }
+                    !shouldSpeak(selectedCandidate) -> {
+                        ttsSkippedReason = "not_critical_or_high_priority"
+                    }
+                    else -> {
+                        val ttsResult = ttsWarningPlayer.speak(selectedCandidate, message)
+                        ttsExecuted = ttsResult.executed
+                        ttsSkippedReason = ttsResult.skippedReason
+                    }
+                }
+            } else {
+                ttsSkippedReason = "tts_disabled"
             }
             if (vibrationExecuted || beepExecuted || ttsExecuted) {
                 warningCooldownManager.markNotified(selectedCandidate.warningKey, start)
@@ -433,10 +459,15 @@ class MainActivity : ComponentActivity() {
             "label=${selectedCandidate?.label ?: "none"} beep=${selectedCandidate?.feedback?.beepLevel ?: FeedbackLevel.NONE} " +
                 "executed=$beepExecuted cooldown=$selectedCooldownPassed enabled=$enableActualBeep"
         )
+        Log.d(
+            TTS_OUTPUT_TAG,
+            "label=${selectedCandidate?.label ?: "none"} voice=${selectedCandidate?.feedback?.voiceLevel ?: FeedbackLevel.NONE} " +
+                "executed=$ttsExecuted skippedReason=${ttsSkippedReason ?: "none"} cooldown=$selectedCooldownPassed enabled=$enableActualTts"
+        )
         val crowdCooldownPassed = selectedCandidate?.warningKey == crowdDecision.warningKey && selectedCooldownPassed
         logCrowdDecision(crowdDecision, crowdCooldownPassed)
         logSelectedWarningCandidate(selectedCandidate, selectedCooldownPassed, vibrationExecuted, beepExecuted, ttsExecuted)
-        logWarningOutput(selectedCandidate, selectedCooldownPassed, vibrationExecuted, beepExecuted, ttsExecuted)
+        logWarningOutput(selectedCandidate, selectedCooldownPassed, vibrationExecuted, beepExecuted, ttsExecuted, ttsSkippedReason)
         val feedbackRiskLevel = selectedFeedback?.riskLevel ?: RiskLevel.NONE
         val feedbackBeepLevel = selectedFeedback?.beepLevel ?: FeedbackLevel.NONE
         val feedbackVoiceLevel = selectedFeedback?.voiceLevel ?: FeedbackLevel.NONE
@@ -575,6 +606,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun shouldSpeak(candidate: WarningCandidate): Boolean {
+        return when {
+            candidate.riskLevel == RiskLevel.CRITICAL -> true
+            candidate.riskLevel == RiskLevel.HIGH && candidate.priority == ObjectPriority.HIGH -> true
+            else -> false
+        }
+    }
+
     private fun logSelectedWarningCandidate(
         candidate: WarningCandidate?,
         cooldownPassed: Boolean,
@@ -611,7 +650,8 @@ class MainActivity : ComponentActivity() {
         cooldownPassed: Boolean,
         vibrationExecuted: Boolean,
         beepExecuted: Boolean,
-        ttsExecuted: Boolean
+        ttsExecuted: Boolean,
+        ttsSkippedReason: String?
     ) {
         if (candidate == null) {
             Log.d(WARNING_OUTPUT_TAG, "[WarningOutput] none")
@@ -632,6 +672,7 @@ class MainActivity : ComponentActivity() {
                 "beepExecuted=$beepExecuted\n" +
                 "voice=${candidate.feedback.voiceLevel}\n" +
                 "ttsExecuted=$ttsExecuted\n" +
+                "ttsSkippedReason=${ttsSkippedReason ?: "none"}\n" +
                 "cooldown=$cooldownPassed"
         )
     }
@@ -854,6 +895,7 @@ class MainActivity : ComponentActivity() {
         detector.close()
         vibrationWarningPlayer.release()
         beepWarningPlayer.release()
+        ttsWarningPlayer.release()
     }
 
     companion object {
@@ -867,6 +909,7 @@ class MainActivity : ComponentActivity() {
         private const val CROWD_DECISION_TAG = "GotoroCrowd"
         private const val VIBRATION_OUTPUT_TAG = "GotoroVibration"
         private const val BEEP_OUTPUT_TAG = "GotoroBeep"
+        private const val TTS_OUTPUT_TAG = "GotoroTts"
         private const val ML_KIT_DETECT_INTERVAL_MS = 1500L
     }
 }
