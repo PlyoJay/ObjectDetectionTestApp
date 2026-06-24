@@ -1,5 +1,7 @@
 package com.samin.objectdetection.camera
 
+import com.samin.objectdetection.ui.OverlayDebugMode
+
 data class DetectionConfig(
     // Used by RoiCalculator/CameraFrameAnalyzer. MainActivity currently uses a center square crop
     // to preserve the YOLO input aspect ratio and does not apply these ratios.
@@ -15,6 +17,7 @@ data class DetectionConfig(
     val minBoxHeightRatio: Float = 0.025f,
     val ignoreTopRatioForGuide: Float = 0.25f,
     val maxGuideObjectCount: Int = 2,
+    val overlayDebugMode: OverlayDebugMode = OverlayDebugMode.SIMPLE,
     val saveDebugImage: Boolean = false,
     val enableDetectorDebugImage: Boolean = false
 )

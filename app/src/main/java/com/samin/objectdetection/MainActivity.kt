@@ -34,6 +34,7 @@ import com.samin.objectdetection.motion.ObjectMotionTracker
 import com.samin.objectdetection.policy.OverlayObjectFilter
 import com.samin.objectdetection.policy.YoloDefaultPolicyRegistry
 import com.samin.objectdetection.ui.BoundingBoxOverlay
+import com.samin.objectdetection.ui.OverlayDebugMode
 import com.samin.objectdetection.warning.CrowdDecision
 import com.samin.objectdetection.warning.FeedbackLevel
 import com.samin.objectdetection.warning.RiskLevel
@@ -128,16 +129,18 @@ class MainActivity : ComponentActivity() {
 
         debugTextView = TextView(this).apply {
             text = "대기 중"
-            textSize = 14f
+            textSize = 12f
             setTextColor(android.graphics.Color.WHITE)
             setBackgroundColor(android.graphics.Color.argb(170, 0, 0, 0))
             setPadding(24, 24, 24, 24)
+            visibility = if (detectionConfig.overlayDebugMode == OverlayDebugMode.FULL) View.VISIBLE else View.GONE
         }
 
         warningMessageTextView = TextView(this).apply {
             id = View.generateViewId()
             visibility = View.GONE
-            textSize = 22f
+            textSize = 18f
+            maxLines = 2
             gravity = Gravity.CENTER
             setTextColor(android.graphics.Color.WHITE)
             setBackgroundColor(android.graphics.Color.argb(190, 0, 0, 0))
@@ -190,6 +193,7 @@ class MainActivity : ComponentActivity() {
         )
 
         overlayView.bringToFront()
+        overlayView.setDebugMode(detectionConfig.overlayDebugMode)
         debugTextView.bringToFront()
         warningMessageTextView.bringToFront()
         toggleButton.bringToFront()
@@ -410,6 +414,11 @@ class MainActivity : ComponentActivity() {
                 warningCooldownManager.markNotified(selectedCandidate.warningKey, start)
             }
         }
+        Log.d(
+            VIBRATION_OUTPUT_TAG,
+            "label=${selectedCandidate?.label ?: "none"} vibration=${selectedCandidate?.feedback?.vibrationLevel ?: FeedbackLevel.NONE} " +
+                "executed=$vibrationExecuted cooldown=$selectedCooldownPassed enabled=$enableActualVibration"
+        )
         val beepExecuted = false
         val ttsExecuted = false
         val crowdCooldownPassed = selectedCandidate?.warningKey == crowdDecision.warningKey && selectedCooldownPassed
@@ -474,15 +483,20 @@ class MainActivity : ComponentActivity() {
                     "emptyReason=${buildEmptyOverlayReason(mapped, visibleMapped, warningDetections, overlayDetections)}"
             )
             overlayView.updateDetections(overlayDetections, width, height, inferenceTime, currentFps)
-            if (feedbackMessage == null || !feedbackShouldNotify) {
+            if (
+                detectionConfig.overlayDebugMode == OverlayDebugMode.NONE ||
+                feedbackMessage == null ||
+                !feedbackShouldNotify
+            ) {
                 warningMessageTextView.text = ""
                 warningMessageTextView.visibility = View.GONE
             } else {
                 warningMessageTextView.text = feedbackMessage
                 warningMessageTextView.visibility = View.VISIBLE
             }
-            debugTextView.text = if (SHOW_DEBUG_INFO) {
-                buildString {
+            if (detectionConfig.overlayDebugMode == OverlayDebugMode.FULL) {
+                debugTextView.visibility = View.VISIBLE
+                debugTextView.text = buildString {
                     appendLine("Frame: ${width}x$height / crop: ${cropRect.width()}x${cropRect.height()}")
                     appendLine("YOLO raw detection count: ${mapped.size}")
                     appendLine("small box filter count: ${visibleMapped.size}")
@@ -511,40 +525,14 @@ class MainActivity : ComponentActivity() {
                     appendLine("PolicyMessage: ${feedbackMessage ?: "none"}")
                     appendLine("Crowd: total=${crowdDecision.totalPersonCount} / center=${crowdDecision.centerPersonCount} / near=${crowdDecision.nearPersonCount} / level=${crowdDecision.crowdLevel} / message=${crowdDecision.message ?: "none"} / cooldown=$crowdCooldownPassed")
                     appendLine("Motion: direction=$warningMotionDirection / approachSpeed=$warningApproachSpeedLevel")
-                    appendLine(
-                        "GPS accuracy: ${formatAccuracy(userLocationSnapshot.accuracyMeters)}"
-                    )
+                    appendLine("GPS accuracy: ${formatAccuracy(userLocationSnapshot.accuracyMeters)}")
                     append("Policy: category=$warningCategory / proximity=$feedbackProximityLevel")
                     appendLine()
                     append(metricsCollector.buildSummary())
                 }
             } else {
-                buildString {
-                    appendLine("YOLO raw detection count: ${mapped.size}")
-                    appendLine("small box filter count: ${visibleMapped.size}")
-                    appendLine("overlay whitelist count: ${overlayDetections.size}")
-                    appendLine("warning policy count: ${warningDetections.size}")
-                    appendLine("Ignored: ${formatIgnoredLabels(ignoredLabels)}")
-                    appendLine("selected warning object label: $feedbackLabel")
-                    appendLine("proximity: $feedbackProximityLevel")
-                    appendLine("object motion state: $warningObjectMovementState")
-                    appendLine("user-object relation: $warningUserObjectRelation")
-                    appendLine("user motion state: ${userLocationSnapshot.motionState}")
-                    appendLine("GPS speed: ${formatSpeed(userLocationSnapshot.speedMps)}")
-                    appendLine("YOLO inference time: ${inferenceTime}ms")
-                    appendLine("ML Kit detection count: $lastMlKitCount")
-                    if (topOverlayObject != null) {
-                        append("Top overlay: ${topOverlayObject.label} ${String.format("%.2f", topOverlayObject.confidence)}")
-                    } else {
-                        append("Top overlay: none")
-                    }
-                    appendLine()
-                    appendLine("Risk: $feedbackRiskLevel")
-                    appendLine("Guide: ${feedbackMessage ?: "none"}")
-                    appendLine("PolicyFeedback: label=$feedbackLabel / priority=$feedbackPriority / proximity=$feedbackProximityLevel / risk=$feedbackRiskLevel / message=${feedbackMessage ?: "none"} / beep=$feedbackBeepLevel / voice=$feedbackVoiceLevel / vibrate=$feedbackVibrationLevel / cooldown=$selectedCooldownPassed / vibrationExecuted=$vibrationExecuted / beepExecuted=$beepExecuted / ttsExecuted=$ttsExecuted / notify=$feedbackShouldNotify / key=$feedbackWarningKey")
-                    appendLine("Crowd: total=${crowdDecision.totalPersonCount} / center=${crowdDecision.centerPersonCount} / near=${crowdDecision.nearPersonCount} / level=${crowdDecision.crowdLevel} / message=${crowdDecision.message ?: "none"} / cooldown=$crowdCooldownPassed")
-                    append("PolicyMessage: ${feedbackMessage ?: "none"}")
-                }
+                debugTextView.text = ""
+                debugTextView.visibility = View.GONE
             }
         }
 
@@ -847,15 +835,15 @@ class MainActivity : ComponentActivity() {
     }
 
     companion object {
-        private const val SHOW_DEBUG_INFO = false
         private const val ENABLE_VERBOSE_LOG = false
         private const val TAG = "ObjectDetectionVision"
         private const val DETECTION_TIMING_TAG = "DetectionTiming"
         private const val DETECTION_FILTER_TAG = "DetectionFilter"
-        private const val WARNING_FEEDBACK_TAG = "WarningFeedback"
-        private const val WARNING_SELECTED_TAG = "WarningSelected"
-        private const val WARNING_OUTPUT_TAG = "WarningOutput"
-        private const val CROWD_DECISION_TAG = "CrowdDecision"
+        private const val WARNING_FEEDBACK_TAG = "GotoroWarning"
+        private const val WARNING_SELECTED_TAG = "GotoroWarning"
+        private const val WARNING_OUTPUT_TAG = "GotoroWarning"
+        private const val CROWD_DECISION_TAG = "GotoroCrowd"
+        private const val VIBRATION_OUTPUT_TAG = "GotoroVibration"
         private const val ML_KIT_DETECT_INTERVAL_MS = 1500L
     }
 }

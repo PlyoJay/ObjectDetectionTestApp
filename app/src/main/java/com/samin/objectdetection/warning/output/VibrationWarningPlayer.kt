@@ -68,7 +68,7 @@ class VibrationWarningPlayer(
     }
 
     companion object {
-        private const val TAG = "VibrationWarningPlayer"
+        private const val TAG = "GotoroVibration"
         private const val NO_REPEAT = -1
         private const val LOW_DURATION_MS = 120L
         private val MEDIUM_PATTERN = longArrayOf(0, 180, 200, 180)
