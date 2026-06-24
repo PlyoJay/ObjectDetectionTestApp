@@ -10,8 +10,7 @@ import com.samin.objectdetection.warning.FeedbackLevel
 import com.samin.objectdetection.warning.WarningCandidate
 
 class VibrationWarningPlayer(
-    context: Context,
-    private val cooldownMs: Long = 2000L
+    context: Context
 ) : WarningPlayer {
 
     private val vibrator: Vibrator? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -21,48 +20,58 @@ class VibrationWarningPlayer(
         @Suppress("DEPRECATION")
         context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
     }
-    private var lastPlayedAtMs = 0L
 
     override fun playIfNeeded(candidate: WarningCandidate) {
-        val vibrationLevel = candidate.feedback.vibrationLevel
-        if (vibrationLevel == FeedbackLevel.NONE) return
+        play(candidate.feedback.vibrationLevel)
+    }
 
-        val now = System.currentTimeMillis()
-        if (now - lastPlayedAtMs < cooldownMs) return
+    fun play(vibrationLevel: FeedbackLevel): Boolean {
+        if (vibrationLevel == FeedbackLevel.NONE) return false
 
-        val (pattern, amplitudes) = when (vibrationLevel) {
-            FeedbackLevel.LOW -> LOW_PATTERN to LOW_AMPLITUDES
-            FeedbackLevel.MEDIUM -> MEDIUM_PATTERN to MEDIUM_AMPLITUDES
-            FeedbackLevel.HIGH -> HIGH_PATTERN to HIGH_AMPLITUDES
-            FeedbackLevel.NONE -> return
-        }
+        val currentVibrator = vibrator ?: return false
+        if (!currentVibrator.hasVibrator()) return false
 
-        val currentVibrator = vibrator ?: return
         try {
-            if (!currentVibrator.hasVibrator()) return
-
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                currentVibrator.vibrate(
-                    VibrationEffect.createWaveform(pattern, amplitudes, NO_REPEAT)
-                )
+                vibrateOreoAndAbove(currentVibrator, vibrationLevel)
             } else {
-                @Suppress("DEPRECATION")
-                currentVibrator.vibrate(pattern, NO_REPEAT)
+                vibrateLegacy(currentVibrator, vibrationLevel)
             }
-            lastPlayedAtMs = now
+            return true
         } catch (e: Exception) {
             Log.w(TAG, "vibration failed", e)
+            return false
+        }
+    }
+
+    private fun vibrateOreoAndAbove(vibrator: Vibrator, vibrationLevel: FeedbackLevel) {
+        val effect = when (vibrationLevel) {
+            FeedbackLevel.LOW -> VibrationEffect.createOneShot(
+                LOW_DURATION_MS,
+                VibrationEffect.DEFAULT_AMPLITUDE
+            )
+            FeedbackLevel.MEDIUM -> VibrationEffect.createWaveform(MEDIUM_PATTERN, NO_REPEAT)
+            FeedbackLevel.HIGH -> VibrationEffect.createWaveform(HIGH_PATTERN, NO_REPEAT)
+            FeedbackLevel.NONE -> return
+        }
+        vibrator.vibrate(effect)
+    }
+
+    @Suppress("DEPRECATION")
+    private fun vibrateLegacy(vibrator: Vibrator, vibrationLevel: FeedbackLevel) {
+        when (vibrationLevel) {
+            FeedbackLevel.LOW -> vibrator.vibrate(LOW_DURATION_MS)
+            FeedbackLevel.MEDIUM -> vibrator.vibrate(MEDIUM_PATTERN, NO_REPEAT)
+            FeedbackLevel.HIGH -> vibrator.vibrate(HIGH_PATTERN, NO_REPEAT)
+            FeedbackLevel.NONE -> return
         }
     }
 
     companion object {
         private const val TAG = "VibrationWarningPlayer"
         private const val NO_REPEAT = -1
-        private val LOW_PATTERN = longArrayOf(0, 120)
-        private val MEDIUM_PATTERN = longArrayOf(0, 180, 100, 180)
-        private val HIGH_PATTERN = longArrayOf(0, 230, 80, 230, 80, 230)
-        private val LOW_AMPLITUDES = intArrayOf(0, 90)
-        private val MEDIUM_AMPLITUDES = intArrayOf(0, 170, 0, 170)
-        private val HIGH_AMPLITUDES = intArrayOf(0, 255, 0, 255, 0, 255)
+        private const val LOW_DURATION_MS = 120L
+        private val MEDIUM_PATTERN = longArrayOf(0, 180, 200, 180)
+        private val HIGH_PATTERN = longArrayOf(0, 250, 200, 250, 200, 250)
     }
 }
