@@ -1,6 +1,7 @@
 package com.samin.objectdetection.warning
 
 import com.samin.objectdetection.detector.DetectionResult
+import com.samin.objectdetection.motion.MotionDirection
 
 enum class ProximityLevel {
     FAR,
@@ -53,6 +54,15 @@ enum class CrowdLevel {
     HIGH
 }
 
+enum class WarningScenario {
+    IMMEDIATE_DANGER,
+    APPROACHING_OBJECT,
+    FRONT_OBSTACLE,
+    CROWD,
+    TRAFFIC_INFO,
+    MONITORING
+}
+
 data class WarningFeedback(
     val riskLevel: RiskLevel,
     val beepLevel: FeedbackLevel,
@@ -77,8 +87,11 @@ data class WarningCandidate(
     val label: String,
     val confidence: Float,
     val priority: ObjectPriority,
+    val category: RiskObjectCategory = RiskObjectCategory.UNKNOWN,
     val proximityLevel: ProximityLevel,
     val riskLevel: RiskLevel,
+    val motionDirection: MotionDirection = MotionDirection.UNKNOWN,
+    val warningScenario: WarningScenario = WarningScenario.MONITORING,
     val horizontalPosition: HorizontalPosition,
     val feedback: WarningFeedback,
     val warningKey: String
@@ -92,8 +105,11 @@ data class WarningCandidate(
                 label = detection.label,
                 confidence = detection.confidence,
                 priority = detection.objectPriority,
+                category = detection.riskObjectCategory,
                 proximityLevel = detection.proximityLevel,
                 riskLevel = detection.riskLevel,
+                motionDirection = detection.motionDirection,
+                warningScenario = detection.warningScenario,
                 horizontalPosition = detection.horizontalPosition,
                 feedback = detection.warningFeedback,
                 warningKey = warningKey
@@ -132,17 +148,13 @@ data class CrowdDecision(
             label = "crowd",
             confidence = totalPersonCount.toFloat(),
             priority = ObjectPriority.LOW,
+            category = RiskObjectCategory.HUMAN_FLOW,
             proximityLevel = if (nearPersonCount > 0) ProximityLevel.NEAR else ProximityLevel.MID,
             riskLevel = riskLevel,
+            motionDirection = MotionDirection.UNKNOWN,
+            warningScenario = WarningScenario.CROWD,
             horizontalPosition = if (centerPersonCount > 0) HorizontalPosition.CENTER else HorizontalPosition.LEFT,
-            feedback = WarningFeedback(
-                riskLevel = riskLevel,
-                beepLevel = FeedbackLevel.NONE,
-                vibrationLevel = FeedbackLevel.NONE,
-                voiceLevel = FeedbackLevel.NONE,
-                message = message,
-                shouldNotify = true
-            ),
+            feedback = WarningPolicy.buildCrowdFeedback(crowdLevel, riskLevel, message),
             warningKey = key
         )
     }

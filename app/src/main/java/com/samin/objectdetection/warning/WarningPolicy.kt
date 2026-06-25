@@ -4,6 +4,7 @@ import android.util.Log
 import com.samin.objectdetection.detector.DetectionResult
 import com.samin.objectdetection.model.DetectionCategory
 import com.samin.objectdetection.model.DetectionPriority
+import com.samin.objectdetection.motion.MotionDirection
 import java.util.Locale
 
 object WarningPolicy {
@@ -56,7 +57,13 @@ object WarningPolicy {
             isIgnored = isIgnored
         )
 
-        return evaluated.copy(warningFeedback = buildWarningFeedback(evaluated))
+        return applyScenarioFeedback(evaluated)
+    }
+
+    fun applyScenarioFeedback(detection: DetectionResult): DetectionResult {
+        val scenario = resolveScenario(detection)
+        val scenarioDetection = detection.copy(warningScenario = scenario)
+        return scenarioDetection.copy(warningFeedback = buildWarningFeedback(scenarioDetection))
     }
 
     fun logDebug(detection: DetectionResult) {
@@ -70,6 +77,8 @@ object WarningPolicy {
                 "priority=${detection.objectPriority}, " +
                 "horizontalPosition=${detection.horizontalPosition}, " +
                 "category=${detection.riskObjectCategory}, ignored=${detection.isIgnored}, " +
+                "motionDirection=${detection.motionDirection}, " +
+                "scenario=${detection.warningScenario}, " +
                 "beepLevel=${detection.warningFeedback.beepLevel}, " +
                 "vibrationLevel=${detection.warningFeedback.vibrationLevel}, " +
                 "voiceLevel=${detection.warningFeedback.voiceLevel}, " +
@@ -187,13 +196,124 @@ object WarningPolicy {
         return applyPriorityRisk(positionAdjustedRisk, priority, proximityLevel)
     }
 
+    fun resolveScenario(detection: DetectionResult): WarningScenario {
+        return when {
+            detection.riskLevel == RiskLevel.CRITICAL -> WarningScenario.IMMEDIATE_DANGER
+            detection.riskObjectCategory == RiskObjectCategory.VEHICLE_RISK &&
+                detection.motionDirection == MotionDirection.APPROACHING &&
+                isNearOrCloser(detection.proximityLevel) -> WarningScenario.APPROACHING_OBJECT
+            detection.riskObjectCategory == RiskObjectCategory.VEHICLE_RISK &&
+                detection.objectPriority == ObjectPriority.HIGH &&
+                isNearOrCloser(detection.proximityLevel) -> WarningScenario.APPROACHING_OBJECT
+            (detection.riskObjectCategory == RiskObjectCategory.STATIC_OBSTACLE ||
+                detection.riskObjectCategory == RiskObjectCategory.TEMPORARY_OBSTACLE) &&
+                detection.horizontalPosition == HorizontalPosition.CENTER &&
+                isNearOrCloser(detection.proximityLevel) -> WarningScenario.FRONT_OBSTACLE
+            detection.riskObjectCategory == RiskObjectCategory.TRAFFIC_CONTROL -> WarningScenario.TRAFFIC_INFO
+            else -> WarningScenario.MONITORING
+        }
+    }
+
+    fun resolveScenario(crowdLevel: CrowdLevel): WarningScenario {
+        return when (crowdLevel) {
+            CrowdLevel.HIGH,
+            CrowdLevel.MEDIUM -> WarningScenario.CROWD
+            CrowdLevel.LOW,
+            CrowdLevel.NONE -> WarningScenario.MONITORING
+        }
+    }
+
     fun buildWarningFeedback(detection: DetectionResult): WarningFeedback {
-        return buildWarningFeedback(
-            label = detection.label,
-            category = detection.riskObjectCategory,
-            priority = detection.objectPriority,
-            riskLevel = detection.riskLevel
-        )
+        return buildScenarioFeedback(detection)
+    }
+
+    fun buildCrowdFeedback(
+        crowdLevel: CrowdLevel,
+        riskLevel: RiskLevel,
+        message: String?
+    ): WarningFeedback {
+        return when (crowdLevel) {
+            CrowdLevel.HIGH -> WarningFeedback(
+                riskLevel = riskLevel,
+                beepLevel = FeedbackLevel.MEDIUM,
+                vibrationLevel = FeedbackLevel.MEDIUM,
+                voiceLevel = FeedbackLevel.NONE,
+                message = message ?: "전방 혼잡",
+                shouldNotify = true
+            )
+            CrowdLevel.MEDIUM -> WarningFeedback(
+                riskLevel = riskLevel,
+                beepLevel = FeedbackLevel.NONE,
+                vibrationLevel = FeedbackLevel.LOW,
+                voiceLevel = FeedbackLevel.NONE,
+                message = message ?: "전방 사람 많음",
+                shouldNotify = true
+            )
+            CrowdLevel.LOW,
+            CrowdLevel.NONE -> WarningFeedback.NONE
+        }
+    }
+
+    private fun buildScenarioFeedback(detection: DetectionResult): WarningFeedback {
+        val scenario = detection.warningScenario
+        val message = buildScenarioMessage(detection)
+        val feedback = when (scenario) {
+            WarningScenario.IMMEDIATE_DANGER -> WarningFeedback(
+                riskLevel = detection.riskLevel,
+                beepLevel = FeedbackLevel.HIGH,
+                vibrationLevel = FeedbackLevel.HIGH,
+                voiceLevel = FeedbackLevel.HIGH,
+                message = message,
+                shouldNotify = message != null
+            )
+            WarningScenario.APPROACHING_OBJECT -> {
+                val beepLevel = if (detection.objectPriority == ObjectPriority.HIGH) FeedbackLevel.HIGH else FeedbackLevel.MEDIUM
+                val vibrationLevel = if (detection.objectPriority == ObjectPriority.HIGH) FeedbackLevel.HIGH else FeedbackLevel.MEDIUM
+                WarningFeedback(
+                    riskLevel = detection.riskLevel,
+                    beepLevel = beepLevel,
+                    vibrationLevel = vibrationLevel,
+                    voiceLevel = FeedbackLevel.MEDIUM,
+                    message = message,
+                    shouldNotify = message != null
+                )
+            }
+            WarningScenario.FRONT_OBSTACLE -> {
+                val level = if (detection.proximityLevel == ProximityLevel.VERY_NEAR) {
+                    FeedbackLevel.HIGH
+                } else {
+                    FeedbackLevel.MEDIUM
+                }
+                WarningFeedback(
+                    riskLevel = detection.riskLevel,
+                    beepLevel = level,
+                    vibrationLevel = level,
+                    voiceLevel = level,
+                    message = message,
+                    shouldNotify = message != null
+                )
+            }
+            WarningScenario.CROWD -> WarningFeedback.NONE
+            WarningScenario.TRAFFIC_INFO -> WarningFeedback(
+                riskLevel = detection.riskLevel,
+                beepLevel = FeedbackLevel.NONE,
+                vibrationLevel = FeedbackLevel.LOW,
+                voiceLevel = FeedbackLevel.NONE,
+                message = message,
+                shouldNotify = message != null
+            )
+            WarningScenario.MONITORING -> WarningFeedback.NONE
+        }
+
+        if (detection.isIgnored || detection.riskLevel == RiskLevel.NONE) {
+            return feedback.copy(
+                beepLevel = FeedbackLevel.NONE,
+                vibrationLevel = FeedbackLevel.NONE,
+                voiceLevel = FeedbackLevel.NONE,
+                shouldNotify = false
+            )
+        }
+        return feedback
     }
 
     fun buildWarningFeedback(
@@ -308,6 +428,59 @@ object WarningPolicy {
             "curb" -> "단차"
             "low_obstacle" -> "낮은 장애물"
             else -> "객체"
+        }
+    }
+
+    private fun buildScenarioMessage(detection: DetectionResult): String? {
+        val label = normalize(detection.label)
+        return when (detection.warningScenario) {
+            WarningScenario.IMMEDIATE_DANGER -> buildImmediateDangerMessage(label)
+            WarningScenario.APPROACHING_OBJECT -> buildApproachingObjectMessage(label)
+            WarningScenario.FRONT_OBSTACLE -> {
+                if (detection.proximityLevel == ProximityLevel.VERY_NEAR) "정지! 장애물" else "전방 장애물"
+            }
+            WarningScenario.CROWD -> null
+            WarningScenario.TRAFFIC_INFO -> buildTrafficInfoMessage(label)
+            WarningScenario.MONITORING -> null
+        }
+    }
+
+    private fun buildImmediateDangerMessage(label: String): String {
+        return when (label) {
+            "car",
+            "bus",
+            "truck" -> "정지! 차량"
+            "motorcycle" -> "정지! 오토바이"
+            "bicycle" -> "정지! 자전거"
+            "person" -> "정지! 사람"
+            "stairs" -> "정지! 계단"
+            "curb" -> "정지! 단차"
+            "low_obstacle",
+            "bollard",
+            "bench",
+            "fire hydrant",
+            "chair" -> "정지! 장애물"
+            else -> "정지!"
+        }
+    }
+
+    private fun buildApproachingObjectMessage(label: String): String {
+        return when (label) {
+            "car",
+            "bus",
+            "truck" -> "차량 접근"
+            "motorcycle" -> "오토바이 접근"
+            "bicycle" -> "자전거 접근"
+            "person" -> "사람 접근"
+            else -> "전방 접근"
+        }
+    }
+
+    private fun buildTrafficInfoMessage(label: String): String? {
+        return when (label) {
+            "traffic light" -> "전방 신호등"
+            "stop sign" -> "전방 정지 표지판"
+            else -> null
         }
     }
 
@@ -448,6 +621,10 @@ object WarningPolicy {
             ProximityLevel.MID -> maxOf(riskLevel, RiskLevel.HIGH)
             ProximityLevel.FAR -> riskLevel
         }
+    }
+
+    private fun isNearOrCloser(proximityLevel: ProximityLevel): Boolean {
+        return proximityLevel == ProximityLevel.NEAR || proximityLevel == ProximityLevel.VERY_NEAR
     }
 
     private fun decrease(riskLevel: RiskLevel): RiskLevel {

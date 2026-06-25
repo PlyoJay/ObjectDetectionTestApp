@@ -203,6 +203,8 @@ class BoundingBoxOverlay @JvmOverloads constructor(
             append("h=${String.format(Locale.US, "%.3f", detection.bboxHeightRatio)} ")
             append("p=${detection.objectPriority} ")
             append("${detection.proximityLevel}/${detection.riskLevel}/${detection.horizontalPosition} ")
+            append("motion=${detection.motionDirection} ")
+            append("scenario=${detection.warningScenario} ")
             append("b=${detection.warningFeedback.beepLevel} ")
             append("v=${detection.warningFeedback.vibrationLevel} ")
             append("voice=${detection.warningFeedback.voiceLevel} ")
@@ -230,6 +232,8 @@ class BoundingBoxOverlay @JvmOverloads constructor(
                     "objectPriority=${detection.objectPriority} " +
                     "proximityLevel=${detection.proximityLevel} " +
                     "riskLevel=${detection.riskLevel} " +
+                    "motionDirection=${detection.motionDirection} " +
+                    "scenario=${detection.warningScenario} " +
                     "beep=${detection.warningFeedback.beepLevel} " +
                     "vibration=${detection.warningFeedback.vibrationLevel} " +
                     "voice=${detection.warningFeedback.voiceLevel} " +

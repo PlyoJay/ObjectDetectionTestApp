@@ -43,6 +43,7 @@ import com.samin.objectdetection.warning.WarningCandidate
 import com.samin.objectdetection.warning.WarningCandidateSelector
 import com.samin.objectdetection.warning.WarningCooldownManager
 import com.samin.objectdetection.warning.WarningPolicy
+import com.samin.objectdetection.warning.WarningScenario
 import com.samin.objectdetection.warning.output.BeepWarningPlayer
 import com.samin.objectdetection.warning.output.TtsWarningPlayer
 import com.samin.objectdetection.warning.output.VibrationWarningPlayer
@@ -375,7 +376,9 @@ class MainActivity : ComponentActivity() {
             frameHeight = height,
             timestampMs = start,
             userMotionState = userLocationSnapshot.motionState
-        )
+        ).map { detection ->
+            WarningPolicy.applyScenarioFeedback(detection)
+        }
 
         val warningDetections = overlayDetections.filter { detection ->
             val policy = YoloDefaultPolicyRegistry.get(detection.label)
@@ -607,10 +610,14 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun shouldSpeak(candidate: WarningCandidate): Boolean {
-        return when {
-            candidate.riskLevel == RiskLevel.CRITICAL -> true
-            candidate.riskLevel == RiskLevel.HIGH && candidate.priority == ObjectPriority.HIGH -> true
-            else -> false
+        return when (candidate.warningScenario) {
+            WarningScenario.IMMEDIATE_DANGER -> true
+            WarningScenario.APPROACHING_OBJECT -> candidate.priority == ObjectPriority.HIGH
+            WarningScenario.FRONT_OBSTACLE -> candidate.riskLevel == RiskLevel.HIGH ||
+                candidate.riskLevel == RiskLevel.CRITICAL
+            WarningScenario.CROWD,
+            WarningScenario.TRAFFIC_INFO,
+            WarningScenario.MONITORING -> false
         }
     }
 
@@ -630,9 +637,12 @@ class MainActivity : ComponentActivity() {
             WARNING_SELECTED_TAG,
             "[WarningSelected]\n" +
                 "label=${candidate.label}\n" +
+                "category=${candidate.category}\n" +
                 "priority=${candidate.priority}\n" +
                 "proximity=${candidate.proximityLevel}\n" +
                 "risk=${candidate.riskLevel}\n" +
+                "motionDirection=${candidate.motionDirection}\n" +
+                "scenario=${candidate.warningScenario}\n" +
                 "message=${candidate.feedback.message}\n" +
                 "beep=${candidate.feedback.beepLevel}\n" +
                 "vibration=${candidate.feedback.vibrationLevel}\n" +
@@ -662,9 +672,12 @@ class MainActivity : ComponentActivity() {
             WARNING_OUTPUT_TAG,
             "[WarningOutput]\n" +
                 "label=${candidate.label}\n" +
+                "category=${candidate.category}\n" +
                 "priority=${candidate.priority}\n" +
                 "proximity=${candidate.proximityLevel}\n" +
                 "risk=${candidate.riskLevel}\n" +
+                "motionDirection=${candidate.motionDirection}\n" +
+                "scenario=${candidate.warningScenario}\n" +
                 "message=${candidate.feedback.message}\n" +
                 "vibration=${candidate.feedback.vibrationLevel}\n" +
                 "vibrationExecuted=$vibrationExecuted\n" +

@@ -9,6 +9,8 @@ class ObjectMotionTracker(
     private val minHistorySize: Int = 3,
     private val minAbsoluteAreaChange: Float = 0.005f,
     private val minRelativeAreaChangeRatio: Float = 0.15f,
+    private val minAbsoluteHeightChange: Float = 0.03f,
+    private val minRelativeHeightChangeRatio: Float = 0.10f,
     private val maxMatchDistanceRatio: Float = 0.18f,
     private val minSampleIntervalMs: Long = 500L,
     private val staleTrackTimeoutMs: Long = 2_000L
@@ -146,14 +148,22 @@ class ObjectMotionTracker(
         val last = records.last()
         val areaDelta = last.areaRatio - first.areaRatio
         val relativeChangeRatio = areaDelta / first.areaRatio.coerceAtLeast(MIN_RELATIVE_AREA_BASE)
+        val heightDelta = last.heightRatio - first.heightRatio
+        val relativeHeightChangeRatio = heightDelta / first.heightRatio.coerceAtLeast(MIN_RELATIVE_AREA_BASE)
+        val isAreaIncreasing = areaDelta >= minAbsoluteAreaChange &&
+            relativeChangeRatio >= minRelativeAreaChangeRatio
+        val isAreaDecreasing = areaDelta <= -minAbsoluteAreaChange &&
+            relativeChangeRatio <= -minRelativeAreaChangeRatio
+        val isHeightIncreasing = heightDelta >= minAbsoluteHeightChange &&
+            relativeHeightChangeRatio >= minRelativeHeightChangeRatio
+        val isHeightDecreasing = heightDelta <= -minAbsoluteHeightChange &&
+            relativeHeightChangeRatio <= -minRelativeHeightChangeRatio
 
         return AreaChange(
             areaDelta = areaDelta,
             relativeChangeRatio = relativeChangeRatio,
-            isIncreasing = areaDelta >= minAbsoluteAreaChange &&
-                relativeChangeRatio >= minRelativeAreaChangeRatio,
-            isDecreasing = areaDelta <= -minAbsoluteAreaChange &&
-                relativeChangeRatio <= -minRelativeAreaChangeRatio,
+            isIncreasing = isAreaIncreasing || isHeightIncreasing,
+            isDecreasing = isAreaDecreasing || isHeightDecreasing,
             hasEnoughSamples = true
         )
     }
@@ -251,6 +261,7 @@ class ObjectMotionTracker(
             centerX = left + boxWidth / 2f,
             centerY = top + boxHeight / 2f,
             areaRatio = boxWidth * boxHeight / imageArea,
+            heightRatio = boxHeight / frameHeight.coerceAtLeast(1).toFloat(),
             timestampMs = timestampMs
         )
     }
@@ -267,6 +278,7 @@ class ObjectMotionTracker(
         val centerX: Float,
         val centerY: Float,
         val areaRatio: Float,
+        val heightRatio: Float,
         val timestampMs: Long
     ) {
         fun distanceTo(other: MotionSnapshot): Float {

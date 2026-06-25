@@ -12,6 +12,7 @@ import com.samin.objectdetection.warning.ProximityLevel
 import com.samin.objectdetection.warning.RiskLevel
 import com.samin.objectdetection.warning.RiskObjectCategory
 import com.samin.objectdetection.warning.WarningFeedback
+import com.samin.objectdetection.warning.WarningScenario
 
 data class DetectionResult(
     val label: String,
@@ -36,6 +37,7 @@ data class DetectionResult(
     val objectPriority: ObjectPriority = ObjectPriority.LOW,
     val proximityLevel: ProximityLevel = ProximityLevel.FAR,
     val riskLevel: RiskLevel = RiskLevel.NONE,
+    val warningScenario: WarningScenario = WarningScenario.MONITORING,
     val isIgnored: Boolean = false,
     val warningFeedback: WarningFeedback = WarningFeedback.NONE
 )
