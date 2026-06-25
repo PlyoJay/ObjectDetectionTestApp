@@ -38,7 +38,8 @@ object WarningPolicy {
                 proximityLevel = proximityLevel,
                 category = category,
                 priority = priority,
-                horizontalPosition = horizontalPosition
+                horizontalPosition = horizontalPosition,
+                motionDirection = detection.motionDirection
             )
         }
 
@@ -61,8 +62,20 @@ object WarningPolicy {
     }
 
     fun applyScenarioFeedback(detection: DetectionResult): DetectionResult {
-        val scenario = resolveScenario(detection)
-        val scenarioDetection = detection.copy(warningScenario = scenario)
+        val riskLevel = if (detection.isIgnored) {
+            RiskLevel.NONE
+        } else {
+            resolveRiskLevel(
+                proximityLevel = detection.proximityLevel,
+                category = detection.riskObjectCategory,
+                priority = detection.objectPriority,
+                horizontalPosition = detection.horizontalPosition,
+                motionDirection = detection.motionDirection
+            )
+        }
+        val riskDetection = detection.copy(riskLevel = riskLevel)
+        val scenario = resolveScenario(riskDetection)
+        val scenarioDetection = riskDetection.copy(warningScenario = scenario)
         return scenarioDetection.copy(warningFeedback = buildWarningFeedback(scenarioDetection))
     }
 
@@ -78,7 +91,7 @@ object WarningPolicy {
                 "horizontalPosition=${detection.horizontalPosition}, " +
                 "category=${detection.riskObjectCategory}, ignored=${detection.isIgnored}, " +
                 "motionDirection=${detection.motionDirection}, " +
-                "scenario=${detection.warningScenario}, " +
+                "warningScenario=${detection.warningScenario}, " +
                 "beepLevel=${detection.warningFeedback.beepLevel}, " +
                 "vibrationLevel=${detection.warningFeedback.vibrationLevel}, " +
                 "voiceLevel=${detection.warningFeedback.voiceLevel}, " +
@@ -174,11 +187,9 @@ object WarningPolicy {
         proximityLevel: ProximityLevel,
         category: RiskObjectCategory,
         priority: ObjectPriority,
-        horizontalPosition: HorizontalPosition
+        horizontalPosition: HorizontalPosition,
+        motionDirection: MotionDirection = MotionDirection.UNKNOWN
     ): RiskLevel {
-        if (category == RiskObjectCategory.VEHICLE_RISK && proximityLevel == ProximityLevel.VERY_NEAR) {
-            return RiskLevel.CRITICAL
-        }
         if (category == RiskObjectCategory.HUMAN_FLOW && proximityLevel == ProximityLevel.FAR) {
             return RiskLevel.NONE
         }
@@ -187,29 +198,37 @@ object WarningPolicy {
         }
 
         val baseRisk = baseRisk(proximityLevel)
-        val positionAdjustedRisk = if (horizontalPosition != HorizontalPosition.CENTER && proximityLevel != ProximityLevel.VERY_NEAR) {
+        val positionAdjustedRisk = if (horizontalPosition != HorizontalPosition.CENTER && proximityLevel != ProximityLevel.FAR) {
             decrease(baseRisk)
         } else {
             baseRisk
         }
 
-        return applyPriorityRisk(positionAdjustedRisk, priority, proximityLevel)
+        return applyPriorityRisk(
+            riskLevel = positionAdjustedRisk,
+            priority = priority,
+            proximityLevel = proximityLevel,
+            horizontalPosition = horizontalPosition,
+            motionDirection = motionDirection
+        )
     }
 
     fun resolveScenario(detection: DetectionResult): WarningScenario {
         return when {
-            detection.riskLevel == RiskLevel.CRITICAL -> WarningScenario.IMMEDIATE_DANGER
+            detection.riskObjectCategory == RiskObjectCategory.VEHICLE_RISK &&
+                detection.proximityLevel == ProximityLevel.VERY_NEAR &&
+                detection.horizontalPosition == HorizontalPosition.CENTER -> WarningScenario.IMMEDIATE_DANGER
             detection.riskObjectCategory == RiskObjectCategory.VEHICLE_RISK &&
                 detection.motionDirection == MotionDirection.APPROACHING &&
                 isNearOrCloser(detection.proximityLevel) -> WarningScenario.APPROACHING_OBJECT
             detection.riskObjectCategory == RiskObjectCategory.VEHICLE_RISK &&
-                detection.objectPriority == ObjectPriority.HIGH &&
-                isNearOrCloser(detection.proximityLevel) -> WarningScenario.APPROACHING_OBJECT
+                isNearOrCloser(detection.proximityLevel) -> WarningScenario.FRONT_VEHICLE
             (detection.riskObjectCategory == RiskObjectCategory.STATIC_OBSTACLE ||
                 detection.riskObjectCategory == RiskObjectCategory.TEMPORARY_OBSTACLE) &&
                 detection.horizontalPosition == HorizontalPosition.CENTER &&
                 isNearOrCloser(detection.proximityLevel) -> WarningScenario.FRONT_OBSTACLE
             detection.riskObjectCategory == RiskObjectCategory.TRAFFIC_CONTROL -> WarningScenario.TRAFFIC_INFO
+            detection.riskLevel == RiskLevel.CRITICAL -> WarningScenario.IMMEDIATE_DANGER
             else -> WarningScenario.MONITORING
         }
     }
@@ -278,6 +297,14 @@ object WarningPolicy {
                     shouldNotify = message != null
                 )
             }
+            WarningScenario.FRONT_VEHICLE -> WarningFeedback(
+                riskLevel = RiskLevel.HIGH,
+                beepLevel = FeedbackLevel.MEDIUM,
+                vibrationLevel = FeedbackLevel.MEDIUM,
+                voiceLevel = FeedbackLevel.NONE,
+                message = message,
+                shouldNotify = message != null
+            )
             WarningScenario.FRONT_OBSTACLE -> {
                 val level = if (detection.proximityLevel == ProximityLevel.VERY_NEAR) {
                     FeedbackLevel.HIGH
@@ -436,12 +463,24 @@ object WarningPolicy {
         return when (detection.warningScenario) {
             WarningScenario.IMMEDIATE_DANGER -> buildImmediateDangerMessage(label)
             WarningScenario.APPROACHING_OBJECT -> buildApproachingObjectMessage(label)
+            WarningScenario.FRONT_VEHICLE -> buildFrontVehicleMessage(label)
             WarningScenario.FRONT_OBSTACLE -> {
                 if (detection.proximityLevel == ProximityLevel.VERY_NEAR) "정지! 장애물" else "전방 장애물"
             }
             WarningScenario.CROWD -> null
             WarningScenario.TRAFFIC_INFO -> buildTrafficInfoMessage(label)
             WarningScenario.MONITORING -> null
+        }
+    }
+
+    private fun buildFrontVehicleMessage(label: String): String {
+        return when (label) {
+            "car",
+            "bus",
+            "truck" -> "전방 차량"
+            "motorcycle" -> "전방 오토바이"
+            "bicycle" -> "전방 자전거"
+            else -> "전방 이동체"
         }
     }
 
@@ -611,14 +650,25 @@ object WarningPolicy {
     private fun applyPriorityRisk(
         riskLevel: RiskLevel,
         priority: ObjectPriority,
-        proximityLevel: ProximityLevel
+        proximityLevel: ProximityLevel,
+        horizontalPosition: HorizontalPosition,
+        motionDirection: MotionDirection
     ): RiskLevel {
         if (priority != ObjectPriority.HIGH) return riskLevel
 
         return when (proximityLevel) {
-            ProximityLevel.VERY_NEAR,
-            ProximityLevel.NEAR -> RiskLevel.CRITICAL
-            ProximityLevel.MID -> maxOf(riskLevel, RiskLevel.HIGH)
+            ProximityLevel.VERY_NEAR -> {
+                if (horizontalPosition == HorizontalPosition.CENTER) RiskLevel.CRITICAL else riskLevel
+            }
+            ProximityLevel.NEAR -> when (motionDirection) {
+                MotionDirection.APPROACHING -> RiskLevel.CRITICAL
+                MotionDirection.STABLE,
+                MotionDirection.UNKNOWN -> maxOf(riskLevel, RiskLevel.HIGH)
+                MotionDirection.LEAVING -> minOf(riskLevel, RiskLevel.MEDIUM)
+            }
+            ProximityLevel.MID -> {
+                if (motionDirection == MotionDirection.APPROACHING) maxOf(riskLevel, RiskLevel.HIGH) else riskLevel
+            }
             ProximityLevel.FAR -> riskLevel
         }
     }

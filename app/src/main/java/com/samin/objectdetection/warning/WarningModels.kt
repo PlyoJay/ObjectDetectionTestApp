@@ -57,6 +57,7 @@ enum class CrowdLevel {
 enum class WarningScenario {
     IMMEDIATE_DANGER,
     APPROACHING_OBJECT,
+    FRONT_VEHICLE,
     FRONT_OBSTACLE,
     CROWD,
     TRAFFIC_INFO,

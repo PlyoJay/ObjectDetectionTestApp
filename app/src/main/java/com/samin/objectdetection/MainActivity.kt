@@ -615,6 +615,7 @@ class MainActivity : ComponentActivity() {
             WarningScenario.APPROACHING_OBJECT -> candidate.priority == ObjectPriority.HIGH
             WarningScenario.FRONT_OBSTACLE -> candidate.riskLevel == RiskLevel.HIGH ||
                 candidate.riskLevel == RiskLevel.CRITICAL
+            WarningScenario.FRONT_VEHICLE,
             WarningScenario.CROWD,
             WarningScenario.TRAFFIC_INFO,
             WarningScenario.MONITORING -> false
@@ -639,14 +640,15 @@ class MainActivity : ComponentActivity() {
                 "label=${candidate.label}\n" +
                 "category=${candidate.category}\n" +
                 "priority=${candidate.priority}\n" +
-                "proximity=${candidate.proximityLevel}\n" +
-                "risk=${candidate.riskLevel}\n" +
+                "proximityLevel=${candidate.proximityLevel}\n" +
+                "horizontalPosition=${candidate.horizontalPosition}\n" +
+                "riskLevel=${candidate.riskLevel}\n" +
                 "motionDirection=${candidate.motionDirection}\n" +
-                "scenario=${candidate.warningScenario}\n" +
+                "warningScenario=${candidate.warningScenario}\n" +
                 "message=${candidate.feedback.message}\n" +
-                "beep=${candidate.feedback.beepLevel}\n" +
-                "vibration=${candidate.feedback.vibrationLevel}\n" +
-                "voice=${candidate.feedback.voiceLevel}\n" +
+                "beepLevel=${candidate.feedback.beepLevel}\n" +
+                "vibrationLevel=${candidate.feedback.vibrationLevel}\n" +
+                "voiceLevel=${candidate.feedback.voiceLevel}\n" +
                 "cooldownPassed=$cooldownPassed\n" +
                 "vibrationExecuted=$vibrationExecuted\n" +
                 "beepExecuted=$beepExecuted\n" +
@@ -674,16 +676,17 @@ class MainActivity : ComponentActivity() {
                 "label=${candidate.label}\n" +
                 "category=${candidate.category}\n" +
                 "priority=${candidate.priority}\n" +
-                "proximity=${candidate.proximityLevel}\n" +
-                "risk=${candidate.riskLevel}\n" +
+                "proximityLevel=${candidate.proximityLevel}\n" +
+                "horizontalPosition=${candidate.horizontalPosition}\n" +
+                "riskLevel=${candidate.riskLevel}\n" +
                 "motionDirection=${candidate.motionDirection}\n" +
-                "scenario=${candidate.warningScenario}\n" +
+                "warningScenario=${candidate.warningScenario}\n" +
                 "message=${candidate.feedback.message}\n" +
-                "vibration=${candidate.feedback.vibrationLevel}\n" +
+                "vibrationLevel=${candidate.feedback.vibrationLevel}\n" +
                 "vibrationExecuted=$vibrationExecuted\n" +
-                "beep=${candidate.feedback.beepLevel}\n" +
+                "beepLevel=${candidate.feedback.beepLevel}\n" +
                 "beepExecuted=$beepExecuted\n" +
-                "voice=${candidate.feedback.voiceLevel}\n" +
+                "voiceLevel=${candidate.feedback.voiceLevel}\n" +
                 "ttsExecuted=$ttsExecuted\n" +
                 "ttsSkippedReason=${ttsSkippedReason ?: "none"}\n" +
                 "cooldown=$cooldownPassed"
