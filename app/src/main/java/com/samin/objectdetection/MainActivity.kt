@@ -37,16 +37,15 @@ import com.samin.objectdetection.ui.BoundingBoxOverlay
 import com.samin.objectdetection.ui.OverlayDebugMode
 import com.samin.objectdetection.warning.CrowdDecision
 import com.samin.objectdetection.warning.FeedbackLevel
-import com.samin.objectdetection.warning.ObjectPriority
 import com.samin.objectdetection.warning.RiskLevel
 import com.samin.objectdetection.warning.WarningCandidate
 import com.samin.objectdetection.warning.WarningCandidateSelector
 import com.samin.objectdetection.warning.WarningCooldownManager
 import com.samin.objectdetection.warning.WarningPolicy
-import com.samin.objectdetection.warning.WarningScenario
 import com.samin.objectdetection.warning.output.BeepWarningPlayer
 import com.samin.objectdetection.warning.output.TtsWarningPlayer
 import com.samin.objectdetection.warning.output.VibrationWarningPlayer
+import com.samin.objectdetection.warning.output.WarningOutputController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -73,6 +72,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var vibrationWarningPlayer: VibrationWarningPlayer
     private lateinit var beepWarningPlayer: BeepWarningPlayer
     private lateinit var ttsWarningPlayer: TtsWarningPlayer
+    private lateinit var warningOutputController: WarningOutputController
 
     private val enableActualVibration = true
     private val enableActualBeep = true
@@ -119,6 +119,16 @@ class MainActivity : ComponentActivity() {
         vibrationWarningPlayer = VibrationWarningPlayer(this)
         beepWarningPlayer = BeepWarningPlayer()
         ttsWarningPlayer = TtsWarningPlayer(this)
+        warningOutputController = WarningOutputController(
+            scope = lifecycleScope,
+            vibrationWarningPlayer = vibrationWarningPlayer,
+            beepWarningPlayer = beepWarningPlayer,
+            ttsWarningPlayer = ttsWarningPlayer,
+            warningCooldownManager = warningCooldownManager,
+            enableActualVibration = { enableActualVibration },
+            enableActualBeep = { enableActualBeep },
+            enableActualTts = { enableActualTts }
+        )
         logWarningPolicyOverlayMismatch()
 
         setupUi()
@@ -411,47 +421,15 @@ class MainActivity : ComponentActivity() {
             warningCooldownManager.canNotify(candidate.warningKey, start)
         } ?: false
         val selectedFeedback = selectedCandidate?.feedback
-        var vibrationExecuted = false
-        var beepExecuted = false
-        var ttsExecuted = false
-        var ttsSkippedReason: String? = null
-        if (
-            selectedCandidate != null &&
-            selectedCandidate.feedback.shouldNotify &&
-            selectedCooldownPassed
-        ) {
-            val feedback = selectedCandidate.feedback
-            if (enableActualVibration && feedback.vibrationLevel != FeedbackLevel.NONE) {
-                vibrationExecuted = vibrationWarningPlayer.play(feedback.vibrationLevel)
-            }
-            if (enableActualBeep && shouldPlayBeep(feedback.beepLevel)) {
-                beepExecuted = beepWarningPlayer.play(feedback.beepLevel)
-            }
-            if (enableActualTts) {
-                val message = feedback.message
-                when {
-                    feedback.voiceLevel == FeedbackLevel.NONE -> {
-                        ttsSkippedReason = "voice_none"
-                    }
-                    message.isNullOrBlank() -> {
-                        ttsSkippedReason = "message_blank"
-                    }
-                    !shouldSpeak(selectedCandidate) -> {
-                        ttsSkippedReason = "not_critical_or_high_priority"
-                    }
-                    else -> {
-                        val ttsResult = ttsWarningPlayer.speak(selectedCandidate, message)
-                        ttsExecuted = ttsResult.executed
-                        ttsSkippedReason = ttsResult.skippedReason
-                    }
-                }
-            } else {
-                ttsSkippedReason = "tts_disabled"
-            }
-            if (vibrationExecuted || beepExecuted || ttsExecuted) {
-                warningCooldownManager.markNotified(selectedCandidate.warningKey, start)
-            }
-        }
+        val outputResult = warningOutputController.submit(
+            candidate = selectedCandidate,
+            cooldownAllowed = selectedCooldownPassed,
+            timestampMs = start
+        )
+        val vibrationExecuted = outputResult.vibrationExecuted
+        val beepExecuted = outputResult.beepExecuted
+        val ttsExecuted = outputResult.ttsExecuted
+        val ttsSkippedReason = outputResult.skippedReason
         Log.d(
             VIBRATION_OUTPUT_TAG,
             "label=${selectedCandidate?.label ?: "none"} vibration=${selectedCandidate?.feedback?.vibrationLevel ?: FeedbackLevel.NONE} " +
@@ -598,28 +576,6 @@ class MainActivity : ComponentActivity() {
 
     private fun logDetectionTiming(tag: String, message: String) {
         Log.d(tag, message)
-    }
-
-    private fun shouldPlayBeep(level: FeedbackLevel): Boolean {
-        return when (level) {
-            FeedbackLevel.HIGH,
-            FeedbackLevel.MEDIUM -> true
-            FeedbackLevel.LOW,
-            FeedbackLevel.NONE -> false
-        }
-    }
-
-    private fun shouldSpeak(candidate: WarningCandidate): Boolean {
-        return when (candidate.warningScenario) {
-            WarningScenario.IMMEDIATE_DANGER -> true
-            WarningScenario.APPROACHING_OBJECT -> candidate.priority == ObjectPriority.HIGH
-            WarningScenario.FRONT_OBSTACLE -> candidate.riskLevel == RiskLevel.HIGH ||
-                candidate.riskLevel == RiskLevel.CRITICAL
-            WarningScenario.FRONT_VEHICLE,
-            WarningScenario.CROWD,
-            WarningScenario.TRAFFIC_INFO,
-            WarningScenario.MONITORING -> false
-        }
     }
 
     private fun logSelectedWarningCandidate(
@@ -909,6 +865,7 @@ class MainActivity : ComponentActivity() {
         cameraExecutor.shutdown()
         mlKitDetector.close()
         detector.close()
+        warningOutputController.release()
         vibrationWarningPlayer.release()
         beepWarningPlayer.release()
         ttsWarningPlayer.release()

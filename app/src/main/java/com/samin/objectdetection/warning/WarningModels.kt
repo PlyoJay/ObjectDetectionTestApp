@@ -2,6 +2,7 @@ package com.samin.objectdetection.warning
 
 import com.samin.objectdetection.detector.DetectionResult
 import com.samin.objectdetection.motion.MotionDirection
+import com.samin.objectdetection.motion.UserObjectRelation
 
 enum class ProximityLevel {
     FAR,
@@ -92,6 +93,7 @@ data class WarningCandidate(
     val proximityLevel: ProximityLevel,
     val riskLevel: RiskLevel,
     val motionDirection: MotionDirection = MotionDirection.UNKNOWN,
+    val userObjectRelation: UserObjectRelation = UserObjectRelation.UNKNOWN,
     val warningScenario: WarningScenario = WarningScenario.MONITORING,
     val horizontalPosition: HorizontalPosition,
     val feedback: WarningFeedback,
@@ -110,6 +112,7 @@ data class WarningCandidate(
                 proximityLevel = detection.proximityLevel,
                 riskLevel = detection.riskLevel,
                 motionDirection = detection.motionDirection,
+                userObjectRelation = detection.userObjectRelation,
                 warningScenario = detection.warningScenario,
                 horizontalPosition = detection.horizontalPosition,
                 feedback = detection.warningFeedback,
@@ -153,6 +156,7 @@ data class CrowdDecision(
             proximityLevel = if (nearPersonCount > 0) ProximityLevel.NEAR else ProximityLevel.MID,
             riskLevel = riskLevel,
             motionDirection = MotionDirection.UNKNOWN,
+            userObjectRelation = UserObjectRelation.UNKNOWN,
             warningScenario = WarningScenario.CROWD,
             horizontalPosition = if (centerPersonCount > 0) HorizontalPosition.CENTER else HorizontalPosition.LEFT,
             feedback = WarningPolicy.buildCrowdFeedback(crowdLevel, riskLevel, message),

@@ -56,8 +56,31 @@ class BeepWarningPlayer : WarningPlayer {
         return true
     }
 
-    override fun release() {
+    fun expectedDurationMs(beepLevel: FeedbackLevel): Long {
+        return when (beepLevel) {
+            FeedbackLevel.MEDIUM -> MEDIUM_INTERVAL_MS + MEDIUM_BEEP_DURATION_MS + BEEP_GUARD_RELEASE_DELAY_MS
+            FeedbackLevel.HIGH -> HIGH_INTERVAL_MS * 2 + HIGH_BEEP_DURATION_MS + BEEP_GUARD_RELEASE_DELAY_MS
+            FeedbackLevel.LOW,
+            FeedbackLevel.NONE -> 0L
+        }
+    }
+
+    fun stop() {
         handler.removeCallbacksAndMessages(null)
+        try {
+            toneGenerator?.stopTone()
+        } catch (e: Exception) {
+            Log.w(TAG, "stop beep failed", e)
+        }
+        isPlaying = false
+    }
+
+    fun isCurrentlyPlaying(): Boolean {
+        return isPlaying
+    }
+
+    override fun release() {
+        stop()
         toneGenerator?.release()
     }
 
@@ -66,7 +89,7 @@ class BeepWarningPlayer : WarningPlayer {
         private const val TONE_VOLUME = 100
         private const val TONE_TYPE = ToneGenerator.TONE_PROP_BEEP
         private const val MEDIUM_BEEP_DURATION_MS = 120
-        private const val HIGH_BEEP_DURATION_MS = 100
+        private const val HIGH_BEEP_DURATION_MS = 120
         private const val MEDIUM_INTERVAL_MS = 150L
         private const val HIGH_INTERVAL_MS = 120L
         private const val BEEP_GUARD_RELEASE_DELAY_MS = 180L

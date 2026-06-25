@@ -2,6 +2,7 @@ package com.samin.objectdetection.warning
 
 import com.samin.objectdetection.detector.DetectionResult
 import com.samin.objectdetection.motion.MotionDirection
+import com.samin.objectdetection.motion.UserObjectRelation
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -55,10 +56,39 @@ class WarningPolicyVehicleScenarioTest {
         assertEquals("정지! 차량", result.warningFeedback.message)
     }
 
+    @Test
+    fun userApproachingNearVehicle_isFrontVehicleWithoutCriticalRisk() {
+        val detection = vehicleDetection(
+            proximityLevel = ProximityLevel.NEAR,
+            motionDirection = MotionDirection.APPROACHING,
+            userObjectRelation = UserObjectRelation.USER_APPROACHING_OBJECT
+        )
+
+        val result = WarningPolicy.applyScenarioFeedback(detection)
+
+        assertEquals(RiskLevel.HIGH, result.riskLevel)
+        assertEquals(WarningScenario.FRONT_VEHICLE, result.warningScenario)
+        assertEquals("전방 차량", result.warningFeedback.message)
+    }
+
+    @Test
+    fun stableMidHighPriorityVehicle_isMonitoringWithoutHighRisk() {
+        val detection = vehicleDetection(
+            proximityLevel = ProximityLevel.MID,
+            motionDirection = MotionDirection.STABLE
+        )
+
+        val result = WarningPolicy.applyScenarioFeedback(detection)
+
+        assertEquals(RiskLevel.MEDIUM, result.riskLevel)
+        assertEquals(WarningScenario.MONITORING, result.warningScenario)
+    }
+
     private fun vehicleDetection(
         proximityLevel: ProximityLevel,
         motionDirection: MotionDirection,
-        horizontalPosition: HorizontalPosition = HorizontalPosition.CENTER
+        horizontalPosition: HorizontalPosition = HorizontalPosition.CENTER,
+        userObjectRelation: UserObjectRelation = UserObjectRelation.UNKNOWN
     ): DetectionResult {
         return DetectionResult(
             label = "car",
@@ -68,6 +98,7 @@ class WarningPolicyVehicleScenarioTest {
             right = 100f,
             bottom = 100f,
             motionDirection = motionDirection,
+            userObjectRelation = userObjectRelation,
             horizontalPosition = horizontalPosition,
             riskObjectCategory = RiskObjectCategory.VEHICLE_RISK,
             objectPriority = ObjectPriority.HIGH,

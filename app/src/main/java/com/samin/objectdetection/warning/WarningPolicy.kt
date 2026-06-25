@@ -5,6 +5,7 @@ import com.samin.objectdetection.detector.DetectionResult
 import com.samin.objectdetection.model.DetectionCategory
 import com.samin.objectdetection.model.DetectionPriority
 import com.samin.objectdetection.motion.MotionDirection
+import com.samin.objectdetection.motion.UserObjectRelation
 import java.util.Locale
 
 object WarningPolicy {
@@ -39,7 +40,8 @@ object WarningPolicy {
                 category = category,
                 priority = priority,
                 horizontalPosition = horizontalPosition,
-                motionDirection = detection.motionDirection
+                motionDirection = detection.motionDirection,
+                userObjectRelation = detection.userObjectRelation
             )
         }
 
@@ -70,7 +72,8 @@ object WarningPolicy {
                 category = detection.riskObjectCategory,
                 priority = detection.objectPriority,
                 horizontalPosition = detection.horizontalPosition,
-                motionDirection = detection.motionDirection
+                motionDirection = detection.motionDirection,
+                userObjectRelation = detection.userObjectRelation
             )
         }
         val riskDetection = detection.copy(riskLevel = riskLevel)
@@ -188,7 +191,8 @@ object WarningPolicy {
         category: RiskObjectCategory,
         priority: ObjectPriority,
         horizontalPosition: HorizontalPosition,
-        motionDirection: MotionDirection = MotionDirection.UNKNOWN
+        motionDirection: MotionDirection = MotionDirection.UNKNOWN,
+        userObjectRelation: UserObjectRelation = UserObjectRelation.UNKNOWN
     ): RiskLevel {
         if (category == RiskObjectCategory.HUMAN_FLOW && proximityLevel == ProximityLevel.FAR) {
             return RiskLevel.NONE
@@ -209,7 +213,8 @@ object WarningPolicy {
             priority = priority,
             proximityLevel = proximityLevel,
             horizontalPosition = horizontalPosition,
-            motionDirection = motionDirection
+            motionDirection = motionDirection,
+            userObjectRelation = userObjectRelation
         )
     }
 
@@ -220,9 +225,12 @@ object WarningPolicy {
                 detection.horizontalPosition == HorizontalPosition.CENTER -> WarningScenario.IMMEDIATE_DANGER
             detection.riskObjectCategory == RiskObjectCategory.VEHICLE_RISK &&
                 detection.motionDirection == MotionDirection.APPROACHING &&
-                isNearOrCloser(detection.proximityLevel) -> WarningScenario.APPROACHING_OBJECT
+                detection.userObjectRelation != UserObjectRelation.USER_APPROACHING_OBJECT &&
+                detection.proximityLevel != ProximityLevel.FAR -> WarningScenario.APPROACHING_OBJECT
             detection.riskObjectCategory == RiskObjectCategory.VEHICLE_RISK &&
-                isNearOrCloser(detection.proximityLevel) -> WarningScenario.FRONT_VEHICLE
+                detection.proximityLevel == ProximityLevel.NEAR -> WarningScenario.FRONT_VEHICLE
+            detection.riskObjectCategory == RiskObjectCategory.VEHICLE_RISK &&
+                detection.proximityLevel == ProximityLevel.VERY_NEAR -> WarningScenario.FRONT_VEHICLE
             (detection.riskObjectCategory == RiskObjectCategory.STATIC_OBSTACLE ||
                 detection.riskObjectCategory == RiskObjectCategory.TEMPORARY_OBSTACLE) &&
                 detection.horizontalPosition == HorizontalPosition.CENTER &&
@@ -652,7 +660,8 @@ object WarningPolicy {
         priority: ObjectPriority,
         proximityLevel: ProximityLevel,
         horizontalPosition: HorizontalPosition,
-        motionDirection: MotionDirection
+        motionDirection: MotionDirection,
+        userObjectRelation: UserObjectRelation
     ): RiskLevel {
         if (priority != ObjectPriority.HIGH) return riskLevel
 
@@ -661,13 +670,26 @@ object WarningPolicy {
                 if (horizontalPosition == HorizontalPosition.CENTER) RiskLevel.CRITICAL else riskLevel
             }
             ProximityLevel.NEAR -> when (motionDirection) {
-                MotionDirection.APPROACHING -> RiskLevel.CRITICAL
+                MotionDirection.APPROACHING -> {
+                    if (userObjectRelation == UserObjectRelation.USER_APPROACHING_OBJECT) {
+                        maxOf(riskLevel, RiskLevel.HIGH)
+                    } else {
+                        RiskLevel.CRITICAL
+                    }
+                }
                 MotionDirection.STABLE,
                 MotionDirection.UNKNOWN -> maxOf(riskLevel, RiskLevel.HIGH)
                 MotionDirection.LEAVING -> minOf(riskLevel, RiskLevel.MEDIUM)
             }
             ProximityLevel.MID -> {
-                if (motionDirection == MotionDirection.APPROACHING) maxOf(riskLevel, RiskLevel.HIGH) else riskLevel
+                if (
+                    motionDirection == MotionDirection.APPROACHING &&
+                    userObjectRelation != UserObjectRelation.USER_APPROACHING_OBJECT
+                ) {
+                    maxOf(riskLevel, RiskLevel.HIGH)
+                } else {
+                    riskLevel
+                }
             }
             ProximityLevel.FAR -> riskLevel
         }

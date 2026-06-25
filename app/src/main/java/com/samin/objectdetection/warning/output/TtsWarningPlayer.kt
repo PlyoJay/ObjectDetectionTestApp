@@ -19,6 +19,10 @@ class TtsWarningPlayer(
     private var isReady = false
     @Volatile
     private var isReleased = false
+    @Volatile
+    private var lastMessage: String? = null
+    @Volatile
+    private var lastSpeakAtMs: Long = 0L
     private lateinit var textToSpeech: TextToSpeech
 
     init {
@@ -44,7 +48,7 @@ class TtsWarningPlayer(
         speak(candidate, message)
     }
 
-    fun speak(candidate: WarningCandidate, message: String): TtsResult {
+    fun speak(candidate: WarningCandidate, message: String, force: Boolean = false): TtsResult {
         if (candidate.feedback.voiceLevel == FeedbackLevel.NONE) {
             return TtsResult(executed = false, skippedReason = "voice_none")
         }
@@ -58,9 +62,14 @@ class TtsWarningPlayer(
             Log.d(TAG, "skip TTS: not ready")
             return TtsResult(executed = false, skippedReason = "tts_not_ready")
         }
+        val nowMs = System.currentTimeMillis()
+        if (!force && lastMessage == message && nowMs - lastSpeakAtMs < DUPLICATE_SUPPRESS_MS) {
+            Log.d(TAG, "skip TTS: duplicate message=$message")
+            return TtsResult(executed = false, skippedReason = "tts_duplicate")
+        }
 
         return try {
-            val utteranceId = "${candidate.warningKey}:${System.currentTimeMillis()}"
+            val utteranceId = "${candidate.warningKey}:$nowMs"
             val result = textToSpeech.speak(
                 message,
                 TextToSpeech.QUEUE_FLUSH,
@@ -71,6 +80,8 @@ class TtsWarningPlayer(
                 Log.w(TAG, "TTS speak returned ERROR")
                 TtsResult(executed = false, skippedReason = "tts_error")
             } else {
+                lastMessage = message
+                lastSpeakAtMs = nowMs
                 Log.d(TAG, "speak TTS: key=${candidate.warningKey}, message=$message")
                 TtsResult(executed = true, skippedReason = null)
             }
@@ -78,6 +89,23 @@ class TtsWarningPlayer(
             Log.w(TAG, "TTS speak failed", e)
             TtsResult(executed = false, skippedReason = "tts_exception")
         }
+    }
+
+    fun stop() {
+        if (isReleased || !isReady) return
+        try {
+            textToSpeech.stop()
+        } catch (e: Exception) {
+            Log.w(TAG, "TTS stop failed", e)
+        }
+    }
+
+    fun isSpeaking(): Boolean {
+        return !isReleased && isReady && textToSpeech.isSpeaking
+    }
+
+    fun isReady(): Boolean {
+        return !isReleased && isReady
     }
 
     override fun release() {
@@ -103,5 +131,6 @@ class TtsWarningPlayer(
         private const val TAG = "GotoroTts"
         private const val SPEECH_RATE = 1.15f
         private const val SPEECH_PITCH = 1.0f
+        private const val DUPLICATE_SUPPRESS_MS = 1_500L
     }
 }
