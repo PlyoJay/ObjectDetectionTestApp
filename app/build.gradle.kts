@@ -53,6 +53,7 @@ dependencies {
     implementation("androidx.camera:camera-camera2:${cameraxVersion}")
     implementation("androidx.camera:camera-lifecycle:${cameraxVersion}")
     implementation("androidx.camera:camera-view:${cameraxVersion}")
+    implementation("androidx.camera:camera-video:${cameraxVersion}")
 
     // Google ML Kit (안정 버전)
     implementation("com.google.mlkit:object-detection:17.0.2")

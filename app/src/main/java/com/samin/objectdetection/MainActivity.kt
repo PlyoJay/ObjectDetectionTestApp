@@ -12,7 +12,9 @@ import android.view.Gravity
 import android.view.View
 import android.widget.Button
 import android.widget.FrameLayout
+import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
@@ -20,6 +22,14 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.camera.video.FallbackStrategy
+import androidx.camera.video.FileOutputOptions
+import androidx.camera.video.Quality
+import androidx.camera.video.QualitySelector
+import androidx.camera.video.Recorder
+import androidx.camera.video.Recording
+import androidx.camera.video.VideoCapture
+import androidx.camera.video.VideoRecordEvent
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.samin.objectdetection.camera.DetectionConfig
@@ -27,6 +37,8 @@ import com.samin.objectdetection.camera.toBitmapSafe
 import com.samin.objectdetection.detector.DetectionResult
 import com.samin.objectdetection.detector.ObjectDetector
 import com.samin.objectdetection.detector.VisionStyleYoloDetector
+import com.samin.objectdetection.evaluation.DetectionFrameSnapshot
+import com.samin.objectdetection.evaluation.EvaluationDataRecorder
 import com.samin.objectdetection.location.UserLocationTracker
 import com.samin.objectdetection.metrics.DetectionMetricsCollector
 import com.samin.objectdetection.mlkit.MlKitObjectDetector
@@ -48,6 +60,7 @@ import com.samin.objectdetection.warning.output.VibrationWarningPlayer
 import com.samin.objectdetection.warning.output.WarningOutputController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.io.File
 import java.util.Locale
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
@@ -59,10 +72,13 @@ class MainActivity : ComponentActivity() {
     private lateinit var debugTextView: TextView
     private lateinit var warningMessageTextView: TextView
     private lateinit var toggleButton: Button
+    private lateinit var captureButton: Button
+    private lateinit var recordingButton: Button
 
     private val cameraExecutor = Executors.newSingleThreadExecutor()
     private lateinit var detector: ObjectDetector
     private lateinit var mlKitDetector: MlKitObjectDetector
+    private lateinit var evaluationDataRecorder: EvaluationDataRecorder
     private val detectionConfig = DetectionConfig()
     private val warningCooldownManager = WarningCooldownManager()
     private val warningCandidateSelector = WarningCandidateSelector()
@@ -93,6 +109,13 @@ class MainActivity : ComponentActivity() {
     private var overlayEnabled = true
     private var skippedFrameCount = 0L
     private var lastDetectionStartTimeMs = 0L
+    private val latestSnapshotLock = Any()
+    private var latestSnapshot: DetectionFrameSnapshot? = null
+    private var videoCapture: VideoCapture<Recorder>? = null
+    private var activeRecording: Recording? = null
+    private var activeRecordingVideoFile: File? = null
+    private var activeRecordingDetectionsFile: File? = null
+    private var isRecording = false
 
     private val permissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
@@ -115,6 +138,7 @@ class MainActivity : ComponentActivity() {
         }
         detector = yoloDetector
         mlKitDetector = MlKitObjectDetector()
+        evaluationDataRecorder = EvaluationDataRecorder(this)
         userLocationTracker = UserLocationTracker(this)
         vibrationWarningPlayer = VibrationWarningPlayer(this)
         beepWarningPlayer = BeepWarningPlayer()
@@ -173,6 +197,21 @@ class MainActivity : ComponentActivity() {
                 text = if (overlayEnabled) "Overlay ON" else "Overlay OFF"
             }
         }
+        captureButton = Button(this).apply {
+            text = "캡쳐"
+            setOnClickListener { captureEvaluationFrame() }
+        }
+        recordingButton = Button(this).apply {
+            text = "녹화 시작"
+            setOnClickListener { toggleEvaluationRecording() }
+        }
+        val controlRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            addView(toggleButton)
+            addView(captureButton)
+            addView(recordingButton)
+        }
 
         root.addView(previewView, FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
         root.addView(overlayView, FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
@@ -189,7 +228,7 @@ class MainActivity : ComponentActivity() {
         )
 
         root.addView(
-            toggleButton,
+            controlRow,
             FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.WRAP_CONTENT,
                 FrameLayout.LayoutParams.WRAP_CONTENT
@@ -214,7 +253,7 @@ class MainActivity : ComponentActivity() {
         overlayView.setDebugMode(detectionConfig.overlayDebugMode)
         debugTextView.bringToFront()
         warningMessageTextView.bringToFront()
-        toggleButton.bringToFront()
+        controlRow.bringToFront()
 
         setContentView(root)
     }
@@ -257,6 +296,16 @@ class MainActivity : ComponentActivity() {
                     .setTargetResolution(Size(1280, 720))
                     .build()
                     .also { it.setSurfaceProvider(previewView.surfaceProvider) }
+                val recorder = Recorder.Builder()
+                    .setQualitySelector(
+                        QualitySelector.from(
+                            Quality.HD,
+                            FallbackStrategy.lowerQualityOrHigherThan(Quality.SD)
+                        )
+                    )
+                    .build()
+                val videoCaptureUseCase = VideoCapture.withOutput(recorder)
+                videoCapture = videoCaptureUseCase
 
                 val analysis = ImageAnalysis.Builder()
                     .setTargetResolution(Size(1280, 720))
@@ -315,7 +364,13 @@ class MainActivity : ComponentActivity() {
                 }
 
                 provider.unbindAll()
-                provider.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, preview, analysis)
+                provider.bindToLifecycle(
+                    this,
+                    CameraSelector.DEFAULT_BACK_CAMERA,
+                    preview,
+                    analysis,
+                    videoCaptureUseCase
+                )
 
                 debugTextView.text = "카메라 시작됨"
             } catch (e: Exception) {
@@ -493,6 +548,15 @@ class MainActivity : ComponentActivity() {
                 "ignoredLabels=${formatIgnoredLabels(ignoredLabels)} " +
                 "emptyReason=${buildEmptyOverlayReason(mapped, visibleMapped, warningDetections, overlayDetections)}"
         )
+        val evaluationSnapshot = updateLatestEvaluationSnapshot(
+            bitmap = bitmap,
+            detections = overlayDetections,
+            frameTimestampMs = start,
+            roi = cropRect
+        )
+        if (isRecording) {
+            evaluationDataRecorder.appendRecordingDetections(evaluationSnapshot)
+        }
 
         runOnUiThread {
             val overlayUpdateTimeMs = System.currentTimeMillis()
@@ -566,6 +630,139 @@ class MainActivity : ComponentActivity() {
                 "overlayDetections=${overlayDetections.size}, ignoredLabels=${formatIgnoredLabels(ignoredLabels)}, " +
                 "time=${inferenceTime}ms"
         )
+    }
+
+    private fun updateLatestEvaluationSnapshot(
+        bitmap: Bitmap,
+        detections: List<DetectionResult>,
+        frameTimestampMs: Long,
+        roi: Rect
+    ): DetectionFrameSnapshot {
+        val snapshot = DetectionFrameSnapshot(
+            bitmap = bitmap.copy(Bitmap.Config.ARGB_8888, false),
+            detections = detections,
+            frameTimestampMs = frameTimestampMs,
+            imageWidth = bitmap.width,
+            imageHeight = bitmap.height,
+            roiApplied = true,
+            roi = Rect(roi)
+        )
+        synchronized(latestSnapshotLock) {
+            latestSnapshot?.bitmap?.recycle()
+            latestSnapshot = snapshot
+        }
+        return snapshot
+    }
+
+    private fun captureEvaluationFrame() {
+        val snapshot = synchronized(latestSnapshotLock) {
+            latestSnapshot?.let { current ->
+                current.copy(
+                    bitmap = current.bitmap.copy(Bitmap.Config.ARGB_8888, false),
+                    detections = current.detections.toList(),
+                    roi = current.roi?.let { Rect(it) }
+                )
+            }
+        }
+        if (snapshot == null) {
+            Toast.makeText(this, "저장할 프레임이 아직 없습니다.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val timestamp = snapshot.frameTimestampMs.toString()
+                val files = evaluationDataRecorder.saveCapture(snapshot, timestamp)
+                runOnUiThread {
+                    Toast.makeText(
+                        this@MainActivity,
+                        "캡쳐 저장: ${files.image.name}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "capture evaluation frame failed", e)
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity, "캡쳐 저장 실패: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            } finally {
+                snapshot.bitmap.recycle()
+            }
+        }
+    }
+
+    private fun toggleEvaluationRecording() {
+        if (isRecording) {
+            stopEvaluationRecording()
+        } else {
+            startEvaluationRecording()
+        }
+    }
+
+    private fun startEvaluationRecording() {
+        val capture = videoCapture
+        if (capture == null) {
+            Toast.makeText(this, "녹화 준비가 아직 끝나지 않았습니다.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val timestamp = System.currentTimeMillis().toString()
+        val videoFile = File(evaluationDataRecorder.recordingsDir, "$timestamp.mp4")
+        val detectionsFile = evaluationDataRecorder.startRecordingLog(timestamp)
+        activeRecordingVideoFile = videoFile
+        activeRecordingDetectionsFile = detectionsFile
+
+        try {
+            val outputOptions = FileOutputOptions.Builder(videoFile).build()
+            activeRecording = capture.output
+                .prepareRecording(this, outputOptions)
+                .start(ContextCompat.getMainExecutor(this)) { event ->
+                    handleVideoRecordEvent(event)
+                }
+            isRecording = true
+            recordingButton.text = "녹화 중지"
+            Toast.makeText(this, "녹화 시작: ${videoFile.name}", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Log.e(TAG, "start recording failed", e)
+            evaluationDataRecorder.stopRecordingLog()
+            activeRecordingVideoFile = null
+            activeRecordingDetectionsFile = null
+            Toast.makeText(this, "녹화 시작 실패: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun stopEvaluationRecording() {
+        try {
+            activeRecording?.stop()
+        } catch (e: Exception) {
+            Log.e(TAG, "stop recording failed", e)
+            finishRecordingState("녹화 중지 실패: ${e.message}")
+        }
+    }
+
+    private fun handleVideoRecordEvent(event: VideoRecordEvent) {
+        when (event) {
+            is VideoRecordEvent.Finalize -> {
+                val message = if (event.hasError()) {
+                    Log.e(TAG, "recording finalized with error=${event.error}")
+                    "녹화 저장 실패: ${event.error}"
+                } else {
+                    "녹화 저장: ${activeRecordingVideoFile?.name ?: "mp4"}"
+                }
+                finishRecordingState(message)
+            }
+            else -> Unit
+        }
+    }
+
+    private fun finishRecordingState(message: String) {
+        evaluationDataRecorder.stopRecordingLog()
+        activeRecording = null
+        isRecording = false
+        recordingButton.text = "녹화 시작"
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        activeRecordingVideoFile = null
+        activeRecordingDetectionsFile = null
     }
 
     private fun verboseLog(tag: String, message: String) {
@@ -861,6 +1058,16 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        try {
+            activeRecording?.stop()
+        } catch (e: Exception) {
+            Log.e(TAG, "stop recording on destroy failed", e)
+        }
+        evaluationDataRecorder.close()
+        synchronized(latestSnapshotLock) {
+            latestSnapshot?.bitmap?.recycle()
+            latestSnapshot = null
+        }
         userLocationTracker.stop()
         cameraExecutor.shutdown()
         mlKitDetector.close()
