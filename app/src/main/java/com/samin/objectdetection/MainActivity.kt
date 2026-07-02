@@ -1,6 +1,11 @@
 package com.samin.objectdetection
 
 import android.Manifest
+import android.app.Activity
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Rect
@@ -22,14 +27,6 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import androidx.camera.video.FallbackStrategy
-import androidx.camera.video.FileOutputOptions
-import androidx.camera.video.Quality
-import androidx.camera.video.QualitySelector
-import androidx.camera.video.Recorder
-import androidx.camera.video.Recording
-import androidx.camera.video.VideoCapture
-import androidx.camera.video.VideoRecordEvent
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.samin.objectdetection.camera.DetectionConfig
@@ -39,6 +36,7 @@ import com.samin.objectdetection.detector.ObjectDetector
 import com.samin.objectdetection.detector.VisionStyleYoloDetector
 import com.samin.objectdetection.evaluation.DetectionFrameSnapshot
 import com.samin.objectdetection.evaluation.EvaluationDataRecorder
+import com.samin.objectdetection.evaluation.ScreenRecordService
 import com.samin.objectdetection.location.UserLocationTracker
 import com.samin.objectdetection.metrics.DetectionMetricsCollector
 import com.samin.objectdetection.mlkit.MlKitObjectDetector
@@ -111,11 +109,27 @@ class MainActivity : ComponentActivity() {
     private var lastDetectionStartTimeMs = 0L
     private val latestSnapshotLock = Any()
     private var latestSnapshot: DetectionFrameSnapshot? = null
-    private var videoCapture: VideoCapture<Recorder>? = null
-    private var activeRecording: Recording? = null
     private var activeRecordingVideoFile: File? = null
     private var activeRecordingDetectionsFile: File? = null
     private var isRecording = false
+
+    private val screenRecordingReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                ScreenRecordService.ACTION_RECORDING_STOPPED -> {
+                    if (isRecording) {
+                        finishRecordingState("화면 녹화 저장: ${activeRecordingVideoFile?.name ?: "mp4"}")
+                    }
+                }
+                ScreenRecordService.ACTION_RECORDING_ERROR -> {
+                    val message = intent.getStringExtra(ScreenRecordService.EXTRA_MESSAGE)
+                    if (isRecording) {
+                        finishRecordingState("화면 녹화 실패: ${message ?: "unknown"}")
+                    }
+                }
+            }
+        }
+    }
 
     private val permissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
@@ -126,6 +140,15 @@ class MainActivity : ComponentActivity() {
                 startCamera()
             } else {
                 debugTextView.text = "카메라 권한이 필요합니다."
+            }
+        }
+
+    private val screenCapturePermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK && result.data != null) {
+                startScreenRecording(result.resultCode, result.data!!)
+            } else {
+                Toast.makeText(this, "화면 녹화 권한이 거부되었습니다.", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -156,6 +179,7 @@ class MainActivity : ComponentActivity() {
         logWarningPolicyOverlayMismatch()
 
         setupUi()
+        registerScreenRecordingReceiver()
         checkPermissionAndStart()
     }
 
@@ -286,6 +310,19 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun registerScreenRecordingReceiver() {
+        val filter = IntentFilter().apply {
+            addAction(ScreenRecordService.ACTION_RECORDING_STOPPED)
+            addAction(ScreenRecordService.ACTION_RECORDING_ERROR)
+        }
+        ContextCompat.registerReceiver(
+            this,
+            screenRecordingReceiver,
+            filter,
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
+    }
+
     private fun startCamera() {
         val providerFuture = ProcessCameraProvider.getInstance(this)
         providerFuture.addListener({
@@ -296,16 +333,6 @@ class MainActivity : ComponentActivity() {
                     .setTargetResolution(Size(1280, 720))
                     .build()
                     .also { it.setSurfaceProvider(previewView.surfaceProvider) }
-                val recorder = Recorder.Builder()
-                    .setQualitySelector(
-                        QualitySelector.from(
-                            Quality.HD,
-                            FallbackStrategy.lowerQualityOrHigherThan(Quality.SD)
-                        )
-                    )
-                    .build()
-                val videoCaptureUseCase = VideoCapture.withOutput(recorder)
-                videoCapture = videoCaptureUseCase
 
                 val analysis = ImageAnalysis.Builder()
                     .setTargetResolution(Size(1280, 720))
@@ -368,8 +395,7 @@ class MainActivity : ComponentActivity() {
                     this,
                     CameraSelector.DEFAULT_BACK_CAMERA,
                     preview,
-                    analysis,
-                    videoCaptureUseCase
+                    analysis
                 )
 
                 debugTextView.text = "카메라 시작됨"
@@ -700,64 +726,52 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun startEvaluationRecording() {
-        val capture = videoCapture
-        if (capture == null) {
-            Toast.makeText(this, "녹화 준비가 아직 끝나지 않았습니다.", Toast.LENGTH_SHORT).show()
-            return
-        }
+        val projectionManager =
+            getSystemService(Context.MEDIA_PROJECTION_SERVICE) as android.media.projection.MediaProjectionManager
+        screenCapturePermissionLauncher.launch(projectionManager.createScreenCaptureIntent())
+    }
 
+    private fun startScreenRecording(resultCode: Int, data: Intent) {
         val timestamp = System.currentTimeMillis().toString()
-        val videoFile = File(evaluationDataRecorder.recordingsDir, "$timestamp.mp4")
+        val videoFile = File(evaluationDataRecorder.recordingsDir, "${timestamp}_screen.mp4")
         val detectionsFile = evaluationDataRecorder.startRecordingLog(timestamp)
         activeRecordingVideoFile = videoFile
         activeRecordingDetectionsFile = detectionsFile
 
         try {
-            val outputOptions = FileOutputOptions.Builder(videoFile).build()
-            activeRecording = capture.output
-                .prepareRecording(this, outputOptions)
-                .start(ContextCompat.getMainExecutor(this)) { event ->
-                    handleVideoRecordEvent(event)
-                }
+            val serviceIntent = Intent(this, ScreenRecordService::class.java)
+                .setAction(ScreenRecordService.ACTION_START)
+                .putExtra(ScreenRecordService.EXTRA_RESULT_CODE, resultCode)
+                .putExtra(ScreenRecordService.EXTRA_RESULT_DATA, data)
+                .putExtra(ScreenRecordService.EXTRA_OUTPUT_PATH, videoFile.absolutePath)
+            ContextCompat.startForegroundService(this, serviceIntent)
             isRecording = true
             recordingButton.text = "녹화 중지"
-            Toast.makeText(this, "녹화 시작: ${videoFile.name}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "화면 녹화 시작: ${videoFile.name}", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
-            Log.e(TAG, "start recording failed", e)
+            Log.e(TAG, "start screen record service failed", e)
             evaluationDataRecorder.stopRecordingLog()
             activeRecordingVideoFile = null
             activeRecordingDetectionsFile = null
-            Toast.makeText(this, "녹화 시작 실패: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "화면 녹화 시작 실패: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun stopEvaluationRecording() {
         try {
-            activeRecording?.stop()
+            val serviceIntent = Intent(this, ScreenRecordService::class.java)
+                .setAction(ScreenRecordService.ACTION_STOP)
+            startService(serviceIntent)
         } catch (e: Exception) {
-            Log.e(TAG, "stop recording failed", e)
-            finishRecordingState("녹화 중지 실패: ${e.message}")
+            Log.e(TAG, "stop screen record service failed", e)
         }
-    }
-
-    private fun handleVideoRecordEvent(event: VideoRecordEvent) {
-        when (event) {
-            is VideoRecordEvent.Finalize -> {
-                val message = if (event.hasError()) {
-                    Log.e(TAG, "recording finalized with error=${event.error}")
-                    "녹화 저장 실패: ${event.error}"
-                } else {
-                    "녹화 저장: ${activeRecordingVideoFile?.name ?: "mp4"}"
-                }
-                finishRecordingState(message)
-            }
-            else -> Unit
-        }
+        finishRecordingState(
+            "화면 녹화 저장: ${activeRecordingVideoFile?.name ?: "mp4"}"
+        )
     }
 
     private fun finishRecordingState(message: String) {
         evaluationDataRecorder.stopRecordingLog()
-        activeRecording = null
         isRecording = false
         recordingButton.text = "녹화 시작"
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
@@ -1059,9 +1073,19 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         try {
-            activeRecording?.stop()
+            unregisterReceiver(screenRecordingReceiver)
         } catch (e: Exception) {
-            Log.e(TAG, "stop recording on destroy failed", e)
+            Log.e(TAG, "unregister screen recording receiver failed", e)
+        }
+        try {
+            if (isRecording) {
+                startService(
+                    Intent(this, ScreenRecordService::class.java)
+                        .setAction(ScreenRecordService.ACTION_STOP)
+                )
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "stop screen record service on destroy failed", e)
         }
         evaluationDataRecorder.close()
         synchronized(latestSnapshotLock) {

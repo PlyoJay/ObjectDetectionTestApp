@@ -24,7 +24,7 @@ ObjectDetectionTestApp/captures/{timestamp}_overlay.jpg
 Recording output:
 
 ```text
-ObjectDetectionTestApp/recordings/{timestamp}.mp4
+ObjectDetectionTestApp/recordings/{timestamp}_screen.mp4
 ObjectDetectionTestApp/recordings/{timestamp}_detections.jsonl
 ```
 
