@@ -156,13 +156,18 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val yoloDetector = VisionStyleYoloDetector(this, "yolo11n_float32.tflite").apply {
+        val yoloDetector = VisionStyleYoloDetector(this, MODEL_NAME).apply {
             confidenceThreshold = detectionConfig.confidenceThreshold
             enableDebugImageSaving = detectionConfig.enableDetectorDebugImage
         }
         detector = yoloDetector
         mlKitDetector = MlKitObjectDetector()
-        evaluationDataRecorder = EvaluationDataRecorder(this)
+        evaluationDataRecorder = EvaluationDataRecorder(
+            context = this,
+            detectionConfig = detectionConfig,
+            modelName = MODEL_NAME,
+            detectorType = DETECTOR_TYPE
+        )
         userLocationTracker = UserLocationTracker(this)
         detectionPipeline = DetectionPipeline(
             detector = detector,
@@ -537,11 +542,22 @@ class MainActivity : ComponentActivity() {
         val evaluationSnapshot = updateLatestEvaluationSnapshot(
             bitmap = bitmap,
             detections = overlayDetections,
+            evaluationDetections = mapped,
             frameTimestampMs = start,
-            roi = cropRect
+            roi = cropRect,
+            rawDetectionCount = mapped.size,
+            visibleDetectionCount = visibleMapped.size,
+            warningDetectionCount = warningDetections.size,
+            topDetection = topOverlayObject,
+            selectedWarningCandidate = selectedCandidate,
+            inferenceTimeMs = inferenceTime,
+            fps = currentFps,
+            userLocationSnapshot = userLocationSnapshot
         )
         if (isRecording) {
-            evaluationDataRecorder.appendRecordingDetections(evaluationSnapshot)
+            lifecycleScope.launch(Dispatchers.IO) {
+                evaluationDataRecorder.appendRecordingDetections(evaluationSnapshot)
+            }
         }
 
         runOnUiThread {
@@ -621,17 +637,35 @@ class MainActivity : ComponentActivity() {
     private fun updateLatestEvaluationSnapshot(
         bitmap: Bitmap,
         detections: List<DetectionResult>,
+        evaluationDetections: List<DetectionResult>,
         frameTimestampMs: Long,
-        roi: Rect
+        roi: Rect,
+        rawDetectionCount: Int,
+        visibleDetectionCount: Int,
+        warningDetectionCount: Int,
+        topDetection: DetectionResult?,
+        selectedWarningCandidate: WarningCandidate?,
+        inferenceTimeMs: Long,
+        fps: Int,
+        userLocationSnapshot: com.samin.objectdetection.location.UserLocationSnapshot
     ): DetectionFrameSnapshot {
         val snapshot = DetectionFrameSnapshot(
             bitmap = bitmap.copy(Bitmap.Config.ARGB_8888, false),
             detections = detections,
+            evaluationDetections = evaluationDetections,
             frameTimestampMs = frameTimestampMs,
             imageWidth = bitmap.width,
             imageHeight = bitmap.height,
             roiApplied = true,
-            roi = Rect(roi)
+            roi = Rect(roi),
+            rawDetectionCount = rawDetectionCount,
+            visibleDetectionCount = visibleDetectionCount,
+            warningDetectionCount = warningDetectionCount,
+            topDetection = topDetection,
+            selectedWarningCandidate = selectedWarningCandidate,
+            inferenceTimeMs = inferenceTimeMs,
+            fps = fps,
+            userLocationSnapshot = userLocationSnapshot
         )
         synchronized(latestSnapshotLock) {
             latestSnapshot?.bitmap?.recycle()
@@ -646,6 +680,7 @@ class MainActivity : ComponentActivity() {
                 current.copy(
                     bitmap = current.bitmap.copy(Bitmap.Config.ARGB_8888, false),
                     detections = current.detections.toList(),
+                    evaluationDetections = current.evaluationDetections.toList(),
                     roi = current.roi?.let { Rect(it) }
                 )
             }
@@ -1017,6 +1052,8 @@ class MainActivity : ComponentActivity() {
     companion object {
         private const val ENABLE_VERBOSE_LOG = false
         private const val TAG = "ObjectDetectionVision"
+        private const val MODEL_NAME = "yolo11n_float32.tflite"
+        private const val DETECTOR_TYPE = "VisionStyleYoloDetector"
         private const val DETECTION_TIMING_TAG = "DetectionTiming"
         private const val WARNING_FEEDBACK_TAG = "GotoroWarning"
         private const val WARNING_SELECTED_TAG = "GotoroWarning"
