@@ -41,6 +41,7 @@ import com.samin.objectdetection.location.UserLocationTracker
 import com.samin.objectdetection.metrics.DetectionMetricsCollector
 import com.samin.objectdetection.mlkit.MlKitObjectDetector
 import com.samin.objectdetection.motion.ObjectMotionTracker
+import com.samin.objectdetection.pipeline.DetectionPipeline
 import com.samin.objectdetection.policy.OverlayObjectFilter
 import com.samin.objectdetection.policy.YoloDefaultPolicyRegistry
 import com.samin.objectdetection.ui.BoundingBoxOverlay
@@ -80,8 +81,8 @@ class MainActivity : ComponentActivity() {
     private val detectionConfig = DetectionConfig()
     private val warningCooldownManager = WarningCooldownManager()
     private val warningCandidateSelector = WarningCandidateSelector()
-    private val objectMotionTracker = ObjectMotionTracker()
     private val metricsCollector = DetectionMetricsCollector()
+    private lateinit var detectionPipeline: DetectionPipeline
     private lateinit var userLocationTracker: UserLocationTracker
     private lateinit var vibrationWarningPlayer: VibrationWarningPlayer
     private lateinit var beepWarningPlayer: BeepWarningPlayer
@@ -163,6 +164,12 @@ class MainActivity : ComponentActivity() {
         mlKitDetector = MlKitObjectDetector()
         evaluationDataRecorder = EvaluationDataRecorder(this)
         userLocationTracker = UserLocationTracker(this)
+        detectionPipeline = DetectionPipeline(
+            detector = detector,
+            config = detectionConfig,
+            objectMotionTracker = ObjectMotionTracker(),
+            userLocationSnapshotProvider = { userLocationTracker.currentSnapshot }
+        )
         vibrationWarningPlayer = VibrationWarningPlayer(this)
         beepWarningPlayer = BeepWarningPlayer()
         ttsWarningPlayer = TtsWarningPlayer(this)
@@ -415,75 +422,28 @@ class MainActivity : ComponentActivity() {
         )
 
         // vision-mlkit-lab 방식: 중앙 정방형 crop으로 모델 입력 왜곡을 줄임
-        val width = bitmap.width
-        val height = bitmap.height
-        val size = minOf(width, height)
-        val left = (width - size) / 2
-        val top = (height - size) / 2
-        val cropRect = Rect(left, top, left + size, top + size)
+        maybeRunMlKitDetection(bitmap, bitmap.width, bitmap.height)
 
-        maybeRunMlKitDetection(bitmap, width, height)
-
-        val cropped = Bitmap.createBitmap(bitmap, cropRect.left, cropRect.top, cropRect.width(), cropRect.height())
-        val croppedResults = detector.detect(cropped)
-        val detectionEndTimeMs = System.currentTimeMillis()
-        val mapped = croppedResults.map { res ->
-            val detection = DetectionResult(
-                label = res.label,
-                confidence = res.confidence,
-                left = res.left + cropRect.left,
-                top = res.top + cropRect.top,
-                right = res.right + cropRect.left,
-                bottom = res.bottom + cropRect.top,
-                frameTimestampMs = start
-            )
-            val feedbackDetection = WarningPolicy.evaluate(
-                detection = detection,
-                frameWidth = width,
-                frameHeight = height
-            )
-            feedbackDetection.also {
-                WarningPolicy.logDebug(it)
-            }
-        }
-        val visibleMapped = filterSmallBoxes(
-            detections = mapped,
-            frameWidth = width,
-            frameHeight = height,
-            config = detectionConfig
-        )
-        val overlayCandidates = visibleMapped.filter { detection ->
-            OverlayObjectFilter.isAllowed(detection.label)
-        }
-        val ignoredLabels = visibleMapped
-            .filterNot { detection -> OverlayObjectFilter.isAllowed(detection.label) }
-            .map { detection -> OverlayObjectFilter.normalize(detection.label) }
-            .distinct()
-            .sorted()
-        val userLocationSnapshot = userLocationTracker.currentSnapshot
-        val overlayDetections = objectMotionTracker.update(
-            detections = overlayCandidates,
-            frameWidth = width,
-            frameHeight = height,
-            timestampMs = start,
-            userMotionState = userLocationSnapshot.motionState
-        ).map { detection ->
-            WarningPolicy.applyScenarioFeedback(detection)
-        }
-
-        val warningDetections = overlayDetections.filter { detection ->
-            val policy = YoloDefaultPolicyRegistry.get(detection.label)
-            !detection.isIgnored && policy != null && detection.confidence >= policy.minConfidence
-        }
+        val pipelineResult = detectionPipeline.process(bitmap, start)
+        val width = pipelineResult.frameWidth
+        val height = pipelineResult.frameHeight
+        val cropRect = pipelineResult.cropRect
+        val mapped = pipelineResult.mappedDetections
+        val visibleMapped = pipelineResult.visibleDetections
+        val overlayDetections = pipelineResult.overlayDetections
+        val warningDetections = pipelineResult.warningDetections
+        val ignoredLabels = pipelineResult.ignoredLabels
+        val userLocationSnapshot = pipelineResult.userLocationSnapshot
+        val inferenceTime = pipelineResult.inferenceTimeMs
+        val detectionEndTimeMs = start + inferenceTime
+        val topOverlayObject = pipelineResult.topOverlayObject
         metricsCollector.recordYoloDetections(
             beforeFilter = mapped,
             afterSmallBoxFilter = visibleMapped,
             afterPolicyFilter = warningDetections,
             timestampMs = start
         )
-        val inferenceTime = detectionEndTimeMs - start
         metricsCollector.recordYoloInferenceTime(inferenceTime)
-        val topOverlayObject = overlayDetections.maxByOrNull { it.confidence }
         val warningCandidates = overlayDetections.map { detection ->
             WarningCandidate.fromDetection(
                 detection = detection,
@@ -892,54 +852,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun filterSmallBoxes(
-        detections: List<DetectionResult>,
-        frameWidth: Int,
-        frameHeight: Int,
-        config: DetectionConfig
-    ): List<DetectionResult> {
-        val kept = mutableListOf<DetectionResult>()
-
-        detections.forEach { detection ->
-            val boxWidth = (detection.right - detection.left).coerceAtLeast(0f)
-            val boxHeight = (detection.bottom - detection.top).coerceAtLeast(0f)
-            val areaRatio = getBoxAreaRatio(boxWidth, boxHeight, frameWidth, frameHeight)
-            val widthRatio = boxWidth / frameWidth.coerceAtLeast(1).toFloat()
-            val heightRatio = boxHeight / frameHeight.coerceAtLeast(1).toFloat()
-            val keep = areaRatio >= config.minBoxAreaRatio &&
-                widthRatio >= config.minBoxWidthRatio &&
-                heightRatio >= config.minBoxHeightRatio
-
-            if (keep) {
-                kept.add(detection)
-            } else {
-                verboseLog(
-                    DETECTION_FILTER_TAG,
-                    "skip small box label=${detection.label}, conf=${detection.confidence}, " +
-                        "areaRatio=$areaRatio, widthRatio=$widthRatio, heightRatio=$heightRatio, " +
-                        "box=${formatBox(detection)}"
-                )
-            }
-        }
-
-        verboseLog(DETECTION_FILTER_TAG, "before=${detections.size}, after=${kept.size}")
-        return kept
-    }
-
-    private fun getBoxAreaRatio(
-        boxWidth: Float,
-        boxHeight: Float,
-        frameWidth: Int,
-        frameHeight: Int
-    ): Float {
-        val imageArea = frameWidth.coerceAtLeast(1) * frameHeight.coerceAtLeast(1).toFloat()
-        return boxWidth * boxHeight / imageArea
-    }
-
-    private fun formatBox(detection: DetectionResult): String {
-        return "left=${detection.left}, top=${detection.top}, right=${detection.right}, bottom=${detection.bottom}"
-    }
-
     private fun buildEmptyOverlayReason(
         rawDetections: List<DetectionResult>,
         visibleDetections: List<DetectionResult>,
@@ -1106,7 +1018,6 @@ class MainActivity : ComponentActivity() {
         private const val ENABLE_VERBOSE_LOG = false
         private const val TAG = "ObjectDetectionVision"
         private const val DETECTION_TIMING_TAG = "DetectionTiming"
-        private const val DETECTION_FILTER_TAG = "DetectionFilter"
         private const val WARNING_FEEDBACK_TAG = "GotoroWarning"
         private const val WARNING_SELECTED_TAG = "GotoroWarning"
         private const val WARNING_OUTPUT_TAG = "GotoroWarning"
