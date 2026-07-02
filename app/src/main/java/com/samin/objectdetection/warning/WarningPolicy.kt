@@ -179,9 +179,9 @@ object WarningPolicy {
 
     fun resolveProximityLevel(heightRatio: Float, areaRatio: Float): ProximityLevel {
         return when {
-            heightRatio >= 0.35f || areaRatio >= 0.15f -> ProximityLevel.VERY_NEAR
-            heightRatio >= 0.22f || areaRatio >= 0.07f -> ProximityLevel.NEAR
-            heightRatio >= 0.12f || areaRatio >= 0.02f -> ProximityLevel.MID
+            heightRatio >= VERY_NEAR_HEIGHT_RATIO || areaRatio >= VERY_NEAR_AREA_RATIO -> ProximityLevel.VERY_NEAR
+            heightRatio >= NEAR_HEIGHT_RATIO || areaRatio >= NEAR_AREA_RATIO -> ProximityLevel.NEAR
+            heightRatio >= MID_HEIGHT_RATIO || areaRatio >= MID_AREA_RATIO -> ProximityLevel.MID
             else -> ProximityLevel.FAR
         }
     }
@@ -719,5 +719,13 @@ object WarningPolicy {
 
     private const val LEFT_CENTER_BOUNDARY = 1f / 3f
     private const val RIGHT_CENTER_BOUNDARY = 2f / 3f
+    // Field-test tuning knobs for perceived object distance. Keep current values stable unless logs show
+    // consistent over-warning or under-warning for a label/category.
+    private const val VERY_NEAR_HEIGHT_RATIO = 0.35f
+    private const val NEAR_HEIGHT_RATIO = 0.22f
+    private const val MID_HEIGHT_RATIO = 0.12f
+    private const val VERY_NEAR_AREA_RATIO = 0.15f
+    private const val NEAR_AREA_RATIO = 0.07f
+    private const val MID_AREA_RATIO = 0.02f
     private const val TAG = "WarningPolicy"
 }

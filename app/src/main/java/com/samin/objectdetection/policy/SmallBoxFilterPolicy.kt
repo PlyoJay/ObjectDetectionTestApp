@@ -21,22 +21,30 @@ object SmallBoxFilterPolicy {
             val areaRatio = getBoxAreaRatio(boxWidth, boxHeight, frameWidth, frameHeight)
             val widthRatio = boxWidth / frameWidth.coerceAtLeast(1).toFloat()
             val heightRatio = boxHeight / frameHeight.coerceAtLeast(1).toFloat()
-            val minAreaRatio = minAreaRatioFor(detection.label, config)
-            val keep = areaRatio >= minAreaRatio &&
-                widthRatio >= config.minBoxWidthRatio &&
-                heightRatio >= config.minBoxHeightRatio
+            val requiredAreaRatio = ObjectTuningPolicyRegistry.minAreaRatioFor(detection.label, config)
+            val requiredWidthRatio = ObjectTuningPolicyRegistry.minWidthRatioFor(detection.label, config)
+            val requiredHeightRatio = ObjectTuningPolicyRegistry.minHeightRatioFor(detection.label, config)
+            val keep = areaRatio >= requiredAreaRatio &&
+                widthRatio >= requiredWidthRatio &&
+                heightRatio >= requiredHeightRatio
+            val reason = when {
+                areaRatio < requiredAreaRatio -> "area below threshold"
+                widthRatio < requiredWidthRatio -> "width below threshold"
+                heightRatio < requiredHeightRatio -> "height below threshold"
+                else -> "kept"
+            }
 
             if (keep) {
                 kept.add(detection)
-            } else {
-                Log.d(
-                    TAG,
-                    "skip small box label=${detection.label}, conf=${detection.confidence}, " +
-                        "areaRatio=$areaRatio, widthRatio=$widthRatio, heightRatio=$heightRatio, " +
-                        "minAreaRatio=$minAreaRatio, minWidthRatio=${config.minBoxWidthRatio}, " +
-                        "minHeightRatio=${config.minBoxHeightRatio}, box=${formatBox(detection)}"
-                )
             }
+            Log.d(
+                TAG,
+                "small box filter label=${detection.label}, conf=${detection.confidence}, " +
+                    "areaRatio=$areaRatio, requiredAreaRatio=$requiredAreaRatio, " +
+                    "widthRatio=$widthRatio, requiredWidthRatio=$requiredWidthRatio, " +
+                    "heightRatio=$heightRatio, requiredHeightRatio=$requiredHeightRatio, " +
+                    "keep=$keep, reason=$reason, box=${formatBox(detection)}"
+            )
         }
 
         Log.d(TAG, "before=${detections.size}, after=${kept.size}")
@@ -44,19 +52,7 @@ object SmallBoxFilterPolicy {
     }
 
     fun minAreaRatioFor(label: String, config: DetectionConfig): Float {
-        return when (OverlayObjectFilter.normalize(label)) {
-            "traffic light",
-            "stop sign" -> 0.002f
-            "person" -> 0.006f
-            "car",
-            "bus",
-            "truck",
-            "motorcycle",
-            "bicycle" -> 0.008f
-            "bench",
-            "fire hydrant" -> 0.01f
-            else -> config.minBoxAreaRatio
-        }
+        return ObjectTuningPolicyRegistry.minAreaRatioFor(label, config)
     }
 
     private fun getBoxAreaRatio(

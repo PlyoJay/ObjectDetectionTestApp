@@ -7,9 +7,9 @@ import com.samin.objectdetection.detector.DetectionResult
 import com.samin.objectdetection.detector.ObjectDetector
 import com.samin.objectdetection.location.UserLocationSnapshot
 import com.samin.objectdetection.motion.ObjectMotionTracker
+import com.samin.objectdetection.policy.ObjectTuningPolicyRegistry
 import com.samin.objectdetection.policy.OverlayObjectFilter
 import com.samin.objectdetection.policy.SmallBoxFilterPolicy
-import com.samin.objectdetection.policy.YoloDefaultPolicyRegistry
 import com.samin.objectdetection.warning.WarningPolicy
 
 class DetectionPipeline(
@@ -63,11 +63,12 @@ class DetectionPipeline(
                 timestampMs = timestampMs,
                 userMotionState = userLocationSnapshot.motionState
             ).map { detection ->
-                WarningPolicy.applyScenarioFeedback(detection)
+                ObjectTuningPolicyRegistry.applyVoiceTuning(
+                    WarningPolicy.applyScenarioFeedback(detection)
+                )
             }
             val warningDetections = overlayDetections.filter { detection ->
-                val policy = YoloDefaultPolicyRegistry.get(detection.label)
-                !detection.isIgnored && policy != null && detection.confidence >= policy.minConfidence
+                ObjectTuningPolicyRegistry.shouldWarn(detection)
             }
 
             return DetectionPipelineResult(

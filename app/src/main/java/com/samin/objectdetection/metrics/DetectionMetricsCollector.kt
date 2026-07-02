@@ -1,6 +1,7 @@
 package com.samin.objectdetection.metrics
 
 import com.samin.objectdetection.detector.DetectionResult
+import com.samin.objectdetection.policy.ObjectTuningPolicyRegistry
 import com.samin.objectdetection.warning.RiskLevel
 import java.util.Locale
 
@@ -49,6 +50,12 @@ class DetectionMetricsCollector {
     private val warningCountByRiskLevel = RiskLevel.entries.associateWith { 0L }.toMutableMap()
     private val detectionCountByLabel = mutableMapOf<String, Long>()
     private val confidenceSumByLabel = mutableMapOf<String, Double>()
+    private val rawCountByLabel = mutableMapOf<String, Long>()
+    private val visibleCountByLabel = mutableMapOf<String, Long>()
+    private val warningCountByLabel = mutableMapOf<String, Long>()
+    private val ignoredCountByLabel = mutableMapOf<String, Long>()
+    private val smallBoxFilteredCountByLabel = mutableMapOf<String, Long>()
+    private val confidenceFilteredCountByLabel = mutableMapOf<String, Long>()
     private val records = ArrayDeque<DetectionMetricRecord>()
     private var yoloInferenceTimeSumMs = 0L
     private var yoloInferenceSampleCount = 0L
@@ -82,6 +89,11 @@ class DetectionMetricsCollector {
         yoloDetectionCountBeforeFilter += beforeFilter.size
         yoloDetectionCountAfterFilter += afterPolicyFilter.size
         filteredSmallBoxCount += (beforeFilter.size - afterSmallBoxFilter.size).coerceAtLeast(0)
+
+        incrementCounts(rawCountByLabel, beforeFilter)
+        incrementCounts(visibleCountByLabel, afterSmallBoxFilter)
+        incrementCounts(warningCountByLabel, afterPolicyFilter)
+        recordFilterBreakdown(beforeFilter, afterSmallBoxFilter, afterPolicyFilter)
 
         afterPolicyFilter.forEach { detection ->
             detectionCountByLabel[detection.label] = detectionCountByLabel.getOrDefault(detection.label, 0L) + 1L
@@ -161,11 +173,74 @@ class DetectionMetricsCollector {
             )
             appendLine("Top labels: $topLabels")
             appendLine("Avg conf: $avgConfidence")
+            appendLine("Label raw: ${formatTopLabelCounts(rawCountByLabel)}")
+            appendLine("Label visible: ${formatTopLabelCounts(visibleCountByLabel)}")
+            appendLine("Label warning: ${formatTopLabelCounts(warningCountByLabel)}")
+            appendLine("Label ignored: ${formatTopLabelCounts(ignoredCountByLabel)}")
+            appendLine("Label small/conf: small=${formatTopLabelCounts(smallBoxFilteredCountByLabel)} / conf=${formatTopLabelCounts(confidenceFilteredCountByLabel)}")
             appendLine("FPS: latest $latestFps / avg $averageFps")
             appendLine("ML Kit avg: ${mlKitInferenceTimeAverageMs}ms / count $mlKitDetectionCount")
             appendLine("Accuracy: ground truth required")
             append("False positive: ground truth required")
         }
+    }
+
+    private fun incrementCounts(
+        target: MutableMap<String, Long>,
+        detections: List<DetectionResult>
+    ) {
+        detections.forEach { detection ->
+            val label = normalizeLabel(detection.label)
+            target[label] = target.getOrDefault(label, 0L) + 1L
+        }
+    }
+
+    private fun recordFilterBreakdown(
+        beforeFilter: List<DetectionResult>,
+        afterSmallBoxFilter: List<DetectionResult>,
+        afterPolicyFilter: List<DetectionResult>
+    ) {
+        val rawCounts = beforeFilter.groupingBy { normalizeLabel(it.label) }.eachCount()
+        val visibleCounts = afterSmallBoxFilter.groupingBy { normalizeLabel(it.label) }.eachCount()
+        val warningCounts = afterPolicyFilter.groupingBy { normalizeLabel(it.label) }.eachCount()
+
+        rawCounts.forEach { (label, rawCount) ->
+            val visibleCount = visibleCounts.getOrDefault(label, 0)
+            val removedBySmallBox = (rawCount - visibleCount).coerceAtLeast(0)
+            if (removedBySmallBox > 0) {
+                smallBoxFilteredCountByLabel[label] =
+                    smallBoxFilteredCountByLabel.getOrDefault(label, 0L) + removedBySmallBox
+            }
+        }
+
+        visibleCounts.forEach { (label, visibleCount) ->
+            val warningCount = warningCounts.getOrDefault(label, 0)
+            val ignoredCount = (visibleCount - warningCount).coerceAtLeast(0)
+            if (ignoredCount > 0) {
+                ignoredCountByLabel[label] = ignoredCountByLabel.getOrDefault(label, 0L) + ignoredCount
+            }
+        }
+
+        afterSmallBoxFilter.forEach { detection ->
+            val tuningPolicy = ObjectTuningPolicyRegistry.get(detection.label)
+            if (tuningPolicy != null && tuningPolicy.enableWarning && detection.confidence < tuningPolicy.minConfidence) {
+                val label = normalizeLabel(detection.label)
+                confidenceFilteredCountByLabel[label] =
+                    confidenceFilteredCountByLabel.getOrDefault(label, 0L) + 1L
+            }
+        }
+    }
+
+    private fun formatTopLabelCounts(counts: Map<String, Long>): String {
+        return counts.entries
+            .sortedByDescending { it.value }
+            .take(SUMMARY_LABEL_LIMIT)
+            .joinToString(", ") { "${it.key} ${it.value}" }
+            .ifBlank { "none" }
+    }
+
+    private fun normalizeLabel(label: String): String {
+        return ObjectTuningPolicyRegistry.normalize(label)
     }
 
     private fun DetectionResult.toMetricRecord(timestampMs: Long): DetectionMetricRecord {
