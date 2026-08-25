@@ -21,7 +21,7 @@ import java.util.Locale
 
 class VisionStyleYoloDetector(
     private val context: Context,
-    modelName: String = "yolo11n_float32.tflite"
+    modelName: String = DEFAULT_MODEL_NAME
 ) : ObjectDetector {
 
     private val interpreter: Interpreter
@@ -38,8 +38,12 @@ class VisionStyleYoloDetector(
     private var outputData: Array<FloatArray>
 
     private val labels: List<String> = runCatching {
-        context.assets.open("labels_bollard.txt").bufferedReader().readLines().filter { it.isNotBlank() }
-    }.getOrDefault(listOf("object"))
+        context.assets.open(DEFAULT_LABELS_NAME).bufferedReader().useLines { lines ->
+            lines.map(String::trim).filter(String::isNotEmpty).toList()
+        }
+    }.getOrElse { cause ->
+        throw IllegalStateException("Failed to load labels asset: $DEFAULT_LABELS_NAME", cause)
+    }
 
     var confidenceThreshold: Float = 0.65f
     var nmsThreshold: Float = 0.55f
@@ -53,7 +57,6 @@ class VisionStyleYoloDetector(
         val modelBuffer = loadModelFile(context, modelName)
         val options = Interpreter.Options().apply {
             setNumThreads(4)
-            useNNAPI = false
         }
         interpreter = Interpreter(modelBuffer, options)
 
@@ -82,6 +85,15 @@ class VisionStyleYoloDetector(
             isTransposed = true
             outputDim = outputShape[1]
             boxCount = outputShape[2]
+        }
+
+        val modelClassCount = outputDim - YOLO_BOX_VALUE_COUNT
+        require(modelClassCount > 0) {
+            "Invalid YOLO output shape=$outputShapeText: output dimension must include box values and classes"
+        }
+        require(labels.size == modelClassCount) {
+            "Model/label mismatch: model=$modelName exposes $modelClassCount classes, " +
+                "$DEFAULT_LABELS_NAME contains ${labels.size} labels"
         }
 
         inputBuffer = ByteBuffer.allocateDirect(1 * inputWidth * inputHeight * 3 * 4)
@@ -166,7 +178,7 @@ class VisionStyleYoloDetector(
         )
         logRawBoxRange()
 
-        val classCount = outputDim - 4
+        val classCount = outputDim - YOLO_BOX_VALUE_COUNT
         val candidates = mutableListOf<DetectionResult>()
 
         for (i in 0 until boxCount) {
@@ -378,6 +390,9 @@ class VisionStyleYoloDetector(
     }
 
     companion object {
+        private const val DEFAULT_MODEL_NAME = "best_float32.tflite"
+        private const val DEFAULT_LABELS_NAME = "labels.txt"
+        private const val YOLO_BOX_VALUE_COUNT = 4
         private const val TAG = "VisionStyleYoloDetector"
         private const val BBOX_DEBUG_TAG = "BBoxDebug"
         private val DEBUG_DATE_FORMAT = ThreadLocal.withInitial {

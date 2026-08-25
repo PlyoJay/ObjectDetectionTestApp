@@ -12,25 +12,14 @@ import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.util.Size
-import android.view.Gravity
 import android.view.View
-import android.widget.Button
-import android.widget.FrameLayout
-import android.widget.LinearLayout
-import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.Preview
-import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import com.samin.objectdetection.camera.CameraController
 import com.samin.objectdetection.camera.DetectionConfig
-import com.samin.objectdetection.camera.toBitmapSafe
 import com.samin.objectdetection.detector.DetectionResult
 import com.samin.objectdetection.detector.ObjectDetector
 import com.samin.objectdetection.detector.VisionStyleYoloDetector
@@ -45,6 +34,7 @@ import com.samin.objectdetection.pipeline.DetectionPipeline
 import com.samin.objectdetection.policy.OverlayObjectFilter
 import com.samin.objectdetection.policy.YoloDefaultPolicyRegistry
 import com.samin.objectdetection.ui.BoundingBoxOverlay
+import com.samin.objectdetection.ui.MainScreenView
 import com.samin.objectdetection.ui.OverlayDebugMode
 import com.samin.objectdetection.warning.CrowdDecision
 import com.samin.objectdetection.warning.FeedbackLevel
@@ -61,20 +51,17 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
 import java.util.Locale
-import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var previewView: PreviewView
+    private lateinit var screen: MainScreenView
     private lateinit var overlayView: BoundingBoxOverlay
-    private lateinit var debugTextView: TextView
-    private lateinit var warningMessageTextView: TextView
-    private lateinit var toggleButton: Button
-    private lateinit var captureButton: Button
-    private lateinit var recordingButton: Button
+    private val debugTextView get() = screen.debugTextView
+    private val warningMessageTextView get() = screen.warningMessageTextView
+    private val recordingButton get() = screen.recordingButton
 
-    private val cameraExecutor = Executors.newSingleThreadExecutor()
+    private lateinit var cameraController: CameraController
     private lateinit var detector: ObjectDetector
     private lateinit var mlKitDetector: MlKitObjectDetector
     private lateinit var evaluationDataRecorder: EvaluationDataRecorder
@@ -93,8 +80,6 @@ class MainActivity : ComponentActivity() {
     private val enableActualBeep = true
     private val enableActualTts = true
 
-    @Volatile
-    private var isProcessing = AtomicBoolean(false)
     private val isMlKitProcessing = AtomicBoolean(false)
     @Volatile
     private var lastMlKitCount = 0
@@ -105,9 +90,6 @@ class MainActivity : ComponentActivity() {
     private var lastMlKitDetectionTime = 0L
     private var frameCount = 0
     private var currentFps = 0
-    private var overlayEnabled = true
-    private var skippedFrameCount = 0L
-    private var lastDetectionStartTimeMs = 0L
     private val latestSnapshotLock = Any()
     private var latestSnapshot: DetectionFrameSnapshot? = null
     private var activeRecordingVideoFile: File? = null
@@ -196,102 +178,14 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun setupUi() {
-        val root = FrameLayout(this)
-
-        previewView = PreviewView(this).apply {
-            // 테스트 중에는 FIT_CENTER가 bbox 위치 확인에 유리함
-            scaleType = PreviewView.ScaleType.FIT_CENTER
-        }
-
-        overlayView = BoundingBoxOverlay(this)
-
-        debugTextView = TextView(this).apply {
-            text = "대기 중"
-            textSize = 12f
-            setTextColor(android.graphics.Color.WHITE)
-            setBackgroundColor(android.graphics.Color.argb(170, 0, 0, 0))
-            setPadding(24, 24, 24, 24)
-            visibility = if (detectionConfig.overlayDebugMode == OverlayDebugMode.FULL) View.VISIBLE else View.GONE
-        }
-
-        warningMessageTextView = TextView(this).apply {
-            id = View.generateViewId()
-            visibility = View.GONE
-            textSize = 18f
-            maxLines = 2
-            gravity = Gravity.CENTER
-            setTextColor(android.graphics.Color.WHITE)
-            setBackgroundColor(android.graphics.Color.argb(190, 0, 0, 0))
-            setPadding(32, 20, 32, 20)
-        }
-
-        toggleButton = Button(this).apply {
-            text = "Overlay ON"
-            setOnClickListener {
-                overlayEnabled = !overlayEnabled
-                overlayView.setDrawingEnabled(overlayEnabled)
-                text = if (overlayEnabled) "Overlay ON" else "Overlay OFF"
-            }
-        }
-        captureButton = Button(this).apply {
-            text = "캡쳐"
-            setOnClickListener { captureEvaluationFrame() }
-        }
-        recordingButton = Button(this).apply {
-            text = "녹화 시작"
-            setOnClickListener { toggleEvaluationRecording() }
-        }
-        val controlRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER
-            addView(toggleButton)
-            addView(captureButton)
-            addView(recordingButton)
-        }
-
-        root.addView(previewView, FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
-        root.addView(overlayView, FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
-
-        root.addView(
-            debugTextView,
-            FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                gravity = Gravity.TOP
-                setMargins(20, 40, 20, 0)
-            }
+        screen = MainScreenView(
+            activity = this,
+            debugMode = detectionConfig.overlayDebugMode,
+            onCapture = ::captureEvaluationFrame,
+            onToggleRecording = ::toggleEvaluationRecording
         )
-
-        root.addView(
-            controlRow,
-            FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
-                setMargins(20, 20, 20, 60)
-            }
-        )
-
-        root.addView(
-            warningMessageTextView,
-            FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
-                setMargins(20, 20, 20, 150)
-            }
-        )
-
-        overlayView.bringToFront()
-        overlayView.setDebugMode(detectionConfig.overlayDebugMode)
-        debugTextView.bringToFront()
-        warningMessageTextView.bringToFront()
-        controlRow.bringToFront()
-
-        setContentView(root)
+        overlayView = screen.overlayView
+        setContentView(screen.root)
     }
 
     private fun checkPermissionAndStart() {
@@ -336,86 +230,42 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun startCamera() {
-        val providerFuture = ProcessCameraProvider.getInstance(this)
-        providerFuture.addListener({
-            try {
-                val provider = providerFuture.get()
-
-                val preview = Preview.Builder()
-                    .setTargetResolution(Size(1280, 720))
-                    .build()
-                    .also { it.setSurfaceProvider(previewView.surfaceProvider) }
-
-                val analysis = ImageAnalysis.Builder()
-                    .setTargetResolution(Size(1280, 720))
-                    .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
-                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                    .build()
-
-                analysis.setAnalyzer(cameraExecutor) { imageProxy ->
-                    val frameReceivedTimeMs = System.currentTimeMillis()
+        cameraController = CameraController(
+            context = this,
+            lifecycleOwner = this,
+            previewView = screen.previewView,
+            detectIntervalMs = detectionConfig.detectIntervalMs,
+            listener = object : CameraController.Listener {
+                override fun onFrameReceived(timestampMs: Long, isProcessing: Boolean) {
                     metricsCollector.recordFrameReceived()
-                    verboseLog(
-                        DETECTION_TIMING_TAG,
-                        "frameReceived=$frameReceivedTimeMs isDetecting=${isProcessing.get()}"
-                    )
                     calculateFps()
-
-                    if (frameReceivedTimeMs - lastDetectionStartTimeMs < detectionConfig.detectIntervalMs) {
-                        skippedFrameCount++
-                        metricsCollector.recordFrameSkipped()
-                        verboseLog(
-                            DETECTION_TIMING_TAG,
-                            "skipFrameByInterval skipped=$skippedFrameCount intervalMs=${detectionConfig.detectIntervalMs}"
-                        )
-                        imageProxy.close()
-                        return@setAnalyzer
-                    }
-
-                    if (!isProcessing.compareAndSet(false, true)) {
-                        skippedFrameCount++
-                        metricsCollector.recordFrameSkipped()
-                        verboseLog(
-                            DETECTION_TIMING_TAG,
-                            "skipFrame skipped=$skippedFrameCount isDetecting=${isProcessing.get()}"
-                        )
-                        imageProxy.close()
-                        return@setAnalyzer
-                    }
-                    lastDetectionStartTimeMs = frameReceivedTimeMs
-
-                    try {
-                        val bitmap = imageProxy.toBitmapSafe()
-                        if (bitmap == null) {
-                            metricsCollector.recordFrameSkipped()
-                            imageProxy.close()
-                            isProcessing.set(false)
-                            return@setAnalyzer
-                        }
-
-                        processBitmap(bitmap, frameReceivedTimeMs)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "analyze error", e)
-                    } finally {
-                        imageProxy.close()
-                        isProcessing.set(false)
-                    }
+                    verboseLog(DETECTION_TIMING_TAG, "frameReceived=$timestampMs isDetecting=$isProcessing")
                 }
 
-                provider.unbindAll()
-                provider.bindToLifecycle(
-                    this,
-                    CameraSelector.DEFAULT_BACK_CAMERA,
-                    preview,
-                    analysis
-                )
+                override fun onFrameSkipped(reason: CameraController.SkipReason, skippedFrameCount: Long) {
+                    metricsCollector.recordFrameSkipped()
+                    verboseLog(DETECTION_TIMING_TAG, "skipFrame reason=$reason skipped=$skippedFrameCount")
+                }
 
-                debugTextView.text = "카메라 시작됨"
-            } catch (e: Exception) {
-                Log.e(TAG, "startCamera error", e)
-                debugTextView.text = "카메라 시작 실패: ${e.message}"
+                override fun onFrame(bitmap: Bitmap, timestampMs: Long) {
+                    processBitmap(bitmap, timestampMs)
+                }
+
+                override fun onCameraStarted() {
+                    debugTextView.text = "카메라 시작됨"
+                }
+
+                override fun onCameraError(error: Throwable) {
+                    Log.e(TAG, "startCamera error", error)
+                    debugTextView.text = "카메라 시작 실패: ${error.message}"
+                }
+
+                override fun onFrameError(error: Throwable) {
+                    Log.e(TAG, "analyze error", error)
+                }
             }
-        }, ContextCompat.getMainExecutor(this))
+        )
+        cameraController.start()
     }
 
     private fun processBitmap(bitmap: Bitmap, frameReceivedTimeMs: Long) {
@@ -423,7 +273,7 @@ class MainActivity : ComponentActivity() {
         metricsCollector.recordFrameAnalyzed()
         verboseLog(
             DETECTION_TIMING_TAG,
-            "detectionStart=$start frameReceived=$frameReceivedTimeMs isDetecting=${isProcessing.get()}"
+            "detectionStart=$start frameReceived=$frameReceivedTimeMs"
         )
 
         // vision-mlkit-lab 방식: 중앙 정방형 crop으로 모델 입력 왜곡을 줄임
@@ -533,7 +383,7 @@ class MainActivity : ComponentActivity() {
         )
         logDetectionTiming(
             DETECTION_TIMING_TAG,
-                "detectionEnd=$detectionEndTimeMs inference=${inferenceTime}ms skipped=$skippedFrameCount " +
+                "detectionEnd=$detectionEndTimeMs inference=${inferenceTime}ms " +
                 "rawCount=${mapped.size} visibleCount=${visibleMapped.size} " +
                 "overlayWhitelistCount=${overlayDetections.size} policyFilteredCount=${warningDetections.size} " +
                 "ignoredLabels=${formatIgnoredLabels(ignoredLabels)} " +
@@ -1040,7 +890,9 @@ class MainActivity : ComponentActivity() {
             latestSnapshot = null
         }
         userLocationTracker.stop()
-        cameraExecutor.shutdown()
+        if (::cameraController.isInitialized) {
+            cameraController.close()
+        }
         mlKitDetector.close()
         detector.close()
         warningOutputController.release()

@@ -60,7 +60,7 @@ dependencies {
 
     implementation("androidx.lifecycle:lifecycle-service:2.8.4")
 
-    implementation("org.tensorflow:tensorflow-lite:2.16.1")
+    implementation("com.google.ai.edge.litert:litert:2.1.1")
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)

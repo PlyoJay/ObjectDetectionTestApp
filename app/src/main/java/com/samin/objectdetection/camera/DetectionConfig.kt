@@ -3,11 +3,6 @@ package com.samin.objectdetection.camera
 import com.samin.objectdetection.ui.OverlayDebugMode
 
 data class DetectionConfig(
-    // Used by RoiCalculator/CameraFrameAnalyzer. MainActivity currently uses a center square crop
-    // to preserve the YOLO input aspect ratio and does not apply these ratios.
-    val leftCropRatio: Float = 0.05f,
-    val rightCropRatio: Float = 0.05f,
-    val topCropRatio: Float = 0.10f,
     val detectIntervalMs: Long = 500L,
     val inputSize: Int = 512,
     // Model-level YOLO confidence threshold. Per-object warning thresholds live in YoloDefaultPolicyRegistry.
