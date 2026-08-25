@@ -142,7 +142,7 @@ object ObjectTuningPolicyRegistry {
             add(
                 ObjectTuningPolicy(
                     label = label,
-                    minConfidence = 0.45f,
+                    minConfidence = if (label == "bollard") 0.15f else 0.45f,
                     minAreaRatio = 0.006f,
                     enableOverlay = true,
                     enableWarning = true,

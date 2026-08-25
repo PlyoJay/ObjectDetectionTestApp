@@ -25,7 +25,8 @@ class CameraService : LifecycleService() {
     override fun onCreate() {
         super.onCreate()
 
-        detector = VisionStyleYoloDetector(this, "yolo11n_float32.tflite").apply {
+        detector = VisionStyleYoloDetector(this, "best_float32.tflite").apply {
+            confidenceThreshold = detectionConfig.confidenceThreshold
             enableDebugImageSaving = detectionConfig.enableDetectorDebugImage
         }
 

@@ -9,9 +9,9 @@ data class DetectionConfig(
     val rightCropRatio: Float = 0.05f,
     val topCropRatio: Float = 0.10f,
     val detectIntervalMs: Long = 500L,
-    val inputSize: Int = 640,
+    val inputSize: Int = 512,
     // Model-level YOLO confidence threshold. Per-object warning thresholds live in YoloDefaultPolicyRegistry.
-    val confidenceThreshold: Float = 0.35f,
+    val confidenceThreshold: Float = 0.10f,
     val minBoxAreaRatio: Float = 0.015f,
     val minBoxWidthRatio: Float = 0.025f,
     val minBoxHeightRatio: Float = 0.025f,

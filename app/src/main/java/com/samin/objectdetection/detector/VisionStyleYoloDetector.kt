@@ -38,7 +38,7 @@ class VisionStyleYoloDetector(
     private var outputData: Array<FloatArray>
 
     private val labels: List<String> = runCatching {
-        context.assets.open("labels.txt").bufferedReader().readLines().filter { it.isNotBlank() }
+        context.assets.open("labels_bollard.txt").bufferedReader().readLines().filter { it.isNotBlank() }
     }.getOrDefault(listOf("object"))
 
     var confidenceThreshold: Float = 0.65f
