@@ -45,7 +45,7 @@ class VisionStyleYoloDetector(
         throw IllegalStateException("Failed to load labels asset: $DEFAULT_LABELS_NAME", cause)
     }
 
-    var confidenceThreshold: Float = 0.65f
+    var confidenceThreshold: Float = 0.15f
     var nmsThreshold: Float = 0.55f
     var maxCandidates: Int = 100
     var enableDebugImageSaving: Boolean = false
@@ -69,6 +69,10 @@ class VisionStyleYoloDetector(
                 inputHeight = inputShape[1]
                 inputWidth = inputShape[2]
             }
+        }
+        require(inputWidth == MODEL_INPUT_SIZE && inputHeight == MODEL_INPUT_SIZE) {
+            "Model input mismatch: expected ${MODEL_INPUT_SIZE}x$MODEL_INPUT_SIZE, " +
+                "actual ${inputWidth}x$inputHeight (shape=${inputShape.contentToString()})"
         }
 
         val outputShape = interpreter.getOutputTensor(0).shape()
@@ -392,6 +396,7 @@ class VisionStyleYoloDetector(
     companion object {
         private const val DEFAULT_MODEL_NAME = "best_float32.tflite"
         private const val DEFAULT_LABELS_NAME = "labels.txt"
+        private const val MODEL_INPUT_SIZE = 640
         private const val YOLO_BOX_VALUE_COUNT = 4
         private const val TAG = "VisionStyleYoloDetector"
         private const val BBOX_DEBUG_TAG = "BBoxDebug"

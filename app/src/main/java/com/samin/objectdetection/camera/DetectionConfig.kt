@@ -4,9 +4,9 @@ import com.samin.objectdetection.ui.OverlayDebugMode
 
 data class DetectionConfig(
     val detectIntervalMs: Long = 500L,
-    val inputSize: Int = 512,
+    val inputSize: Int = 640,
     // Model-level YOLO confidence threshold. Per-object warning thresholds live in YoloDefaultPolicyRegistry.
-    val confidenceThreshold: Float = 0.10f,
+    val confidenceThreshold: Float = 0.15f,
     val minBoxAreaRatio: Float = 0.015f,
     val minBoxWidthRatio: Float = 0.025f,
     val minBoxHeightRatio: Float = 0.025f,
