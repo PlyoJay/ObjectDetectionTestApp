@@ -9,15 +9,10 @@ import com.samin.objectdetection.motion.UserObjectRelation
 import java.util.Locale
 
 object WarningPolicy {
-    const val DEFAULT_MIN_CONFIDENCE = 0.35f
-    const val DEFAULT_MIN_AREA_RATIO = 0.005f
-
     fun evaluate(
         detection: DetectionResult,
         frameWidth: Int,
-        frameHeight: Int,
-        minConfidence: Float = DEFAULT_MIN_CONFIDENCE,
-        minAreaRatio: Float = DEFAULT_MIN_AREA_RATIO
+        frameHeight: Int
     ): DetectionResult {
         val safeFrameWidth = frameWidth.coerceAtLeast(1).toFloat()
         val safeFrameHeight = frameHeight.coerceAtLeast(1).toFloat()
@@ -31,7 +26,9 @@ object WarningPolicy {
         val category = resolveObjectCategory(detection.label)
         val priority = resolveObjectPriority(detection.label)
         val proximityLevel = resolveProximityLevel(heightRatio, areaRatio)
-        val isIgnored = detection.confidence < minConfidence || areaRatio < minAreaRatio
+        // Filtering is owned by the detector (confidence), SmallBoxFilterPolicy (geometry),
+        // and ObjectTuningPolicyRegistry (object-specific warning eligibility).
+        val isIgnored = detection.isIgnored
         val riskLevel = if (isIgnored) {
             RiskLevel.NONE
         } else {

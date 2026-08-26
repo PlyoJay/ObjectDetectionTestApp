@@ -2,6 +2,7 @@ package com.samin.objectdetection.pipeline
 
 import android.graphics.Bitmap
 import android.graphics.Rect
+import android.util.Log
 import com.samin.objectdetection.camera.DetectionConfig
 import com.samin.objectdetection.detector.DetectionResult
 import com.samin.objectdetection.detector.ObjectDetector
@@ -70,6 +71,12 @@ class DetectionPipeline(
             val warningDetections = overlayDetections.filter { detection ->
                 ObjectTuningPolicyRegistry.shouldWarn(detection)
             }
+            logBollardDiagnostics(
+                detections = mappedDetections,
+                visibleDetections = visibleDetections,
+                warningDetections = warningDetections,
+                frameWidth = width
+            )
 
             return DetectionPipelineResult(
                 frameWidth = width,
@@ -112,5 +119,39 @@ class DetectionPipeline(
             bottom = result.bottom + cropRect.top,
             frameTimestampMs = timestampMs
         )
+    }
+
+    private fun logBollardDiagnostics(
+        detections: List<DetectionResult>,
+        visibleDetections: List<DetectionResult>,
+        warningDetections: List<DetectionResult>,
+        frameWidth: Int
+    ) {
+        val safeFrameWidth = frameWidth.coerceAtLeast(1).toFloat()
+        detections.filter { ObjectTuningPolicyRegistry.normalize(it.label) == BOLLARD_LABEL }
+            .forEach { detection ->
+                val smallBoxPassed = visibleDetections.any { it.sameBoxAs(detection) }
+                val shouldWarn = warningDetections.any { it.sameBoxAs(detection) }
+                Log.d(
+                    BOLLARD_DIAGNOSTICS_TAG,
+                    "stage=pipeline label=${detection.label} confidence=${detection.confidence} " +
+                        "bboxWidthRatio=${detection.bboxWidth / safeFrameWidth} " +
+                        "bboxHeightRatio=${detection.bboxHeightRatio} " +
+                        "bboxAreaRatio=${detection.bboxAreaRatio} " +
+                        "centerXRatio=${detection.centerXRatio} centerYRatio=${detection.centerYRatio} " +
+                        "smallBoxPassed=$smallBoxPassed warningPolicyRisk=${detection.riskLevel} " +
+                        "isIgnored=${detection.isIgnored} shouldWarn=$shouldWarn"
+                )
+            }
+    }
+
+    private fun DetectionResult.sameBoxAs(other: DetectionResult): Boolean {
+        return label == other.label &&
+            left == other.left && top == other.top && right == other.right && bottom == other.bottom
+    }
+
+    private companion object {
+        const val BOLLARD_LABEL = "bollard"
+        const val BOLLARD_DIAGNOSTICS_TAG = "BollardDiagnostics"
     }
 }

@@ -21,7 +21,9 @@ import java.util.Locale
 
 class VisionStyleYoloDetector(
     private val context: Context,
-    modelName: String = DEFAULT_MODEL_NAME
+    modelName: String,
+    private val confidenceThreshold: Float,
+    private val nmsThreshold: Float
 ) : ObjectDetector {
 
     private val interpreter: Interpreter
@@ -45,8 +47,6 @@ class VisionStyleYoloDetector(
         throw IllegalStateException("Failed to load labels asset: $DEFAULT_LABELS_NAME", cause)
     }
 
-    var confidenceThreshold: Float = 0.15f
-    var nmsThreshold: Float = 0.55f
     var maxCandidates: Int = 100
     var enableDebugImageSaving: Boolean = false
 
@@ -236,11 +236,19 @@ class VisionStyleYoloDetector(
                 right = normalized.right * sourceWidth,
                 bottom = normalized.bottom * sourceHeight
             )
-            logFinalBox(detection)
             candidates.add(detection)
         }
 
-        return nms(candidates.sortedByDescending { it.confidence }.take(maxCandidates))
+        val nmsInput = candidates.sortedByDescending { it.confidence }.take(maxCandidates)
+        val nmsResults = nms(nmsInput)
+        Log.d(
+            BOLLARD_DIAGNOSTICS_TAG,
+            "stage=nms threshold=$nmsThreshold before=${nmsInput.size} after=${nmsResults.size}"
+        )
+        nmsResults.forEach { detection ->
+            logFinalBox(detection, sourceWidth, sourceHeight)
+        }
+        return nmsResults
     }
 
     private fun nms(items: List<DetectionResult>): List<DetectionResult> {
@@ -285,11 +293,18 @@ class VisionStyleYoloDetector(
         Log.d(BBOX_DEBUG_TAG, "rawBoxRange min=$min max=$max")
     }
 
-    private fun logFinalBox(detection: DetectionResult) {
+    private fun logFinalBox(detection: DetectionResult, sourceWidth: Int, sourceHeight: Int) {
         val width = detection.right - detection.left
         val height = detection.bottom - detection.top
         val centerX = detection.left + width / 2f
         val centerY = detection.top + height / 2f
+        val safeWidth = sourceWidth.coerceAtLeast(1).toFloat()
+        val safeHeight = sourceHeight.coerceAtLeast(1).toFloat()
+        val widthRatio = width / safeWidth
+        val heightRatio = height / safeHeight
+        val areaRatio = width * height / (safeWidth * safeHeight)
+        val centerXRatio = centerX / safeWidth
+        val centerYRatio = centerY / safeHeight
         val looksNormalized = detection.left in 0f..1f &&
             detection.right in 0f..1f &&
             detection.top in 0f..1f &&
@@ -304,9 +319,10 @@ class VisionStyleYoloDetector(
             detection.bottom > inputHeight.toFloat()
 
         Log.d(
-            BBOX_DEBUG_TAG,
+            BOLLARD_DIAGNOSTICS_TAG,
             "finalBox left=${detection.left} top=${detection.top} right=${detection.right} bottom=${detection.bottom} " +
-                "width=$width height=$height centerX=$centerX centerY=$centerY " +
+                "bboxWidthRatio=$widthRatio bboxHeightRatio=$heightRatio bboxAreaRatio=$areaRatio " +
+                "centerXRatio=$centerXRatio centerYRatio=$centerYRatio nmsPassed=true " +
                 "looksNormalized=$looksNormalized looksPixel640=$looksPixel640 outOfInput=$outOfInput " +
                 "label=${detection.label} conf=${detection.confidence}"
         )
@@ -400,6 +416,7 @@ class VisionStyleYoloDetector(
         private const val YOLO_BOX_VALUE_COUNT = 4
         private const val TAG = "VisionStyleYoloDetector"
         private const val BBOX_DEBUG_TAG = "BBoxDebug"
+        private const val BOLLARD_DIAGNOSTICS_TAG = "BollardDiagnostics"
         private val DEBUG_DATE_FORMAT = ThreadLocal.withInitial {
             SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.US)
         }

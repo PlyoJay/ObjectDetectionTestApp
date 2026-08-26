@@ -278,6 +278,7 @@ class EvaluationDataRecorder(
             .put("detectIntervalMs", detectIntervalMs)
             .put("inputSize", inputSize)
             .put("confidenceThreshold", confidenceThreshold.toDouble())
+            .put("nmsThreshold", nmsThreshold.toDouble())
             .put("minBoxAreaRatio", minBoxAreaRatio.toDouble())
             .put("minBoxWidthRatio", minBoxWidthRatio.toDouble())
             .put("minBoxHeightRatio", minBoxHeightRatio.toDouble())

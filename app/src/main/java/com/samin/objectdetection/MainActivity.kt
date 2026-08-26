@@ -138,8 +138,12 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val yoloDetector = VisionStyleYoloDetector(this, MODEL_NAME).apply {
-            confidenceThreshold = detectionConfig.confidenceThreshold
+        val yoloDetector = VisionStyleYoloDetector(
+            context = this,
+            modelName = MODEL_NAME,
+            confidenceThreshold = detectionConfig.confidenceThreshold,
+            nmsThreshold = detectionConfig.nmsThreshold
+        ).apply {
             enableDebugImageSaving = detectionConfig.enableDetectorDebugImage
         }
         detector = yoloDetector
