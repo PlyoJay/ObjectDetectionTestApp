@@ -5,6 +5,7 @@ import com.samin.objectdetection.detector.DetectionResult
 import com.samin.objectdetection.warning.WarningPolicy
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class BollardDetectionPolicyTest {
@@ -17,6 +18,17 @@ class BollardDetectionPolicyTest {
         assertEquals(0.20f, config.confidenceThreshold)
         assertEquals(0.45f, config.nmsThreshold)
         assertEquals(config.confidenceThreshold, bollardPolicy?.minConfidence)
+        assertEquals(0.002f, bollardPolicy?.minAreaRatio)
+        assertEquals(0.010f, bollardPolicy?.minWidthRatio)
+        assertEquals(0.010f, bollardPolicy?.minHeightRatio)
+    }
+
+    @Test
+    fun fieldTestConfigUsesFullFrameAndDiagnostics() {
+        val config = DetectionConfig()
+
+        assertFalse(config.useCenterSquareCrop)
+        assertTrue(config.enableDetectorDiagnostics)
     }
 
     @Test
