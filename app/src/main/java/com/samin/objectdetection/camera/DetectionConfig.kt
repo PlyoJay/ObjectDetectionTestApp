@@ -5,6 +5,8 @@ import com.samin.objectdetection.ui.OverlayDebugMode
 data class DetectionConfig(
     val detectIntervalMs: Long = 500L,
     val inputSize: Int = 640,
+    // Keep the full camera frame by default. Enable only for comparison with the legacy center-square ROI.
+    val useCenterSquareCrop: Boolean = false,
     // Base YOLO candidate threshold. Object-specific warning thresholds are applied later by ObjectTuningPolicyRegistry.
     val confidenceThreshold: Float = DEFAULT_CONFIDENCE_THRESHOLD,
     val nmsThreshold: Float = DEFAULT_NMS_THRESHOLD,
@@ -16,7 +18,8 @@ data class DetectionConfig(
     val overlayDebugMode: OverlayDebugMode = OverlayDebugMode.SIMPLE,
     val saveDebugImage: Boolean = false,
     val enableDetectorDebugImage: Boolean = false,
-    val enableDetectorDiagnostics: Boolean = false
+    // This is an evaluation app: keep stage-by-stage diagnostics on for field-test builds.
+    val enableDetectorDiagnostics: Boolean = true
 ) {
     companion object {
         const val DEFAULT_CONFIDENCE_THRESHOLD = 0.20f
