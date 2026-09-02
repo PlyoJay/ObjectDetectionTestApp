@@ -31,8 +31,8 @@ object ObjectTuningPolicyRegistry {
         "parking meter"
     )
 
-    // The current yolo11n_float32.tflite model uses COCO labels, so these custom labels may not be emitted
-    // until a future custom model and matching labels.txt are shipped.
+    // Custom pedestrian-safety labels supported by the policy layer. The packaged model and labels file
+    // are validated together at detector startup, so only labels emitted by that pair can reach this registry.
     val futureCustomLabels = setOf(
         "bollard",
         "stairs",
@@ -139,21 +139,28 @@ object ObjectTuningPolicyRegistry {
             )
         }
         futureCustomLabels.forEach { label ->
+            val isBollard = label == "bollard"
             add(
                 ObjectTuningPolicy(
                     label = label,
-                    minConfidence = if (label == "bollard") {
+                    minConfidence = if (isBollard) {
                         DetectionConfig.DEFAULT_CONFIDENCE_THRESHOLD
                     } else {
                         0.45f
                     },
-                    minAreaRatio = 0.006f,
+                    minAreaRatio = if (isBollard) BOLLARD_MIN_AREA_RATIO else 0.006f,
+                    minWidthRatio = if (isBollard) BOLLARD_MIN_WIDTH_RATIO else null,
+                    minHeightRatio = if (isBollard) BOLLARD_MIN_HEIGHT_RATIO else null,
                     enableOverlay = true,
                     enableWarning = true,
                     enableVoice = true,
                     priority = ObjectPriority.HIGH,
                     category = RiskObjectCategory.TEMPORARY_OBSTACLE,
-                    note = "향후 커스텀 보행 장애물 모델에서 사용할 라벨"
+                    note = if (isBollard) {
+                        "중·원거리 Bollard 필드 테스트를 위해 전용 소형 bbox 기준 적용"
+                    } else {
+                        "커스텀 보행 장애물 모델에서 사용할 라벨"
+                    }
                 )
             )
         }
@@ -210,5 +217,9 @@ object ObjectTuningPolicyRegistry {
     fun normalize(label: String): String {
         return label.trim().lowercase(Locale.US)
     }
+
+    private const val BOLLARD_MIN_AREA_RATIO = 0.002f
+    private const val BOLLARD_MIN_WIDTH_RATIO = 0.010f
+    private const val BOLLARD_MIN_HEIGHT_RATIO = 0.010f
 
 }
