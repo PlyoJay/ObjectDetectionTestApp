@@ -551,9 +551,14 @@ class MainActivity : ComponentActivity() {
                 val timestamp = snapshot.frameTimestampMs.toString()
                 val files = evaluationDataRecorder.saveCapture(snapshot, timestamp)
                 runOnUiThread {
+                    val gallerySaved = files.galleryOriginal != null || files.galleryOverlay != null
                     Toast.makeText(
                         this@MainActivity,
-                        "캡쳐 저장: ${files.image.name}",
+                        if (gallerySaved) {
+                            "캡쳐 저장: Pictures/GOTORO"
+                        } else {
+                            "캡쳐 저장: ${files.image.name} (앱 전용 폴더)"
+                        },
                         Toast.LENGTH_SHORT
                     ).show()
                 }

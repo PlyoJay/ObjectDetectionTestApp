@@ -1,12 +1,16 @@
 package com.samin.objectdetection.evaluation
 
+import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
+import android.net.Uri
 import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.util.Log
 import com.samin.objectdetection.camera.DetectionConfig
 import com.samin.objectdetection.detector.DetectionResult
@@ -15,6 +19,7 @@ import org.json.JSONObject
 import java.io.BufferedWriter
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 import java.io.OutputStreamWriter
 import java.util.Locale
 
@@ -42,19 +47,37 @@ class EvaluationDataRecorder(
         val jsonFile = File(capturesDir, "$timestamp.json")
         val overlayFile = File(capturesDir, "${timestamp}_overlay.jpg")
 
-        saveJpeg(snapshot.bitmap, imageFile)
-        jsonFile.writeText(
-            buildFrameJson(snapshot, timestamp).toString(2),
-            Charsets.UTF_8
+        saveJpegIfAbsent(snapshot.bitmap, imageFile)
+        writeTextIfAbsent(
+            file = jsonFile,
+            text = buildFrameJson(snapshot, timestamp).toString(2)
         )
         val overlayBitmap = drawOverlay(snapshot)
+        var galleryOriginal: PublishedImage? = null
+        var galleryOverlay: PublishedImage? = null
         try {
-            saveJpeg(overlayBitmap, overlayFile)
+            saveJpegIfAbsent(overlayBitmap, overlayFile)
+            galleryOriginal = publishJpegSafely(
+                bitmap = snapshot.bitmap,
+                displayName = "${timestamp}_original.jpg",
+                albumName = ORIGINAL_ALBUM
+            )
+            galleryOverlay = publishJpegSafely(
+                bitmap = overlayBitmap,
+                displayName = "${timestamp}_overlay.jpg",
+                albumName = OVERLAY_ALBUM
+            )
         } finally {
             overlayBitmap.recycle()
         }
 
-        return CaptureFiles(imageFile, jsonFile, overlayFile)
+        return CaptureFiles(
+            image = imageFile,
+            detectionsJson = jsonFile,
+            overlayImage = overlayFile,
+            galleryOriginal = galleryOriginal,
+            galleryOverlay = galleryOverlay
+        )
     }
 
     fun startRecordingLog(timestamp: String): File {
@@ -105,9 +128,94 @@ class EvaluationDataRecorder(
         }
     }
 
-    private fun saveJpeg(bitmap: Bitmap, file: File) {
-        FileOutputStream(file).use { out ->
-            bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out)
+    private fun saveJpegIfAbsent(bitmap: Bitmap, file: File) {
+        if (!file.createNewFile()) {
+            Log.w(TAG, "private capture already exists; keeping existing file path=${file.absolutePath}")
+            return
+        }
+        try {
+            FileOutputStream(file, false).use { out ->
+                if (!bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out)) {
+                    throw IOException("JPEG compression failed: ${file.absolutePath}")
+                }
+            }
+        } catch (error: Exception) {
+            runCatching { file.delete() }
+            throw error
+        }
+    }
+
+    private fun writeTextIfAbsent(file: File, text: String) {
+        if (!file.createNewFile()) {
+            Log.w(TAG, "private capture already exists; keeping existing file path=${file.absolutePath}")
+            return
+        }
+        try {
+            file.outputStream().bufferedWriter(Charsets.UTF_8).use { writer ->
+                writer.write(text)
+            }
+        } catch (error: Exception) {
+            runCatching { file.delete() }
+            throw error
+        }
+    }
+
+    private fun publishJpegSafely(
+        bitmap: Bitmap,
+        displayName: String,
+        albumName: String
+    ): PublishedImage? {
+        return try {
+            publishJpeg(bitmap, displayName, albumName)
+        } catch (error: Exception) {
+            Log.e(
+                TAG,
+                "gallery image save failed name=$displayName album=$albumName",
+                error
+            )
+            null
+        }
+    }
+
+    private fun publishJpeg(
+        bitmap: Bitmap,
+        displayName: String,
+        albumName: String
+    ): PublishedImage {
+        val relativePath = "${Environment.DIRECTORY_PICTURES}/$GALLERY_ROOT_ALBUM/$albumName"
+        val values = ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, displayName)
+            put(MediaStore.Images.Media.MIME_TYPE, JPEG_MIME_TYPE)
+            put(MediaStore.Images.Media.RELATIVE_PATH, relativePath)
+            put(MediaStore.Images.Media.IS_PENDING, 1)
+        }
+        val resolver = context.contentResolver
+        val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+            ?: throw IOException("MediaStore insert returned null: $relativePath/$displayName")
+
+        try {
+            resolver.openOutputStream(uri, "w")?.use { output ->
+                if (!bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, output)) {
+                    throw IOException("JPEG compression failed for MediaStore URI: $uri")
+                }
+            } ?: throw IOException("MediaStore OutputStream is null: $uri")
+
+            val completed = ContentValues().apply {
+                put(MediaStore.Images.Media.IS_PENDING, 0)
+            }
+            if (resolver.update(uri, completed, null, null) <= 0) {
+                throw IOException("Failed to publish pending MediaStore item: $uri")
+            }
+
+            val displayPath = "$relativePath/$displayName"
+            Log.i(TAG, "gallery image saved uri=$uri path=$displayPath")
+            return PublishedImage(uri, displayPath)
+        } catch (error: Exception) {
+            runCatching { resolver.delete(uri, null, null) }
+                .onFailure { cleanupError ->
+                    Log.e(TAG, "failed to delete incomplete MediaStore item uri=$uri", cleanupError)
+                }
+            throw error
         }
     }
 
@@ -317,13 +425,24 @@ class EvaluationDataRecorder(
     data class CaptureFiles(
         val image: File,
         val detectionsJson: File,
-        val overlayImage: File
+        val overlayImage: File,
+        val galleryOriginal: PublishedImage?,
+        val galleryOverlay: PublishedImage?
+    )
+
+    data class PublishedImage(
+        val uri: Uri,
+        val displayPath: String
     )
 
     companion object {
         private const val TAG = "EvaluationRecorder"
         private const val ROOT_DIR = "ObjectDetectionTestApp"
         private const val JPEG_QUALITY = 92
+        private const val JPEG_MIME_TYPE = "image/jpeg"
+        private const val GALLERY_ROOT_ALBUM = "GOTORO"
+        private const val ORIGINAL_ALBUM = "Original"
+        private const val OVERLAY_ALBUM = "Overlay"
 
         private val boxPaint = Paint().apply {
             color = Color.CYAN
