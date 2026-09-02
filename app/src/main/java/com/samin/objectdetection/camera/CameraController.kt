@@ -18,13 +18,14 @@ class CameraController(
     private val lifecycleOwner: LifecycleOwner,
     private val previewView: PreviewView,
     private val detectIntervalMs: Long,
+    private val enableDiagnostics: Boolean,
     private val listener: Listener
 ) : AutoCloseable {
 
     interface Listener {
         fun onFrameReceived(timestampMs: Long, isProcessing: Boolean)
         fun onFrameSkipped(reason: SkipReason, skippedFrameCount: Long)
-        fun onFrame(bitmap: Bitmap, timestampMs: Long)
+        fun onFrame(bitmap: Bitmap, timestampMs: Long, rotationDegrees: Int)
         fun onCameraStarted()
         fun onCameraError(error: Throwable)
         fun onFrameError(error: Throwable)
@@ -76,13 +77,13 @@ class CameraController(
                 }
                 detectionStarted = true
                 lastDetectionStartTimeMs = timestampMs
-                val bitmap = imageProxy.toBitmapSafe()
+                val bitmap = imageProxy.toBitmapSafe(enableDiagnostics)
                 if (bitmap == null) {
                     recordSkipped(SkipReason.BITMAP_CONVERSION)
                     return@setAnalyzer
                 }
                 try {
-                    listener.onFrame(bitmap, timestampMs)
+                    listener.onFrame(bitmap, timestampMs, imageProxy.imageInfo.rotationDegrees)
                 } finally {
                     if (!bitmap.isRecycled) {
                         bitmap.recycle()

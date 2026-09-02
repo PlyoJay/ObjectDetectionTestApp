@@ -15,7 +15,8 @@ data class DetectionConfig(
     val maxGuideObjectCount: Int = 2,
     val overlayDebugMode: OverlayDebugMode = OverlayDebugMode.SIMPLE,
     val saveDebugImage: Boolean = false,
-    val enableDetectorDebugImage: Boolean = false
+    val enableDetectorDebugImage: Boolean = false,
+    val enableDetectorDiagnostics: Boolean = false
 ) {
     companion object {
         const val DEFAULT_CONFIDENCE_THRESHOLD = 0.20f

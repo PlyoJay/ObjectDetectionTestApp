@@ -22,7 +22,8 @@ class DetectionPipeline(
 
     fun process(
         bitmap: Bitmap,
-        timestampMs: Long
+        timestampMs: Long,
+        rotationDegrees: Int
     ): DetectionPipelineResult {
         val width = bitmap.width
         val height = bitmap.height
@@ -40,7 +41,9 @@ class DetectionPipeline(
                     detection = detection,
                     frameWidth = width,
                     frameHeight = height
-                ).also { WarningPolicy.logDebug(it) }
+                ).also { detection ->
+                    if (config.enableDetectorDiagnostics) WarningPolicy.logDebug(detection)
+                }
             }
             val visibleDetections = SmallBoxFilterPolicy.filter(
                 detections = mappedDetections,
@@ -71,12 +74,19 @@ class DetectionPipeline(
             val warningDetections = overlayDetections.filter { detection ->
                 ObjectTuningPolicyRegistry.shouldWarn(detection)
             }
-            logBollardDiagnostics(
-                detections = mappedDetections,
-                visibleDetections = visibleDetections,
-                warningDetections = warningDetections,
-                frameWidth = width
-            )
+            if (config.enableDetectorDiagnostics) {
+                logFrameDiagnostics(
+                    timestampMs = timestampMs,
+                    rotationDegrees = rotationDegrees,
+                    frameWidth = width,
+                    frameHeight = height,
+                    cropRect = cropRect,
+                    detections = mappedDetections,
+                    visibleDetections = visibleDetections,
+                    overlayDetections = overlayDetections,
+                    warningDetections = warningDetections
+                )
+            }
 
             return DetectionPipelineResult(
                 frameWidth = width,
@@ -121,12 +131,31 @@ class DetectionPipeline(
         )
     }
 
-    private fun logBollardDiagnostics(
+    private fun logFrameDiagnostics(
+        timestampMs: Long,
+        rotationDegrees: Int,
+        frameWidth: Int,
+        frameHeight: Int,
+        cropRect: Rect,
         detections: List<DetectionResult>,
         visibleDetections: List<DetectionResult>,
-        warningDetections: List<DetectionResult>,
-        frameWidth: Int
+        overlayDetections: List<DetectionResult>,
+        warningDetections: List<DetectionResult>
     ) {
+        val model = detector.modelIdentity()
+        val stats = detector.frameDiagnostics()
+        Log.d(
+            BOLLARD_DIAGNOSTICS_TAG,
+            "frameTimestamp=$timestampMs modelSha256=${model?.sha256Prefix ?: "unknown"} " +
+                "inputImage=${frameWidth}x$frameHeight roi=[${cropRect.left},${cropRect.top},${cropRect.right},${cropRect.bottom}] " +
+                "roiApplied=${!cropRect.isFullFrame(frameWidth, frameHeight)} rotationDegrees=$rotationDegrees " +
+                "preprocess=center_square_crop_then_stretch_${config.inputSize}x${config.inputSize}_rgb_float_0_to_1 " +
+                "inferenceTimeMs=${stats?.inferenceTimeMs ?: -1} rawTop5=${stats?.rawTopConfidences ?: emptyList<Float>()} " +
+                "rawCandidates=${stats?.rawCandidateCount ?: -1} confidencePassed=${stats?.confidencePassedCount ?: -1} " +
+                "invalidBox=${stats?.invalidBoxCount ?: -1} detectorAreaRejected=${stats?.detectorAreaRejectedCount ?: -1} " +
+                "nmsInput=${stats?.nmsInputCount ?: -1} nmsAfter=${stats?.nmsOutputCount ?: -1} " +
+                "smallBoxAfter=${visibleDetections.size} overlayAfter=${overlayDetections.size} finalDetections=${warningDetections.size}"
+        )
         val safeFrameWidth = frameWidth.coerceAtLeast(1).toFloat()
         detections.filter { ObjectTuningPolicyRegistry.normalize(it.label) == BOLLARD_LABEL }
             .forEach { detection ->
@@ -148,6 +177,10 @@ class DetectionPipeline(
     private fun DetectionResult.sameBoxAs(other: DetectionResult): Boolean {
         return label == other.label &&
             left == other.left && top == other.top && right == other.right && bottom == other.bottom
+    }
+
+    private fun Rect.isFullFrame(frameWidth: Int, frameHeight: Int): Boolean {
+        return left == 0 && top == 0 && right == frameWidth && bottom == frameHeight
     }
 
     private companion object {

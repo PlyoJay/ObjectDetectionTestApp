@@ -283,6 +283,7 @@ class EvaluationDataRecorder(
             .put("minBoxWidthRatio", minBoxWidthRatio.toDouble())
             .put("minBoxHeightRatio", minBoxHeightRatio.toDouble())
             .put("overlayDebugMode", overlayDebugMode.name)
+            .put("enableDetectorDiagnostics", enableDetectorDiagnostics)
     }
 
     private fun resolveAppVersionName(): String {

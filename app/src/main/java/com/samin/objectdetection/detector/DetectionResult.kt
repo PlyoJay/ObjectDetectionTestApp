@@ -45,6 +45,8 @@ data class DetectionResult(
 interface ObjectDetector {
     fun detect(bitmap: Bitmap): List<DetectionResult>
     fun close()
+    fun modelIdentity(): ModelIdentity? = null
+    fun frameDiagnostics(): DetectorFrameDiagnostics? = null
 }
 
 fun DetectionResult.mapToOriginalFrame(

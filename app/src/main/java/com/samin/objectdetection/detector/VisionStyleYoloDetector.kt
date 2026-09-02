@@ -15,6 +15,7 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
+import java.security.MessageDigest
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -49,6 +50,11 @@ class VisionStyleYoloDetector(
 
     var maxCandidates: Int = 100
     var enableDebugImageSaving: Boolean = false
+    var enableDiagnostics: Boolean = false
+
+    private lateinit var loadedModelIdentity: ModelIdentity
+    @Volatile
+    private var latestFrameDiagnostics: DetectorFrameDiagnostics? = null
 
     @Volatile
     private var isProcessing = false
@@ -76,6 +82,8 @@ class VisionStyleYoloDetector(
         }
 
         val outputShape = interpreter.getOutputTensor(0).shape()
+        val inputType = interpreter.getInputTensor(0).dataType().toString()
+        val outputType = interpreter.getOutputTensor(0).dataType().toString()
         outputShapeText = outputShape.contentToString()
         if (outputShape.size != 3) {
             throw IllegalStateException("Unsupported output shape=${outputShape.contentToString()}")
@@ -107,36 +115,57 @@ class VisionStyleYoloDetector(
         pixels = IntArray(inputWidth * inputHeight)
         outputData = Array(outputDim) { FloatArray(boxCount) }
 
-        Log.d(TAG, "model=$modelName")
-        Log.d(TAG, "input=${inputShape.contentToString()}, ${inputWidth}x$inputHeight")
-        Log.d(TAG, "output=${outputShape.contentToString()}, dim=$outputDim, boxes=$boxCount, transposed=$isTransposed")
-        Log.d(TAG, "labels=${labels.size}")
+        loadedModelIdentity = ModelIdentity(
+            assetName = modelName,
+            assetSizeBytes = context.assets.openFd(modelName).use { it.declaredLength },
+            sha256 = calculateAssetSha256(modelName),
+            inputShape = inputShape.contentToString(),
+            inputType = inputType,
+            outputShape = outputShape.contentToString(),
+            outputType = outputType
+        )
+
+        Log.i(
+            TAG,
+            "modelAsset=asset://$modelName sizeBytes=${loadedModelIdentity.assetSizeBytes} " +
+                "sha256=${loadedModelIdentity.sha256} inputShape=${loadedModelIdentity.inputShape} " +
+                "inputType=$inputType outputShape=${loadedModelIdentity.outputShape} outputType=$outputType " +
+                "labels=${labels.size}"
+        )
     }
 
     override fun detect(bitmap: Bitmap): List<DetectionResult> {
         if (isProcessing) return emptyList()
         isProcessing = true
 
+        val inferenceStartMs = System.currentTimeMillis()
+        var scaled: Bitmap? = null
         return try {
-            val scaled = if (bitmap.width != inputWidth || bitmap.height != inputHeight) {
+            scaled = if (bitmap.width != inputWidth || bitmap.height != inputHeight) {
                 Bitmap.createScaledBitmap(bitmap, inputWidth, inputHeight, true)
             } else {
                 bitmap
             }
+            val modelInput = requireNotNull(scaled)
 
-            Log.d(BBOX_DEBUG_TAG, "input=${scaled.width}x${scaled.height}")
+            if (enableDiagnostics) {
+                Log.d(BBOX_DEBUG_TAG, "input=${modelInput.width}x${modelInput.height}")
+            }
 
-            fillInputBuffer(scaled)
+            fillInputBuffer(modelInput)
 
             outputBuffer.rewind()
             interpreter.run(inputBuffer, outputBuffer)
             outputBuffer.rewind()
 
             parseOutput(outputBuffer, bitmap.width, bitmap.height).also { results ->
+                latestFrameDiagnostics = latestFrameDiagnostics?.copy(
+                    inferenceTimeMs = System.currentTimeMillis() - inferenceStartMs
+                )
                 if (enableDebugImageSaving) {
-                    saveDebugImages(scaled, results)
+                    saveDebugImages(modelInput, results)
                 }
-                if (results.isNotEmpty()) {
+                if (enableDiagnostics && results.isNotEmpty()) {
                     val top = results.maxByOrNull { it.confidence }
                     Log.d(TAG, "detected=${results.size}, top=${top?.label}, conf=${top?.confidence}")
                 }
@@ -145,6 +174,9 @@ class VisionStyleYoloDetector(
             Log.e(TAG, "detect error", e)
             emptyList()
         } finally {
+            if (scaled != null && scaled !== bitmap && !scaled.isRecycled) {
+                scaled.recycle()
+            }
             isProcessing = false
         }
     }
@@ -176,14 +208,20 @@ class VisionStyleYoloDetector(
             }
         }
 
-        Log.d(
-            BBOX_DEBUG_TAG,
-            "outputShape=$outputShapeText outputDim=$outputDim boxCount=$boxCount transposed=$isTransposed"
-        )
-        logRawBoxRange()
+        if (enableDiagnostics) {
+            Log.d(
+                BBOX_DEBUG_TAG,
+                "outputShape=$outputShapeText outputDim=$outputDim boxCount=$boxCount transposed=$isTransposed"
+            )
+            logRawBoxRange()
+        }
 
         val classCount = outputDim - YOLO_BOX_VALUE_COUNT
         val candidates = mutableListOf<DetectionResult>()
+        val rawConfidences = if (enableDiagnostics) ArrayList<Float>(boxCount) else null
+        var confidencePassedCount = 0
+        var invalidBoxCount = 0
+        var detectorAreaRejectedCount = 0
 
         for (i in 0 until boxCount) {
             var bestClassId = -1
@@ -197,7 +235,10 @@ class VisionStyleYoloDetector(
                 }
             }
 
+            rawConfidences?.add(bestScore)
+
             if (bestClassId < 0 || bestScore < confidenceThreshold) continue
+            confidencePassedCount++
 
             val cx = outputData[0][i]
             val cy = outputData[1][i]
@@ -206,10 +247,12 @@ class VisionStyleYoloDetector(
             val rawMin = minOf(cx, cy, w, h)
             val rawMax = maxOf(cx, cy, w, h)
 
-            Log.d(
-                BBOX_DEBUG_TAG,
-                "rawBox index=$i x=$cx y=$cy w=$w h=$h rawMin=$rawMin rawMax=$rawMax"
-            )
+            if (enableDiagnostics) {
+                Log.d(
+                    BBOX_DEBUG_TAG,
+                    "candidate=$i rawConfidence=$bestScore rawBox=[$cx,$cy,$w,$h] rawMin=$rawMin rawMax=$rawMax"
+                )
+            }
 
             // YOLO export에 따라 0~1 또는 0~inputSize 값이 나올 수 있어 정규화 좌표로 통일
             val scaleW = if (cx > 1.1f || w > 1.1f) inputWidth.toFloat() else 1f
@@ -222,10 +265,18 @@ class VisionStyleYoloDetector(
                 ((cy + h / 2f) / scaleH).coerceIn(0f, 1f)
             )
 
-            if (normalized.right <= normalized.left || normalized.bottom <= normalized.top) continue
+            if (normalized.right <= normalized.left || normalized.bottom <= normalized.top) {
+                invalidBoxCount++
+                if (enableDiagnostics) Log.d(BBOX_DEBUG_TAG, "candidate=$i removed=invalid_box")
+                continue
+            }
 
             val area = normalized.width() * normalized.height()
-            if (area < 0.0005f || area > 0.95f) continue
+            if (area < 0.0005f || area > 0.95f) {
+                detectorAreaRejectedCount++
+                if (enableDiagnostics) Log.d(BBOX_DEBUG_TAG, "candidate=$i removed=detector_area areaRatio=$area")
+                continue
+            }
 
             val label = labels.getOrElse(bestClassId) { "class_$bestClassId" }
             val detection = DetectionResult(
@@ -241,12 +292,25 @@ class VisionStyleYoloDetector(
 
         val nmsInput = candidates.sortedByDescending { it.confidence }.take(maxCandidates)
         val nmsResults = nms(nmsInput)
-        Log.d(
-            BOLLARD_DIAGNOSTICS_TAG,
-            "stage=nms threshold=$nmsThreshold before=${nmsInput.size} after=${nmsResults.size}"
-        )
-        nmsResults.forEach { detection ->
-            logFinalBox(detection, sourceWidth, sourceHeight)
+        if (enableDiagnostics) {
+            latestFrameDiagnostics = DetectorFrameDiagnostics(
+                rawCandidateCount = boxCount,
+                rawTopConfidences = requireNotNull(rawConfidences).sortedDescending()
+                    .take(RAW_TOP_CONFIDENCE_COUNT),
+                confidencePassedCount = confidencePassedCount,
+                invalidBoxCount = invalidBoxCount,
+                detectorAreaRejectedCount = detectorAreaRejectedCount,
+                nmsInputCount = nmsInput.size,
+                nmsOutputCount = nmsResults.size,
+                inferenceTimeMs = 0L
+            )
+            Log.d(
+                BOLLARD_DIAGNOSTICS_TAG,
+                "stage=nms threshold=$nmsThreshold before=${nmsInput.size} after=${nmsResults.size}"
+            )
+            nmsResults.forEach { detection ->
+                logFinalBox(detection, sourceWidth, sourceHeight)
+            }
         }
         return nmsResults
     }
@@ -409,11 +473,30 @@ class VisionStyleYoloDetector(
         interpreter.close()
     }
 
+    override fun modelIdentity(): ModelIdentity = loadedModelIdentity
+
+    override fun frameDiagnostics(): DetectorFrameDiagnostics? = latestFrameDiagnostics
+
+    private fun calculateAssetSha256(assetName: String): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        context.assets.open(assetName).use { input ->
+            val buffer = ByteArray(HASH_BUFFER_SIZE)
+            while (true) {
+                val read = input.read(buffer)
+                if (read < 0) break
+                digest.update(buffer, 0, read)
+            }
+        }
+        return digest.digest().joinToString("") { byte -> "%02x".format(byte) }
+    }
+
     companion object {
         private const val DEFAULT_MODEL_NAME = "best_float32.tflite"
         private const val DEFAULT_LABELS_NAME = "labels.txt"
         private const val MODEL_INPUT_SIZE = 640
         private const val YOLO_BOX_VALUE_COUNT = 4
+        private const val RAW_TOP_CONFIDENCE_COUNT = 5
+        private const val HASH_BUFFER_SIZE = 64 * 1024
         private const val TAG = "VisionStyleYoloDetector"
         private const val BBOX_DEBUG_TAG = "BBoxDebug"
         private const val BOLLARD_DIAGNOSTICS_TAG = "BollardDiagnostics"

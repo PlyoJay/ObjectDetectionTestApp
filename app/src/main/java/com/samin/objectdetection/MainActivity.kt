@@ -145,6 +145,7 @@ class MainActivity : ComponentActivity() {
             nmsThreshold = detectionConfig.nmsThreshold
         ).apply {
             enableDebugImageSaving = detectionConfig.enableDetectorDebugImage
+            enableDiagnostics = detectionConfig.enableDetectorDiagnostics
         }
         detector = yoloDetector
         mlKitDetector = MlKitObjectDetector()
@@ -239,6 +240,7 @@ class MainActivity : ComponentActivity() {
             lifecycleOwner = this,
             previewView = screen.previewView,
             detectIntervalMs = detectionConfig.detectIntervalMs,
+            enableDiagnostics = detectionConfig.enableDetectorDiagnostics,
             listener = object : CameraController.Listener {
                 override fun onFrameReceived(timestampMs: Long, isProcessing: Boolean) {
                     metricsCollector.recordFrameReceived()
@@ -251,8 +253,8 @@ class MainActivity : ComponentActivity() {
                     verboseLog(DETECTION_TIMING_TAG, "skipFrame reason=$reason skipped=$skippedFrameCount")
                 }
 
-                override fun onFrame(bitmap: Bitmap, timestampMs: Long) {
-                    processBitmap(bitmap, timestampMs)
+                override fun onFrame(bitmap: Bitmap, timestampMs: Long, rotationDegrees: Int) {
+                    processBitmap(bitmap, timestampMs, rotationDegrees)
                 }
 
                 override fun onCameraStarted() {
@@ -272,7 +274,7 @@ class MainActivity : ComponentActivity() {
         cameraController.start()
     }
 
-    private fun processBitmap(bitmap: Bitmap, frameReceivedTimeMs: Long) {
+    private fun processBitmap(bitmap: Bitmap, frameReceivedTimeMs: Long, rotationDegrees: Int) {
         val start = System.currentTimeMillis()
         metricsCollector.recordFrameAnalyzed()
         verboseLog(
@@ -283,7 +285,7 @@ class MainActivity : ComponentActivity() {
         // vision-mlkit-lab 방식: 중앙 정방형 crop으로 모델 입력 왜곡을 줄임
         maybeRunMlKitDetection(bitmap, bitmap.width, bitmap.height)
 
-        val pipelineResult = detectionPipeline.process(bitmap, start)
+        val pipelineResult = detectionPipeline.process(bitmap, frameReceivedTimeMs, rotationDegrees)
         val width = pipelineResult.frameWidth
         val height = pipelineResult.frameHeight
         val cropRect = pipelineResult.cropRect
@@ -397,7 +399,7 @@ class MainActivity : ComponentActivity() {
             bitmap = bitmap,
             detections = overlayDetections,
             evaluationDetections = mapped,
-            frameTimestampMs = start,
+            frameTimestampMs = frameReceivedTimeMs,
             roi = cropRect,
             rawDetectionCount = mapped.size,
             visibleDetectionCount = visibleMapped.size,
@@ -510,7 +512,7 @@ class MainActivity : ComponentActivity() {
             frameTimestampMs = frameTimestampMs,
             imageWidth = bitmap.width,
             imageHeight = bitmap.height,
-            roiApplied = true,
+            roiApplied = roi.left != 0 || roi.top != 0 || roi.right != bitmap.width || roi.bottom != bitmap.height,
             roi = Rect(roi),
             rawDetectionCount = rawDetectionCount,
             visibleDetectionCount = visibleDetectionCount,
@@ -772,19 +774,14 @@ class MainActivity : ComponentActivity() {
 
         lastMlKitDetectionTime = now
 
+        val mlInputWidth = 640
+        val mlInputHeight = 360
+        // Create the ML Kit input while the camera bitmap is still owned by the analyzer thread.
+        // The camera bitmap is recycled immediately after processBitmap returns.
+        val mlBitmap = Bitmap.createScaledBitmap(bitmap, mlInputWidth, mlInputHeight, true)
+
         lifecycleScope.launch(Dispatchers.Default) {
             try {
-                val mlInputWidth = 640
-                val mlInputHeight = 360
-
-                // ML Kit 연산량 줄이기 위해 작은 Bitmap으로 축소
-                val mlBitmap = Bitmap.createScaledBitmap(
-                    bitmap,
-                    mlInputWidth,
-                    mlInputHeight,
-                    true
-                )
-
                 val mlStart = System.currentTimeMillis()
 
                 val mlKitResults = mlKitDetector.detect(mlBitmap)
@@ -821,6 +818,9 @@ class MainActivity : ComponentActivity() {
             } catch (e: Exception) {
                 Log.e(TAG, "ML Kit detection error", e)
             } finally {
+                if (mlBitmap !== bitmap && !mlBitmap.isRecycled) {
+                    mlBitmap.recycle()
+                }
                 isMlKitProcessing.set(false)
             }
         }

@@ -5,7 +5,7 @@ import android.graphics.Matrix
 import android.util.Log
 import androidx.camera.core.ImageProxy
 
-fun ImageProxy.toBitmapSafe(): Bitmap? {
+fun ImageProxy.toBitmapSafe(enableDiagnostics: Boolean = false): Bitmap? {
     return try {
         val plane = planes[0]
         val buffer = plane.buffer
@@ -13,10 +13,13 @@ fun ImageProxy.toBitmapSafe(): Bitmap? {
         val pixelStride = plane.pixelStride
         val rowStride = plane.rowStride
 
-        Log.d(
-            "ImageProxyExt",
-            "format=$format, width=$width, height=$height, pixelStride=$pixelStride, rowStride=$rowStride, buffer=${buffer.remaining()}"
-        )
+        if (enableDiagnostics) {
+            Log.d(
+                "ImageProxyExt",
+                "format=$format, width=$width, height=$height, pixelStride=$pixelStride, " +
+                    "rowStride=$rowStride, buffer=${buffer.remaining()}"
+            )
+        }
 
         val rowPadding = rowStride - pixelStride * width
 
@@ -36,12 +39,19 @@ fun ImageProxy.toBitmapSafe(): Bitmap? {
             width,
             height
         )
+        if (bitmapWithPadding !== bitmap && !bitmapWithPadding.isRecycled) {
+            bitmapWithPadding.recycle()
+        }
 
         val rotationDegrees = imageInfo.rotationDegrees
-        Log.d("ImageProxyExt", "rotationDegrees=$rotationDegrees")
+        if (enableDiagnostics) Log.d("ImageProxyExt", "rotationDegrees=$rotationDegrees")
 
         if (rotationDegrees != 0) {
-            bitmap.rotate(rotationDegrees.toFloat())
+            bitmap.rotate(rotationDegrees.toFloat()).also { rotated ->
+                if (rotated !== bitmap && !bitmap.isRecycled) {
+                    bitmap.recycle()
+                }
+            }
         } else {
             bitmap
         }

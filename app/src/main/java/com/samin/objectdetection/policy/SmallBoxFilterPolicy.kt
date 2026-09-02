@@ -37,17 +37,21 @@ object SmallBoxFilterPolicy {
             if (keep) {
                 kept.add(detection)
             }
-            Log.d(
-                TAG,
-                "small box filter label=${detection.label}, conf=${detection.confidence}, " +
-                    "areaRatio=$areaRatio, requiredAreaRatio=$requiredAreaRatio, " +
-                    "widthRatio=$widthRatio, requiredWidthRatio=$requiredWidthRatio, " +
-                    "heightRatio=$heightRatio, requiredHeightRatio=$requiredHeightRatio, " +
-                    "keep=$keep, reason=$reason, box=${formatBox(detection)}"
-            )
+            if (config.enableDetectorDiagnostics) {
+                Log.d(
+                    TAG,
+                    "small box filter label=${detection.label}, conf=${detection.confidence}, " +
+                        "areaRatio=$areaRatio, requiredAreaRatio=$requiredAreaRatio, " +
+                        "widthRatio=$widthRatio, requiredWidthRatio=$requiredWidthRatio, " +
+                        "heightRatio=$heightRatio, requiredHeightRatio=$requiredHeightRatio, " +
+                        "keep=$keep, reason=$reason, box=${formatBox(detection)}"
+                )
+            }
         }
 
-        Log.d(TAG, "before=${detections.size}, after=${kept.size}")
+        if (config.enableDetectorDiagnostics) {
+            Log.d(TAG, "before=${detections.size}, after=${kept.size}")
+        }
         return kept
     }
 
