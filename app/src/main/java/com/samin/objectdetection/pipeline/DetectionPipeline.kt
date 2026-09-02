@@ -27,7 +27,7 @@ class DetectionPipeline(
     ): DetectionPipelineResult {
         val width = bitmap.width
         val height = bitmap.height
-        val cropRect = createCenterSquareCrop(width, height)
+        val cropRect = createInferenceRect(width, height)
         val detectionStartTimeMs = System.currentTimeMillis()
         var cropped: Bitmap? = null
 
@@ -108,7 +108,10 @@ class DetectionPipeline(
         }
     }
 
-    private fun createCenterSquareCrop(width: Int, height: Int): Rect {
+    private fun createInferenceRect(width: Int, height: Int): Rect {
+        if (!config.useCenterSquareCrop) {
+            return Rect(0, 0, width, height)
+        }
         val size = minOf(width, height)
         val left = (width - size) / 2
         val top = (height - size) / 2
@@ -149,7 +152,8 @@ class DetectionPipeline(
             "frameTimestamp=$timestampMs modelSha256=${model?.sha256Prefix ?: "unknown"} " +
                 "inputImage=${frameWidth}x$frameHeight roi=[${cropRect.left},${cropRect.top},${cropRect.right},${cropRect.bottom}] " +
                 "roiApplied=${!cropRect.isFullFrame(frameWidth, frameHeight)} rotationDegrees=$rotationDegrees " +
-                "preprocess=center_square_crop_then_stretch_${config.inputSize}x${config.inputSize}_rgb_float_0_to_1 " +
+                "preprocess=${if (config.useCenterSquareCrop) "center_square_crop" else "full_frame"}" +
+                "_then_stretch_${config.inputSize}x${config.inputSize}_rgb_float_0_to_1 " +
                 "inferenceTimeMs=${stats?.inferenceTimeMs ?: -1} rawTop5=${stats?.rawTopConfidences ?: emptyList<Float>()} " +
                 "rawCandidates=${stats?.rawCandidateCount ?: -1} confidencePassed=${stats?.confidencePassedCount ?: -1} " +
                 "invalidBox=${stats?.invalidBoxCount ?: -1} detectorAreaRejected=${stats?.detectorAreaRejectedCount ?: -1} " +
