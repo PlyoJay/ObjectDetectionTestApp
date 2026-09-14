@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="pas.registUser.service.impl.RegistUserMapper">
+
+	<select id="countGuardianByUserId" parameterType="string" resultType="int">
+		SELECT COUNT(*)
+		  FROM tb_guardian
+		 WHERE guardian_id = #{value}
+	</select>
+
+	<!-- 보호자 연결 요청 전용 정확 일치 조회. 후보 목록이나 개인정보는 반환하지 않는다. -->
+	<select id="selectProtectedUserForConnection" parameterType="map" resultType="egovMap">
+		SELECT U.user_id AS protected_user_id,
+		       U.user_name AS protected_user_name
+		  FROM tb_user U
+		 WHERE U.user_type = 'PROTECTED'
+		   AND U.user_name = #{userName}
+		   AND U.user_id = #{userId}
+		   AND REPLACE(COALESCE(U.phone_no, ''), '-', '') = #{phoneNo}
+		 LIMIT 1
+	</select>
+
+	<select id="selectGuardianList" parameterType="map" resultType="egovMap">
+		SELECT
+			A.guardian_id,
+			A.guardian_name,
+			A.user_id AS protected_user_id,
+			A.relation,
+			A.status AS connection_status
+		FROM
+			tb_guardian A
+		WHERE
+			A.user_id = #{userId}
+	</select>
+
+	<select id="selectProtectedUserList" parameterType="map" resultType="egovMap">
+		SELECT
+			G.user_id AS protected_user_id,
+			U.user_name AS protected_user_name,
+			G.relation,
+			CASE G.relation
+				WHEN 'FAMILY' THEN '가족'
+				WHEN 'ACQUAINTANCE' THEN '지인'
+				ELSE G.relation
+			END AS relation_name,
+			G.status AS connection_status,
+			CASE G.status
+				WHEN 'PENDING' THEN '승인 대기'
+				WHEN 'APPROVED' THEN '연결됨'
+				ELSE G.status
+			END AS connection_status_name
+		FROM tb_guardian G
+		INNER JOIN tb_user U
+			ON U.user_id = G.user_id
+			AND U.user_type = 'PROTECTED'
+		WHERE G.guardian_id = #{guardianId}
+		ORDER BY G.guardian_seq
+	</select>
+
+	<select id="selectConnectionUser" parameterType="string" resultType="egovMap">
+		SELECT user_id, user_name, user_type
+		  FROM tb_user
+		 WHERE user_id = #{value}
+	</select>
+
+	<select id="selectGuardianConnectionStatus" parameterType="map" resultType="string">
+		SELECT status
+		  FROM tb_guardian
+		 WHERE user_id = #{protectedUserId}
+		   AND guardian_id = #{guardianId}
+		 LIMIT 1
+		 FOR UPDATE
+	</select>
+
+	<insert id="insertProtectedUserConnectionRequest" parameterType="map">
+		<selectKey resultType="string" keyProperty="guardianSeq" order="BEFORE">
+			SELECT CAST(COALESCE(MAX(CAST(guardian_seq AS UNSIGNED)), 0) + 1 AS CHAR) AS guardian_seq
+			  FROM tb_guardian
+		</selectKey>
+		INSERT INTO tb_guardian (
+			user_id, guardian_seq, guardian_id, guardian_name, relation, status,
+			reg_user_id, reg_date, last_chg_user_id, last_chg_date
+		) VALUES (
+			#{protectedUserId}, #{guardianSeq}, #{guardianId}, #{guardianName}, #{relation}, 'PENDING',
+			#{guardianId}, NOW(), #{guardianId}, NOW()
+		)
+	</insert>
+
+	<delete id="deleteGuardianNotificationSetting" parameterType="map">
+		DELETE FROM tb_guardian_notification_setting
+		 WHERE guardian_id = #{guardianId}
+		   AND protege_id = #{protectedUserId}
+	</delete>
+
+	<!-- 로그인 보호자에게 승인된 관계만 연결 해제한다. 사용자 데이터는 삭제하지 않는다. -->
+	<delete id="deleteApprovedProtectedUserConnection" parameterType="map">
+		DELETE FROM tb_guardian
+		 WHERE guardian_id = #{guardianId}
+		   AND user_id = #{protectedUserId}
+		   AND status = 'APPROVED'
+	</delete>
+
+	<!-- 로그인 피보호자 본인에게 승인된 특정 보호자 관계 한 건만 해제한다. -->
+	<delete id="deleteApprovedGuardianConnectionByProtected" parameterType="map">
+		DELETE FROM tb_guardian
+		 WHERE user_id = #{protectedUserId}
+		   AND guardian_id = #{guardianId}
+		   AND status = 'APPROVED'
+	</delete>
+
+	<update id="approveGuardianRequest" parameterType="map">
+		UPDATE tb_guardian
+		   SET status = 'APPROVED',
+		       last_chg_user_id = #{protectedUserId},
+		       last_chg_date = NOW()
+		 WHERE user_id = #{protectedUserId}
+		   AND guardian_id = #{guardianId}
+		   AND status = 'PENDING'
+	</update>
+
+	<delete id="rejectGuardianRequest" parameterType="map">
+		DELETE FROM tb_guardian
+		 WHERE user_id = #{protectedUserId}
+		   AND guardian_id = #{guardianId}
+		   AND status = 'PENDING'
+	</delete>
+
+	<select id="selectGuardianToRegist" parameterType="LoginVO" resultType="EgovMap">
+		SELECT
+			user_id AS guardian_id,
+			user_name AS guardian_name
+		FROM
+			vw_user_sw
+		WHERE
+			user_password = #{userPwd}
+		AND
+			user_id = #{userId}
+	</select>
+
+	<!-- 보호자 저장 -->
+	<insert id="insertGuardianRegistInfo" parameterType="map">
+		<selectKey resultType="string" keyProperty="guardianSeq" order="BEFORE">
+			SELECT CAST(COALESCE(MAX(CAST(guardian_seq AS UNSIGNED)), 0) + 1 AS CHAR) AS guardian_seq
+  			  FROM tb_guardian
+		</selectKey>
+		INSERT INTO tb_guardian (
+					user_id,
+					guardian_seq,
+					guardian_id,
+					guardian_name,
+					note,
+					reg_user_id,
+					reg_date,
+					status
+		) values (
+					#{userId},
+					#{guardianSeq},
+					#{guardianId},
+					#{guardianName},
+					#{note},
+					#{regUserId},
+					NOW(),
+					'APPROVED'
+		)
+	</insert>
+
+	<!-- 보호자 삭제 -->
+	<delete id="deleteGuardianRegistInfo" parameterType="map">
+		DELETE FROM tb_guardian
+			  WHERE user_id = #{userId}
+			    AND guardian_id = #{guardianId}
+	</delete>
+
+</mapper>

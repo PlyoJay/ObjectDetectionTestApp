@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="pas.settings.service.impl.SettingsMapper">
+
+	<select id="selectGuardianProtegeList" parameterType="map" resultType="egovMap">
+		SELECT G.user_id AS protege_id,
+		       U.user_name AS protege_name,
+		       G.relation
+		  FROM tb_guardian G
+		  JOIN tb_user U ON U.user_id = G.user_id
+		 WHERE G.guardian_id = #{guardianId}
+		   AND G.status = 'APPROVED'
+		   AND U.user_type = 'PROTECTED'
+		 ORDER BY G.guardian_seq
+	</select>
+
+	<select id="countApprovedGuardianProtege" parameterType="map" resultType="int">
+		SELECT COUNT(*)
+		  FROM tb_guardian
+		 WHERE guardian_id = #{guardianId}
+		   AND user_id = #{protegeId}
+		   AND status = 'APPROVED'
+	</select>
+
+	<select id="selectGuardianNotification" parameterType="map" resultType="egovMap">
+		SELECT sos_enabled,
+		       route_deviation_enabled,
+		       low_battery_enabled,
+		       low_battery_threshold,
+		       device_offline_enabled
+		  FROM tb_guardian_notification_setting
+		 WHERE guardian_id = #{guardianId}
+		   AND protege_id = #{protegeId}
+	</select>
+
+	<insert id="upsertGuardianNotification" parameterType="map">
+		INSERT INTO tb_guardian_notification_setting (
+			guardian_id, protege_id, sos_enabled, route_deviation_enabled,
+			low_battery_enabled, low_battery_threshold, device_offline_enabled
+		) VALUES (
+			#{guardianId}, #{protegeId}, #{sosEnabled}, #{routeDeviationEnabled},
+			#{lowBatteryEnabled}, #{lowBatteryThreshold}, #{deviceOfflineEnabled}
+		)
+		ON DUPLICATE KEY UPDATE
+			sos_enabled = #{sosEnabled},
+			route_deviation_enabled = #{routeDeviationEnabled},
+			low_battery_enabled = #{lowBatteryEnabled},
+			low_battery_threshold = #{lowBatteryThreshold},
+			device_offline_enabled = #{deviceOfflineEnabled}
+	</insert>
+
+	<insert id="saveSettingList" parameterType="map">
+		INSERT INTO tb_settings(
+				user_id,				total_distance,				crosswalk_num,				traffic_light,
+				IOT_light,				vehicle_entryway,			block_ratio,
+				tts_speed,				sound_output,				reg_user_id,
+				reg_date,				crosswalk_output,			blinker_output,				access_output,
+				facility_output,		path_end_comment,			current_times,				location_information
+			)
+		VALUES(
+				#{userId},				'Y',						'Y',						'Y',
+				'Y',					'Y',						'Y',
+				'1.0',					'B',						#{userId},
+				NOW(),					'3',						'3',						'3',
+				'3',					'Y',						'Y',						'Y'
+			)
+	</insert>
+
+	<select id="selectSettingList" parameterType="map" resultType="String">
+		SELECT user_id FROM tb_settings
+		WHERE user_id =#{userId}
+	</select>
+
+	<update id="updateUser" parameterType="map">
+	    UPDATE
+			tb_user
+		SET
+		    user_name = #{userName},
+		    phone_no = #{phoneNo},
+		    zipcode = #{zipcode},
+		    addr = #{addr},
+		    addr_detail = #{addrDetail},
+		    user_email = #{userEmail},
+	        wifi_id = #{wifiId},
+	        wifi_password = #{wifiPassword},
+		    last_chg_user_id = #{userId},
+		    last_chg_date = NOW()
+		WHERE user_id = #{userId}
+	</update>
+
+	<update id="updateGuardianPersonalInfo" parameterType="map">
+	    UPDATE tb_user
+	       SET user_name = #{userName},
+	           phone_no = #{phoneNo},
+	           zipcode = #{zipcode},
+	           addr = #{addr},
+	           addr_detail = #{addrDetail},
+	           user_email = #{userEmail},
+	           last_chg_user_id = #{userId},
+	           last_chg_date = NOW()
+	     WHERE user_id = #{userId}
+	</update>
+
+	<update id="updateSetting" parameterType="map">
+		INSERT INTO tb_settings (
+			user_id,
+	        total_distance,
+	        crosswalk_num,
+	        traffic_light,
+	        IOT_light,
+	        vehicle_entryway,
+	        block_ratio,
+	        tts_speed,
+	        sound_output,
+	        crosswalk_output,
+	        blinker_output,
+	        access_output,
+	        facility_output,
+	        path_end_comment,
+	        current_times,
+	        location_information,
+	        reg_user_id,
+	        reg_date
+	    )
+	    VALUES (
+	    	#{userId},
+	        #{totalDistance},
+	        #{crosswalkNum},
+	        #{trafficLight},
+	        #{iotLight},
+	        #{vehicleEntryway},
+	        #{blockRatio},
+	        #{ttsSpeed},
+	        #{soundOutput},
+	        #{crosswalkOutput},
+	        #{blinkerOutput},
+	        #{accessOutput},
+	        #{facilityOutput},
+	        #{pathEndComment},
+	        #{currentTimes},
+	        #{locationInformation},
+	        #{userId},
+	        NOW()
+	    )
+	    ON DUPLICATE KEY UPDATE
+	        total_distance 		= #{totalDistance},
+			crosswalk_num 		= #{crosswalkNum},
+			traffic_light 		= #{trafficLight},
+			IOT_light			= #{iotLight},
+			vehicle_entryway	= #{vehicleEntryway},
+			block_ratio			= #{blockRatio},
+			tts_speed 			= #{ttsSpeed},
+			sound_output		= #{soundOutput},
+			crosswalk_output	= #{crosswalkOutput},
+	        blinker_output		= #{blinkerOutput},
+	        access_output		= #{accessOutput},
+	        facility_output		= #{facilityOutput},
+	        path_end_comment	= #{pathEndComment},
+	        current_times		= #{currentTimes},
+	        location_information= #{locationInformation},
+		    last_chg_user_id	= #{userId},
+		    last_chg_date		= NOW()
+	</update>
+
+	<select id="selectUserInfo" parameterType="hashMap" resultType="egovMap">
+		SELECT
+			A.user_id,
+			A.user_name,
+			A.zipcode,
+			A.addr,
+			A.addr_detail,
+			A.user_email,
+			A.phone_no,
+			A.wifi_id AS wifiId,
+        	A.wifi_password AS wifiPassword,
+			B.total_distance,
+			B.crosswalk_num,
+			B.traffic_light,
+			B.IOT_light,
+			B.vehicle_entryway,
+			B.rotation,
+			B.block_ratio,
+			B.tts_speed,
+			B.sound_output,
+			B.crosswalk_output,
+			B.blinker_output,
+			B.access_output,
+			B.facility_output,
+			B.path_end_comment,
+			B.current_times,
+			B.location_information
+		FROM vw_user_sw A
+		LEFT JOIN tb_settings B ON A.user_id = B.user_id
+		WHERE A.user_id = #{userId}
+	</select>
+
+	<select id="selectFamInfo" parameterType="hashMap" resultType="egovMap">
+		SELECT
+			A.user_id,
+			A.user_name,
+			A.zipcode,
+			A.addr,
+			A.addr_detail,
+			A.user_email,
+			A.phone_no,
+	        A.wifi_id AS wifiId,
+	        A.wifi_password AS wifiPassword
+		FROM vw_user_sw A
+		WHERE A.user_id = #{userId}
+	</select>
+
+	<select id="selectUserChk" parameterType="hashMap" resultType="boolean">
+		SELECT
+			COUNT(*) > 0
+	    FROM
+	    	vw_user_sw
+	    WHERE
+	    	user_id = #{userId}
+	      AND
+			user_password = #{enPassword}
+	</select>
+
+	<update id="updateUserPwd" parameterType="map">
+	    UPDATE
+			tb_user
+		SET
+		    user_password = #{newEnPassword}
+		WHERE
+			user_id = #{userId}
+	</update>
+	
+	<!-- 단말기 정보 불러오기 -->
+	<select id="selectDeviceInfo" parameterType="egovMap" resultType="egovMap">
+		SELECT 
+	        device_serial_no,
+	        model_nm,
+	        firmware_version
+	    FROM vw_device_sw 
+	    WHERE user_id = #{userId}
+	</select>
+	
+	<!-- 시리얼 넘버 확인 -->
+	<select id="checkDeviceSerial" parameterType="string" resultType="int">
+	    SELECT COUNT(*)
+	      FROM vw_device_sw
+	     WHERE device_serial_no = #{value} 
+	</select>
+	
+	<!-- 단말기 등록 -->
+	<update id="updateDeviceInfo" parameterType="egovMap">
+	    UPDATE tb_device
+	       SET user_id = #{userId},
+	           last_chg_date = NOW()
+	     WHERE device_serial_no = #{deviceSerialNum}
+	</update>
+	
+	
+	<!-- 단말기 최신버전 확인 -->  
+	<select id="selectFirmVer" parameterType="egovMap" resultType="egovMap">
+		SELECT
+	    	version
+	    FROM tb_firmware 
+	   	ORDER BY version DESC
+	   	LIMIT 1
+	</select>
+	
+	<update id="updateFirmware" parameterType="map">
+	    UPDATE tb_device
+	       SET firmware_version = #{latestVersion}, 
+	           last_chg_date = NOW()
+	     WHERE user_id = #{userId}
+	</update>
+	
+
+</mapper>

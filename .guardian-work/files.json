@@ -1,0 +1,12 @@
+[
+  "src/main/java/pas/settings/service/impl/SettingsServiceImpl.java",
+  "src/main/java/pas/settings/service/impl/SettingsMapper.java",
+  "src/main/java/pas/settings/service/impl/SettingsMapper.xml",
+  "src/main/java/pas/settings/service/SettingsSerivce.java",
+  "src/main/java/pas/settings/web/SettingsController.java",
+  "src/main/webapp/WEB-INF/jsp/setting/guardianNotificationSetting.jsp",
+  "src/main/java/pas/registUser/service/impl/RegistUserServiceImpl.java",
+  "src/main/java/pas/registUser/service/impl/RegistUserMapper.java",
+  "src/main/java/pas/registUser/service/impl/RegistUserMapper.xml",
+  "src/test/java/pas/settings/web/GuardianNotificationSettingTest.java"
+]

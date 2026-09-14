@@ -1,0 +1,72 @@
+JUnit version 4.13.2
+...E..E.E.....E...E.E.E...E
+Time: 0.02
+There were 8 failures:
+1) requestIsPendingAndUsesExistingSequenceStrategy(pas.registUser.service.impl.GuardianConnectionWorkflowMapperTest)
+java.lang.AssertionError
+	at org.junit.Assert.fail(Assert.java:87)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertTrue(Assert.java:53)
+	at pas.registUser.service.impl.GuardianConnectionWorkflowMapperTest.requestIsPendingAndUsesExistingSequenceStrategy(GuardianConnectionWorkflowMapperTest.java:40)
+2) requestCandidatesAreProtectedAndExcludeExistingConnections(pas.registUser.service.impl.RegistUserProtectedUserMapperTest)
+java.lang.AssertionError
+	at org.junit.Assert.fail(Assert.java:87)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertTrue(Assert.java:53)
+	at pas.registUser.service.impl.RegistUserProtectedUserMapperTest.requestCandidatesAreProtectedAndExcludeExistingConnections(RegistUserProtectedUserMapperTest.java:42)
+3) requestCandidatesExposeOnlyMaskedPhoneAndSupportSearch(pas.registUser.service.impl.RegistUserProtectedUserMapperTest)
+java.lang.AssertionError
+	at org.junit.Assert.fail(Assert.java:87)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertTrue(Assert.java:53)
+	at pas.registUser.service.impl.RegistUserProtectedUserMapperTest.requestCandidatesExposeOnlyMaskedPhoneAndSupportSearch(RegistUserProtectedUserMapperTest.java:51)
+4) disconnectActionIsStillNonFunctional(pas.settings.web.GuardianInfoEditUiTest)
+java.lang.AssertionError
+	at org.junit.Assert.fail(Assert.java:87)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertTrue(Assert.java:53)
+	at pas.settings.web.GuardianInfoEditUiTest.disconnectActionIsStillNonFunctional(GuardianInfoEditUiTest.java:51)
+5) candidatesSupportSearchMaskingAndSingleSelection(pas.settings.web.ProtectedUserRequestPopupUiTest)
+java.lang.AssertionError
+	at org.junit.Assert.fail(Assert.java:87)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertTrue(Assert.java:53)
+	at pas.settings.web.ProtectedUserRequestPopupUiTest.candidatesSupportSearchMaskingAndSingleSelection(ProtectedUserRequestPopupUiTest.java:37)
+6) closeControlsAndAccessibleLabelsExist(pas.settings.web.ProtectedUserRequestPopupUiTest)
+java.lang.AssertionError
+	at org.junit.Assert.fail(Assert.java:87)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertTrue(Assert.java:53)
+	at pas.settings.web.ProtectedUserRequestPopupUiTest.closeControlsAndAccessibleLabelsExist(ProtectedUserRequestPopupUiTest.java:63)
+7) relationAndClientValidationAreReadyForFutureApi(pas.settings.web.ProtectedUserRequestPopupUiTest)
+java.lang.AssertionError
+	at org.junit.Assert.fail(Assert.java:87)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertTrue(Assert.java:53)
+	at pas.settings.web.ProtectedUserRequestPopupUiTest.relationAndClientValidationAreReadyForFutureApi(ProtectedUserRequestPopupUiTest.java:52)
+8) initializationError(pas_spring.EgovEnvCryptoAlgorithmCreateTest)
+org.junit.runners.model.InvalidTestClassError: Invalid test class 'pas_spring.EgovEnvCryptoAlgorithmCreateTest':
+  1. No runnable methods
+	at org.junit.runners.ParentRunner.validate(ParentRunner.java:525)
+	at org.junit.runners.ParentRunner.<init>(ParentRunner.java:102)
+	at org.junit.runners.BlockJUnit4ClassRunner.<init>(BlockJUnit4ClassRunner.java:84)
+	at org.junit.runners.JUnit4.<init>(JUnit4.java:23)
+	at org.junit.internal.builders.JUnit4Builder.runnerForClass(JUnit4Builder.java:10)
+	at org.junit.runners.model.RunnerBuilder.safeRunnerForClass(RunnerBuilder.java:70)
+	at org.junit.internal.builders.AllDefaultPossibilitiesBuilder.runnerForClass(AllDefaultPossibilitiesBuilder.java:37)
+	at org.junit.runner.Computer.getRunner(Computer.java:50)
+	at org.junit.runner.Computer$1.runnerForClass(Computer.java:31)
+	at org.junit.runners.model.RunnerBuilder.safeRunnerForClass(RunnerBuilder.java:70)
+	at org.junit.runners.model.RunnerBuilder.runners(RunnerBuilder.java:125)
+	at org.junit.runners.model.RunnerBuilder.runners(RunnerBuilder.java:111)
+	at org.junit.runners.Suite.<init>(Suite.java:81)
+	at org.junit.runner.Computer$2.<init>(Computer.java:33)
+	at org.junit.runner.Computer.getSuite(Computer.java:28)
+	at org.junit.runner.Request.classes(Request.java:77)
+	at org.junit.runner.JUnitCommandLineParseResult.createRequest(JUnitCommandLineParseResult.java:116)
+	at org.junit.runner.JUnitCore.runMain(JUnitCore.java:77)
+	at org.junit.runner.JUnitCore.main(JUnitCore.java:36)
+
+FAILURES!!!
+Tests run: 19,  Failures: 8
+
