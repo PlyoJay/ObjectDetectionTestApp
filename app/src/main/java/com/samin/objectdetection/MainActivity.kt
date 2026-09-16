@@ -142,7 +142,8 @@ class MainActivity : ComponentActivity() {
             context = this,
             modelName = MODEL_NAME,
             confidenceThreshold = detectionConfig.confidenceThreshold,
-            nmsThreshold = detectionConfig.nmsThreshold
+            nmsThreshold = detectionConfig.nmsThreshold,
+            sizeFilterMode = detectionConfig.sizeFilterMode
         ).apply {
             enableDebugImageSaving = detectionConfig.enableDetectorDebugImage
             enableDiagnostics = detectionConfig.enableDetectorDiagnostics

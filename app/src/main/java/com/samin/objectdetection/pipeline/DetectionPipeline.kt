@@ -155,10 +155,13 @@ class DetectionPipeline(
                 "preprocess=${if (config.useCenterSquareCrop) "center_square_crop" else "full_frame"}" +
                 "_then_stretch_${config.inputSize}x${config.inputSize}_rgb_float_0_to_1 " +
                 "inferenceTimeMs=${stats?.inferenceTimeMs ?: -1} rawTop5=${stats?.rawTopConfidences ?: emptyList<Float>()} " +
-                "rawCandidates=${stats?.rawCandidateCount ?: -1} confidencePassed=${stats?.confidencePassedCount ?: -1} " +
+                "rawDetectionCount=${stats?.rawCandidateCount ?: -1} " +
+                "confidenceFilteredCount=${stats?.confidencePassedCount ?: -1} " +
                 "invalidBox=${stats?.invalidBoxCount ?: -1} detectorAreaRejected=${stats?.detectorAreaRejectedCount ?: -1} " +
                 "nmsInput=${stats?.nmsInputCount ?: -1} nmsAfter=${stats?.nmsOutputCount ?: -1} " +
-                "smallBoxAfter=${visibleDetections.size} overlayAfter=${overlayDetections.size} finalDetections=${warningDetections.size}"
+                "sizeFilterMode=${config.sizeFilterMode} sizeFilterInput=${detections.size} " +
+                "sizeFilteredCount=${visibleDetections.size} sizeRejectedCount=${detections.size - visibleDetections.size} " +
+                "overlayAfter=${overlayDetections.size} finalDetections=${warningDetections.size}"
         )
         val safeFrameWidth = frameWidth.coerceAtLeast(1).toFloat()
         detections.filter { ObjectTuningPolicyRegistry.normalize(it.label) == BOLLARD_LABEL }

@@ -7,6 +7,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
 import android.util.Log
+import com.samin.objectdetection.camera.SizeFilterMode
 import org.tensorflow.lite.Interpreter
 import java.io.File
 import java.io.FileInputStream
@@ -24,7 +25,8 @@ class VisionStyleYoloDetector(
     private val context: Context,
     modelName: String,
     private val confidenceThreshold: Float,
-    private val nmsThreshold: Float
+    private val nmsThreshold: Float,
+    private val sizeFilterMode: SizeFilterMode = SizeFilterMode.NORMAL
 ) : ObjectDetector {
 
     private val interpreter: Interpreter
@@ -272,13 +274,27 @@ class VisionStyleYoloDetector(
             }
 
             val area = normalized.width() * normalized.height()
-            if (area < 0.0005f || area > 0.95f) {
+            val label = labels.getOrElse(bestClassId) { "class_$bestClassId" }
+            val detectorAreaRange = when (sizeFilterMode) {
+                SizeFilterMode.DISABLED -> null
+                SizeFilterMode.RELAXED -> RELAXED_MIN_AREA_RATIO..RELAXED_MAX_AREA_RATIO
+                SizeFilterMode.NORMAL -> NORMAL_MIN_AREA_RATIO..NORMAL_MAX_AREA_RATIO
+            }
+            if (detectorAreaRange != null && area !in detectorAreaRange) {
                 detectorAreaRejectedCount++
-                if (enableDiagnostics) Log.d(BBOX_DEBUG_TAG, "candidate=$i removed=detector_area areaRatio=$area")
+                if (enableDiagnostics) {
+                    val boxWidth = normalized.width() * sourceWidth
+                    val boxHeight = normalized.height() * sourceHeight
+                    Log.d(
+                        SIZE_FILTER_TAG,
+                        "removed stage=detector mode=$sizeFilterMode class=$label confidence=$bestScore " +
+                            "bboxWidth=$boxWidth bboxHeight=$boxHeight bboxArea=${boxWidth * boxHeight} " +
+                            "screenAreaRatio=$area reason=area_outside_${detectorAreaRange.start}_to_${detectorAreaRange.endInclusive}"
+                    )
+                }
                 continue
             }
 
-            val label = labels.getOrElse(bestClassId) { "class_$bestClassId" }
             val detection = DetectionResult(
                 label = label,
                 confidence = bestScore,
@@ -306,7 +322,8 @@ class VisionStyleYoloDetector(
             )
             Log.d(
                 BOLLARD_DIAGNOSTICS_TAG,
-                "stage=nms threshold=$nmsThreshold before=${nmsInput.size} after=${nmsResults.size}"
+                "stage=nms threshold=$nmsThreshold before=${nmsInput.size} after=${nmsResults.size} " +
+                    "sizeFilterMode=$sizeFilterMode detectorSizeRejected=$detectorAreaRejectedCount"
             )
             nmsResults.forEach { detection ->
                 logFinalBox(detection, sourceWidth, sourceHeight)
@@ -497,8 +514,13 @@ class VisionStyleYoloDetector(
         private const val YOLO_BOX_VALUE_COUNT = 4
         private const val RAW_TOP_CONFIDENCE_COUNT = 5
         private const val HASH_BUFFER_SIZE = 64 * 1024
+        private const val NORMAL_MIN_AREA_RATIO = 0.0005f
+        private const val NORMAL_MAX_AREA_RATIO = 0.95f
+        private const val RELAXED_MIN_AREA_RATIO = 0.00005f
+        private const val RELAXED_MAX_AREA_RATIO = 0.99f
         private const val TAG = "VisionStyleYoloDetector"
         private const val BBOX_DEBUG_TAG = "BBoxDebug"
+        private const val SIZE_FILTER_TAG = "DetectionSizeFilter"
         private const val BOLLARD_DIAGNOSTICS_TAG = "BollardDiagnostics"
         private val DEBUG_DATE_FORMAT = ThreadLocal.withInitial {
             SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.US)
