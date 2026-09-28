@@ -20,5 +20,15 @@ data class DetectorFrameDiagnostics(
     val detectorAreaRejectedCount: Int,
     val nmsInputCount: Int,
     val nmsOutputCount: Int,
-    val inferenceTimeMs: Long
+    /** Resize plus RGB float-buffer creation. */
+    val preprocessTimeMs: Long,
+    val resizeTimeMs: Long,
+    val inputBufferTimeMs: Long,
+    /** Interpreter.run only. */
+    val inferenceTimeMs: Long,
+    val outputCopyTimeMs: Long,
+    val candidateScanTimeMs: Long,
+    val nmsTimeMs: Long,
+    val postprocessTimeMs: Long,
+    val detectorTotalTimeMs: Long
 )

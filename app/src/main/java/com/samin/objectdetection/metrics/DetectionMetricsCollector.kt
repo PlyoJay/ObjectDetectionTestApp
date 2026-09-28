@@ -19,6 +19,25 @@ data class DetectionMetricRecord(
     val timestampMs: Long
 )
 
+data class PerformanceMetricStats(val averageMs: Long, val p95Ms: Long)
+
+data class PerformanceSnapshot(
+    val durationMs: Long,
+    val receivedFrames: Long,
+    val processedFrames: Long,
+    val droppedFrames: Long,
+    val averageFps: Int,
+    val preprocess: PerformanceMetricStats,
+    val inference: PerformanceMetricStats,
+    val postprocess: PerformanceMetricStats,
+    val pipeline: PerformanceMetricStats,
+    val frameAgeAtOverlay: PerformanceMetricStats,
+    val yoloDetections: Long,
+    val visibleDetections: Long,
+    val warnings: Long,
+    val mlKitAverageMs: Long
+)
+
 class DetectionMetricsCollector {
     var totalFrameCount: Long = 0L
         private set
@@ -29,6 +48,8 @@ class DetectionMetricsCollector {
     var yoloDetectionCountBeforeFilter: Long = 0L
         private set
     var yoloDetectionCountAfterFilter: Long = 0L
+        private set
+    var yoloVisibleDetectionCount: Long = 0L
         private set
     var filteredSmallBoxCount: Long = 0L
         private set
@@ -63,6 +84,19 @@ class DetectionMetricsCollector {
     private var fpsSampleCount = 0L
     private var mlKitInferenceTimeSumMs = 0L
     private var mlKitInferenceSampleCount = 0L
+    private val performanceSamples = ArrayDeque<PerformanceSample>()
+    private var performanceSampleCount = 0L
+    private val sessionPerformanceSamples = ArrayList<PerformanceSample>()
+    private var performanceSessionStartedAtMs = 0L
+    private var performanceSessionActive = false
+    private var sessionReceivedFrameBaseline = 0L
+    private var sessionProcessedFrameBaseline = 0L
+    private var sessionDroppedFrameBaseline = 0L
+    private var sessionYoloDetectionBaseline = 0L
+    private var sessionVisibleDetectionBaseline = 0L
+    private var sessionWarningBaseline = 0L
+    private var sessionMlKitTimeBaseline = 0L
+    private var sessionMlKitSampleBaseline = 0L
 
     @Synchronized
     fun recordFrameReceived() {
@@ -88,6 +122,7 @@ class DetectionMetricsCollector {
     ) {
         yoloDetectionCountBeforeFilter += beforeFilter.size
         yoloDetectionCountAfterFilter += afterPolicyFilter.size
+        yoloVisibleDetectionCount += afterSmallBoxFilter.size
         filteredSmallBoxCount += (beforeFilter.size - afterSmallBoxFilter.size).coerceAtLeast(0)
 
         incrementCounts(rawCountByLabel, beforeFilter)
@@ -136,6 +171,82 @@ class DetectionMetricsCollector {
         mlKitInferenceSampleCount++
         mlKitInferenceTimeAverageMs = mlKitInferenceTimeSumMs / mlKitInferenceSampleCount
         mlKitDetectionCount += detectionCount
+    }
+
+    @Synchronized
+    fun recordPerformance(
+        preprocessMs: Long,
+        inferenceMs: Long,
+        postprocessMs: Long,
+        pipelineMs: Long,
+        frameAgeAtOverlayMs: Long,
+        fps: Int
+    ): String? {
+        val sample = PerformanceSample(
+            preprocessMs,
+            inferenceMs,
+            postprocessMs,
+            pipelineMs,
+            frameAgeAtOverlayMs,
+            fps
+        )
+        performanceSamples.addLast(sample)
+        if (performanceSamples.size > PERF_SUMMARY_WINDOW) performanceSamples.removeFirst()
+        if (performanceSessionActive && sessionPerformanceSamples.size < MAX_SESSION_PERFORMANCE_SAMPLES) {
+            sessionPerformanceSamples += sample
+        }
+        performanceSampleCount++
+        if (performanceSampleCount % PERF_SUMMARY_WINDOW != 0L) return null
+
+        return "[PerfSummary] frames=$performanceSampleCount processedFrames=$analyzedFrameCount " +
+            "droppedFrames=$skippedFrameCount " +
+            summarize("preprocess", performanceSamples.map { it.preprocessMs }) + " " +
+            summarize("inference", performanceSamples.map { it.inferenceMs }) + " " +
+            summarize("postprocess", performanceSamples.map { it.postprocessMs }) + " " +
+            summarize("pipeline", performanceSamples.map { it.pipelineMs }) + " " +
+            summarize("frameAgeAtOverlay", performanceSamples.map { it.frameAgeAtOverlayMs })
+    }
+
+    @Synchronized
+    fun startPerformanceSession(startedAtMs: Long = System.currentTimeMillis()) {
+        performanceSessionStartedAtMs = startedAtMs
+        performanceSessionActive = true
+        sessionPerformanceSamples.clear()
+        sessionReceivedFrameBaseline = totalFrameCount
+        sessionProcessedFrameBaseline = analyzedFrameCount
+        sessionDroppedFrameBaseline = skippedFrameCount
+        sessionYoloDetectionBaseline = yoloDetectionCountBeforeFilter
+        sessionVisibleDetectionBaseline = yoloVisibleDetectionCount
+        sessionWarningBaseline = warningCount
+        sessionMlKitTimeBaseline = mlKitInferenceTimeSumMs
+        sessionMlKitSampleBaseline = mlKitInferenceSampleCount
+    }
+
+    @Synchronized
+    fun stopPerformanceSessionSnapshot(stoppedAtMs: Long = System.currentTimeMillis()): PerformanceSnapshot {
+        performanceSessionActive = false
+        val samples = sessionPerformanceSamples.toList()
+        val mlKitSamples = mlKitInferenceSampleCount - sessionMlKitSampleBaseline
+        return PerformanceSnapshot(
+            durationMs = (stoppedAtMs - performanceSessionStartedAtMs).coerceAtLeast(0L),
+            receivedFrames = totalFrameCount - sessionReceivedFrameBaseline,
+            processedFrames = analyzedFrameCount - sessionProcessedFrameBaseline,
+            droppedFrames = skippedFrameCount - sessionDroppedFrameBaseline,
+            averageFps = samples.map { it.fps.toLong() }.averageLong().toInt(),
+            preprocess = stats(samples.map { it.preprocessMs }),
+            inference = stats(samples.map { it.inferenceMs }),
+            postprocess = stats(samples.map { it.postprocessMs }),
+            pipeline = stats(samples.map { it.pipelineMs }),
+            frameAgeAtOverlay = stats(samples.map { it.frameAgeAtOverlayMs }),
+            yoloDetections = yoloDetectionCountBeforeFilter - sessionYoloDetectionBaseline,
+            visibleDetections = yoloVisibleDetectionCount - sessionVisibleDetectionBaseline,
+            warnings = warningCount - sessionWarningBaseline,
+            mlKitAverageMs = if (mlKitSamples > 0L) {
+                (mlKitInferenceTimeSumMs - sessionMlKitTimeBaseline) / mlKitSamples
+            } else {
+                0L
+            }
+        )
     }
 
     // TODO: Connect TTS emitted/skipped counts when TtsWarningPlayer exposes playback metrics.
@@ -243,6 +354,26 @@ class DetectionMetricsCollector {
         return ObjectTuningPolicyRegistry.normalize(label)
     }
 
+    private fun summarize(name: String, values: List<Long>): String {
+        if (values.isEmpty()) return "avg${name.replaceFirstChar(Char::uppercase)}=-1ms p95${name.replaceFirstChar(Char::uppercase)}=-1ms"
+        val sorted = values.sorted()
+        val average = values.sum() / values.size
+        val p95Index = ((sorted.size * 95 + 99) / 100 - 1).coerceAtLeast(0)
+        val title = name.replaceFirstChar(Char::uppercase)
+        return "avg$title=${average}ms p95$title=${sorted[p95Index]}ms"
+    }
+
+    private fun stats(values: List<Long>): PerformanceMetricStats {
+        if (values.isEmpty()) return PerformanceMetricStats(0L, 0L)
+        val sorted = values.sorted()
+        return PerformanceMetricStats(
+            averageMs = values.sum() / values.size,
+            p95Ms = sorted[((sorted.size * 95 + 99) / 100 - 1).coerceAtLeast(0)]
+        )
+    }
+
+    private fun List<Long>.averageLong(): Long = if (isEmpty()) 0L else sum() / size
+
     private fun DetectionResult.toMetricRecord(timestampMs: Long): DetectionMetricRecord {
         return DetectionMetricRecord(
             label = label,
@@ -260,5 +391,16 @@ class DetectionMetricsCollector {
     private companion object {
         private const val MAX_RECORDS = 500
         private const val SUMMARY_LABEL_LIMIT = 3
+        private const val PERF_SUMMARY_WINDOW = 100
+        private const val MAX_SESSION_PERFORMANCE_SAMPLES = 100_000
     }
+
+    private data class PerformanceSample(
+        val preprocessMs: Long,
+        val inferenceMs: Long,
+        val postprocessMs: Long,
+        val pipelineMs: Long,
+        val frameAgeAtOverlayMs: Long,
+        val fps: Int
+    )
 }

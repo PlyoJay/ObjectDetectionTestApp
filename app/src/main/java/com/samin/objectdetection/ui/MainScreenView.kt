@@ -14,7 +14,8 @@ class MainScreenView(
     activity: ComponentActivity,
     debugMode: OverlayDebugMode,
     onCapture: () -> Unit,
-    onToggleRecording: () -> Unit
+    onToggleRecording: () -> Unit,
+    onTogglePerformanceLogging: () -> Unit
 ) {
     val previewView = PreviewView(activity).apply { scaleType = PreviewView.ScaleType.FIT_CENTER }
     val overlayView = BoundingBoxOverlay(activity).apply { setDebugMode(debugMode) }
@@ -40,6 +41,17 @@ class MainScreenView(
         text = "녹화 시작"
         setOnClickListener { onToggleRecording() }
     }
+    val performanceLogButton = Button(activity).apply {
+        text = "성능 로그 시작"
+        setOnClickListener { onTogglePerformanceLogging() }
+    }
+    val performanceRecordingTextView = TextView(activity).apply {
+        text = "PERF REC"
+        textSize = 12f
+        setTextColor(Color.RED)
+        visibility = View.GONE
+        setPadding(12, 0, 12, 0)
+    }
     val root: View
 
     init {
@@ -63,17 +75,29 @@ class MainScreenView(
             addView(captureButton)
             addView(recordingButton)
         }
+        val performanceRow = LinearLayout(activity).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            addView(performanceLogButton)
+            addView(performanceRecordingTextView)
+        }
+        val controls = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            addView(controlRow)
+            addView(performanceRow)
+        }
         root = FrameLayout(activity).apply {
             addView(previewView, FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
             addView(overlayView, FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
             addView(debugTextView, fullWidthAt(Gravity.TOP, 20, 40, 20, 0))
-            addView(controlRow, wrapAt(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL, 20, 20, 20, 60))
-            addView(warningMessageTextView, wrapAt(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL, 20, 20, 20, 150))
+            addView(controls, wrapAt(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL, 20, 20, 20, 40))
+            addView(warningMessageTextView, wrapAt(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL, 20, 20, 20, 190))
         }
         overlayView.bringToFront()
         debugTextView.bringToFront()
         warningMessageTextView.bringToFront()
-        controlRow.bringToFront()
+        controls.bringToFront()
     }
 
     private fun fullWidthAt(gravity: Int, left: Int, top: Int, right: Int, bottom: Int) =

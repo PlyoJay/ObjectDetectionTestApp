@@ -3,30 +3,27 @@ package com.samin.objectdetection.detector
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
+import android.os.SystemClock
 import android.util.Log
 import com.samin.objectdetection.camera.SizeFilterMode
 import org.tensorflow.lite.Interpreter
-import java.io.File
 import java.io.FileInputStream
-import java.io.FileOutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
 import java.security.MessageDigest
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 class VisionStyleYoloDetector(
     private val context: Context,
     modelName: String,
     private val confidenceThreshold: Float,
     private val nmsThreshold: Float,
-    private val sizeFilterMode: SizeFilterMode = SizeFilterMode.NORMAL
+    private val sizeFilterMode: SizeFilterMode = SizeFilterMode.NORMAL,
+    interpreterThreadCount: Int = 4,
+    private val debugRecorder: DetectionDebugRecorder? = null
 ) : ObjectDetector {
 
     private val interpreter: Interpreter
@@ -41,6 +38,9 @@ class VisionStyleYoloDetector(
     private var outputBuffer: ByteBuffer
     private var pixels: IntArray
     private var outputData: Array<FloatArray>
+    private lateinit var reusableInputBitmap: Bitmap
+    private lateinit var reusableInputCanvas: Canvas
+    private val resizePaint = Paint(Paint.FILTER_BITMAP_FLAG)
 
     private val labels: List<String> = runCatching {
         context.assets.open(DEFAULT_LABELS_NAME).bufferedReader().useLines { lines ->
@@ -51,20 +51,18 @@ class VisionStyleYoloDetector(
     }
 
     var maxCandidates: Int = 100
-    var enableDebugImageSaving: Boolean = false
     var enableDiagnostics: Boolean = false
 
     private lateinit var loadedModelIdentity: ModelIdentity
     @Volatile
     private var latestFrameDiagnostics: DetectorFrameDiagnostics? = null
-
-    @Volatile
-    private var isProcessing = false
+    private var debugFrame: DetectionDebugFrame? = null
+    override fun setDebugFrame(frame: DetectionDebugFrame?) { debugFrame = frame }
 
     init {
         val modelBuffer = loadModelFile(context, modelName)
         val options = Interpreter.Options().apply {
-            setNumThreads(4)
+            setNumThreads(interpreterThreadCount.coerceAtLeast(1))
         }
         interpreter = Interpreter(modelBuffer, options)
 
@@ -116,6 +114,8 @@ class VisionStyleYoloDetector(
             .order(ByteOrder.nativeOrder())
         pixels = IntArray(inputWidth * inputHeight)
         outputData = Array(outputDim) { FloatArray(boxCount) }
+        reusableInputBitmap = Bitmap.createBitmap(inputWidth, inputHeight, Bitmap.Config.ARGB_8888)
+        reusableInputCanvas = Canvas(reusableInputBitmap)
 
         loadedModelIdentity = ModelIdentity(
             assetName = modelName,
@@ -137,49 +137,62 @@ class VisionStyleYoloDetector(
     }
 
     override fun detect(bitmap: Bitmap): List<DetectionResult> {
-        if (isProcessing) return emptyList()
-        isProcessing = true
-
-        val inferenceStartMs = System.currentTimeMillis()
-        var scaled: Bitmap? = null
+        latestFrameDiagnostics = null
+        val detectorStartNs = SystemClock.elapsedRealtimeNanos()
         return try {
-            scaled = if (bitmap.width != inputWidth || bitmap.height != inputHeight) {
-                Bitmap.createScaledBitmap(bitmap, inputWidth, inputHeight, true)
+            val resizeStartNs = SystemClock.elapsedRealtimeNanos()
+            val modelInput = if (bitmap.width != inputWidth || bitmap.height != inputHeight) {
+                reusableInputCanvas.drawBitmap(bitmap, null, INPUT_RECT, resizePaint)
+                reusableInputBitmap
             } else {
                 bitmap
             }
-            val modelInput = requireNotNull(scaled)
+            val resizeTimeMs = elapsedMs(resizeStartNs)
 
             if (enableDiagnostics) {
                 Log.d(BBOX_DEBUG_TAG, "input=${modelInput.width}x${modelInput.height}")
             }
 
+            val inputBufferStartNs = SystemClock.elapsedRealtimeNanos()
+            debugFrame?.let { frame ->
+                debugRecorder?.modelInput(frame,
+                    "input=${inputWidth}x$inputHeight source=${bitmap.width}x${bitmap.height} " +
+                        "resizeMode=${if (modelInput === bitmap) "identity" else "stretch_bilinear"} letterbox=false " +
+                        "channelOrder=RGB normalization=channel/255.0f inputRange=0..1 " +
+                        "tensorType=${loadedModelIdentity.inputType} inputShape=${loadedModelIdentity.inputShape} " +
+                        "bufferLayout=NHWC_interleaved bufferWrite=putFloat_nativeOrder " +
+                        "outputShape=$outputShapeText outputType=${loadedModelIdentity.outputType} " +
+                        "parser=xywh_plus_class_scores_no_objectness_no_sigmoid transposed=$isTransposed " +
+                        "coordinateScale=per_box_axis_1.1_heuristic modelSha256=${loadedModelIdentity.sha256}")
+            }
             fillInputBuffer(modelInput)
+            val inputBufferTimeMs = elapsedMs(inputBufferStartNs)
 
             outputBuffer.rewind()
+            val inferenceStartNs = SystemClock.elapsedRealtimeNanos()
             interpreter.run(inputBuffer, outputBuffer)
+            val inferenceTimeMs = elapsedMs(inferenceStartNs)
             outputBuffer.rewind()
 
-            parseOutput(outputBuffer, bitmap.width, bitmap.height).also { results ->
-                latestFrameDiagnostics = latestFrameDiagnostics?.copy(
-                    inferenceTimeMs = System.currentTimeMillis() - inferenceStartMs
-                )
-                if (enableDebugImageSaving) {
-                    saveDebugImages(modelInput, results)
-                }
+            parseOutput(
+                buffer = outputBuffer,
+                sourceWidth = bitmap.width,
+                sourceHeight = bitmap.height,
+                resizeTimeMs = resizeTimeMs,
+                inputBufferTimeMs = inputBufferTimeMs,
+                inferenceTimeMs = inferenceTimeMs,
+                detectorStartNs = detectorStartNs
+            ).also { results ->
+                debugFrame?.let { debugRecorder?.saveInput(it, modelInput, results) }
                 if (enableDiagnostics && results.isNotEmpty()) {
                     val top = results.maxByOrNull { it.confidence }
                     Log.d(TAG, "detected=${results.size}, top=${top?.label}, conf=${top?.confidence}")
                 }
             }
         } catch (e: Exception) {
+            debugFrame?.line("[DETECTOR_ERROR] frame=${debugFrame?.id} error=$e")
             Log.e(TAG, "detect error", e)
             emptyList()
-        } finally {
-            if (scaled != null && scaled !== bitmap && !scaled.isRecycled) {
-                scaled.recycle()
-            }
-            isProcessing = false
         }
     }
 
@@ -194,7 +207,17 @@ class VisionStyleYoloDetector(
         inputBuffer.rewind()
     }
 
-    private fun parseOutput(buffer: ByteBuffer, sourceWidth: Int, sourceHeight: Int): List<DetectionResult> {
+    private fun parseOutput(
+        buffer: ByteBuffer,
+        sourceWidth: Int,
+        sourceHeight: Int,
+        resizeTimeMs: Long,
+        inputBufferTimeMs: Long,
+        inferenceTimeMs: Long,
+        detectorStartNs: Long
+    ): List<DetectionResult> {
+        val postprocessStartNs = SystemClock.elapsedRealtimeNanos()
+        val outputCopyStartNs = SystemClock.elapsedRealtimeNanos()
         buffer.rewind()
         if (isTransposed) {
             for (c in 0 until outputDim) {
@@ -209,6 +232,7 @@ class VisionStyleYoloDetector(
                 }
             }
         }
+        val outputCopyTimeMs = elapsedMs(outputCopyStartNs)
 
         if (enableDiagnostics) {
             Log.d(
@@ -224,6 +248,7 @@ class VisionStyleYoloDetector(
         var confidencePassedCount = 0
         var invalidBoxCount = 0
         var detectorAreaRejectedCount = 0
+        val candidateScanStartNs = SystemClock.elapsedRealtimeNanos()
 
         for (i in 0 until boxCount) {
             var bestClassId = -1
@@ -238,6 +263,9 @@ class VisionStyleYoloDetector(
             }
 
             rawConfidences?.add(bestScore)
+
+            debugFrame?.raw(i, bestClassId, labels.getOrElse(bestClassId) { "none" }, bestScore,
+                outputData[0][i], outputData[1][i], outputData[2][i], outputData[3][i], confidenceThreshold)
 
             if (bestClassId < 0 || bestScore < confidenceThreshold) continue
             confidencePassedCount++
@@ -267,8 +295,15 @@ class VisionStyleYoloDetector(
                 ((cy + h / 2f) / scaleH).coerceIn(0f, 1f)
             )
 
+            val diagnosticBox = if (debugFrame != null) DetectionResult(
+                label = labels.getOrElse(bestClassId) { "class_$bestClassId" }, confidence = bestScore,
+                left = normalized.left * sourceWidth, top = normalized.top * sourceHeight,
+                right = normalized.right * sourceWidth, bottom = normalized.bottom * sourceHeight
+            ) else null
+
             if (normalized.right <= normalized.left || normalized.bottom <= normalized.top) {
                 invalidBoxCount++
+                diagnosticBox?.let { debugFrame?.filtered(it, "INVALID_BOX", "roi_pixels") }
                 if (enableDiagnostics) Log.d(BBOX_DEBUG_TAG, "candidate=$i removed=invalid_box")
                 continue
             }
@@ -282,6 +317,7 @@ class VisionStyleYoloDetector(
             }
             if (detectorAreaRange != null && area !in detectorAreaRange) {
                 detectorAreaRejectedCount++
+                diagnosticBox?.let { debugFrame?.filtered(it, "SIZE_DETECTOR", "roi_pixels") }
                 if (enableDiagnostics) {
                     val boxWidth = normalized.width() * sourceWidth
                     val boxHeight = normalized.height() * sourceHeight
@@ -305,21 +341,47 @@ class VisionStyleYoloDetector(
             )
             candidates.add(detection)
         }
+        val candidateScanTimeMs = elapsedMs(candidateScanStartNs)
+        debugFrame?.summary(boxCount)
 
         val nmsInput = candidates.sortedByDescending { it.confidence }.take(maxCandidates)
+        if (debugFrame != null) candidates.filterNot { it in nmsInput }.forEach {
+            debugFrame?.filtered(it, "MAX_CANDIDATES", "roi_pixels")
+        }
+        val nmsStartNs = SystemClock.elapsedRealtimeNanos()
         val nmsResults = nms(nmsInput)
+        debugFrame?.let { frame ->
+            nmsResults.forEach { detection ->
+                frame.line("[YOLO_RESULT] frame=${frame.id} class=${detection.label} confidence=${detection.confidence} " +
+                    "bbox=[${detection.left},${detection.top},${detection.right},${detection.bottom}] bboxSpace=roi_pixels")
+            }
+        }
+        debugFrame?.let { frame ->
+            nmsResults.forEach { detection ->
+                frame.line("[YOLO_RESULT] frame=${frame.id} class=${detection.label} confidence=${detection.confidence} " +
+                    "bbox=[${detection.left},${detection.top},${detection.right},${detection.bottom}] bboxSpace=roi_pixels")
+            }
+        }
+        val nmsTimeMs = elapsedMs(nmsStartNs)
+        latestFrameDiagnostics = DetectorFrameDiagnostics(
+            rawCandidateCount = boxCount,
+            rawTopConfidences = rawConfidences?.sortedDescending()?.take(RAW_TOP_CONFIDENCE_COUNT).orEmpty(),
+            confidencePassedCount = confidencePassedCount,
+            invalidBoxCount = invalidBoxCount,
+            detectorAreaRejectedCount = detectorAreaRejectedCount,
+            nmsInputCount = nmsInput.size,
+            nmsOutputCount = nmsResults.size,
+            preprocessTimeMs = resizeTimeMs + inputBufferTimeMs,
+            resizeTimeMs = resizeTimeMs,
+            inputBufferTimeMs = inputBufferTimeMs,
+            inferenceTimeMs = inferenceTimeMs,
+            outputCopyTimeMs = outputCopyTimeMs,
+            candidateScanTimeMs = candidateScanTimeMs,
+            nmsTimeMs = nmsTimeMs,
+            postprocessTimeMs = elapsedMs(postprocessStartNs),
+            detectorTotalTimeMs = elapsedMs(detectorStartNs)
+        )
         if (enableDiagnostics) {
-            latestFrameDiagnostics = DetectorFrameDiagnostics(
-                rawCandidateCount = boxCount,
-                rawTopConfidences = requireNotNull(rawConfidences).sortedDescending()
-                    .take(RAW_TOP_CONFIDENCE_COUNT),
-                confidencePassedCount = confidencePassedCount,
-                invalidBoxCount = invalidBoxCount,
-                detectorAreaRejectedCount = detectorAreaRejectedCount,
-                nmsInputCount = nmsInput.size,
-                nmsOutputCount = nmsResults.size,
-                inferenceTimeMs = 0L
-            )
             Log.d(
                 BOLLARD_DIAGNOSTICS_TAG,
                 "stage=nms threshold=$nmsThreshold before=${nmsInput.size} after=${nmsResults.size} " +
@@ -334,7 +396,8 @@ class VisionStyleYoloDetector(
 
     private fun nms(items: List<DetectionResult>): List<DetectionResult> {
         val result = mutableListOf<DetectionResult>()
-        val sorted = items.sortedByDescending { it.confidence }.toMutableList()
+        // parseOutput already supplies confidence-descending items.
+        val sorted = items.toMutableList()
 
         while (sorted.isNotEmpty()) {
             val best = sorted.removeAt(0)
@@ -343,6 +406,7 @@ class VisionStyleYoloDetector(
             while (iterator.hasNext()) {
                 val other = iterator.next()
                 if (best.label == other.label && iou(best, other) > nmsThreshold) {
+                    debugFrame?.filtered(other, "NMS", "roi_pixels")
                     iterator.remove()
                 }
             }
@@ -409,76 +473,6 @@ class VisionStyleYoloDetector(
         )
     }
 
-    private fun saveDebugImages(inputBitmap: Bitmap, detections: List<DetectionResult>) {
-        val dir = File(context.getExternalFilesDir(null), "debug_roi")
-        if (!dir.exists()) {
-            val created = dir.mkdirs()
-            Log.d(BBOX_DEBUG_TAG, "debug dir created=$created path=${dir.absolutePath}")
-        }
-
-        val timestamp = DEBUG_DATE_FORMAT.get()!!.format(Date())
-        val inputFile = File(dir, "debug_input_$timestamp.jpg")
-        val resultFile = File(dir, "debug_result_existing_box_$timestamp.jpg")
-
-        try {
-            FileOutputStream(inputFile).use { out ->
-                inputBitmap.compress(Bitmap.CompressFormat.JPEG, 95, out)
-            }
-            Log.d(BBOX_DEBUG_TAG, "saved debug input=${inputFile.absolutePath}")
-        } catch (e: Exception) {
-            Log.e(BBOX_DEBUG_TAG, "save debug input failed path=${inputFile.absolutePath}", e)
-        }
-
-        try {
-            val resultBitmap = inputBitmap.copy(Bitmap.Config.ARGB_8888, true)
-            drawExistingDetections(resultBitmap, detections)
-            FileOutputStream(resultFile).use { out ->
-                resultBitmap.compress(Bitmap.CompressFormat.JPEG, 95, out)
-            }
-            Log.d(BBOX_DEBUG_TAG, "saved debug result=${resultFile.absolutePath}")
-        } catch (e: Exception) {
-            Log.e(BBOX_DEBUG_TAG, "save debug result failed path=${resultFile.absolutePath}", e)
-        }
-    }
-
-    private fun drawExistingDetections(bitmap: Bitmap, detections: List<DetectionResult>) {
-        val canvas = Canvas(bitmap)
-        val boxPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.STROKE
-            strokeWidth = 3f
-            color = Color.RED
-        }
-        val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.FILL
-            textSize = 20f
-            color = Color.WHITE
-        }
-        val labelBgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.FILL
-            color = Color.argb(190, 0, 0, 0)
-        }
-
-        detections.forEach { detection ->
-            val box = RectF(detection.left, detection.top, detection.right, detection.bottom)
-            canvas.drawRect(box, boxPaint)
-
-            val text = "${detection.label} ${String.format(Locale.US, "%.2f", detection.confidence)}"
-            val textWidth = textPaint.measureText(text)
-            val textHeight = textPaint.textSize
-            val labelLeft = box.left.coerceIn(0f, bitmap.width.toFloat())
-            val labelTop = (box.top - textHeight - 8f).coerceAtLeast(0f)
-            val labelBottom = (labelTop + textHeight + 8f).coerceAtMost(bitmap.height.toFloat())
-            canvas.drawRect(
-                labelLeft,
-                labelTop,
-                (labelLeft + textWidth + 12f).coerceAtMost(bitmap.width.toFloat()),
-                labelBottom,
-                labelBgPaint
-            )
-            canvas.drawText(text, labelLeft + 6f, labelBottom - 6f, textPaint)
-        }
-    }
-
     private fun loadModelFile(context: Context, modelName: String): MappedByteBuffer {
         val fd = context.assets.openFd(modelName)
         FileInputStream(fd.fileDescriptor).use { input ->
@@ -487,6 +481,8 @@ class VisionStyleYoloDetector(
     }
 
     override fun close() {
+        reusableInputCanvas.setBitmap(null)
+        reusableInputBitmap.recycle()
         interpreter.close()
     }
 
@@ -507,6 +503,9 @@ class VisionStyleYoloDetector(
         return digest.digest().joinToString("") { byte -> "%02x".format(byte) }
     }
 
+    private fun elapsedMs(startNs: Long): Long =
+        (SystemClock.elapsedRealtimeNanos() - startNs) / 1_000_000L
+
     companion object {
         private const val DEFAULT_MODEL_NAME = "best_float32.tflite"
         private const val DEFAULT_LABELS_NAME = "labels.txt"
@@ -522,8 +521,6 @@ class VisionStyleYoloDetector(
         private const val BBOX_DEBUG_TAG = "BBoxDebug"
         private const val SIZE_FILTER_TAG = "DetectionSizeFilter"
         private const val BOLLARD_DIAGNOSTICS_TAG = "BollardDiagnostics"
-        private val DEBUG_DATE_FORMAT = ThreadLocal.withInitial {
-            SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.US)
-        }
+        private val INPUT_RECT = RectF(0f, 0f, MODEL_INPUT_SIZE.toFloat(), MODEL_INPUT_SIZE.toFloat())
     }
 }

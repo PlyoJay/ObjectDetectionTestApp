@@ -24,11 +24,12 @@ class BollardDetectionPolicyTest {
     }
 
     @Test
-    fun fieldTestConfigUsesFullFrameAndDiagnostics() {
+    fun latencyFirstConfigUsesFullFrameWithoutPerCandidateDiagnostics() {
         val config = DetectionConfig()
 
         assertFalse(config.useCenterSquareCrop)
-        assertTrue(config.enableDetectorDiagnostics)
+        assertFalse(config.enableDetectorDiagnostics)
+        assertEquals(0L, config.detectIntervalMs)
     }
 
     @Test

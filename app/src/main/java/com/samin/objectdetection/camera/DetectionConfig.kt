@@ -14,7 +14,9 @@ enum class SizeFilterMode {
 }
 
 data class DetectionConfig(
-    val detectIntervalMs: Long = 500L,
+    // CameraX drops queued frames for us. A fixed 500 ms throttle made the overlay update at most 2 FPS.
+    // Keep this at zero for latency-first operation; raise it only for an explicit A/B test.
+    val detectIntervalMs: Long = 0L,
     val inputSize: Int = 640,
     // Keep the full camera frame by default. Enable only for comparison with the legacy center-square ROI.
     val useCenterSquareCrop: Boolean = false,
@@ -30,9 +32,25 @@ data class DetectionConfig(
     val maxGuideObjectCount: Int = 2,
     val overlayDebugMode: OverlayDebugMode = OverlayDebugMode.SIMPLE,
     val saveDebugImage: Boolean = false,
+    // Legacy alias for rate-limited inference input PNG saving.
     val enableDetectorDebugImage: Boolean = false,
-    // This is an evaluation app: keep stage-by-stage diagnostics on for field-test builds.
-    val enableDetectorDiagnostics: Boolean = true
+    // Per-candidate logging is expensive. Perf summaries remain available when this is false.
+    val enableDetectorDiagnostics: Boolean = false,
+    // Independent of the production confidence threshold and legacy Logcat diagnostics.
+    val debugDetectionLogging: Boolean = false,
+    val diagnosticRawConfidenceThreshold: Float = 0.01f,
+    val diagnosticMaxRawCandidates: Int = 200,
+    val debugSaveInferenceInput: Boolean = false,
+    val debugSaveIntervalMs: Long = 2000L,
+    val debugSaveOnDetection: Boolean = false,
+    // Allows an on-device CPU thread-count sweep without changing detector code.
+    val interpreterThreadCount: Int = 4,
+    // ML Kit is retained, but can be disabled for YOLO-only latency comparison.
+    val enableMlKitDetection: Boolean = true,
+    val bollardGeometryFilterEnabled: Boolean = true,
+    val adaptiveTemporalEnabled: Boolean = false,
+    val temporalImmediateConfidence: Float = 0.75f,
+    val temporalConfirmationConfidence: Float = 0.50f
 ) {
     companion object {
         const val DEFAULT_CONFIDENCE_THRESHOLD = 0.20f

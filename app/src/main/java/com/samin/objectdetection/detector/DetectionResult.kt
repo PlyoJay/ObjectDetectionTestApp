@@ -43,6 +43,7 @@ data class DetectionResult(
 )
 
 interface ObjectDetector {
+    fun setDebugFrame(frame: DetectionDebugFrame?) {}
     fun detect(bitmap: Bitmap): List<DetectionResult>
     fun close()
     fun modelIdentity(): ModelIdentity? = null

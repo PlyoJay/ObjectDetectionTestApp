@@ -2,39 +2,67 @@ package com.samin.objectdetection.pipeline
 
 import android.graphics.Bitmap
 import android.graphics.Rect
+import android.os.SystemClock
 import android.util.Log
 import com.samin.objectdetection.camera.DetectionConfig
 import com.samin.objectdetection.detector.DetectionResult
 import com.samin.objectdetection.detector.ObjectDetector
+import com.samin.objectdetection.detector.DetectionDebugRecorder
 import com.samin.objectdetection.location.UserLocationSnapshot
 import com.samin.objectdetection.motion.ObjectMotionTracker
 import com.samin.objectdetection.policy.ObjectTuningPolicyRegistry
 import com.samin.objectdetection.policy.OverlayObjectFilter
 import com.samin.objectdetection.policy.SmallBoxFilterPolicy
+import com.samin.objectdetection.policy.AdaptiveTemporalValidator
+import com.samin.objectdetection.policy.BollardGeometryValidator
 import com.samin.objectdetection.warning.WarningPolicy
 
 class DetectionPipeline(
     private val detector: ObjectDetector,
     private val config: DetectionConfig,
     private val objectMotionTracker: ObjectMotionTracker,
-    private val userLocationSnapshotProvider: () -> UserLocationSnapshot
+    private val userLocationSnapshotProvider: () -> UserLocationSnapshot,
+    private val debugRecorder: DetectionDebugRecorder? = null
 ) {
+    private val temporalValidator = AdaptiveTemporalValidator(
+        immediateConfidence = config.temporalImmediateConfidence,
+        confirmationConfidence = config.temporalConfirmationConfidence
+    )
 
     fun process(
         bitmap: Bitmap,
         timestampMs: Long,
         rotationDegrees: Int
     ): DetectionPipelineResult {
+        val pipelineStartedAtMs = System.currentTimeMillis()
+        val pipelineStartNs = SystemClock.elapsedRealtimeNanos()
         val width = bitmap.width
         val height = bitmap.height
         val cropRect = createInferenceRect(width, height)
-        val detectionStartTimeMs = System.currentTimeMillis()
+        val debugFrame = debugRecorder?.begin(timestampMs)
+        detector.setDebugFrame(debugFrame)
+        debugFrame?.sourceDescription = (
+            "camera=${if (rotationDegrees % 180 == 0) width else height}x${if (rotationDegrees % 180 == 0) height else width} " +
+            "rotated=${width}x$height rotation=$rotationDegrees rotationOperation=Matrix.postRotate_clockwise " +
+            "roi=[${cropRect.left},${cropRect.top},${cropRect.right},${cropRect.bottom}] roiSpace=rotated_frame_pixels " +
+            "confidenceThreshold=${config.confidenceThreshold} nmsThreshold=${config.nmsThreshold} " +
+            "geometryEnabled=${config.bollardGeometryFilterEnabled} sizeFilter=${config.sizeFilterMode} temporalEnabled=${config.adaptiveTemporalEnabled}")
+        debugFrame?.line("[FRAME_INPUT] frame=${debugFrame.id} ${debugFrame.sourceDescription}")
         var cropped: Bitmap? = null
 
         try {
-            cropped = Bitmap.createBitmap(bitmap, cropRect.left, cropRect.top, cropRect.width(), cropRect.height())
+            val cropStartNs = SystemClock.elapsedRealtimeNanos()
+            cropped = if (cropRect.isFullFrame(width, height)) {
+                bitmap
+            } else {
+                Bitmap.createBitmap(bitmap, cropRect.left, cropRect.top, cropRect.width(), cropRect.height())
+            }
+            val cropTimeMs = elapsedMs(cropStartNs)
+            val inferenceStartedAtMs = System.currentTimeMillis()
+            val detectorStartNs = SystemClock.elapsedRealtimeNanos()
             val croppedResults = detector.detect(cropped)
-            val detectionEndTimeMs = System.currentTimeMillis()
+            val detectorTimeMs = elapsedMs(detectorStartNs)
+            val postprocessStartNs = SystemClock.elapsedRealtimeNanos()
             val mappedDetections = croppedResults.map { result ->
                 val detection = mapToOriginalFrame(result, cropRect, timestampMs)
                 WarningPolicy.evaluate(
@@ -45,20 +73,34 @@ class DetectionPipeline(
                     if (config.enableDetectorDiagnostics) WarningPolicy.logDebug(detection)
                 }
             }
+            val geometryFilteredDetections = if (config.bollardGeometryFilterEnabled) {
+                mappedDetections.filter { BollardGeometryValidator.isValid(it, width, height) }
+            } else {
+                mappedDetections
+            }
             val visibleDetections = SmallBoxFilterPolicy.filter(
-                detections = mappedDetections,
+                detections = geometryFilteredDetections,
                 frameWidth = width,
                 frameHeight = height,
                 config = config
             )
-            val overlayCandidates = visibleDetections.filter { detection ->
+            val overlayCandidatesBeforeTemporal = visibleDetections.filter { detection ->
                 OverlayObjectFilter.isAllowed(detection.label)
+            }
+            val overlayCandidates = if (config.adaptiveTemporalEnabled) {
+                temporalValidator.filter(overlayCandidatesBeforeTemporal)
+            } else {
+                overlayCandidatesBeforeTemporal
             }
             val ignoredLabels = visibleDetections
                 .filterNot { detection -> OverlayObjectFilter.isAllowed(detection.label) }
                 .map { detection -> OverlayObjectFilter.normalize(detection.label) }
                 .distinct()
                 .sorted()
+            debugFrame?.removed(mappedDetections, geometryFilteredDetections, "GEOMETRY_FILTER")
+            debugFrame?.removed(geometryFilteredDetections, visibleDetections, "SIZE_PIPELINE")
+            debugFrame?.removed(visibleDetections, overlayCandidatesBeforeTemporal, "OVERLAY_CLASS")
+            debugFrame?.removed(overlayCandidatesBeforeTemporal, overlayCandidates, "TEMPORAL")
             val userLocationSnapshot = userLocationSnapshotProvider()
             val overlayDetections = objectMotionTracker.update(
                 detections = overlayCandidates,
@@ -87,8 +129,20 @@ class DetectionPipeline(
                     warningDetections = warningDetections
                 )
             }
+            val postprocessTimeMs = elapsedMs(postprocessStartNs)
+            val detectorDiagnostics = detector.frameDiagnostics()
+            debugFrame?.line("[DETECTION_FLOW] frame=${debugFrame.id} " +
+                "rawCandidates=${detectorDiagnostics?.rawCandidateCount ?: -1} " +
+                "afterConfidence=${detectorDiagnostics?.confidencePassedCount ?: -1} " +
+                "invalidBox=${detectorDiagnostics?.invalidBoxCount ?: -1} " +
+                "detectorSizeRejected=${detectorDiagnostics?.detectorAreaRejectedCount ?: -1} " +
+                "afterCandidateLimit=${detectorDiagnostics?.nmsInputCount ?: -1} " +
+                "afterNms=${croppedResults.size} afterGeometry=${geometryFilteredDetections.size} " +
+                "afterSize=${visibleDetections.size} afterClass=${overlayCandidatesBeforeTemporal.size} " +
+                "afterTemporal=${overlayCandidates.size} visible=${overlayDetections.size} visibleMeaning=submitted_to_ui")
 
             return DetectionPipelineResult(
+                debugFrameId = debugFrame?.id,
                 frameWidth = width,
                 frameHeight = height,
                 cropRect = cropRect,
@@ -97,16 +151,32 @@ class DetectionPipeline(
                 overlayDetections = overlayDetections,
                 warningDetections = warningDetections,
                 ignoredLabels = ignoredLabels,
-                inferenceTimeMs = detectionEndTimeMs - detectionStartTimeMs,
+                inferenceTimeMs = detectorDiagnostics?.inferenceTimeMs ?: detectorTimeMs,
+                timing = PipelineTiming(
+                    pipelineStartedAtMs = pipelineStartedAtMs,
+                    inferenceStartedAtMs = inferenceStartedAtMs,
+                    cropTimeMs = cropTimeMs,
+                    detectorTimeMs = detectorTimeMs,
+                    postprocessTimeMs = postprocessTimeMs,
+                    pipelineTimeMs = elapsedMs(pipelineStartNs)
+                ),
                 topOverlayObject = overlayDetections.maxByOrNull { it.confidence },
                 userLocationSnapshot = userLocationSnapshot
             )
+        } catch (error: Exception) {
+            debugFrame?.line("[PIPELINE_ERROR] frame=${debugFrame.id} error=$error")
+            throw error
         } finally {
+            detector.setDebugFrame(null)
+            debugFrame?.let { debugRecorder?.finish(it) }
             if (cropped != null && cropped !== bitmap && !cropped.isRecycled) {
                 cropped.recycle()
             }
         }
     }
+
+    private fun elapsedMs(startNs: Long): Long =
+        (SystemClock.elapsedRealtimeNanos() - startNs) / 1_000_000L
 
     private fun createInferenceRect(width: Int, height: Int): Rect {
         if (!config.useCenterSquareCrop) {

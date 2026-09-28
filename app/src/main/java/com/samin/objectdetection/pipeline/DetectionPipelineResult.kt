@@ -14,6 +14,17 @@ data class DetectionPipelineResult(
     val warningDetections: List<DetectionResult>,
     val ignoredLabels: List<String>,
     val inferenceTimeMs: Long,
+    val timing: PipelineTiming,
     val topOverlayObject: DetectionResult?,
-    val userLocationSnapshot: UserLocationSnapshot
+    val userLocationSnapshot: UserLocationSnapshot,
+    val debugFrameId: Long? = null
+)
+
+data class PipelineTiming(
+    val pipelineStartedAtMs: Long,
+    val inferenceStartedAtMs: Long,
+    val cropTimeMs: Long,
+    val detectorTimeMs: Long,
+    val postprocessTimeMs: Long,
+    val pipelineTimeMs: Long
 )

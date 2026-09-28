@@ -2,6 +2,7 @@ package com.samin.objectdetection.camera
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.os.SystemClock
 import android.util.Size
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
@@ -11,7 +12,17 @@ import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import java.util.concurrent.Executors
-import java.util.concurrent.atomic.AtomicBoolean
+
+data class CameraFrameTiming(
+    val frameTimestampMs: Long,
+    val analyzerReceivedMs: Long,
+    val bitmapConversionStartMs: Long,
+    val bitmapConversionEndMs: Long
+) {
+    val cameraToAnalyzerMs: Long get() = (analyzerReceivedMs - frameTimestampMs).coerceAtLeast(0L)
+    val bitmapConversionMs: Long get() =
+        (bitmapConversionEndMs - bitmapConversionStartMs).coerceAtLeast(0L)
+}
 
 class CameraController(
     private val context: Context,
@@ -23,18 +34,17 @@ class CameraController(
 ) : AutoCloseable {
 
     interface Listener {
-        fun onFrameReceived(timestampMs: Long, isProcessing: Boolean)
+        fun onFrameReceived(frameTimestampMs: Long, analyzerReceivedMs: Long)
         fun onFrameSkipped(reason: SkipReason, skippedFrameCount: Long)
-        fun onFrame(bitmap: Bitmap, timestampMs: Long, rotationDegrees: Int)
+        fun onFrame(bitmap: Bitmap, timing: CameraFrameTiming, rotationDegrees: Int)
         fun onCameraStarted()
         fun onCameraError(error: Throwable)
         fun onFrameError(error: Throwable)
     }
 
-    enum class SkipReason { INTERVAL, BUSY, BITMAP_CONVERSION }
+    enum class SkipReason { INTERVAL, BITMAP_CONVERSION }
 
     private val analyzerExecutor = Executors.newSingleThreadExecutor()
-    private val isProcessing = AtomicBoolean(false)
     private var provider: ProcessCameraProvider? = null
     private var lastDetectionStartTimeMs = 0L
     private var skippedFrameCount = 0L
@@ -63,27 +73,33 @@ class CameraController(
             .build()
 
         analysis.setAnalyzer(analyzerExecutor) { imageProxy ->
-            val timestampMs = System.currentTimeMillis()
-            var detectionStarted = false
-            listener.onFrameReceived(timestampMs, isProcessing.get())
+            val analyzerReceivedMs = System.currentTimeMillis()
+            val frameTimestampMs = estimateCaptureWallTimeMs(imageProxy.imageInfo.timestamp, analyzerReceivedMs)
+            listener.onFrameReceived(frameTimestampMs, analyzerReceivedMs)
             try {
-                if (timestampMs - lastDetectionStartTimeMs < detectIntervalMs) {
+                if (analyzerReceivedMs - lastDetectionStartTimeMs < detectIntervalMs) {
                     recordSkipped(SkipReason.INTERVAL)
                     return@setAnalyzer
                 }
-                if (!isProcessing.compareAndSet(false, true)) {
-                    recordSkipped(SkipReason.BUSY)
-                    return@setAnalyzer
-                }
-                detectionStarted = true
-                lastDetectionStartTimeMs = timestampMs
+                lastDetectionStartTimeMs = analyzerReceivedMs
+                val bitmapConversionStartMs = System.currentTimeMillis()
                 val bitmap = imageProxy.toBitmapSafe(enableDiagnostics)
+                val bitmapConversionEndMs = System.currentTimeMillis()
                 if (bitmap == null) {
                     recordSkipped(SkipReason.BITMAP_CONVERSION)
                     return@setAnalyzer
                 }
                 try {
-                    listener.onFrame(bitmap, timestampMs, imageProxy.imageInfo.rotationDegrees)
+                    listener.onFrame(
+                        bitmap,
+                        CameraFrameTiming(
+                            frameTimestampMs = frameTimestampMs,
+                            analyzerReceivedMs = analyzerReceivedMs,
+                            bitmapConversionStartMs = bitmapConversionStartMs,
+                            bitmapConversionEndMs = bitmapConversionEndMs
+                        ),
+                        imageProxy.imageInfo.rotationDegrees
+                    )
                 } finally {
                     if (!bitmap.isRecycled) {
                         bitmap.recycle()
@@ -92,9 +108,6 @@ class CameraController(
             } catch (error: Exception) {
                 listener.onFrameError(error)
             } finally {
-                if (detectionStarted) {
-                    isProcessing.set(false)
-                }
                 imageProxy.close()
             }
         }
@@ -113,13 +126,24 @@ class CameraController(
         listener.onFrameSkipped(reason, skippedFrameCount)
     }
 
+    private fun estimateCaptureWallTimeMs(cameraTimestampNs: Long, nowWallMs: Long): Long {
+        if (cameraTimestampNs <= 0L) return nowWallMs
+        val ageNs = (SystemClock.elapsedRealtimeNanos() - cameraTimestampNs).coerceAtLeast(0L)
+        // Guard against a device using a different timestamp source.
+        val ageMs = (ageNs / 1_000_000L).coerceAtMost(MAX_REASONABLE_FRAME_AGE_MS)
+        return nowWallMs - ageMs
+    }
+
     override fun close() {
         provider?.unbindAll()
         provider = null
         analyzerExecutor.shutdown()
     }
 
-    private companion object {
-        val TARGET_RESOLUTION = Size(1280, 720)
+    companion object {
+        const val TARGET_WIDTH = 1280
+        const val TARGET_HEIGHT = 720
+        private val TARGET_RESOLUTION = Size(TARGET_WIDTH, TARGET_HEIGHT)
+        const val MAX_REASONABLE_FRAME_AGE_MS = 10_000L
     }
 }

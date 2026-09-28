@@ -25,9 +25,14 @@ class BoundingBoxOverlay @JvmOverloads constructor(
     private var inferenceTimeMs: Long = 0L
     private var fps: Int = 0
     private var enabled = true
+    var diagnosticLog: ((String) -> Unit)? = null
+    private var debugFrameId: Long? = null
+    private var loggedDrawFrame: Long? = null
     private var debugMode: OverlayDebugMode = OverlayDebugMode.SIMPLE
     private var lastDetectionUpdatedAtMs: Long = 0L
     private var lastMlKitUpdatedAtMs: Long = 0L
+    private val clearYoloRunnable = Runnable { clearYoloIfStale() }
+    private val clearMlKitRunnable = Runnable { clearMlKitIfStale() }
 
     private val boxPaint = Paint().apply {
         color = Color.parseColor("#00BFFF")
@@ -71,17 +76,25 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         frameWidth: Int,
         frameHeight: Int,
         inferenceTimeMs: Long,
-        fps: Int
+        fps: Int,
+        debugFrameId: Long? = null
     ) {
+        this.debugFrameId?.let { previous ->
+            if (previous != loggedDrawFrame) diagnosticLog?.invoke("[OVERLAY_SKIPPED] frame=$previous reason=REPLACED_BEFORE_DRAW")
+        }
+        this.debugFrameId = debugFrameId
         this.detections = detections
         this.frameWidth = frameWidth.coerceAtLeast(1)
         this.frameHeight = frameHeight.coerceAtLeast(1)
         this.inferenceTimeMs = inferenceTimeMs
         this.fps = fps
         lastDetectionUpdatedAtMs = System.currentTimeMillis()
-        logOverlayAge(this.detections)
-        logDetectionDetails(this.detections, DetectionSource.YOLO)
-        postDelayed({ clearStaleDetectionsIfNeeded() }, MAX_OVERLAY_AGE_MS)
+        if (debugMode == OverlayDebugMode.FULL) {
+            logOverlayAge(this.detections)
+            logDetectionDetails(this.detections, DetectionSource.YOLO)
+        }
+        removeCallbacks(clearYoloRunnable)
+        postDelayed(clearYoloRunnable, MAX_OVERLAY_AGE_MS)
         postInvalidateOnAnimation()
     }
 
@@ -94,8 +107,11 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         this.frameWidth = frameWidth.coerceAtLeast(1)
         this.frameHeight = frameHeight.coerceAtLeast(1)
         lastMlKitUpdatedAtMs = System.currentTimeMillis()
-        logDetectionDetails(this.mlKitDetections, DetectionSource.ML_KIT)
-        postDelayed({ clearStaleDetectionsIfNeeded() }, MAX_OVERLAY_AGE_MS)
+        if (debugMode == OverlayDebugMode.FULL) {
+            logDetectionDetails(this.mlKitDetections, DetectionSource.ML_KIT)
+        }
+        removeCallbacks(clearMlKitRunnable)
+        postDelayed(clearMlKitRunnable, MAX_OVERLAY_AGE_MS)
         postInvalidateOnAnimation()
     }
 
@@ -106,13 +122,12 @@ class BoundingBoxOverlay @JvmOverloads constructor(
 
     fun setDrawingEnabled(enabled: Boolean) {
         this.enabled = enabled
+        loggedDrawFrame = null
         postInvalidateOnAnimation()
     }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-
-        clearStaleDetectionsIfNeeded()
 
         // 중앙 감시 구역 가이드
 //        val guidePaint = Paint().apply {
@@ -123,6 +138,14 @@ class BoundingBoxOverlay @JvmOverloads constructor(
 //        canvas.drawLine(width * 0.33f, 0f, width * 0.33f, height.toFloat(), guidePaint)
 //        canvas.drawLine(width * 0.67f, 0f, width * 0.67f, height.toFloat(), guidePaint)
 
+        debugFrameId?.let { frame ->
+            if (loggedDrawFrame != frame) {
+                diagnosticLog?.invoke("[OVERLAY_DRAW] frame=$frame visible=${if (enabled) detections.size else 0} " +
+                    "drawingEnabled=$enabled view=${width}x$height frameSize=${frameWidth}x$frameHeight transform=FIT_CENTER " +
+                    "drawTimestampMs=${System.currentTimeMillis()}")
+                loggedDrawFrame = frame
+            }
+        }
         if (!enabled) return
 
         val transform = calculateFitCenterTransform(
@@ -263,15 +286,17 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         val offsetX = (safeViewWidth - displayedWidth) / 2f
         val offsetY = (safeViewHeight - displayedHeight) / 2f
 
-        logTransformIfAspectMismatch(
-            safeFrameWidth,
-            safeFrameHeight,
-            safeViewWidth,
-            safeViewHeight,
-            scale,
-            offsetX,
-            offsetY
-        )
+        if (debugMode == OverlayDebugMode.FULL) {
+            logTransformIfAspectMismatch(
+                safeFrameWidth,
+                safeFrameHeight,
+                safeViewWidth,
+                safeViewHeight,
+                scale,
+                offsetX,
+                offsetY
+            )
+        }
 
         return PreviewTransform(
             scale = scale,
@@ -305,20 +330,22 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         }
     }
 
-    private fun clearStaleDetectionsIfNeeded() {
+    private fun clearYoloIfStale() {
         val now = System.currentTimeMillis()
-        var changed = false
-
         if (detections.isNotEmpty() && now - lastDetectionUpdatedAtMs > MAX_OVERLAY_AGE_MS) {
+            debugFrameId?.let { diagnosticLog?.invoke("[OVERLAY_CLEARED] frame=$it reason=STALE ageMs=${now-lastDetectionUpdatedAtMs}") }
             Log.d(
                 DETECTION_TIMING_TAG,
                 "overlay stale clear source=YOLO ageMs=${now - lastDetectionUpdatedAtMs} " +
                     "count=${detections.size}"
             )
             detections = emptyList()
-            changed = true
+            postInvalidateOnAnimation()
         }
+    }
 
+    private fun clearMlKitIfStale() {
+        val now = System.currentTimeMillis()
         if (mlKitDetections.isNotEmpty() && now - lastMlKitUpdatedAtMs > MAX_OVERLAY_AGE_MS) {
             Log.d(
                 DETECTION_TIMING_TAG,
@@ -326,10 +353,6 @@ class BoundingBoxOverlay @JvmOverloads constructor(
                     "count=${mlKitDetections.size}"
             )
             mlKitDetections = emptyList()
-            changed = true
-        }
-
-        if (changed) {
             postInvalidateOnAnimation()
         }
     }
