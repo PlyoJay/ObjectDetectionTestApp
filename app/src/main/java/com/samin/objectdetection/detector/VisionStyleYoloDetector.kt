@@ -26,6 +26,7 @@ class VisionStyleYoloDetector(
     private val sizeFilterMode: SizeFilterMode = SizeFilterMode.NORMAL,
     private val resizeMode: YoloResizeMode = YoloResizeMode.STRETCH,
     interpreterThreadCount: Int = 4,
+    private val maxCandidates: Int = 100,
     private val debugRecorder: DetectionDebugRecorder? = null
 ) : ObjectDetector {
 
@@ -55,7 +56,6 @@ class VisionStyleYoloDetector(
         throw IllegalStateException("Failed to load labels asset: $DEFAULT_LABELS_NAME", cause)
     }
 
-    var maxCandidates: Int = 100
     var enableDiagnostics: Boolean = false
 
     private lateinit var loadedModelIdentity: ModelIdentity
@@ -383,18 +383,12 @@ class VisionStyleYoloDetector(
         val candidateScanTimeMs = elapsedMs(candidateScanStartNs)
         debugFrame?.summary(boxCount)
 
-        val nmsInput = candidates.sortedByDescending { it.confidence }.take(maxCandidates)
+        val nmsInput = candidates.sortedByDescending { it.confidence }.take(maxCandidates.coerceAtLeast(1))
         if (debugFrame != null) candidates.filterNot { it in nmsInput }.forEach {
             debugFrame?.filtered(it, "MAX_CANDIDATES", "roi_pixels")
         }
         val nmsStartNs = SystemClock.elapsedRealtimeNanos()
         val nmsResults = nms(nmsInput)
-        debugFrame?.let { frame ->
-            nmsResults.forEach { detection ->
-                frame.line("[YOLO_RESULT] frame=${frame.id} class=${detection.label} confidence=${detection.confidence} " +
-                    "bbox=[${detection.left},${detection.top},${detection.right},${detection.bottom}] bboxSpace=roi_pixels")
-            }
-        }
         debugFrame?.let { frame ->
             nmsResults.forEach { detection ->
                 frame.line("[YOLO_RESULT] frame=${frame.id} class=${detection.label} confidence=${detection.confidence} " +

@@ -2,6 +2,7 @@ package com.samin.objectdetection
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -14,6 +15,11 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.Toast
+import android.widget.ArrayAdapter
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.Spinner
+import android.widget.Switch
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
@@ -40,6 +46,11 @@ import com.samin.objectdetection.policy.YoloDefaultPolicyRegistry
 import com.samin.objectdetection.ui.BoundingBoxOverlay
 import com.samin.objectdetection.ui.MainScreenView
 import com.samin.objectdetection.ui.OverlayDebugMode
+import com.samin.objectdetection.settings.AppSettings
+import com.samin.objectdetection.settings.AppSettingsStore
+import com.samin.objectdetection.settings.SettingsActivity
+import com.samin.objectdetection.settings.SettingsPresets
+import com.samin.objectdetection.settings.AppSettingsCodec
 import com.samin.objectdetection.warning.CrowdDecision
 import com.samin.objectdetection.warning.FeedbackLevel
 import com.samin.objectdetection.warning.RiskLevel
@@ -73,9 +84,11 @@ class MainActivity : ComponentActivity() {
     private lateinit var detector: ObjectDetector
     private lateinit var mlKitDetector: MlKitObjectDetector
     private lateinit var evaluationDataRecorder: EvaluationDataRecorder
-    private val detectionConfig = DetectionConfig()
+    private lateinit var appSettings: AppSettings
+    private lateinit var detectionConfig: DetectionConfig
+    private lateinit var settingsStore: AppSettingsStore
     private lateinit var detectionDebugRecorder: com.samin.objectdetection.detector.DetectionDebugRecorder
-    private val warningCooldownManager = WarningCooldownManager()
+    private lateinit var warningCooldownManager: WarningCooldownManager
     private val warningCandidateSelector = WarningCandidateSelector()
     private val metricsCollector = DetectionMetricsCollector()
     private lateinit var performanceLogRecorder: PerformanceLogRecorder
@@ -85,10 +98,6 @@ class MainActivity : ComponentActivity() {
     private lateinit var beepWarningPlayer: BeepWarningPlayer
     private lateinit var ttsWarningPlayer: TtsWarningPlayer
     private lateinit var warningOutputController: WarningOutputController
-
-    private val enableActualVibration = true
-    private val enableActualBeep = true
-    private val enableActualTts = true
 
     private val isMlKitProcessing = AtomicBoolean(false)
     @Volatile
@@ -106,6 +115,14 @@ class MainActivity : ComponentActivity() {
     private var activeRecordingVideoFile: File? = null
     private var activeRecordingDetectionsFile: File? = null
     private var isRecording = false
+    @Volatile private var actualAnalysisWidth = 0
+    @Volatile private var actualAnalysisHeight = 0
+
+    private val settingsLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK && result.data?.getBooleanExtra(SettingsActivity.EXTRA_APPLIED, false) == true) {
+            recreate()
+        }
+    }
 
     private val screenRecordingReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -149,6 +166,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        settingsStore = AppSettingsStore(this)
+        appSettings = settingsStore.loadApplied()
+        detectionConfig = appSettings.toDetectionConfig()
+        warningCooldownManager = WarningCooldownManager(appSettings.warning.cooldownMs)
+
         detectionDebugRecorder = com.samin.objectdetection.detector.DetectionDebugRecorder(this, detectionConfig)
         val yoloDetector = VisionStyleYoloDetector(
             context = this,
@@ -158,6 +180,7 @@ class MainActivity : ComponentActivity() {
             sizeFilterMode = detectionConfig.sizeFilterMode,
             resizeMode = detectionConfig.yoloResizeMode,
             interpreterThreadCount = detectionConfig.interpreterThreadCount,
+            maxCandidates = detectionConfig.maxCandidates,
             debugRecorder = detectionDebugRecorder
         ).apply {
             enableDiagnostics = detectionConfig.enableDetectorDiagnostics
@@ -175,7 +198,17 @@ class MainActivity : ComponentActivity() {
         detectionPipeline = DetectionPipeline(
             detector = detector,
             config = detectionConfig,
-            objectMotionTracker = ObjectMotionTracker(),
+            objectMotionTracker = ObjectMotionTracker(
+                maxHistorySize = detectionConfig.motionMaxHistorySize,
+                minHistorySize = detectionConfig.motionMinHistorySize,
+                minAbsoluteAreaChange = detectionConfig.motionMinAbsoluteAreaChange,
+                minRelativeAreaChangeRatio = detectionConfig.motionMinRelativeAreaChangeRatio,
+                minAbsoluteHeightChange = detectionConfig.motionMinAbsoluteHeightChange,
+                minRelativeHeightChangeRatio = detectionConfig.motionMinRelativeHeightChangeRatio,
+                maxMatchDistanceRatio = detectionConfig.motionMaxMatchDistanceRatio,
+                minSampleIntervalMs = detectionConfig.motionMinSampleIntervalMs,
+                staleTrackTimeoutMs = detectionConfig.motionStaleTrackTimeoutMs
+            ),
             userLocationSnapshotProvider = { userLocationTracker.currentSnapshot },
             debugRecorder = detectionDebugRecorder
         )
@@ -188,13 +221,14 @@ class MainActivity : ComponentActivity() {
             beepWarningPlayer = beepWarningPlayer,
             ttsWarningPlayer = ttsWarningPlayer,
             warningCooldownManager = warningCooldownManager,
-            enableActualVibration = { enableActualVibration },
-            enableActualBeep = { enableActualBeep },
-            enableActualTts = { enableActualTts }
+            enableActualVibration = { appSettings.warning.enableActualVibration },
+            enableActualBeep = { appSettings.warning.enableActualBeep },
+            enableActualTts = { appSettings.warning.enableActualTts }
         )
         logWarningPolicyOverlayMismatch()
 
         setupUi()
+        settingsStore.markAppliedHealthy()
         registerScreenRecordingReceiver()
         checkPermissionAndStart()
     }
@@ -203,13 +237,84 @@ class MainActivity : ComponentActivity() {
         screen = MainScreenView(
             activity = this,
             debugMode = detectionConfig.overlayDebugMode,
+            presetName = appSettings.presetName,
+            overlayInitiallyEnabled = appSettings.overlay.enabled,
+            outputTestMode = !appSettings.warning.enableActualVibration ||
+                !appSettings.warning.enableActualBeep || !appSettings.warning.enableActualTts,
             onCapture = ::captureEvaluationFrame,
             onToggleRecording = ::toggleEvaluationRecording,
-            onTogglePerformanceLogging = ::togglePerformanceLogging
+            onTogglePerformanceLogging = ::togglePerformanceLogging,
+            onOpenSettings = ::openSettings,
+            onOpenQuickSettings = ::openQuickSettings
         )
         overlayView = screen.overlayView
+        overlayView.configure(
+            enabled = appSettings.overlay.enabled,
+            showYoloBoxes = appSettings.overlay.showYoloBoxes,
+            showMlKitBoxes = appSettings.overlay.showMlKitBoxes,
+            showConfidence = appSettings.overlay.showConfidence,
+            showFps = appSettings.overlay.showFps,
+            staleTimeoutMs = appSettings.overlay.staleTimeoutMs
+        )
         if (detectionConfig.debugDetectionLogging) overlayView.diagnosticLog = detectionDebugRecorder::record
         setContentView(screen.root)
+    }
+
+    private fun openSettings() {
+        if (isRecording || performanceLogRecorder.isRecording) {
+            Toast.makeText(this, "녹화 또는 성능 로그 세션을 종료한 뒤 설정을 변경하세요.", Toast.LENGTH_LONG).show()
+            return
+        }
+        settingsLauncher.launch(Intent(this, SettingsActivity::class.java))
+    }
+
+    private fun openQuickSettings() {
+        if (isRecording || performanceLogRecorder.isRecording) {
+            Toast.makeText(this, "진행 중인 측정 세션을 종료한 뒤 설정을 변경하세요.", Toast.LENGTH_LONG).show()
+            return
+        }
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(40, 12, 40, 0)
+        }
+        val mode = Spinner(this).apply {
+            adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item,
+                com.samin.objectdetection.camera.YoloResizeMode.entries.map { it.name })
+            setSelection(com.samin.objectdetection.camera.YoloResizeMode.entries.indexOf(appSettings.yolo.resizeMode))
+        }
+        val confidence = EditText(this).apply {
+            hint = "Confidence (0..1)"
+            setText(appSettings.yolo.confidenceThreshold.toString())
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+        }
+        val geometry = Switch(this).apply { text = "Geometry Filter"; isChecked = appSettings.filters.geometryFilterEnabled }
+        val mlKit = Switch(this).apply { text = "ML Kit"; isChecked = appSettings.mlKit.enabled }
+        content.addView(android.widget.TextView(this).apply { text = "현재 프리셋: ${appSettings.presetName}" })
+        content.addView(mode); content.addView(confidence); content.addView(geometry); content.addView(mlKit)
+        content.addView(android.widget.TextView(this).apply { text = "적용을 누르기 전에는 실행 중 설정이 바뀌지 않습니다." })
+        AlertDialog.Builder(this)
+            .setTitle("빠른 설정")
+            .setView(content)
+            .setNegativeButton("취소", null)
+            .setPositiveButton("적용") { _, _ ->
+                val threshold = confidence.text.toString().toFloatOrNull()
+                if (threshold == null || threshold !in 0f..1f) {
+                    Toast.makeText(this, "Confidence는 0~1이어야 합니다.", Toast.LENGTH_LONG).show()
+                    return@setPositiveButton
+                }
+                val updated = appSettings.copy(
+                    presetName = SettingsPresets.CUSTOM,
+                    yolo = appSettings.yolo.copy(
+                        resizeMode = com.samin.objectdetection.camera.YoloResizeMode.valueOf(mode.selectedItem.toString()),
+                        confidenceThreshold = threshold
+                    ),
+                    filters = appSettings.filters.copy(geometryFilterEnabled = geometry.isChecked),
+                    mlKit = appSettings.mlKit.copy(enabled = mlKit.isChecked)
+                )
+                settingsStore.saveApplied(updated)
+                recreate()
+            }
+            .show()
     }
 
     private fun checkPermissionAndStart() {
@@ -260,6 +365,8 @@ class MainActivity : ComponentActivity() {
             previewView = screen.previewView,
             detectIntervalMs = detectionConfig.detectIntervalMs,
             enableDiagnostics = detectionConfig.enableDetectorDiagnostics,
+            targetWidth = appSettings.camera.requestedWidth,
+            targetHeight = appSettings.camera.requestedHeight,
             listener = object : CameraController.Listener {
                 override fun onFrameReceived(frameTimestampMs: Long, analyzerReceivedMs: Long) {
                     metricsCollector.recordFrameReceived()
@@ -298,6 +405,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun processBitmap(bitmap: Bitmap, frameTiming: CameraFrameTiming, rotationDegrees: Int) {
+        actualAnalysisWidth = bitmap.width
+        actualAnalysisHeight = bitmap.height
         val start = System.currentTimeMillis()
         val frameReceivedTimeMs = frameTiming.frameTimestampMs
         metricsCollector.recordFrameAnalyzed()
@@ -329,7 +438,10 @@ class MainActivity : ComponentActivity() {
             timestampMs = start
         )
         metricsCollector.recordYoloInferenceTime(inferenceTime)
-        val warningCandidates = overlayDetections.map { detection ->
+        val warningCandidates = overlayDetections
+            .filter { it.centerYRatio >= detectionConfig.ignoreTopRatioForGuide }
+            .take(detectionConfig.maxGuideObjectCount.coerceAtLeast(1))
+            .map { detection ->
             WarningCandidate.fromDetection(
                 detection = detection,
                 warningKey = warningCooldownManager.buildKey(
@@ -359,17 +471,17 @@ class MainActivity : ComponentActivity() {
         Log.d(
             VIBRATION_OUTPUT_TAG,
             "label=${selectedCandidate?.label ?: "none"} vibration=${selectedCandidate?.feedback?.vibrationLevel ?: FeedbackLevel.NONE} " +
-                "executed=$vibrationExecuted cooldown=$selectedCooldownPassed enabled=$enableActualVibration"
+                "executed=$vibrationExecuted cooldown=$selectedCooldownPassed enabled=${appSettings.warning.enableActualVibration}"
         )
         Log.d(
             BEEP_OUTPUT_TAG,
             "label=${selectedCandidate?.label ?: "none"} beep=${selectedCandidate?.feedback?.beepLevel ?: FeedbackLevel.NONE} " +
-                "executed=$beepExecuted cooldown=$selectedCooldownPassed enabled=$enableActualBeep"
+                "executed=$beepExecuted cooldown=$selectedCooldownPassed enabled=${appSettings.warning.enableActualBeep}"
         )
         Log.d(
             TTS_OUTPUT_TAG,
             "label=${selectedCandidate?.label ?: "none"} voice=${selectedCandidate?.feedback?.voiceLevel ?: FeedbackLevel.NONE} " +
-                "executed=$ttsExecuted skippedReason=${ttsSkippedReason ?: "none"} cooldown=$selectedCooldownPassed enabled=$enableActualTts"
+                "executed=$ttsExecuted skippedReason=${ttsSkippedReason ?: "none"} cooldown=$selectedCooldownPassed enabled=${appSettings.warning.enableActualTts}"
         )
         val crowdCooldownPassed = selectedCandidate?.warningKey == crowdDecision.warningKey && selectedCooldownPassed
         logCrowdDecision(crowdDecision, crowdCooldownPassed)
@@ -408,7 +520,7 @@ class MainActivity : ComponentActivity() {
                 "vibrationLevel=$feedbackVibrationLevel voiceLevel=$feedbackVoiceLevel " +
                 "cooldownPassed=$selectedCooldownPassed vibrationExecuted=$vibrationExecuted " +
                 "beepExecuted=$beepExecuted ttsExecuted=$ttsExecuted " +
-                "enableActualVibration=$enableActualVibration enableActualBeep=$enableActualBeep enableActualTts=$enableActualTts " +
+                "enableActualVibration=${appSettings.warning.enableActualVibration} enableActualBeep=${appSettings.warning.enableActualBeep} enableActualTts=${appSettings.warning.enableActualTts} " +
                 "shouldNotify=$feedbackShouldNotify key=$feedbackWarningKey"
         )
         logDetectionTiming(
@@ -656,15 +768,22 @@ class MainActivity : ComponentActivity() {
             detectorName = DETECTOR_TYPE,
             inputWidth = detectionConfig.inputSize,
             inputHeight = detectionConfig.inputSize,
-            cameraWidth = CameraController.TARGET_WIDTH,
-            cameraHeight = CameraController.TARGET_HEIGHT,
+            cameraWidth = actualAnalysisWidth.takeIf { it > 0 } ?: appSettings.camera.requestedWidth,
+            cameraHeight = actualAnalysisHeight.takeIf { it > 0 } ?: appSettings.camera.requestedHeight,
             resizeMode = detectionConfig.yoloResizeMode,
             yoloThreads = detectionConfig.interpreterThreadCount,
             mlKitEnabled = detectionConfig.enableMlKitDetection,
             geometryFilterEnabled = detectionConfig.bollardGeometryFilterEnabled,
             adaptiveTemporalEnabled = detectionConfig.adaptiveTemporalEnabled,
             confidenceThreshold = detectionConfig.confidenceThreshold,
-            nmsThreshold = detectionConfig.nmsThreshold
+            nmsThreshold = detectionConfig.nmsThreshold,
+            presetName = appSettings.presetName,
+            settingsSchemaVersion = appSettings.schemaVersion,
+            modelSha256 = detector.modelIdentity()?.sha256 ?: "unknown",
+            requestedCameraWidth = appSettings.camera.requestedWidth,
+            requestedCameraHeight = appSettings.camera.requestedHeight,
+            appVersion = runCatching { packageManager.getPackageInfo(packageName, 0).versionName }.getOrNull() ?: "unknown",
+            settingsSnapshot = AppSettingsCodec.snapshotLines(appSettings)
         )
         performanceLogButton.isEnabled = false
         metricsCollector.startPerformanceSession(startedAtMs)
@@ -916,7 +1035,7 @@ class MainActivity : ComponentActivity() {
         if (!detectionConfig.enableMlKitDetection) return
         val now = System.currentTimeMillis()
 
-        if (now - lastMlKitDetectionTime < ML_KIT_DETECT_INTERVAL_MS) return
+        if (now - lastMlKitDetectionTime < detectionConfig.mlKitDetectionIntervalMs) return
         if (!isMlKitProcessing.compareAndSet(false, true)) return
 
         lastMlKitDetectionTime = now
@@ -1035,14 +1154,15 @@ class MainActivity : ComponentActivity() {
         } catch (e: Exception) {
             Log.e(TAG, "stop screen record service on destroy failed", e)
         }
+        // Stop CameraX and wait for its single analyzer to finish before closing any component it uses.
+        if (::cameraController.isInitialized) {
+            cameraController.close()
+        }
         if (::performanceLogRecorder.isInitialized && performanceLogRecorder.isRecording) {
             performanceLogRecorder.stopAsync(metricsCollector.stopPerformanceSessionSnapshot())
         }
         evaluationDataRecorder.close()
         userLocationTracker.stop()
-        if (::cameraController.isInitialized) {
-            cameraController.close()
-        }
         mlKitDetector.close()
         detector.close()
         if (::detectionDebugRecorder.isInitialized) detectionDebugRecorder.close()
@@ -1065,6 +1185,5 @@ class MainActivity : ComponentActivity() {
         private const val VIBRATION_OUTPUT_TAG = "GotoroVibration"
         private const val BEEP_OUTPUT_TAG = "GotoroBeep"
         private const val TTS_OUTPUT_TAG = "GotoroTts"
-        private const val ML_KIT_DETECT_INTERVAL_MS = 1500L
     }
 }

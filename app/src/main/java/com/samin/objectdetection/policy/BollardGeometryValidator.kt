@@ -4,7 +4,13 @@ import com.samin.objectdetection.detector.DetectionResult
 
 /** Constant-time rejection of only clearly invalid bollard boxes. */
 object BollardGeometryValidator {
-    fun isValid(detection: DetectionResult, frameWidth: Int, frameHeight: Int): Boolean {
+    fun isValid(
+        detection: DetectionResult,
+        frameWidth: Int,
+        frameHeight: Int,
+        minAreaRatio: Float = DEFAULT_MIN_AREA_RATIO,
+        maxWidthToHeightRatio: Float = DEFAULT_MAX_WIDTH_TO_HEIGHT_RATIO
+    ): Boolean {
         if (ObjectTuningPolicyRegistry.normalize(detection.label) != BOLLARD_LABEL) return true
         if (frameWidth <= 0 || frameHeight <= 0) return false
         if (!detection.left.isFinite() || !detection.top.isFinite() ||
@@ -19,10 +25,10 @@ object BollardGeometryValidator {
         if (width <= 0f || height <= 0f) return false
         val areaRatio = width * height / (frameWidth.toFloat() * frameHeight.toFloat())
         val aspectRatio = width / height
-        return areaRatio >= MIN_AREA_RATIO && aspectRatio <= MAX_WIDTH_TO_HEIGHT_RATIO
+        return areaRatio >= minAreaRatio && aspectRatio <= maxWidthToHeightRatio
     }
 
     private const val BOLLARD_LABEL = "bollard"
-    private const val MIN_AREA_RATIO = 0.00001f
-    private const val MAX_WIDTH_TO_HEIGHT_RATIO = 4f
+    const val DEFAULT_MIN_AREA_RATIO = 0.00001f
+    const val DEFAULT_MAX_WIDTH_TO_HEIGHT_RATIO = 4f
 }

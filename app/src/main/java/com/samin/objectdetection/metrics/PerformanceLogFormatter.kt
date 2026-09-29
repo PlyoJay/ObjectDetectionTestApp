@@ -19,7 +19,14 @@ data class PerformanceLogHeader(
     val geometryFilterEnabled: Boolean,
     val adaptiveTemporalEnabled: Boolean,
     val confidenceThreshold: Float,
-    val nmsThreshold: Float
+    val nmsThreshold: Float,
+    val presetName: String = "DEFAULT",
+    val settingsSchemaVersion: Int = 1,
+    val modelSha256: String = "unknown",
+    val requestedCameraWidth: Int = cameraWidth,
+    val requestedCameraHeight: Int = cameraHeight,
+    val appVersion: String = "unknown",
+    val settingsSnapshot: String = ""
 )
 
 data class PerformanceFrameRecord(
@@ -58,8 +65,13 @@ object PerformanceLogFormatter {
         appendLine("Start Time: ${dateTimeFormat.get()!!.format(Date(header.startedAtMs))}")
         appendLine()
         appendLine("Model: ${header.modelName}")
+        appendLine("Model SHA256: ${header.modelSha256}")
         appendLine("Detector: ${header.detectorName}")
+        appendLine("App Version: ${header.appVersion}")
+        appendLine("Preset: ${header.presetName}")
+        appendLine("Settings Schema Version: ${header.settingsSchemaVersion}")
         appendLine("Input Size: ${header.inputWidth}x${header.inputHeight}")
+        appendLine("Requested Camera Resolution: ${header.requestedCameraWidth}x${header.requestedCameraHeight}")
         appendLine("Camera Resolution: ${header.cameraWidth}x${header.cameraHeight}")
         appendLine("resizeMode=${header.resizeMode}")
         appendLine("YOLO Threads: ${header.yoloThreads}")
@@ -68,6 +80,12 @@ object PerformanceLogFormatter {
         appendLine("Adaptive Temporal Enabled: ${header.adaptiveTemporalEnabled}")
         appendLine("Confidence Threshold: ${header.confidenceThreshold}")
         appendLine("NMS Threshold: ${header.nmsThreshold}")
+        if (header.settingsSnapshot.isNotBlank()) {
+            appendLine()
+            appendLine("--- Applied AppSettings Snapshot ---")
+            appendLine(header.settingsSnapshot)
+            appendLine("--- End AppSettings Snapshot ---")
+        }
         appendLine()
         appendLine("========================================")
     }

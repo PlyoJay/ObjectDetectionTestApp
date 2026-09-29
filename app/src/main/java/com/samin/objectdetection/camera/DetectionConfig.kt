@@ -49,12 +49,32 @@ data class DetectionConfig(
     val debugSaveOnDetection: Boolean = false,
     // Allows an on-device CPU thread-count sweep without changing detector code.
     val interpreterThreadCount: Int = 4,
+    val maxCandidates: Int = 100,
     // ML Kit is retained, but can be disabled for YOLO-only latency comparison.
     val enableMlKitDetection: Boolean = true,
+    val mlKitDetectionIntervalMs: Long = 1500L,
     val bollardGeometryFilterEnabled: Boolean = true,
+    val bollardMinAreaRatio: Float = 0.00001f,
+    val bollardMaxWidthToHeightRatio: Float = 4f,
     val adaptiveTemporalEnabled: Boolean = false,
     val temporalImmediateConfidence: Float = 0.75f,
-    val temporalConfirmationConfidence: Float = 0.50f
+    val temporalConfirmationConfidence: Float = 0.50f,
+    val temporalMatchIouThreshold: Float = 0.30f,
+    val motionMaxHistorySize: Int = 5,
+    val motionMinHistorySize: Int = 3,
+    val motionMaxMatchDistanceRatio: Float = 0.18f,
+    val motionMinSampleIntervalMs: Long = 500L,
+    val motionStaleTrackTimeoutMs: Long = 2_000L,
+    val motionMinAbsoluteAreaChange: Float = 0.005f,
+    val motionMinRelativeAreaChangeRatio: Float = 0.15f,
+    val motionMinAbsoluteHeightChange: Float = 0.03f,
+    val motionMinRelativeHeightChangeRatio: Float = 0.10f,
+    val warningVeryNearHeightRatio: Float = 0.35f,
+    val warningNearHeightRatio: Float = 0.22f,
+    val warningMidHeightRatio: Float = 0.12f,
+    val warningVeryNearAreaRatio: Float = 0.15f,
+    val warningNearAreaRatio: Float = 0.07f,
+    val warningMidAreaRatio: Float = 0.02f
 ) {
     companion object {
         const val DEFAULT_CONFIDENCE_THRESHOLD = 0.20f

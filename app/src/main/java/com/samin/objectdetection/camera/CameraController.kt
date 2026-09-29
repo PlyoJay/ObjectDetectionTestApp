@@ -3,15 +3,19 @@ package com.samin.objectdetection.camera
 import android.content.Context
 import android.graphics.Bitmap
 import android.os.SystemClock
+import android.util.Log
 import android.util.Size
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
+import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 data class CameraFrameTiming(
     val frameTimestampMs: Long,
@@ -30,6 +34,8 @@ class CameraController(
     private val previewView: PreviewView,
     private val detectIntervalMs: Long,
     private val enableDiagnostics: Boolean,
+    private val targetWidth: Int = TARGET_WIDTH,
+    private val targetHeight: Int = TARGET_HEIGHT,
     private val listener: Listener
 ) : AutoCloseable {
 
@@ -62,12 +68,20 @@ class CameraController(
     }
 
     private fun bindUseCases(cameraProvider: ProcessCameraProvider) {
+        val resolutionSelector = ResolutionSelector.Builder()
+            .setResolutionStrategy(
+                ResolutionStrategy(
+                    Size(targetWidth, targetHeight),
+                    ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER
+                )
+            )
+            .build()
         val preview = Preview.Builder()
-            .setTargetResolution(TARGET_RESOLUTION)
+            .setResolutionSelector(resolutionSelector)
             .build()
             .also { it.setSurfaceProvider(previewView.surfaceProvider) }
         val analysis = ImageAnalysis.Builder()
-            .setTargetResolution(TARGET_RESOLUTION)
+            .setResolutionSelector(resolutionSelector)
             .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             .build()
@@ -138,12 +152,20 @@ class CameraController(
         provider?.unbindAll()
         provider = null
         analyzerExecutor.shutdown()
+        try {
+            if (!analyzerExecutor.awaitTermination(ANALYZER_SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                Log.w(TAG, "Analyzer did not finish before detector shutdown timeout")
+            }
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+        }
     }
 
     companion object {
         const val TARGET_WIDTH = 1280
         const val TARGET_HEIGHT = 720
-        private val TARGET_RESOLUTION = Size(TARGET_WIDTH, TARGET_HEIGHT)
         const val MAX_REASONABLE_FRAME_AGE_MS = 10_000L
+        private const val ANALYZER_SHUTDOWN_TIMEOUT_SECONDS = 10L
+        private const val TAG = "CameraController"
     }
 }

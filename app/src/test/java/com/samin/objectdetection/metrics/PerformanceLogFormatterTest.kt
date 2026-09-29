@@ -22,7 +22,14 @@ class PerformanceLogFormatterTest {
                 geometryFilterEnabled = true,
                 adaptiveTemporalEnabled = false,
                 confidenceThreshold = 0.2f,
-                nmsThreshold = 0.45f
+                nmsThreshold = 0.45f,
+                presetName = "FIELD TEST - LETTERBOX",
+                settingsSchemaVersion = 3,
+                modelSha256 = "abc123",
+                requestedCameraWidth = 1920,
+                requestedCameraHeight = 1080,
+                appVersion = "1.2.3",
+                settingsSnapshot = "camera.detectIntervalMs=0\nyolo.maxCandidates=100"
             )
         )
 
@@ -30,6 +37,10 @@ class PerformanceLogFormatterTest {
         assertTrue(text.contains("Camera Resolution: 1280x720"))
         assertTrue(text.contains("resizeMode=LETTERBOX"))
         assertTrue(text.contains("ML Kit Enabled: false"))
+        assertTrue(text.contains("Preset: FIELD TEST - LETTERBOX"))
+        assertTrue(text.contains("Model SHA256: abc123"))
+        assertTrue(text.contains("Requested Camera Resolution: 1920x1080"))
+        assertTrue(text.contains("yolo.maxCandidates=100"))
     }
 
     @Test

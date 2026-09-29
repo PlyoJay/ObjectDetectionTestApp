@@ -12,7 +12,13 @@ object WarningPolicy {
     fun evaluate(
         detection: DetectionResult,
         frameWidth: Int,
-        frameHeight: Int
+        frameHeight: Int,
+        veryNearHeightRatio: Float = VERY_NEAR_HEIGHT_RATIO,
+        nearHeightRatio: Float = NEAR_HEIGHT_RATIO,
+        midHeightRatio: Float = MID_HEIGHT_RATIO,
+        veryNearAreaRatio: Float = VERY_NEAR_AREA_RATIO,
+        nearAreaRatio: Float = NEAR_AREA_RATIO,
+        midAreaRatio: Float = MID_AREA_RATIO
     ): DetectionResult {
         val safeFrameWidth = frameWidth.coerceAtLeast(1).toFloat()
         val safeFrameHeight = frameHeight.coerceAtLeast(1).toFloat()
@@ -25,7 +31,10 @@ object WarningPolicy {
         val horizontalPosition = resolveHorizontalPosition(centerXRatio)
         val category = resolveObjectCategory(detection.label)
         val priority = resolveObjectPriority(detection.label)
-        val proximityLevel = resolveProximityLevel(heightRatio, areaRatio)
+        val proximityLevel = resolveProximityLevel(
+            heightRatio, areaRatio, veryNearHeightRatio, nearHeightRatio, midHeightRatio,
+            veryNearAreaRatio, nearAreaRatio, midAreaRatio
+        )
         // Filtering is owned by the detector (confidence), SmallBoxFilterPolicy (geometry),
         // and ObjectTuningPolicyRegistry (object-specific warning eligibility).
         val isIgnored = detection.isIgnored
@@ -174,11 +183,20 @@ object WarningPolicy {
         }
     }
 
-    fun resolveProximityLevel(heightRatio: Float, areaRatio: Float): ProximityLevel {
+    fun resolveProximityLevel(
+        heightRatio: Float,
+        areaRatio: Float,
+        veryNearHeightRatio: Float = VERY_NEAR_HEIGHT_RATIO,
+        nearHeightRatio: Float = NEAR_HEIGHT_RATIO,
+        midHeightRatio: Float = MID_HEIGHT_RATIO,
+        veryNearAreaRatio: Float = VERY_NEAR_AREA_RATIO,
+        nearAreaRatio: Float = NEAR_AREA_RATIO,
+        midAreaRatio: Float = MID_AREA_RATIO
+    ): ProximityLevel {
         return when {
-            heightRatio >= VERY_NEAR_HEIGHT_RATIO || areaRatio >= VERY_NEAR_AREA_RATIO -> ProximityLevel.VERY_NEAR
-            heightRatio >= NEAR_HEIGHT_RATIO || areaRatio >= NEAR_AREA_RATIO -> ProximityLevel.NEAR
-            heightRatio >= MID_HEIGHT_RATIO || areaRatio >= MID_AREA_RATIO -> ProximityLevel.MID
+            heightRatio >= veryNearHeightRatio || areaRatio >= veryNearAreaRatio -> ProximityLevel.VERY_NEAR
+            heightRatio >= nearHeightRatio || areaRatio >= nearAreaRatio -> ProximityLevel.NEAR
+            heightRatio >= midHeightRatio || areaRatio >= midAreaRatio -> ProximityLevel.MID
             else -> ProximityLevel.FAR
         }
     }

@@ -25,6 +25,11 @@ class BoundingBoxOverlay @JvmOverloads constructor(
     private var inferenceTimeMs: Long = 0L
     private var fps: Int = 0
     private var enabled = true
+    private var showYoloBoxes = true
+    private var showMlKitBoxes = true
+    private var showConfidence = false
+    private var showFps = false
+    private var staleTimeoutMs = DEFAULT_MAX_OVERLAY_AGE_MS
     var diagnosticLog: ((String) -> Unit)? = null
     private var debugFrameId: Long? = null
     private var loggedDrawFrame: Long? = null
@@ -94,7 +99,7 @@ class BoundingBoxOverlay @JvmOverloads constructor(
             logDetectionDetails(this.detections, DetectionSource.YOLO)
         }
         removeCallbacks(clearYoloRunnable)
-        postDelayed(clearYoloRunnable, MAX_OVERLAY_AGE_MS)
+        postDelayed(clearYoloRunnable, staleTimeoutMs)
         postInvalidateOnAnimation()
     }
 
@@ -111,7 +116,7 @@ class BoundingBoxOverlay @JvmOverloads constructor(
             logDetectionDetails(this.mlKitDetections, DetectionSource.ML_KIT)
         }
         removeCallbacks(clearMlKitRunnable)
-        postDelayed(clearMlKitRunnable, MAX_OVERLAY_AGE_MS)
+        postDelayed(clearMlKitRunnable, staleTimeoutMs)
         postInvalidateOnAnimation()
     }
 
@@ -123,6 +128,23 @@ class BoundingBoxOverlay @JvmOverloads constructor(
     fun setDrawingEnabled(enabled: Boolean) {
         this.enabled = enabled
         loggedDrawFrame = null
+        postInvalidateOnAnimation()
+    }
+
+    fun configure(
+        enabled: Boolean,
+        showYoloBoxes: Boolean,
+        showMlKitBoxes: Boolean,
+        showConfidence: Boolean,
+        showFps: Boolean,
+        staleTimeoutMs: Long
+    ) {
+        this.enabled = enabled
+        this.showYoloBoxes = showYoloBoxes
+        this.showMlKitBoxes = showMlKitBoxes
+        this.showConfidence = showConfidence
+        this.showFps = showFps
+        this.staleTimeoutMs = staleTimeoutMs.coerceAtLeast(100L)
         postInvalidateOnAnimation()
     }
 
@@ -157,7 +179,7 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         val freshDetections = detections
         val freshMlKitDetections = mlKitDetections
 
-        freshDetections.forEach { res ->
+        if (showYoloBoxes) freshDetections.forEach { res ->
             val left = transform.offsetX + res.left * transform.scale
             val top = transform.offsetY + res.top * transform.scale
             val right = transform.offsetX + res.right * transform.scale
@@ -173,7 +195,7 @@ class BoundingBoxOverlay @JvmOverloads constructor(
             drawLabelIfNeeded(canvas, res, DetectionSource.YOLO, left, top)
         }
 
-        freshMlKitDetections.forEach { res ->
+        if (showMlKitBoxes) freshMlKitDetections.forEach { res ->
             val left = transform.offsetX + res.left * transform.scale
             val top = transform.offsetY + res.top * transform.scale
             val right = transform.offsetX + res.right * transform.scale
@@ -181,6 +203,9 @@ class BoundingBoxOverlay @JvmOverloads constructor(
 
             canvas.drawRoundRect(left, top, right, bottom, 20f, 20f, mlKitBoxPaint)
             drawLabelIfNeeded(canvas, res, DetectionSource.ML_KIT, left, top)
+        }
+        if (showFps) {
+            canvas.drawText("FPS=$fps  inference=${inferenceTimeMs}ms", 24f, 56f, infoPaint)
         }
     }
 
@@ -208,7 +233,8 @@ class BoundingBoxOverlay @JvmOverloads constructor(
                 if (source == DetectionSource.ML_KIT) {
                     detection.label
                 } else {
-                    "${detection.label} ${detection.riskLevel}"
+                    "${detection.label} ${detection.riskLevel}" +
+                        if (showConfidence) " ${String.format(Locale.US, "%.2f", detection.confidence)}" else ""
                 }
             }
             OverlayDebugMode.FULL -> buildFullDebugLabel(detection, source)
@@ -332,7 +358,7 @@ class BoundingBoxOverlay @JvmOverloads constructor(
 
     private fun clearYoloIfStale() {
         val now = System.currentTimeMillis()
-        if (detections.isNotEmpty() && now - lastDetectionUpdatedAtMs > MAX_OVERLAY_AGE_MS) {
+        if (detections.isNotEmpty() && now - lastDetectionUpdatedAtMs > staleTimeoutMs) {
             debugFrameId?.let { diagnosticLog?.invoke("[OVERLAY_CLEARED] frame=$it reason=STALE ageMs=${now-lastDetectionUpdatedAtMs}") }
             Log.d(
                 DETECTION_TIMING_TAG,
@@ -346,7 +372,7 @@ class BoundingBoxOverlay @JvmOverloads constructor(
 
     private fun clearMlKitIfStale() {
         val now = System.currentTimeMillis()
-        if (mlKitDetections.isNotEmpty() && now - lastMlKitUpdatedAtMs > MAX_OVERLAY_AGE_MS) {
+        if (mlKitDetections.isNotEmpty() && now - lastMlKitUpdatedAtMs > staleTimeoutMs) {
             Log.d(
                 DETECTION_TIMING_TAG,
                 "overlay stale clear source=ML_KIT ageMs=${now - lastMlKitUpdatedAtMs} " +
@@ -369,7 +395,7 @@ class BoundingBoxOverlay @JvmOverloads constructor(
     }
 
     companion object {
-        private const val MAX_OVERLAY_AGE_MS = 1500L
+        private const val DEFAULT_MAX_OVERLAY_AGE_MS = 1500L
         private const val DETECTION_TIMING_TAG = "DetectionTiming"
         private const val TRANSFORM_TAG = "OverlayTransform"
         private const val WARNING_DETAIL_TAG = "GotoroWarning"

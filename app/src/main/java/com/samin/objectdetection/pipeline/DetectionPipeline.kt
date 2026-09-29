@@ -26,7 +26,8 @@ class DetectionPipeline(
 ) {
     private val temporalValidator = AdaptiveTemporalValidator(
         immediateConfidence = config.temporalImmediateConfidence,
-        confirmationConfidence = config.temporalConfirmationConfidence
+        confirmationConfidence = config.temporalConfirmationConfidence,
+        matchIouThreshold = config.temporalMatchIouThreshold
     )
 
     fun process(
@@ -68,13 +69,27 @@ class DetectionPipeline(
                 WarningPolicy.evaluate(
                     detection = detection,
                     frameWidth = width,
-                    frameHeight = height
+                    frameHeight = height,
+                    veryNearHeightRatio = config.warningVeryNearHeightRatio,
+                    nearHeightRatio = config.warningNearHeightRatio,
+                    midHeightRatio = config.warningMidHeightRatio,
+                    veryNearAreaRatio = config.warningVeryNearAreaRatio,
+                    nearAreaRatio = config.warningNearAreaRatio,
+                    midAreaRatio = config.warningMidAreaRatio
                 ).also { detection ->
                     if (config.enableDetectorDiagnostics) WarningPolicy.logDebug(detection)
                 }
             }
             val geometryFilteredDetections = if (config.bollardGeometryFilterEnabled) {
-                mappedDetections.filter { BollardGeometryValidator.isValid(it, width, height) }
+                mappedDetections.filter {
+                    BollardGeometryValidator.isValid(
+                        it,
+                        width,
+                        height,
+                        config.bollardMinAreaRatio,
+                        config.bollardMaxWidthToHeightRatio
+                    )
+                }
             } else {
                 mappedDetections
             }
