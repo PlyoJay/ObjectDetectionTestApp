@@ -3,11 +3,13 @@ package com.samin.objectdetection.detector
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
 import android.os.SystemClock
 import android.util.Log
 import com.samin.objectdetection.camera.SizeFilterMode
+import com.samin.objectdetection.camera.YoloResizeMode
 import org.tensorflow.lite.Interpreter
 import java.io.FileInputStream
 import java.nio.ByteBuffer
@@ -22,6 +24,7 @@ class VisionStyleYoloDetector(
     private val confidenceThreshold: Float,
     private val nmsThreshold: Float,
     private val sizeFilterMode: SizeFilterMode = SizeFilterMode.NORMAL,
+    private val resizeMode: YoloResizeMode = YoloResizeMode.STRETCH,
     interpreterThreadCount: Int = 4,
     private val debugRecorder: DetectionDebugRecorder? = null
 ) : ObjectDetector {
@@ -40,6 +43,8 @@ class VisionStyleYoloDetector(
     private var outputData: Array<FloatArray>
     private lateinit var reusableInputBitmap: Bitmap
     private lateinit var reusableInputCanvas: Canvas
+    private val inputDestination = RectF()
+    private var cachedTransform: YoloResizeTransform? = null
     private val resizePaint = Paint(Paint.FILTER_BITMAP_FLAG)
 
     private val labels: List<String> = runCatching {
@@ -141,8 +146,23 @@ class VisionStyleYoloDetector(
         val detectorStartNs = SystemClock.elapsedRealtimeNanos()
         return try {
             val resizeStartNs = SystemClock.elapsedRealtimeNanos()
+            val transform = cachedTransform?.takeIf {
+                it.mode == resizeMode && it.sourceWidth == bitmap.width && it.sourceHeight == bitmap.height
+            } ?: YoloResizeTransform.calculate(
+                resizeMode, bitmap.width, bitmap.height, inputWidth, inputHeight
+            ).also { cachedTransform = it }
             val modelInput = if (bitmap.width != inputWidth || bitmap.height != inputHeight) {
-                reusableInputCanvas.drawBitmap(bitmap, null, INPUT_RECT, resizePaint)
+                if (resizeMode == YoloResizeMode.LETTERBOX) {
+                    reusableInputCanvas.drawColor(LETTERBOX_PADDING_COLOR)
+                    inputDestination.set(
+                        transform.padLeft.toFloat(), transform.padTop.toFloat(),
+                        (transform.padLeft + transform.scaledWidth).toFloat(),
+                        (transform.padTop + transform.scaledHeight).toFloat()
+                    )
+                    reusableInputCanvas.drawBitmap(bitmap, null, inputDestination, resizePaint)
+                } else {
+                    reusableInputCanvas.drawBitmap(bitmap, null, INPUT_RECT, resizePaint)
+                }
                 reusableInputBitmap
             } else {
                 bitmap
@@ -155,9 +175,20 @@ class VisionStyleYoloDetector(
 
             val inputBufferStartNs = SystemClock.elapsedRealtimeNanos()
             debugFrame?.let { frame ->
+                val resizeDescription = if (resizeMode == YoloResizeMode.LETTERBOX) {
+                    "scaled=${transform.scaledWidth}x${transform.scaledHeight} " +
+                        "scale=${minOf(transform.scaleX, transform.scaleY)} " +
+                        "scaleX=${transform.scaleX} scaleY=${transform.scaleY} " +
+                        "padLeft=${transform.padLeft} padTop=${transform.padTop} " +
+                        "padRight=${transform.padRight} padBottom=${transform.padBottom} " +
+                        "paddingRgb=114,114,114"
+                } else {
+                    "scaleX=${transform.scaleX} scaleY=${transform.scaleY}"
+                }
                 debugRecorder?.modelInput(frame,
-                    "input=${inputWidth}x$inputHeight source=${bitmap.width}x${bitmap.height} " +
-                        "resizeMode=${if (modelInput === bitmap) "identity" else "stretch_bilinear"} letterbox=false " +
+                    "input=${inputWidth}x$inputHeight modelInput=${inputWidth}x$inputHeight " +
+                        "source=${bitmap.width}x${bitmap.height} resizeMode=$resizeMode " +
+                        "letterbox=${resizeMode == YoloResizeMode.LETTERBOX} $resizeDescription " +
                         "channelOrder=RGB normalization=channel/255.0f inputRange=0..1 " +
                         "tensorType=${loadedModelIdentity.inputType} inputShape=${loadedModelIdentity.inputShape} " +
                         "bufferLayout=NHWC_interleaved bufferWrite=putFloat_nativeOrder " +
@@ -176,8 +207,7 @@ class VisionStyleYoloDetector(
 
             parseOutput(
                 buffer = outputBuffer,
-                sourceWidth = bitmap.width,
-                sourceHeight = bitmap.height,
+                transform = transform,
                 resizeTimeMs = resizeTimeMs,
                 inputBufferTimeMs = inputBufferTimeMs,
                 inferenceTimeMs = inferenceTimeMs,
@@ -209,13 +239,14 @@ class VisionStyleYoloDetector(
 
     private fun parseOutput(
         buffer: ByteBuffer,
-        sourceWidth: Int,
-        sourceHeight: Int,
+        transform: YoloResizeTransform,
         resizeTimeMs: Long,
         inputBufferTimeMs: Long,
         inferenceTimeMs: Long,
         detectorStartNs: Long
     ): List<DetectionResult> {
+        val sourceWidth = transform.sourceWidth
+        val sourceHeight = transform.sourceHeight
         val postprocessStartNs = SystemClock.elapsedRealtimeNanos()
         val outputCopyStartNs = SystemClock.elapsedRealtimeNanos()
         buffer.rewind()
@@ -295,20 +326,28 @@ class VisionStyleYoloDetector(
                 ((cy + h / 2f) / scaleH).coerceIn(0f, 1f)
             )
 
+            val left = transform.sourceX(normalized.left)
+            val top = transform.sourceY(normalized.top)
+            val right = transform.sourceX(normalized.right)
+            val bottom = transform.sourceY(normalized.bottom)
+
             val diagnosticBox = if (debugFrame != null) DetectionResult(
                 label = labels.getOrElse(bestClassId) { "class_$bestClassId" }, confidence = bestScore,
-                left = normalized.left * sourceWidth, top = normalized.top * sourceHeight,
-                right = normalized.right * sourceWidth, bottom = normalized.bottom * sourceHeight
+                left = left, top = top, right = right, bottom = bottom
             ) else null
 
-            if (normalized.right <= normalized.left || normalized.bottom <= normalized.top) {
+            if (right <= left || bottom <= top) {
                 invalidBoxCount++
                 diagnosticBox?.let { debugFrame?.filtered(it, "INVALID_BOX", "roi_pixels") }
                 if (enableDiagnostics) Log.d(BBOX_DEBUG_TAG, "candidate=$i removed=invalid_box")
                 continue
             }
 
-            val area = normalized.width() * normalized.height()
+            val area = if (resizeMode == YoloResizeMode.STRETCH) {
+                normalized.width() * normalized.height()
+            } else {
+                (right - left) * (bottom - top) / (sourceWidth.toFloat() * sourceHeight)
+            }
             val label = labels.getOrElse(bestClassId) { "class_$bestClassId" }
             val detectorAreaRange = when (sizeFilterMode) {
                 SizeFilterMode.DISABLED -> null
@@ -319,8 +358,8 @@ class VisionStyleYoloDetector(
                 detectorAreaRejectedCount++
                 diagnosticBox?.let { debugFrame?.filtered(it, "SIZE_DETECTOR", "roi_pixels") }
                 if (enableDiagnostics) {
-                    val boxWidth = normalized.width() * sourceWidth
-                    val boxHeight = normalized.height() * sourceHeight
+                    val boxWidth = right - left
+                    val boxHeight = bottom - top
                     Log.d(
                         SIZE_FILTER_TAG,
                         "removed stage=detector mode=$sizeFilterMode class=$label confidence=$bestScore " +
@@ -334,10 +373,10 @@ class VisionStyleYoloDetector(
             val detection = DetectionResult(
                 label = label,
                 confidence = bestScore,
-                left = normalized.left * sourceWidth,
-                top = normalized.top * sourceHeight,
-                right = normalized.right * sourceWidth,
-                bottom = normalized.bottom * sourceHeight
+                left = left,
+                top = top,
+                right = right,
+                bottom = bottom
             )
             candidates.add(detection)
         }
@@ -521,6 +560,7 @@ class VisionStyleYoloDetector(
         private const val BBOX_DEBUG_TAG = "BBoxDebug"
         private const val SIZE_FILTER_TAG = "DetectionSizeFilter"
         private const val BOLLARD_DIAGNOSTICS_TAG = "BollardDiagnostics"
+        private val LETTERBOX_PADDING_COLOR = Color.rgb(114, 114, 114)
         private val INPUT_RECT = RectF(0f, 0f, MODEL_INPUT_SIZE.toFloat(), MODEL_INPUT_SIZE.toFloat())
     }
 }

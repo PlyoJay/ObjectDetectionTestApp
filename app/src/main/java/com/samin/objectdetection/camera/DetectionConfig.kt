@@ -13,17 +13,21 @@ enum class SizeFilterMode {
     NORMAL
 }
 
+enum class YoloResizeMode { STRETCH, LETTERBOX }
+
 data class DetectionConfig(
     // CameraX drops queued frames for us. A fixed 500 ms throttle made the overlay update at most 2 FPS.
     // Keep this at zero for latency-first operation; raise it only for an explicit A/B test.
     val detectIntervalMs: Long = 0L,
     val inputSize: Int = 640,
+    // Change only this value between A/B runs; STRETCH preserves the existing preprocessing.
+    val yoloResizeMode: YoloResizeMode = YoloResizeMode.STRETCH,
     // Keep the full camera frame by default. Enable only for comparison with the legacy center-square ROI.
     val useCenterSquareCrop: Boolean = false,
     // Base YOLO candidate threshold. Object-specific warning thresholds are applied later by ObjectTuningPolicyRegistry.
     val confidenceThreshold: Float = DEFAULT_CONFIDENCE_THRESHOLD,
     val nmsThreshold: Float = DEFAULT_NMS_THRESHOLD,
-    // Field-test default: expose the retrained model's detections without bbox size suppression.
+    // Field-test setting: expose the retrained model's detections without bbox size suppression.
     val sizeFilterMode: SizeFilterMode = SizeFilterMode.DISABLED,
     val minBoxAreaRatio: Float = 0.015f,
     val minBoxWidthRatio: Float = 0.025f,
@@ -55,5 +59,19 @@ data class DetectionConfig(
     companion object {
         const val DEFAULT_CONFIDENCE_THRESHOLD = 0.20f
         const val DEFAULT_NMS_THRESHOLD = 0.45f
+
+        /** YOLO-only field test. Keep every setting fixed except [yoloResizeMode] for A/B runs. */
+        fun fieldTest(yoloResizeMode: YoloResizeMode) = DetectionConfig(
+            detectIntervalMs = 0L,
+            useCenterSquareCrop = false,
+            yoloResizeMode = yoloResizeMode,
+            confidenceThreshold = 0.20f,
+            sizeFilterMode = SizeFilterMode.DISABLED,
+            bollardGeometryFilterEnabled = false,
+            adaptiveTemporalEnabled = false,
+            enableMlKitDetection = false,
+            debugDetectionLogging = true,
+            debugSaveInferenceInput = true
+        )
     }
 }

@@ -1,5 +1,6 @@
 package com.samin.objectdetection.metrics
 
+import com.samin.objectdetection.camera.YoloResizeMode
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -12,6 +13,7 @@ data class PerformanceLogHeader(
     val inputHeight: Int,
     val cameraWidth: Int,
     val cameraHeight: Int,
+    val resizeMode: YoloResizeMode,
     val yoloThreads: Int,
     val mlKitEnabled: Boolean,
     val geometryFilterEnabled: Boolean,
@@ -59,6 +61,7 @@ object PerformanceLogFormatter {
         appendLine("Detector: ${header.detectorName}")
         appendLine("Input Size: ${header.inputWidth}x${header.inputHeight}")
         appendLine("Camera Resolution: ${header.cameraWidth}x${header.cameraHeight}")
+        appendLine("resizeMode=${header.resizeMode}")
         appendLine("YOLO Threads: ${header.yoloThreads}")
         appendLine("ML Kit Enabled: ${header.mlKitEnabled}")
         appendLine("Geometry Filter Enabled: ${header.geometryFilterEnabled}")

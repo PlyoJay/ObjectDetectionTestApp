@@ -1,5 +1,6 @@
 package com.samin.objectdetection.metrics
 
+import com.samin.objectdetection.camera.YoloResizeMode
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -15,6 +16,7 @@ class PerformanceLogFormatterTest {
                 inputHeight = 640,
                 cameraWidth = 1280,
                 cameraHeight = 720,
+                resizeMode = YoloResizeMode.LETTERBOX,
                 yoloThreads = 4,
                 mlKitEnabled = false,
                 geometryFilterEnabled = true,
@@ -26,6 +28,7 @@ class PerformanceLogFormatterTest {
 
         assertTrue(text.contains("Model: model.tflite"))
         assertTrue(text.contains("Camera Resolution: 1280x720"))
+        assertTrue(text.contains("resizeMode=LETTERBOX"))
         assertTrue(text.contains("ML Kit Enabled: false"))
     }
 

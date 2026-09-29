@@ -156,6 +156,7 @@ class MainActivity : ComponentActivity() {
             confidenceThreshold = detectionConfig.confidenceThreshold,
             nmsThreshold = detectionConfig.nmsThreshold,
             sizeFilterMode = detectionConfig.sizeFilterMode,
+            resizeMode = detectionConfig.yoloResizeMode,
             interpreterThreadCount = detectionConfig.interpreterThreadCount,
             debugRecorder = detectionDebugRecorder
         ).apply {
@@ -657,6 +658,7 @@ class MainActivity : ComponentActivity() {
             inputHeight = detectionConfig.inputSize,
             cameraWidth = CameraController.TARGET_WIDTH,
             cameraHeight = CameraController.TARGET_HEIGHT,
+            resizeMode = detectionConfig.yoloResizeMode,
             yoloThreads = detectionConfig.interpreterThreadCount,
             mlKitEnabled = detectionConfig.enableMlKitDetection,
             geometryFilterEnabled = detectionConfig.bollardGeometryFilterEnabled,

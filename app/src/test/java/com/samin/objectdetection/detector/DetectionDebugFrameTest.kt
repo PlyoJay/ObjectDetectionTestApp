@@ -17,6 +17,8 @@ class DetectionDebugFrameTest {
         assertTrue(text.contains("reason=CONFIDENCE"))
         assertTrue(text.contains("candidateCount=2 logged=1 omitted=1"))
         assertTrue(text.contains("maxConfidence=0.183"))
+        assertTrue(text.contains("bollardMaxConfidence=0.183"))
+        assertTrue(text.contains("bollardCandidateCount=2"))
         assertFalse(text.contains("[RAW_YOLO] frame=123 candidate=1"))
     }
 
@@ -26,6 +28,7 @@ class DetectionDebugFrameTest {
         frame.summary(1)
         assertTrue(frame.text().contains("candidateCount=0"))
         assertTrue(frame.text().contains("maxConfidence=0.005"))
+        assertTrue(frame.text().contains("bollardCandidateCount=0"))
     }
 
     @Test fun onlyRemovedBoxesAreReportedWithoutMutatingLists() {

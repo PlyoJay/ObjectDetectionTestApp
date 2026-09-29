@@ -7,7 +7,7 @@ CameraX (1280×720 요청, RGBA_8888, KEEP_ONLY_LATEST)
  → row padding 제거 후 Bitmap 생성
  → ImageProxy.rotationDegrees만큼 Matrix.postRotate
  → 전체 프레임 또는 선택적 중앙 정사각형 ROI
- → 모델 tensor에서 읽은 입력 크기로 bilinear stretch (현재 640×640, letterbox 없음)
+ → 모델 tensor에서 읽은 입력 크기로 bilinear stretch 또는 중앙 letterbox (현재 640×640, 기본 STRETCH)
  → RGB 순서, 각 채널 /255.0f, native-order FLOAT32 interleaved buffer
  → TFLite Interpreter.run
  → output shape 방향에 따라 복사, xywh + 클래스 점수 중 최고 점수 선택
@@ -36,7 +36,7 @@ ROI 외부는 추론 전 잘리므로 개별 객체에 `reason=ROI`를 부여하
 | 구분 | 코드에서 확인한 사실과 검증 방법 |
 |---|---|
 | 모델 confidence | 현장 로그만으로는 모델 반응을 확정할 수 없다. RAW_YOLO_SUMMARY의 전체 tensor 후보 최대값을 확인한다. |
-| Android 전처리 | 전체 화면을 640×640으로 stretch하므로 종횡비가 변한다. 저장 PNG에서 bollard의 형태·회전·색상을 직접 확인한다. 학습/PC 전처리와의 차이가 원인인지는 비교가 필요하다. |
+| Android 전처리 | 기본 STRETCH는 전체 화면의 종횡비를 바꾼다. LETTERBOX는 비율을 유지하고 RGB 114 padding을 넣는다. 저장 PNG에서 형태·회전·색상·padding을 확인하고 같은 조건에서 A/B 비교한다. |
 | output parsing | output을 `4 + classes`, 별도 objectness·sigmoid 없음으로 가정한다. 축 길이 비교로 전치 여부를 결정하며, cx/w 또는 cy/h가 1.1보다 크면 해당 축을 pixel 단위로 판단한다. export 계약과의 일치는 확인이 필요하다. 기존 해석을 변경하지 않았다. |
 | tensor layout/type | 현재 writer는 FLOAT32 NHWC interleaved로 작성한다. 초기화 코드는 NCHW 모양도 읽지만 writer는 NCHW로 재배열하지 않는다. MODEL_INPUT의 실제 shape/type과 bufferLayout을 비교한다. 현재 모델이 이 문제에 해당한다고 단정하지 않는다. |
 | confidence filtering | 최고 클래스 점수가 기본 0.20 미만이면 제거한다. 0.15/0.10으로 설정 비교가 가능하다. 기본값은 유지했다. |
@@ -64,7 +64,16 @@ ROI 외부는 추론 전 잘리므로 개별 객체에 `reason=ROI`를 부여하
 
 ## D. 설정 및 실기기 테스트
 
-현재 앱은 해당 설정을 UI에서 편집하는 구조가 아니므로 `MainActivity`의 `detectionConfig` 생성자를 변경한 뒤 재빌드/재실행한다.
+현재 앱은 해당 설정을 UI에서 편집하는 구조가 아니므로 `MainActivity`의 `detectionConfig` 생성자를 변경한 뒤 재빌드/재실행한다. 순수 YOLO 필드테스트에는 아래 preset을 사용하고 A/B 간 인자만 변경한다.
+
+```kotlin
+import com.samin.objectdetection.camera.YoloResizeMode
+
+private val detectionConfig = DetectionConfig.fieldTest(YoloResizeMode.STRETCH)
+// 두 번째 실행: DetectionConfig.fieldTest(YoloResizeMode.LETTERBOX)
+```
+
+이 preset은 `detectIntervalMs=0`, 전체 프레임, confidence 0.20, size/geometry/temporal 필터 OFF, ML Kit OFF, RAW 로그와 입력 PNG 저장 ON이다. 기존 `DetectionConfig()` 기본 동작은 STRETCH이며 다른 production 설정을 바꾸지 않는다. 저장 주기는 기본 2초다.
 
 ```kotlin
 private val detectionConfig = DetectionConfig(
@@ -83,15 +92,15 @@ private val detectionConfig = DetectionConfig(
 기존 `enableDetectorDiagnostics`는 Logcat 상세 진단 옵션으로 별개다. 새 파일 로그만 사용할 때 켤 필요가 없다.
 기존 `enableDetectorDebugImage=true`도 새 주기 제한 PNG 저장을 활성화하는 호환 옵션이다.
 
-1. Geometry OFF, confidence 0.20으로 같은 거리·각도·조명에서 촬영한다. 기존 Performance Log 버튼도 켠다.
-2. confidence만 0.10으로 바꾸고 재빌드해 반복한다. 필요하면 0.15도 비교한다. temporal은 OFF, size 설정 등은 고정한다.
-3. RAW_YOLO_SUMMARY의 `maxConfidence`, `maxClass`, `candidateCount`를 확인한다. 최대값은 diagnostic threshold나 상세 로그 개수 제한과 관계없이 전체 후보를 대상으로 계산한다.
+1. `fieldTest(STRETCH)`로 빌드하고 같은 피사체의 거리·각도·조명·이동 경로를 정해 촬영한다. Performance Log 버튼을 켜고 충분한 프레임을 기록한다.
+2. `fieldTest(LETTERBOX)`로만 바꿔 재빌드하고 같은 장면과 경로를 반복한다. 두 실행에서 confidence, 모델, 카메라, 후처리 설정을 유지한다.
+3. 성능 로그 헤더의 `resizeMode`와 MODEL_INPUT의 scaled 크기·scale·padding을 확인한다. RAW_YOLO_SUMMARY의 `maxConfidence`, `maxClass`, `bollardMaxConfidence`, `bollardCandidateCount`를 비교한다. 최대 confidence는 상세 로그 개수 제한과 관계없이 전체 후보를 대상으로 계산한다. Bollard 후보 수는 production threshold 이전의 진단 threshold를 사용한다.
 4. DETECTION_FLOW에서 confidence → invalid/size → 후보 제한 → NMS → geometry → size → class → temporal → visible을 비교한다. Geometry ON으로 재시험해 제거 차이를 확인한다.
-5. 저장된 640×640 PNG를 열어 실제 bollard 포함 여부, 회전, 색상, 찌그러짐을 확인한다.
+5. 저장된 640×640 PNG를 열어 실제 bollard 포함 여부, 회전, 색상, 찌그러짐과 LETTERBOX의 회색 padding을 확인한다. 두 실행의 preprocess/inference/postprocess/pipeline 평균·P95와 FPS를 비교한다.
 6. PC의 같은 학습 가중치 `best.pt`에 **이 PNG 자체**를 넣는다. 입력 640×640, 클래스 목록, confidence와 NMS IoU를 맞추고 추가 crop/회전/색상 반전을 적용하지 않는다. PC 도구에 원본 카메라 사진을 대신 넣으면 동일 입력 비교가 아니다.
 7. Android의 RAW_YOLO 및 YOLO_RESULT와 PyTorch 결과의 클래스·점수·좌표를 비교한다. PC에서 후처리된 결과는 Android의 NMS 이후 결과와 비교한다. pre-NMS raw 후보와 PC 최종 bbox 개수를 직접 동일시하지 않는다. 가능하면 같은 PNG를 PC TFLite에서도 돌려 export 차이와 Android 경로 차이를 추가 분리한다.
 
-좌표 비교: YOLO_RESULT는 **ROI pixel** 좌표이므로 PNG 640×640과 비교할 때 x에 `640/roi.width`, y에 `640/roi.height`를 곱한다. FILTERED의 geometry 이후 좌표는 회전된 전체 프레임 pixel이므로 ROI offset을 먼저 뺀다. RAW_YOLO는 clamp/스케일 판단 전 tensor xyxy이며 `rawCxCyWh`도 남긴다. tensor 단위는 MODEL_INPUT에 기록된 기존 휴리스틱과 export 사양을 대조한다.
+좌표 비교: YOLO_RESULT는 **ROI pixel** 좌표다. STRETCH의 PNG 좌표는 x에 `640/roi.width`, y에 `640/roi.height`를 곱한다. LETTERBOX에서는 x에 `scaleX`를 곱하고 `padLeft`를, y에 `scaleY`를 곱하고 `padTop`을 더한다. FILTERED의 geometry 이후 좌표는 회전된 전체 프레임 pixel이므로 ROI offset을 먼저 뺀다. RAW_YOLO는 clamp/스케일 판단 전 tensor xyxy이며 `rawCxCyWh`도 남긴다. tensor 단위는 MODEL_INPUT에 기록된 기존 휴리스틱과 export 사양을 대조한다.
 
 ### 저장 위치와 로그 해석
 
@@ -125,5 +134,5 @@ PNG는 `fillInputBuffer`가 읽은 동일한 최종 RGB Bitmap에서 복사한�
 
 ## 검증 결과
 
-`gradlew.bat :app:testDebugUnitTest :app:assembleDebug` 성공. 진단 테스트 4개를 포함한 전체 35개 단위 테스트 통과.
+`gradlew.bat :app:testDebugUnitTest :app:assembleDebug` 성공. 전처리/좌표 테스트 4개를 포함한 전체 39개 단위 테스트 통과.
 실기기 촬영, PNG의 실물 색상 확인, 디스크 포화/종료 시 저장 검증, best.pt 비교 및 FPS 영향 측정은 아직 수행하지 않았다.

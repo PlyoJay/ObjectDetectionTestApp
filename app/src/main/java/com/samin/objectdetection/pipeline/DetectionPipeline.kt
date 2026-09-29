@@ -223,7 +223,7 @@ class DetectionPipeline(
                 "inputImage=${frameWidth}x$frameHeight roi=[${cropRect.left},${cropRect.top},${cropRect.right},${cropRect.bottom}] " +
                 "roiApplied=${!cropRect.isFullFrame(frameWidth, frameHeight)} rotationDegrees=$rotationDegrees " +
                 "preprocess=${if (config.useCenterSquareCrop) "center_square_crop" else "full_frame"}" +
-                "_then_stretch_${config.inputSize}x${config.inputSize}_rgb_float_0_to_1 " +
+                "_then_${config.yoloResizeMode.name.lowercase()}_${config.inputSize}x${config.inputSize}_rgb_float_0_to_1 " +
                 "inferenceTimeMs=${stats?.inferenceTimeMs ?: -1} rawTop5=${stats?.rawTopConfidences ?: emptyList<Float>()} " +
                 "rawDetectionCount=${stats?.rawCandidateCount ?: -1} " +
                 "confidenceFilteredCount=${stats?.confidencePassedCount ?: -1} " +

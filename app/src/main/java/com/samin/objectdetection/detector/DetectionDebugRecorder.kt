@@ -120,6 +120,8 @@ class DetectionDebugFrame(val id: Long, timestampMs: Long, private val config: D
     private var qualifying = 0
     private var maxScore = Float.NEGATIVE_INFINITY
     private var maxClass = "none"
+    private var bollardMaxScore = Float.NEGATIVE_INFINITY
+    private var bollardCandidates = 0
     init { line("[FRAME] frame=$id captureTimestampMs=$timestampMs") }
     fun line(value: String) { if (config.debugDetectionLogging) lines.appendLine(value) }
     fun raw(index: Int, classId: Int, label: String, score: Float, cx: Float, cy: Float, w: Float, h: Float, threshold: Float) {
@@ -127,13 +129,17 @@ class DetectionDebugFrame(val id: Long, timestampMs: Long, private val config: D
         if (score > maxScore) { maxScore = score; maxClass = label }
         if (score < config.diagnosticRawConfidenceThreshold || classId < 0) return
         qualifying++
+        if (label.equals("bollard", ignoreCase = true)) {
+            bollardCandidates++
+            if (score > bollardMaxScore) bollardMaxScore = score
+        }
         if (rawLogged >= config.diagnosticMaxRawCandidates.coerceAtLeast(0)) return
         rawLogged++
         val box = "[${cx-w/2},${cy-h/2},${cx+w/2},${cy+h/2}]"
         line("[RAW_YOLO] frame=$id candidate=$index classId=$classId className=$label confidence=$score bbox=$box bboxSpace=output_tensor_xyxy rawCxCyWh=[$cx,$cy,$w,$h]")
         if (score < threshold) line("[FILTERED] frame=$id candidate=$index class=$label confidence=$score reason=CONFIDENCE bbox=$box bboxSpace=output_tensor_xyxy")
     }
-    fun summary(total: Int) = line("[RAW_YOLO_SUMMARY] frame=$id tensorCandidateCount=$total candidateCount=$qualifying logged=$rawLogged omitted=${qualifying-rawLogged} maxConfidence=$maxScore maxClass=$maxClass diagnosticThreshold=${config.diagnosticRawConfidenceThreshold}")
+    fun summary(total: Int) = line("[RAW_YOLO_SUMMARY] frame=$id tensorCandidateCount=$total candidateCount=$qualifying logged=$rawLogged omitted=${qualifying-rawLogged} maxConfidence=$maxScore maxClass=$maxClass bollardMaxConfidence=${if (bollardCandidates > 0) bollardMaxScore else "none"} bollardCandidateCount=$bollardCandidates diagnosticThreshold=${config.diagnosticRawConfidenceThreshold}")
     fun filtered(detection: DetectionResult, reason: String, space: String = "rotated_frame_pixels") {
         if (!config.debugDetectionLogging) return
         if (filteredLogged++ >= 300) { filteredOmitted++; return }
