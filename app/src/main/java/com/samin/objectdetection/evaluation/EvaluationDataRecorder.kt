@@ -14,6 +14,7 @@ import android.provider.MediaStore
 import android.util.Log
 import com.samin.objectdetection.camera.DetectionConfig
 import com.samin.objectdetection.detector.DetectionResult
+import com.samin.objectdetection.detector.DetectionStageCounts
 import com.samin.objectdetection.detector.ModelIdentity
 import com.samin.objectdetection.settings.AppSettings
 import org.json.JSONArray
@@ -122,6 +123,7 @@ class EvaluationDataRecorder(
             closeRecordingLogLocked()
         }
     }
+
 
     private fun closeRecordingLogLocked() {
         try {
@@ -457,6 +459,77 @@ class EvaluationDataRecorder(
             .put("bottom", bottom)
             .put("width", width())
             .put("height", height())
+    }
+
+    private fun DetectionStageCounts.toJson(): JSONObject {
+        return JSONObject()
+            .put("rawCandidateCount", rawCandidateCount ?: JSONObject.NULL)
+            .put("confidencePassedCount", confidencePassedCount ?: JSONObject.NULL)
+            .put("invalidBoxCount", invalidBoxCount ?: JSONObject.NULL)
+            .put("detectorSizeRejectedCount", detectorSizeRejectedCount ?: JSONObject.NULL)
+            .put("nmsInputCount", nmsInputCount ?: JSONObject.NULL)
+            .put("nmsPassedCount", nmsPassedCount)
+            .put("geometryPassedCount", geometryPassedCount)
+            .put("sizeFilterPassedCount", sizeFilterPassedCount)
+            .put("overlayClassPassedCount", overlayClassPassedCount)
+            .put("temporalPassedCount", temporalPassedCount)
+            .put("finalDetectionCount", finalDetectionCount)
+    }
+
+    private fun ModelIdentity.toJson(): JSONObject {
+        return JSONObject()
+            .put("assetName", assetName)
+            .put("assetSizeBytes", assetSizeBytes)
+            .put("sha256", sha256)
+            .put("inputShape", inputShape)
+            .put("inputType", inputType)
+            .put("outputShape", outputShape)
+            .put("outputType", outputType)
+            .put("classCount", classCount)
+            .put("coordinateScale", coordinateScale)
+    }
+
+    private fun AppSettings.toJson(): JSONObject {
+        return JSONObject()
+            .put("schemaVersion", schemaVersion)
+            .put("presetName", presetName)
+
+            .put("camera", JSONObject()
+                .put("detectIntervalMs", camera.detectIntervalMs)
+                .put("useCenterSquareCrop", camera.useCenterSquareCrop)
+                .put("requestedWidth", camera.requestedWidth)
+                .put("requestedHeight", camera.requestedHeight)
+            )
+
+            .put("yolo", JSONObject()
+                .put("resizeMode", yolo.resizeMode.name)
+                .put("confidenceThreshold", yolo.confidenceThreshold.toDouble())
+                .put("nmsThreshold", yolo.nmsThreshold.toDouble())
+                .put("interpreterThreadCount", yolo.interpreterThreadCount)
+                .put("maxCandidates", yolo.maxCandidates)
+            )
+
+            .put("filters", JSONObject()
+                .put("geometryFilterEnabled", filters.geometryFilterEnabled)
+                .put("sizeFilterMode", filters.sizeFilterMode.name)
+                .put("bollardMinAreaRatio", filters.bollardMinAreaRatio.toDouble())
+                .put("bollardMaxWidthToHeightRatio", filters.bollardMaxWidthToHeightRatio.toDouble())
+                .put("adaptiveTemporalEnabled", filters.adaptiveTemporalEnabled)
+                .put("temporalImmediateConfidence", filters.temporalImmediateConfidence.toDouble())
+                .put("temporalConfirmationConfidence", filters.temporalConfirmationConfidence.toDouble())
+                .put("temporalMatchIouThreshold", filters.temporalMatchIouThreshold.toDouble())
+            )
+
+            .put("mlKit", JSONObject()
+                .put("enabled", mlKit.enabled)
+                .put("detectionIntervalMs", mlKit.detectionIntervalMs)
+            )
+
+            .put("debug", JSONObject()
+                .put("enableDetectorDiagnostics", debug.enableDetectorDiagnostics)
+                .put("debugDetectionLogging", debug.debugDetectionLogging)
+                .put("debugSaveInferenceInput", debug.debugSaveInferenceInput)
+            )
     }
 
     data class CaptureFiles(
