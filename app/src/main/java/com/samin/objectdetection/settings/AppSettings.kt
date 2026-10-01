@@ -5,7 +5,7 @@ import com.samin.objectdetection.camera.SizeFilterMode
 import com.samin.objectdetection.camera.YoloResizeMode
 import com.samin.objectdetection.ui.OverlayDebugMode
 
-const val APP_SETTINGS_SCHEMA_VERSION = 1
+const val APP_SETTINGS_SCHEMA_VERSION = 2
 
 data class CameraSettings(
     val detectIntervalMs: Long = 0L,
@@ -15,7 +15,7 @@ data class CameraSettings(
 )
 
 data class YoloSettings(
-    val resizeMode: YoloResizeMode = YoloResizeMode.STRETCH,
+    val resizeMode: YoloResizeMode = YoloResizeMode.LETTERBOX,
     val confidenceThreshold: Float = DetectionConfig.DEFAULT_CONFIDENCE_THRESHOLD,
     val nmsThreshold: Float = DetectionConfig.DEFAULT_NMS_THRESHOLD,
     val interpreterThreadCount: Int = 4,
@@ -216,6 +216,6 @@ object SettingsPresets {
             adaptiveTemporalEnabled = false
         ),
         mlKit = MlKitSettings(enabled = false),
-        debug = DebugSettings(debugDetectionLogging = true, debugSaveInferenceInput = true)
+        debug = DebugSettings(enableDetectorDiagnostics = true, debugDetectionLogging = true, debugSaveInferenceInput = true)
     )
 }

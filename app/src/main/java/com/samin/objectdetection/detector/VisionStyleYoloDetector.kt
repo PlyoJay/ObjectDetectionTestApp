@@ -24,7 +24,7 @@ class VisionStyleYoloDetector(
     private val confidenceThreshold: Float,
     private val nmsThreshold: Float,
     private val sizeFilterMode: SizeFilterMode = SizeFilterMode.NORMAL,
-    private val resizeMode: YoloResizeMode = YoloResizeMode.STRETCH,
+    private val resizeMode: YoloResizeMode = YoloResizeMode.LETTERBOX,
     interpreterThreadCount: Int = 4,
     private val maxCandidates: Int = 100,
     private val debugRecorder: DetectionDebugRecorder? = null
@@ -37,6 +37,7 @@ class VisionStyleYoloDetector(
     private var boxCount = 0
     private var isTransposed = true
     private var outputShapeText = ""
+    private var loggedRawCoordinateRange = false
 
     private var inputBuffer: ByteBuffer
     private var outputBuffer: ByteBuffer
@@ -129,7 +130,8 @@ class VisionStyleYoloDetector(
             inputShape = inputShape.contentToString(),
             inputType = inputType,
             outputShape = outputShape.contentToString(),
-            outputType = outputType
+            outputType = outputType,
+            classCount = modelClassCount
         )
 
         Log.i(
@@ -137,7 +139,7 @@ class VisionStyleYoloDetector(
             "modelAsset=asset://$modelName sizeBytes=${loadedModelIdentity.assetSizeBytes} " +
                 "sha256=${loadedModelIdentity.sha256} inputShape=${loadedModelIdentity.inputShape} " +
                 "inputType=$inputType outputShape=${loadedModelIdentity.outputShape} outputType=$outputType " +
-                "labels=${labels.size}"
+                "labels=${labels.size} classCount=$modelClassCount coordinateScale=${loadedModelIdentity.coordinateScale}"
         )
     }
 
@@ -194,7 +196,7 @@ class VisionStyleYoloDetector(
                         "bufferLayout=NHWC_interleaved bufferWrite=putFloat_nativeOrder " +
                         "outputShape=$outputShapeText outputType=${loadedModelIdentity.outputType} " +
                         "parser=xywh_plus_class_scores_no_objectness_no_sigmoid transposed=$isTransposed " +
-                        "coordinateScale=per_box_axis_1.1_heuristic modelSha256=${loadedModelIdentity.sha256}")
+                        "coordinateScale=${loadedModelIdentity.coordinateScale} modelSha256=${loadedModelIdentity.sha256}")
             }
             fillInputBuffer(modelInput)
             val inputBufferTimeMs = elapsedMs(inputBufferStartNs)
@@ -270,7 +272,6 @@ class VisionStyleYoloDetector(
                 BBOX_DEBUG_TAG,
                 "outputShape=$outputShapeText outputDim=$outputDim boxCount=$boxCount transposed=$isTransposed"
             )
-            logRawBoxRange()
         }
 
         val classCount = outputDim - YOLO_BOX_VALUE_COUNT
@@ -279,9 +280,19 @@ class VisionStyleYoloDetector(
         var confidencePassedCount = 0
         var invalidBoxCount = 0
         var detectorAreaRejectedCount = 0
+        var rawCoordinateMin = Float.POSITIVE_INFINITY
+        var rawCoordinateMax = Float.NEGATIVE_INFINITY
         val candidateScanStartNs = SystemClock.elapsedRealtimeNanos()
 
         for (i in 0 until boxCount) {
+            // Observe the same output scan; no extra inference or bitmap allocation.
+            for (c in 0 until YOLO_BOX_VALUE_COUNT) {
+                val value = outputData[c][i]
+                if (value.isFinite()) {
+                    rawCoordinateMin = minOf(rawCoordinateMin, value)
+                    rawCoordinateMax = maxOf(rawCoordinateMax, value)
+                }
+            }
             var bestClassId = -1
             var bestScore = 0f
 
@@ -315,7 +326,8 @@ class VisionStyleYoloDetector(
                 )
             }
 
-            // YOLO export에 따라 0~1 또는 0~inputSize 값이 나올 수 있어 정규화 좌표로 통일
+            // Compatibility: keep the current per-box, per-axis heuristic to avoid shifting boxes.
+            // TODO: replace with a verified NORMALIZED/INPUT_PIXEL export contract after model A/B validation.
             val scaleW = if (cx > 1.1f || w > 1.1f) inputWidth.toFloat() else 1f
             val scaleH = if (cy > 1.1f || h > 1.1f) inputHeight.toFloat() else 1f
 
@@ -381,6 +393,15 @@ class VisionStyleYoloDetector(
             candidates.add(detection)
         }
         val candidateScanTimeMs = elapsedMs(candidateScanStartNs)
+        if (!loggedRawCoordinateRange || enableDiagnostics || debugFrame != null) {
+            val rangeDescription = "model=${loadedModelIdentity.assetName} sha256=${loadedModelIdentity.sha256Prefix} " +
+                "coordinateScale=${loadedModelIdentity.coordinateScale} rawCoordinateMin=$rawCoordinateMin rawCoordinateMax=$rawCoordinateMax"
+            if (!loggedRawCoordinateRange || enableDiagnostics) {
+                Log.i(BBOX_DEBUG_TAG, rangeDescription)
+                loggedRawCoordinateRange = true
+            }
+            debugFrame?.line("[RAW_COORDINATE_RANGE] frame=${debugFrame?.id} $rangeDescription")
+        }
         debugFrame?.summary(boxCount)
 
         val nmsInput = candidates.sortedByDescending { it.confidence }.take(maxCandidates.coerceAtLeast(1))
@@ -412,7 +433,9 @@ class VisionStyleYoloDetector(
             candidateScanTimeMs = candidateScanTimeMs,
             nmsTimeMs = nmsTimeMs,
             postprocessTimeMs = elapsedMs(postprocessStartNs),
-            detectorTotalTimeMs = elapsedMs(detectorStartNs)
+            detectorTotalTimeMs = elapsedMs(detectorStartNs),
+            rawCoordinateMin = rawCoordinateMin.takeIf { it.isFinite() },
+            rawCoordinateMax = rawCoordinateMax.takeIf { it.isFinite() }
         )
         if (enableDiagnostics) {
             Log.d(
@@ -456,19 +479,6 @@ class VisionStyleYoloDetector(
         val areaA = maxOf(0f, a.right - a.left) * maxOf(0f, a.bottom - a.top)
         val areaB = maxOf(0f, b.right - b.left) * maxOf(0f, b.bottom - b.top)
         return inter / (areaA + areaB - inter + 1e-6f)
-    }
-
-    private fun logRawBoxRange() {
-        var min = Float.POSITIVE_INFINITY
-        var max = Float.NEGATIVE_INFINITY
-        for (i in 0 until boxCount) {
-            for (c in 0 until minOf(4, outputDim)) {
-                val value = outputData[c][i]
-                min = minOf(min, value)
-                max = maxOf(max, value)
-            }
-        }
-        Log.d(BBOX_DEBUG_TAG, "rawBoxRange min=$min max=$max")
     }
 
     private fun logFinalBox(detection: DetectionResult, sourceWidth: Int, sourceHeight: Int) {

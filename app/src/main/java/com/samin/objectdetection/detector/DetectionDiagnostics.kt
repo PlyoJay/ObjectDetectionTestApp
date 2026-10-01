@@ -7,7 +7,9 @@ data class ModelIdentity(
     val inputShape: String,
     val inputType: String,
     val outputShape: String,
-    val outputType: String
+    val outputType: String,
+    val classCount: Int,
+    val coordinateScale: String = "per_box_axis_1.1_heuristic"
 ) {
     val sha256Prefix: String get() = sha256.take(12)
 }
@@ -30,5 +32,23 @@ data class DetectorFrameDiagnostics(
     val candidateScanTimeMs: Long,
     val nmsTimeMs: Long,
     val postprocessTimeMs: Long,
-    val detectorTotalTimeMs: Long
+    val detectorTotalTimeMs: Long,
+    val rawCoordinateMin: Float? = null,
+    val rawCoordinateMax: Float? = null
+)
+
+/** Actual execution order: confidence, valid box, detector size, candidate limit, NMS,
+ * geometry, pipeline size, overlay class, temporal, final YOLO overlay. ML Kit is separate. */
+data class DetectionStageCounts(
+    val rawCandidateCount: Int?,
+    val confidencePassedCount: Int?,
+    val invalidBoxCount: Int?,
+    val detectorSizeRejectedCount: Int?,
+    val nmsInputCount: Int?,
+    val nmsPassedCount: Int,
+    val geometryPassedCount: Int,
+    val sizeFilterPassedCount: Int,
+    val overlayClassPassedCount: Int,
+    val temporalPassedCount: Int,
+    val finalDetectionCount: Int
 )

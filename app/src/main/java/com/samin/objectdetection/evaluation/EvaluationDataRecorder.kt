@@ -14,6 +14,8 @@ import android.provider.MediaStore
 import android.util.Log
 import com.samin.objectdetection.camera.DetectionConfig
 import com.samin.objectdetection.detector.DetectionResult
+import com.samin.objectdetection.detector.ModelIdentity
+import com.samin.objectdetection.settings.AppSettings
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.BufferedWriter
@@ -27,11 +29,15 @@ class EvaluationDataRecorder(
     private val context: Context,
     private val detectionConfig: DetectionConfig = DetectionConfig(),
     private val modelName: String = "yolo11n_float32.tflite",
-    private val detectorType: String = "VisionStyleYoloDetector"
+    private val detectorType: String = "VisionStyleYoloDetector",
+    private val modelIdentity: ModelIdentity? = null,
+    private val appSettings: AppSettings = AppSettings()
 ) {
     private val lock = Any()
     private var detectionsWriter: BufferedWriter? = null
     private var activeDetectionsFile: File? = null
+    // Settings and model are fixed for this recorder's lifetime. Avoid encoding them every frame.
+    private val metadataJson by lazy { buildMetadataJson() }
 
     val capturesDir: File
         get() = File(rootDir, "captures").also { it.mkdirs() }
@@ -251,7 +257,7 @@ class EvaluationDataRecorder(
             .put("roiBottom", snapshot.roi?.bottom ?: JSONObject.NULL)
             .put("roi", snapshot.roi?.toJson() ?: JSONObject.NULL)
             .put("coordinateSpace", "original_image")
-            .put("metadata", buildMetadataJson())
+            .put("metadata", metadataJson)
             .put("frameSummary", summary.toJson())
             .put("detections", JSONArray(snapshot.evaluationDetections.mapIndexed { index, detection ->
                 detection.toJson(snapshot, summary, index)
@@ -346,12 +352,15 @@ class EvaluationDataRecorder(
             fps = fps,
             userMotionState = userLocationSnapshot?.motionState?.name,
             gpsSpeedMps = userLocationSnapshot?.speedMps,
-            gpsAccuracyMeters = userLocationSnapshot?.accuracyMeters
+            gpsAccuracyMeters = userLocationSnapshot?.accuracyMeters,
+            stageCounts = stageCounts,
+            rawCoordinateMin = rawCoordinateMin,
+            rawCoordinateMax = rawCoordinateMax
         )
     }
 
     private fun EvaluationFrameSummary.toJson(): JSONObject {
-        return JSONObject()
+        val json = JSONObject()
             .put("timestampMs", timestampMs)
             .put("frameWidth", frameWidth)
             .put("frameHeight", frameHeight)
@@ -368,12 +377,21 @@ class EvaluationDataRecorder(
             .put("userMotionState", userMotionState ?: JSONObject.NULL)
             .put("gpsSpeedMps", gpsSpeedMps?.toDouble() ?: JSONObject.NULL)
             .put("gpsAccuracyMeters", gpsAccuracyMeters?.toDouble() ?: JSONObject.NULL)
+            .put("rawCoordinateMin", rawCoordinateMin?.toDouble() ?: JSONObject.NULL)
+            .put("rawCoordinateMax", rawCoordinateMax?.toDouble() ?: JSONObject.NULL)
+        stageCounts?.toJson()?.let { counts ->
+            // Additive flat fields keep frameSummary easy to consume with existing tooling.
+            counts.keys().forEach { key -> json.put(key, counts.get(key)) }
+        }
+        return json
     }
 
     private fun buildMetadataJson(): JSONObject {
         return JSONObject()
             .put("appVersionName", resolveAppVersionName())
-            .put("modelName", modelName)
+            .put("modelName", modelIdentity?.assetName ?: modelName)
+            .put("model", modelIdentity?.toJson() ?: JSONObject.NULL)
+            .put("settings", appSettings.toJson())
             .put("detectorType", detectorType)
             .put("detectionConfig", detectionConfig.toJson())
             .put("createdAt", System.currentTimeMillis())
@@ -385,8 +403,27 @@ class EvaluationDataRecorder(
         return JSONObject()
             .put("detectIntervalMs", detectIntervalMs)
             .put("inputSize", inputSize)
+            .put("requestedWidth", appSettings.camera.requestedWidth)
+            .put("requestedHeight", appSettings.camera.requestedHeight)
+            .put("useCenterSquareCrop", useCenterSquareCrop)
+            .put("resizeMode", yoloResizeMode.name)
+            .put("yoloResizeMode", yoloResizeMode.name)
             .put("confidenceThreshold", confidenceThreshold.toDouble())
             .put("nmsThreshold", nmsThreshold.toDouble())
+            .put("interpreterThreadCount", interpreterThreadCount)
+            .put("maxCandidates", maxCandidates)
+            .put("sizeFilterMode", sizeFilterMode.name)
+            .put("geometryFilterEnabled", bollardGeometryFilterEnabled)
+            .put("bollardMinAreaRatio", bollardMinAreaRatio.toDouble())
+            .put("bollardMaxWidthToHeightRatio", bollardMaxWidthToHeightRatio.toDouble())
+            .put("adaptiveTemporalEnabled", adaptiveTemporalEnabled)
+            .put("temporalImmediateConfidence", temporalImmediateConfidence.toDouble())
+            .put("temporalConfirmationConfidence", temporalConfirmationConfidence.toDouble())
+            .put("temporalMatchIouThreshold", temporalMatchIouThreshold.toDouble())
+            .put("enableMlKitDetection", enableMlKitDetection)
+            .put("mlKitDetectionIntervalMs", mlKitDetectionIntervalMs)
+            .put("debugDetectionLogging", debugDetectionLogging)
+            .put("debugSaveInferenceInput", debugSaveInferenceInput)
             .put("minBoxAreaRatio", minBoxAreaRatio.toDouble())
             .put("minBoxWidthRatio", minBoxWidthRatio.toDouble())
             .put("minBoxHeightRatio", minBoxHeightRatio.toDouble())

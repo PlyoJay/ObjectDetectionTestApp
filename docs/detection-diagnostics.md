@@ -7,7 +7,7 @@ CameraX (1280×720 요청, RGBA_8888, KEEP_ONLY_LATEST)
  → row padding 제거 후 Bitmap 생성
  → ImageProxy.rotationDegrees만큼 Matrix.postRotate
  → 전체 프레임 또는 선택적 중앙 정사각형 ROI
- → 모델 tensor에서 읽은 입력 크기로 bilinear stretch 또는 중앙 letterbox (현재 640×640, 기본 STRETCH)
+ → 모델 tensor에서 읽은 입력 크기로 bilinear stretch 또는 중앙 letterbox (현재 640×640, 기본 LETTERBOX)
  → RGB 순서, 각 채널 /255.0f, native-order FLOAT32 interleaved buffer
  → TFLite Interpreter.run
  → output shape 방향에 따라 복사, xywh + 클래스 점수 중 최고 점수 선택
@@ -36,7 +36,7 @@ ROI 외부는 추론 전 잘리므로 개별 객체에 `reason=ROI`를 부여하
 | 구분 | 코드에서 확인한 사실과 검증 방법 |
 |---|---|
 | 모델 confidence | 현장 로그만으로는 모델 반응을 확정할 수 없다. RAW_YOLO_SUMMARY의 전체 tensor 후보 최대값을 확인한다. |
-| Android 전처리 | 기본 STRETCH는 전체 화면의 종횡비를 바꾼다. LETTERBOX는 비율을 유지하고 RGB 114 padding을 넣는다. 저장 PNG에서 형태·회전·색상·padding을 확인하고 같은 조건에서 A/B 비교한다. |
+| Android 전처리 | 기본 LETTERBOX는 비율을 유지하고 RGB 114 padding을 넣는다. STRETCH는 전체 화면의 종횡비를 바꾼다. 저장 PNG에서 형태·회전·색상·padding을 확인하고 같은 조건에서 A/B 비교한다. |
 | output parsing | output을 `4 + classes`, 별도 objectness·sigmoid 없음으로 가정한다. 축 길이 비교로 전치 여부를 결정하며, cx/w 또는 cy/h가 1.1보다 크면 해당 축을 pixel 단위로 판단한다. export 계약과의 일치는 확인이 필요하다. 기존 해석을 변경하지 않았다. |
 | tensor layout/type | 현재 writer는 FLOAT32 NHWC interleaved로 작성한다. 초기화 코드는 NCHW 모양도 읽지만 writer는 NCHW로 재배열하지 않는다. MODEL_INPUT의 실제 shape/type과 bufferLayout을 비교한다. 현재 모델이 이 문제에 해당한다고 단정하지 않는다. |
 | confidence filtering | 최고 클래스 점수가 기본 0.20 미만이면 제거한다. 0.15/0.10으로 설정 비교가 가능하다. 기본값은 유지했다. |
@@ -64,7 +64,7 @@ ROI 외부는 추론 전 잘리므로 개별 객체에 `reason=ROI`를 부여하
 
 ## D. 설정 및 실기기 테스트
 
-현재 앱은 해당 설정을 UI에서 편집하는 구조가 아니므로 `MainActivity`의 `detectionConfig` 생성자를 변경한 뒤 재빌드/재실행한다. 순수 YOLO 필드테스트에는 아래 preset을 사용하고 A/B 간 인자만 변경한다.
+설정 UI에서 `FIELD TEST - LETTERBOX`를 선택해 적용 및 저장한다. A/B 비교는 `FIELD TEST - STRETCH`를 사용한다. 코드의 동일한 프리셋은 아래와 같다.
 
 ```kotlin
 import com.samin.objectdetection.camera.YoloResizeMode
@@ -73,7 +73,7 @@ private val detectionConfig = DetectionConfig.fieldTest(YoloResizeMode.STRETCH)
 // 두 번째 실행: DetectionConfig.fieldTest(YoloResizeMode.LETTERBOX)
 ```
 
-이 preset은 `detectIntervalMs=0`, 전체 프레임, confidence 0.20, size/geometry/temporal 필터 OFF, ML Kit OFF, RAW 로그와 입력 PNG 저장 ON이다. 기존 `DetectionConfig()` 기본 동작은 STRETCH이며 다른 production 설정을 바꾸지 않는다. 저장 주기는 기본 2초다.
+이 preset은 `detectIntervalMs=0`, 전체 프레임, confidence 0.20, NMS 0.45, size/geometry/temporal 필터 OFF, ML Kit OFF, diagnostics/RAW 로그/입력 PNG 저장 ON이다. `DetectionConfig()` 기본 resize는 LETTERBOX이며 다른 production 기준은 유지한다. 저장 주기는 기본 2초다. 평가 JSON에는 전체 설정, 모델 identity 및 단계별 count가 추가되었다. 자세한 형식과 실기기 절차는 [model-evaluation-reliability.md](model-evaluation-reliability.md)를 참조한다.
 
 ```kotlin
 private val detectionConfig = DetectionConfig(

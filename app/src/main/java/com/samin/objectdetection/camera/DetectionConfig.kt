@@ -20,8 +20,8 @@ data class DetectionConfig(
     // Keep this at zero for latency-first operation; raise it only for an explicit A/B test.
     val detectIntervalMs: Long = 0L,
     val inputSize: Int = 640,
-    // Change only this value between A/B runs; STRETCH preserves the existing preprocessing.
-    val yoloResizeMode: YoloResizeMode = YoloResizeMode.STRETCH,
+    // Preserve aspect ratio by default; STRETCH remains available for explicit A/B runs.
+    val yoloResizeMode: YoloResizeMode = YoloResizeMode.LETTERBOX,
     // Keep the full camera frame by default. Enable only for comparison with the legacy center-square ROI.
     val useCenterSquareCrop: Boolean = false,
     // Base YOLO candidate threshold. Object-specific warning thresholds are applied later by ObjectTuningPolicyRegistry.
@@ -90,6 +90,7 @@ data class DetectionConfig(
             bollardGeometryFilterEnabled = false,
             adaptiveTemporalEnabled = false,
             enableMlKitDetection = false,
+            enableDetectorDiagnostics = true,
             debugDetectionLogging = true,
             debugSaveInferenceInput = true
         )

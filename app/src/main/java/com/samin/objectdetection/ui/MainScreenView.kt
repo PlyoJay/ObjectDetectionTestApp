@@ -16,6 +16,7 @@ class MainScreenView(
     activity: ComponentActivity,
     debugMode: OverlayDebugMode,
     presetName: String,
+    modelDescription: String,
     overlayInitiallyEnabled: Boolean,
     outputTestMode: Boolean,
     onCapture: () -> Unit,
@@ -60,7 +61,7 @@ class MainScreenView(
         setPadding(12, 0, 12, 0)
     }
     val presetTextView = TextView(activity).apply {
-        text = "Preset: $presetName" + if (outputTestMode) "  •  TEST OUTPUT" else ""
+        text = "Preset: $presetName" + (if (outputTestMode) "  •  TEST OUTPUT" else "") + "\n$modelDescription"
         textSize = 13f
         setTextColor(if (outputTestMode) Color.YELLOW else Color.WHITE)
         setBackgroundColor(Color.argb(170, 0, 0, 0))
@@ -121,7 +122,9 @@ class MainScreenView(
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             presetParams.topMargin = bars.top + dp(activity, 8)
             settingsParams.topMargin = bars.top + dp(activity, 4)
-            debugParams.topMargin = bars.top + dp(activity, 68)
+            debugParams.topMargin = bars.top + dp(activity, 100)
+            // Reserve the settings button's width when a model asset has a long name.
+            presetParams.width = (activity.resources.displayMetrics.widthPixels - dp(activity, 100)).coerceAtLeast(1)
             controlsParams.bottomMargin = bars.bottom + dp(activity, 12)
             warningParams.bottomMargin = bars.bottom + dp(activity, 116)
             root.requestLayout()

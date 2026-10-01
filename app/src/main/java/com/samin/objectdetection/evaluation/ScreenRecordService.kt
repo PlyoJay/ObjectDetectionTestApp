@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
+import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.hardware.display.DisplayManager
@@ -14,14 +15,19 @@ import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.os.IBinder
+import android.os.Environment
+import android.provider.MediaStore
 import android.util.Log
 import com.samin.objectdetection.R
 import java.io.File
+import java.io.IOException
+import java.util.concurrent.Executors
 
 class ScreenRecordService : Service() {
     private val projectionCallback = object : MediaProjection.Callback() {
         override fun onStop() {
             stopRecording(sendBroadcast = true, stopProjection = false)
+            stopSelf()
         }
     }
 
@@ -30,6 +36,8 @@ class ScreenRecordService : Service() {
     private var virtualDisplay: VirtualDisplay? = null
     private var outputFile: File? = null
     private var isStoppingProjection = false
+    private var recorderStarted = false
+    private val galleryExecutor = Executors.newSingleThreadExecutor()
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -50,6 +58,8 @@ class ScreenRecordService : Service() {
 
     override fun onDestroy() {
         stopRecording(sendBroadcast = false, stopProjection = true)
+        // Already submitted copies finish even after the service stops.
+        galleryExecutor.shutdown()
         super.onDestroy()
     }
 
@@ -86,9 +96,12 @@ class ScreenRecordService : Service() {
         try {
             val projection = projectionManager.getMediaProjection(resultCode, resultData)
                 ?: throw IllegalStateException("MediaProjection permission was not granted")
+            mediaProjection = projection
             val file = File(outputPath)
+            outputFile = file
             val size = resolveRecordSize()
             val recorder = buildMediaRecorder(file, size.width, size.height)
+            mediaRecorder = recorder
 
             projection.registerCallback(projectionCallback, null)
             val display = projection.createVirtualDisplay(
@@ -102,11 +115,9 @@ class ScreenRecordService : Service() {
                 null
             )
 
-            mediaProjection = projection
-            mediaRecorder = recorder
             virtualDisplay = display
-            outputFile = file
             recorder.start()
+            recorderStarted = true
             broadcastState(ACTION_RECORDING_STARTED, file.absolutePath)
         } catch (e: Exception) {
             Log.e(TAG, "start screen recording failed", e)
@@ -118,20 +129,27 @@ class ScreenRecordService : Service() {
 
     private fun buildMediaRecorder(outputFile: File, width: Int, height: Int): MediaRecorder {
         outputFile.parentFile?.mkdirs()
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        val recorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             MediaRecorder(this)
         } else {
             @Suppress("DEPRECATION")
             MediaRecorder()
-        }.apply {
-            setVideoSource(MediaRecorder.VideoSource.SURFACE)
-            setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-            setOutputFile(outputFile.absolutePath)
-            setVideoEncoder(MediaRecorder.VideoEncoder.H264)
-            setVideoEncodingBitRate(VIDEO_BIT_RATE)
-            setVideoFrameRate(VIDEO_FRAME_RATE)
-            setVideoSize(width, height)
-            prepare()
+        }
+        try {
+            recorder.apply {
+                setVideoSource(MediaRecorder.VideoSource.SURFACE)
+                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                setOutputFile(outputFile.absolutePath)
+                setVideoEncoder(MediaRecorder.VideoEncoder.H264)
+                setVideoEncodingBitRate(VIDEO_BIT_RATE)
+                setVideoFrameRate(VIDEO_FRAME_RATE)
+                setVideoSize(width, height)
+                prepare()
+            }
+            return recorder
+        } catch (error: Exception) {
+            safeReleaseRecorder(recorder, stop = false)
+            throw error
         }
     }
 
@@ -155,15 +173,18 @@ class ScreenRecordService : Service() {
     private fun stopRecording(sendBroadcast: Boolean, stopProjection: Boolean) {
         val file = outputFile
         val projection = mediaProjection
+        val recorder = mediaRecorder
+        val wasStarted = recorderStarted
+        outputFile = null
+        mediaRecorder = null
+        mediaProjection = null
+        recorderStarted = false
 
-        virtualDisplay?.release()
+        runCatching { virtualDisplay?.release() }
+            .onFailure { Log.e(TAG, "release virtual display failed", it) }
         virtualDisplay = null
 
-        mediaRecorder?.let { recorder ->
-            safeReleaseRecorder(recorder, stop = true)
-        }
-        mediaRecorder = null
-        outputFile = null
+        val finalized = recorder?.let { safeReleaseRecorder(it, stop = wasStarted) } == true && wasStarted
 
         if (projection != null) {
             try {
@@ -181,20 +202,29 @@ class ScreenRecordService : Service() {
                 }
             }
         }
-        mediaProjection = null
+        val validRecording = finalized && file != null && file.isFile && file.length() > 0L
+        if (validRecording) {
+            galleryExecutor.execute { publishVideoSafely(requireNotNull(file)) }
+        }
 
         if (sendBroadcast) {
-            broadcastState(ACTION_RECORDING_STOPPED, file?.absolutePath)
+            if (validRecording) {
+                broadcastState(ACTION_RECORDING_STOPPED, file?.absolutePath)
+            } else if (recorder != null || file != null) {
+                broadcastState(ACTION_RECORDING_ERROR, "Recording did not finalize; gallery publish skipped")
+            }
         }
     }
 
-    private fun safeReleaseRecorder(recorder: MediaRecorder, stop: Boolean) {
-        try {
+    private fun safeReleaseRecorder(recorder: MediaRecorder, stop: Boolean): Boolean {
+        return try {
             if (stop) {
                 recorder.stop()
             }
+            true
         } catch (e: Exception) {
             Log.e(TAG, "stop media recorder failed", e)
+            false
         } finally {
             try {
                 recorder.reset()
@@ -204,6 +234,41 @@ class ScreenRecordService : Service() {
                 recorder.release()
             } catch (_: Exception) {
             }
+        }
+    }
+
+    private fun publishVideoSafely(file: File) {
+        // minSdk is 33; all supported devices use the Android 10+ MediaStore contract.
+        if (!file.isFile || file.length() <= 0L) return
+        val relativePath = "${Environment.DIRECTORY_MOVIES}/GOTORO/Recordings"
+        val resolver = contentResolver
+        var pendingUri: android.net.Uri? = null
+        try {
+            val values = ContentValues().apply {
+                put(MediaStore.Video.Media.DISPLAY_NAME, file.name)
+                put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
+                put(MediaStore.Video.Media.RELATIVE_PATH, relativePath)
+                put(MediaStore.Video.Media.IS_PENDING, 1)
+            }
+            val uri = resolver.insert(
+                MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY), values
+            ) ?: throw IOException("MediaStore video insert returned null")
+            pendingUri = uri
+            resolver.openOutputStream(uri, "w")?.use { output ->
+                val copied = file.inputStream().use { input -> input.copyTo(output) }
+                if (copied <= 0L || copied != file.length()) throw IOException("Incomplete video copy: $copied bytes")
+            } ?: throw IOException("MediaStore video OutputStream is null")
+            val completed = ContentValues().apply { put(MediaStore.Video.Media.IS_PENDING, 0) }
+            if (resolver.update(uri, completed, null, null) <= 0) {
+                throw IOException("Failed to publish pending video: $uri")
+            }
+            Log.i(TAG, "gallery video saved uri=$uri path=$relativePath/${file.name}")
+        } catch (error: Exception) {
+            pendingUri?.let { uri ->
+                runCatching { resolver.delete(uri, null, null) }
+                    .onFailure { Log.e(TAG, "failed to delete pending video uri=$uri", it) }
+            }
+            Log.e(TAG, "gallery video publish failed privatePath=${file.absolutePath}", error)
         }
     }
 

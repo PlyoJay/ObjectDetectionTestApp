@@ -59,10 +59,12 @@ Interpreter thread 수, YOLO 전처리 및 threshold 변경은 detector를 다�
 
 ## 프리셋
 
-- `DEFAULT`: 기존 `DetectionConfig` 기본값
+- `DEFAULT`: `DetectionConfig` 기본값 (LETTERBOX, 입력 640×640, confidence 0.20, NMS 0.45, size DISABLED)
 - `FIELD TEST - STRETCH`: 기존 `DetectionConfig.fieldTest(STRETCH)` 조건
 - `FIELD TEST - LETTERBOX`: STRETCH 프리셋과 resize mode만 다름
 - `CUSTOM`: 빠른 설정 또는 임의 편집 결과
 - 사용자 프리셋: 이름 지정 저장, 이름 변경, 삭제 및 재선택 지원
 
-저장 형식은 schema version이 포함된 Properties snapshot이며 누락된 키는 현재 기본값으로 마이그레이션한다. 숫자 파싱 실패나 검증 실패 시 안전 기본값을 사용한다. 새 설정 적용 후 런타임 구성요소 생성이 완료되기 전에 앱이 종료되면 다음 실행에서 이전 설정 snapshot으로 복구한다.
+저장 형식은 schema version이 포함된 Properties snapshot이다. schema v2는 v1의 `DEFAULT` snapshot이 이전 기본값 전체와 같을 때만 resize를 LETTERBOX로 이관한다. 다른 값 하나라도 수정했거나 사용자 이름/`CUSTOM`/명시적 FIELD TEST - STRETCH를 사용한 설정은 STRETCH를 보존한다. v1에서 누락된 resize는 이전 STRETCH 기본값으로 읽은 뒤 이 조건을 적용한다. 이관한 적용 설정은 v2로 저장하며 사용자 preset과 복구 snapshot을 삭제하지 않는다. 기존 FIELD TEST를 새 진단 조건으로 사용하려면 프리셋을 다시 선택하고 적용한다.
+
+숫자 파싱 실패나 검증 실패 시 안전 기본값을 사용한다. 새 설정 적용 후 런타임 구성요소 생성이 완료되기 전에 앱이 종료되면 다음 실행에서 이전 설정 snapshot으로 복구한다. 전체 모델/평가/갤러리 검증 절차는 [model-evaluation-reliability.md](model-evaluation-reliability.md)에 정리했다.

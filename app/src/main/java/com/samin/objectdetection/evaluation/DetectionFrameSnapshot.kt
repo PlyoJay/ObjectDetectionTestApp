@@ -3,6 +3,7 @@ package com.samin.objectdetection.evaluation
 import android.graphics.Bitmap
 import android.graphics.Rect
 import com.samin.objectdetection.detector.DetectionResult
+import com.samin.objectdetection.detector.DetectionStageCounts
 import com.samin.objectdetection.location.UserLocationSnapshot
 import com.samin.objectdetection.warning.RiskLevel
 import com.samin.objectdetection.warning.WarningCandidate
@@ -23,7 +24,10 @@ data class DetectionFrameSnapshot(
     val selectedWarningCandidate: WarningCandidate? = null,
     val inferenceTimeMs: Long = 0L,
     val fps: Int = 0,
-    val userLocationSnapshot: UserLocationSnapshot? = null
+    val userLocationSnapshot: UserLocationSnapshot? = null,
+    val stageCounts: DetectionStageCounts? = null,
+    val rawCoordinateMin: Float? = null,
+    val rawCoordinateMax: Float? = null
 )
 
 data class EvaluationFrameSummary(
@@ -42,5 +46,8 @@ data class EvaluationFrameSummary(
     val fps: Int,
     val userMotionState: String?,
     val gpsSpeedMps: Float?,
-    val gpsAccuracyMeters: Float?
+    val gpsAccuracyMeters: Float?,
+    val stageCounts: DetectionStageCounts? = null,
+    val rawCoordinateMin: Float? = null,
+    val rawCoordinateMax: Float? = null
 )

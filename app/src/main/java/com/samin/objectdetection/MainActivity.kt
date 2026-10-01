@@ -191,7 +191,9 @@ class MainActivity : ComponentActivity() {
             context = this,
             detectionConfig = detectionConfig,
             modelName = MODEL_NAME,
-            detectorType = DETECTOR_TYPE
+            detectorType = DETECTOR_TYPE,
+            modelIdentity = detector.modelIdentity(),
+            appSettings = appSettings
         )
         performanceLogRecorder = PerformanceLogRecorder(this)
         userLocationTracker = UserLocationTracker(this)
@@ -238,6 +240,7 @@ class MainActivity : ComponentActivity() {
             activity = this,
             debugMode = detectionConfig.overlayDebugMode,
             presetName = appSettings.presetName,
+            modelDescription = detector.modelIdentity()?.let { "Model: ${it.assetName}\nSHA256: ${it.sha256Prefix}" } ?: "Model: $MODEL_NAME",
             overlayInitiallyEnabled = appSettings.overlay.enabled,
             outputTestMode = !appSettings.warning.enableActualVibration ||
                 !appSettings.warning.enableActualBeep || !appSettings.warning.enableActualTts,
@@ -558,7 +561,10 @@ class MainActivity : ComponentActivity() {
                 selectedWarningCandidate = selectedCandidate,
                 inferenceTimeMs = inferenceTime,
                 fps = currentFps,
-                userLocationSnapshot = userLocationSnapshot
+                userLocationSnapshot = userLocationSnapshot,
+                stageCounts = pipelineResult.stageCounts,
+                rawCoordinateMin = detectorDiagnostics?.rawCoordinateMin,
+                rawCoordinateMax = detectorDiagnostics?.rawCoordinateMax
             )
             if (needsCapture) saveEvaluationSnapshot(evaluationSnapshot)
             if (isRecording) {
@@ -693,7 +699,10 @@ class MainActivity : ComponentActivity() {
         selectedWarningCandidate: WarningCandidate?,
         inferenceTimeMs: Long,
         fps: Int,
-        userLocationSnapshot: com.samin.objectdetection.location.UserLocationSnapshot
+        userLocationSnapshot: com.samin.objectdetection.location.UserLocationSnapshot,
+        stageCounts: com.samin.objectdetection.detector.DetectionStageCounts?,
+        rawCoordinateMin: Float?,
+        rawCoordinateMax: Float?
     ): DetectionFrameSnapshot {
         return DetectionFrameSnapshot(
             bitmap = if (copyBitmap) bitmap.copy(Bitmap.Config.ARGB_8888, false) else bitmap,
@@ -711,7 +720,10 @@ class MainActivity : ComponentActivity() {
             selectedWarningCandidate = selectedWarningCandidate,
             inferenceTimeMs = inferenceTimeMs,
             fps = fps,
-            userLocationSnapshot = userLocationSnapshot
+            userLocationSnapshot = userLocationSnapshot,
+            stageCounts = stageCounts,
+            rawCoordinateMin = rawCoordinateMin,
+            rawCoordinateMax = rawCoordinateMax
         )
     }
 

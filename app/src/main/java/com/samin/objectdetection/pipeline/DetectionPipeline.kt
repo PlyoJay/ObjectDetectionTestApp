@@ -6,6 +6,7 @@ import android.os.SystemClock
 import android.util.Log
 import com.samin.objectdetection.camera.DetectionConfig
 import com.samin.objectdetection.detector.DetectionResult
+import com.samin.objectdetection.detector.DetectionStageCounts
 import com.samin.objectdetection.detector.ObjectDetector
 import com.samin.objectdetection.detector.DetectionDebugRecorder
 import com.samin.objectdetection.location.UserLocationSnapshot
@@ -158,6 +159,19 @@ class DetectionPipeline(
 
             return DetectionPipelineResult(
                 debugFrameId = debugFrame?.id,
+                stageCounts = DetectionStageCounts(
+                    rawCandidateCount = detectorDiagnostics?.rawCandidateCount,
+                    confidencePassedCount = detectorDiagnostics?.confidencePassedCount,
+                    invalidBoxCount = detectorDiagnostics?.invalidBoxCount,
+                    detectorSizeRejectedCount = detectorDiagnostics?.detectorAreaRejectedCount,
+                    nmsInputCount = detectorDiagnostics?.nmsInputCount,
+                    nmsPassedCount = croppedResults.size,
+                    geometryPassedCount = geometryFilteredDetections.size,
+                    sizeFilterPassedCount = visibleDetections.size,
+                    overlayClassPassedCount = overlayCandidatesBeforeTemporal.size,
+                    temporalPassedCount = overlayCandidates.size,
+                    finalDetectionCount = overlayDetections.size
+                ),
                 frameWidth = width,
                 frameHeight = height,
                 cropRect = cropRect,

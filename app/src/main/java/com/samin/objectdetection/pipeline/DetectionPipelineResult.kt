@@ -2,6 +2,7 @@ package com.samin.objectdetection.pipeline
 
 import android.graphics.Rect
 import com.samin.objectdetection.detector.DetectionResult
+import com.samin.objectdetection.detector.DetectionStageCounts
 import com.samin.objectdetection.location.UserLocationSnapshot
 
 data class DetectionPipelineResult(
@@ -17,7 +18,8 @@ data class DetectionPipelineResult(
     val timing: PipelineTiming,
     val topOverlayObject: DetectionResult?,
     val userLocationSnapshot: UserLocationSnapshot,
-    val debugFrameId: Long? = null
+    val debugFrameId: Long? = null,
+    val stageCounts: DetectionStageCounts? = null
 )
 
 data class PipelineTiming(

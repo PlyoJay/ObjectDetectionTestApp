@@ -26,7 +26,13 @@ class AppSettingsStore(context: Context) {
         val decoded = runCatching { AppSettingsCodec.decode(encoded) }
             .getOrNull()
             ?.takeIf { it.validationErrors().isEmpty() }
-        if (decoded != null) return decoded
+        if (decoded != null) {
+            // Persist the migrated schema without clearing custom presets or rollback markers.
+            if (AppSettingsCodec.storedSchemaVersion(encoded) < APP_SETTINGS_SCHEMA_VERSION) {
+                preferences.edit().putString(KEY_APPLIED, AppSettingsCodec.encode(decoded)).commit()
+            }
+            return decoded
+        }
         return AppSettings().also { safeDefault ->
             preferences.edit().putString(KEY_APPLIED, AppSettingsCodec.encode(safeDefault))
                 .remove(KEY_APPLY_STATE).remove(KEY_BACKUP).commit()
@@ -100,6 +106,9 @@ class AppSettingsStore(context: Context) {
 
 /** Human-readable, forward-compatible properties format. Missing/invalid fields retain current defaults. */
 object AppSettingsCodec {
+    fun storedSchemaVersion(encoded: String): Int = Properties().apply { load(StringReader(encoded)) }
+        .getProperty("schemaVersion")?.trim()?.toIntOrNull() ?: 1
+
     fun encode(value: AppSettings): String {
         val p = Properties()
         fun put(key: String, item: Any) { p.setProperty(key, item.toString()) }
@@ -162,7 +171,11 @@ object AppSettingsCodec {
 
     fun decode(encoded: String): AppSettings {
         val p = Properties().apply { load(StringReader(encoded)) }
-        val d = AppSettings()
+        val storedVersion = storedSchemaVersion(encoded)
+        val d = AppSettings().let { defaults ->
+            if (storedVersion < 2) defaults.copy(yolo = defaults.yolo.copy(resizeMode = YoloResizeMode.STRETCH))
+            else defaults
+        }
         fun s(key: String, default: String) = p.getProperty(key)?.trim()?.takeIf(String::isNotEmpty) ?: default
         fun i(key: String, default: Int) = s(key, default.toString()).toIntOrNull() ?: default
         fun l(key: String, default: Long) = s(key, default.toString()).toLongOrNull() ?: default
@@ -177,7 +190,7 @@ object AppSettingsCodec {
         fun overlayMode(key: String, default: OverlayDebugMode) =
             OverlayDebugMode.entries.firstOrNull { it.name == s(key, default.name) } ?: default
 
-        return AppSettings(
+        val decoded = AppSettings(
             schemaVersion = APP_SETTINGS_SCHEMA_VERSION,
             presetName = s("presetName", d.presetName),
             camera = CameraSettings(
@@ -232,6 +245,12 @@ object AppSettingsCodec {
                 b("debug.legacyDebugImageEnabled", d.debug.legacyDebugImageEnabled)
             )
         )
+        // Only an unchanged v1 DEFAULT can be identified safely as the former default.
+        // Explicit STRETCH presets and every customized configuration retain their resize mode.
+        val legacyDefault = d.copy(yolo = d.yolo.copy(resizeMode = YoloResizeMode.STRETCH))
+        return if (storedVersion < 2 && decoded == legacyDefault) {
+            decoded.copy(yolo = decoded.yolo.copy(resizeMode = YoloResizeMode.LETTERBOX))
+        } else decoded
     }
 
     fun snapshotLines(settings: AppSettings): String = encode(settings)
