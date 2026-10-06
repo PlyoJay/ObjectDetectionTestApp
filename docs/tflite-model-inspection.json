@@ -1,0 +1,732 @@
+[
+  {
+    "model": "best.tflite",
+    "bytes": 37949120,
+    "sha256": "eb605f541257c2ee216e8198d796172201435e03ba5f2d16d9c7bc9372602281",
+    "inputs": [
+      {
+        "name": "serving_default_args_0",
+        "shape": [
+          1,
+          3,
+          640,
+          640
+        ],
+        "dtype": "float32",
+        "scale": 0.0,
+        "zeroPoint": 0,
+        "scales": [],
+        "zeroPoints": []
+      }
+    ],
+    "outputs": [
+      {
+        "name": "serving_default_output_0_output",
+        "shape": [
+          1,
+          5,
+          8400
+        ],
+        "dtype": "float32",
+        "scale": 0.0,
+        "zeroPoint": 0,
+        "scales": [],
+        "zeroPoints": []
+      }
+    ],
+    "exportMetadata": {
+      "description": "Ultralytics YOLO11s model trained on /home/samin_khj/datasets/yolo_results/yolo_dataset_bollard_xywh_fixed/data.yaml",
+      "author": "Ultralytics",
+      "date": "2026-10-06T10:13:12.773016+09:00",
+      "version": "8.4.173",
+      "license": "AGPL-3.0 License (https://ultralytics.com/license)",
+      "docs": "https://docs.ultralytics.com",
+      "stride": 32,
+      "task": "detect",
+      "head": "Detect",
+      "batch": 1,
+      "imgsz": [
+        640,
+        640
+      ],
+      "names": {
+        "0": "bollard"
+      },
+      "args": {
+        "data": null,
+        "batch": 1,
+        "fraction": 1.0,
+        "quantize": null
+      },
+      "channels": 3,
+      "end2end": false
+    },
+    "graphBoundaries": [
+      {
+        "index": 0,
+        "builtinCode": 39,
+        "inputs": [
+          {
+            "index": 0,
+            "name": "serving_default_args_0",
+            "shape": [
+              1,
+              3,
+              640,
+              640
+            ]
+          },
+          {
+            "index": 215,
+            "name": "arith.constant17",
+            "shape": [
+              4
+            ],
+            "constant": [
+              0,
+              2,
+              3,
+              1
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 219,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.conv.Conv_0/torch.nn.modules.conv.Conv2d_conv;2",
+            "shape": [
+              1,
+              640,
+              640,
+              3
+            ]
+          }
+        ]
+      },
+      {
+        "index": 1,
+        "builtinCode": 34,
+        "inputs": [
+          {
+            "index": 219,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.conv.Conv_0/torch.nn.modules.conv.Conv2d_conv;2",
+            "shape": [
+              1,
+              640,
+              640,
+              3
+            ]
+          },
+          {
+            "index": 106,
+            "name": "arith.constant10",
+            "shape": [
+              4,
+              2
+            ],
+            "constant": [
+              0,
+              0,
+              1,
+              1,
+              1,
+              1,
+              0,
+              0
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 220,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.conv.Conv_0/torch.nn.modules.conv.Conv2d_conv;3",
+            "shape": [
+              1,
+              642,
+              642,
+              3
+            ]
+          }
+        ]
+      },
+      {
+        "index": 2,
+        "builtinCode": 3,
+        "inputs": [
+          {
+            "index": 220,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.conv.Conv_0/torch.nn.modules.conv.Conv2d_conv;3",
+            "shape": [
+              1,
+              642,
+              642,
+              3
+            ]
+          },
+          {
+            "index": 208,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.conv.Conv_0/torch.nn.modules.conv.Conv2d_conv;1",
+            "shape": [
+              32,
+              3,
+              3,
+              3
+            ]
+          },
+          {
+            "index": 105,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.conv.Conv_0/torch.nn.modules.conv.Conv2d_conv;",
+            "shape": [
+              32
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 221,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.conv.Conv_0/torch.nn.modules.conv.Conv2d_conv;4",
+            "shape": [
+              1,
+              320,
+              320,
+              32
+            ]
+          }
+        ]
+      },
+      {
+        "index": 345,
+        "builtinCode": 2,
+        "inputs": [
+          {
+            "index": 562,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.head.Detect_23;24",
+            "shape": [
+              1,
+              2,
+              8400
+            ]
+          },
+          {
+            "index": 563,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.head.Detect_23;25",
+            "shape": [
+              1,
+              2,
+              8400
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 564,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.head.Detect_23;26",
+            "shape": [
+              1,
+              4,
+              8400
+            ]
+          }
+        ]
+      },
+      {
+        "index": 346,
+        "builtinCode": 18,
+        "inputs": [
+          {
+            "index": 564,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.head.Detect_23;26",
+            "shape": [
+              1,
+              4,
+              8400
+            ]
+          },
+          {
+            "index": 216,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.head.Detect_23;9",
+            "shape": [
+              1,
+              1,
+              8400
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 565,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.head.Detect_23;27",
+            "shape": [
+              1,
+              4,
+              8400
+            ]
+          }
+        ]
+      },
+      {
+        "index": 347,
+        "builtinCode": 14,
+        "inputs": [
+          {
+            "index": 551,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.head.Detect_23;18",
+            "shape": [
+              1,
+              1,
+              8400
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 566,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.head.Detect_23;28",
+            "shape": [
+              1,
+              1,
+              8400
+            ]
+          }
+        ]
+      },
+      {
+        "index": 348,
+        "builtinCode": 18,
+        "inputs": [
+          {
+            "index": 565,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.head.Detect_23;27",
+            "shape": [
+              1,
+              4,
+              8400
+            ]
+          },
+          {
+            "index": 4,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords;",
+            "shape": [],
+            "constant": [
+              0.0015625000232830644
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 567,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords;1",
+            "shape": [
+              1,
+              4,
+              8400
+            ]
+          }
+        ]
+      },
+      {
+        "index": 349,
+        "builtinCode": 2,
+        "inputs": [
+          {
+            "index": 567,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords;1",
+            "shape": [
+              1,
+              4,
+              8400
+            ]
+          },
+          {
+            "index": 566,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.head.Detect_23;28",
+            "shape": [
+              1,
+              1,
+              8400
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 568,
+            "name": "serving_default_output_0_output",
+            "shape": [
+              1,
+              5,
+              8400
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "model": "best_float32.tflite",
+    "bytes": 37936709,
+    "sha256": "4b3c92517eb040eb40788efd3018cc004680345ec87d7050c14db965931ad8b8",
+    "inputs": [
+      {
+        "name": "images",
+        "shape": [
+          1,
+          640,
+          640,
+          3
+        ],
+        "dtype": "float32",
+        "scale": 0.0,
+        "zeroPoint": 0,
+        "scales": [],
+        "zeroPoints": []
+      }
+    ],
+    "outputs": [
+      {
+        "name": "Identity",
+        "shape": [
+          1,
+          5,
+          8400
+        ],
+        "dtype": "float32",
+        "scale": 0.0,
+        "zeroPoint": 0,
+        "scales": [],
+        "zeroPoints": []
+      }
+    ],
+    "exportMetadata": {
+      "description": "Ultralytics YOLO11s model trained on /home/samin_khj/datasets/yolo_results/yolo_dataset_bollard/data.yaml",
+      "author": "Ultralytics",
+      "date": "2026-09-16T09:48:13.056637",
+      "version": "8.4.56",
+      "license": "AGPL-3.0 License (https://ultralytics.com/license)",
+      "docs": "https://docs.ultralytics.com",
+      "stride": 32,
+      "task": "detect",
+      "batch": 1,
+      "imgsz": [
+        640,
+        640
+      ],
+      "names": {
+        "0": "bollard"
+      },
+      "args": {
+        "data": null,
+        "batch": 1,
+        "fraction": 1.0,
+        "half": false,
+        "int8": false,
+        "nms": false
+      },
+      "channels": 3,
+      "end2end": false
+    },
+    "graphBoundaries": [
+      {
+        "index": 0,
+        "builtinCode": 34,
+        "inputs": [
+          {
+            "index": 0,
+            "name": "images",
+            "shape": [
+              1,
+              640,
+              640,
+              3
+            ]
+          },
+          {
+            "index": 222,
+            "name": "arith.constant221",
+            "shape": [
+              4,
+              2
+            ],
+            "constant": [
+              0,
+              0,
+              1,
+              1,
+              1,
+              1,
+              0,
+              0
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 223,
+            "name": "model_29/tf.compat.v1.pad/Pad",
+            "shape": [
+              1,
+              642,
+              642,
+              3
+            ]
+          }
+        ]
+      },
+      {
+        "index": 1,
+        "builtinCode": 3,
+        "inputs": [
+          {
+            "index": 223,
+            "name": "model_29/tf.compat.v1.pad/Pad",
+            "shape": [
+              1,
+              642,
+              642,
+              3
+            ]
+          },
+          {
+            "index": 194,
+            "name": "arith.constant193",
+            "shape": [
+              32,
+              3,
+              3,
+              3
+            ]
+          },
+          {
+            "index": 88,
+            "name": "arith.constant87",
+            "shape": [
+              32
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 224,
+            "name": "model_29/tf.math.add/Add;model_29/tf.nn.convolution/convolution",
+            "shape": [
+              1,
+              320,
+              320,
+              32
+            ]
+          }
+        ]
+      },
+      {
+        "index": 2,
+        "builtinCode": 14,
+        "inputs": [
+          {
+            "index": 224,
+            "name": "model_29/tf.math.add/Add;model_29/tf.nn.convolution/convolution",
+            "shape": [
+              1,
+              320,
+              320,
+              32
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 225,
+            "name": "model_29/tf.math.sigmoid/Sigmoid",
+            "shape": [
+              1,
+              320,
+              320,
+              32
+            ]
+          }
+        ]
+      },
+      {
+        "index": 370,
+        "builtinCode": 0,
+        "inputs": [
+          {
+            "index": 604,
+            "name": "model_29/tf.strided_slice_22/StridedSlice",
+            "shape": [
+              1,
+              2,
+              8400
+            ]
+          },
+          {
+            "index": 221,
+            "name": "arith.constant220",
+            "shape": [
+              1,
+              2,
+              8400
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 605,
+            "name": "model_29/tf.math.add_115/Add",
+            "shape": [
+              1,
+              2,
+              8400
+            ]
+          }
+        ]
+      },
+      {
+        "index": 371,
+        "builtinCode": 0,
+        "inputs": [
+          {
+            "index": 603,
+            "name": "model_29/tf.math.subtract/Sub",
+            "shape": [
+              1,
+              2,
+              8400
+            ]
+          },
+          {
+            "index": 605,
+            "name": "model_29/tf.math.add_115/Add",
+            "shape": [
+              1,
+              2,
+              8400
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 606,
+            "name": "model_29/tf.math.add_116/Add",
+            "shape": [
+              1,
+              2,
+              8400
+            ]
+          }
+        ]
+      },
+      {
+        "index": 372,
+        "builtinCode": 18,
+        "inputs": [
+          {
+            "index": 606,
+            "name": "model_29/tf.math.add_116/Add",
+            "shape": [
+              1,
+              2,
+              8400
+            ]
+          },
+          {
+            "index": 195,
+            "name": "arith.constant194",
+            "shape": [],
+            "constant": [
+              0.5
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 607,
+            "name": "model_29/tf.math.divide/truediv",
+            "shape": [
+              1,
+              2,
+              8400
+            ]
+          }
+        ]
+      },
+      {
+        "index": 373,
+        "builtinCode": 41,
+        "inputs": [
+          {
+            "index": 605,
+            "name": "model_29/tf.math.add_115/Add",
+            "shape": [
+              1,
+              2,
+              8400
+            ]
+          },
+          {
+            "index": 603,
+            "name": "model_29/tf.math.subtract/Sub",
+            "shape": [
+              1,
+              2,
+              8400
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 608,
+            "name": "model_29/tf.math.subtract_1/Sub",
+            "shape": [
+              1,
+              2,
+              8400
+            ]
+          }
+        ]
+      },
+      {
+        "index": 374,
+        "builtinCode": 2,
+        "inputs": [
+          {
+            "index": 607,
+            "name": "model_29/tf.math.divide/truediv",
+            "shape": [
+              1,
+              2,
+              8400
+            ]
+          },
+          {
+            "index": 608,
+            "name": "model_29/tf.math.subtract_1/Sub",
+            "shape": [
+              1,
+              2,
+              8400
+            ]
+          },
+          {
+            "index": 566,
+            "name": "model_29/tf.math.sigmoid_76/Sigmoid",
+            "shape": [
+              1,
+              1,
+              8400
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 609,
+            "name": "Identity",
+            "shape": [
+              1,
+              5,
+              8400
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

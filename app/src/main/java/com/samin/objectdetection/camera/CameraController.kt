@@ -54,6 +54,7 @@ class CameraController(
     private var provider: ProcessCameraProvider? = null
     private var lastDetectionStartTimeMs = 0L
     private var skippedFrameCount = 0L
+    private var loggedCameraShape = false
 
     fun start() {
         val providerFuture = ProcessCameraProvider.getInstance(context)
@@ -96,6 +97,12 @@ class CameraController(
                     return@setAnalyzer
                 }
                 lastDetectionStartTimeMs = analyzerReceivedMs
+                if (!loggedCameraShape || enableDiagnostics) {
+                    Log.i(TAG, "[CAMERA_SHAPE] requested=${targetWidth}x$targetHeight " +
+                        "actual=${imageProxy.width}x${imageProxy.height} format=${imageProxy.format} " +
+                        "rotationDegrees=${imageProxy.imageInfo.rotationDegrees} cropRect=${imageProxy.cropRect}")
+                    loggedCameraShape = true
+                }
                 val bitmapConversionStartMs = System.currentTimeMillis()
                 val bitmap = imageProxy.toBitmapSafe(enableDiagnostics)
                 val bitmapConversionEndMs = System.currentTimeMillis()

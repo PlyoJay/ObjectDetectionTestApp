@@ -7,46 +7,21 @@ import androidx.camera.core.ImageProxy
 
 fun ImageProxy.toBitmapSafe(enableDiagnostics: Boolean = false): Bitmap? {
     return try {
-        val plane = planes[0]
-        val buffer = plane.buffer
-
-        val pixelStride = plane.pixelStride
-        val rowStride = plane.rowStride
-
         if (enableDiagnostics) {
             Log.d(
                 "ImageProxyExt",
-                "format=$format, width=$width, height=$height, pixelStride=$pixelStride, " +
-                    "rowStride=$rowStride, buffer=${buffer.remaining()}"
+                "[CAMERA_INPUT] format=$format width=$width height=$height rotationDegrees=${imageInfo.rotationDegrees} " +
+                    "cropRect=$cropRect proxyCropApplied=false " +
+                    "planes=${planes.map { "pixelStride=${it.pixelStride},rowStride=${it.rowStride},bytes=${it.buffer.remaining()}" }} " +
+                    "conversion=CameraX.toBitmap rotationThenPipelineRoiThenLetterbox"
             )
         }
-
-        val rowPadding = rowStride - pixelStride * width
-
-        val bitmapWithPadding = Bitmap.createBitmap(
-            width + rowPadding / pixelStride,
-            height,
-            Bitmap.Config.ARGB_8888
-        )
-
-        buffer.rewind()
-        bitmapWithPadding.copyPixelsFromBuffer(buffer)
-
-        val bitmap = Bitmap.createBitmap(
-            bitmapWithPadding,
-            0,
-            0,
-            width,
-            height
-        )
-        if (bitmapWithPadding !== bitmap && !bitmapWithPadding.isRecycled) {
-            bitmapWithPadding.recycle()
-        }
+        // CameraX 1.3.4 handles RGBA row stride and also YUV_420_888 explicitly.
+        // The previous raw plane copy assumed RGBA and a fully padded last row.
+        val bitmap = toBitmap()
 
         val rotationDegrees = imageInfo.rotationDegrees
-        if (enableDiagnostics) Log.d("ImageProxyExt", "rotationDegrees=$rotationDegrees")
-
-        if (rotationDegrees != 0) {
+        val result = if (rotationDegrees != 0) {
             bitmap.rotate(rotationDegrees.toFloat()).also { rotated ->
                 if (rotated !== bitmap && !bitmap.isRecycled) {
                     bitmap.recycle()
@@ -55,9 +30,11 @@ fun ImageProxy.toBitmapSafe(enableDiagnostics: Boolean = false): Bitmap? {
         } else {
             bitmap
         }
+        if (enableDiagnostics) Log.d("ImageProxyExt", "[CAMERA_BITMAP] rotated=${result.width}x${result.height} config=${result.config}")
+        result
 
     } catch (e: Exception) {
-        e.printStackTrace()
+        Log.e("ImageProxyExt", "Camera bitmap conversion failed format=$format size=${width}x$height", e)
         null
     }
 }

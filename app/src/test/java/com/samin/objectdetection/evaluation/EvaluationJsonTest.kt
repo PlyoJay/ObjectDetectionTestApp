@@ -45,6 +45,6 @@ class EvaluationJsonTest {
         assertEquals(model.inputShape, json.getString("inputShape"))
         assertEquals(model.outputShape, json.getString("outputShape"))
         assertEquals(1, json.getInt("classCount"))
-        assertEquals("per_box_axis_1.1_heuristic", json.getString("coordinateScale"))
+        assertEquals("normalized_xywh", json.getString("coordinateScale"))
     }
 }

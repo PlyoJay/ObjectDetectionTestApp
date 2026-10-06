@@ -8,9 +8,14 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.os.SystemClock
 import android.util.Log
+import com.samin.objectdetection.BuildConfig
 import com.samin.objectdetection.camera.SizeFilterMode
 import com.samin.objectdetection.camera.YoloResizeMode
 import org.tensorflow.lite.Interpreter
+import org.tensorflow.lite.Tensor
+import org.json.JSONArray
+import org.json.JSONObject
+import java.io.File
 import java.io.FileInputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -38,6 +43,14 @@ class VisionStyleYoloDetector(
     private var isTransposed = true
     private var outputShapeText = ""
     private var loggedRawCoordinateRange = false
+    private val inputRgbShape: RgbTensorShape
+    private val inputCodec: TensorValueCodec
+    private val outputCodec: TensorValueCodec
+    private var lastTensorDiagnosticMs = Long.MIN_VALUE
+    private var diagnoseTensorThisFrame = false
+    private var goldenDirectory: File? = null
+    private var goldenReport: JSONObject? = null
+    private var selfTestLog: StringBuilder? = null
 
     private var inputBuffer: ByteBuffer
     private var outputBuffer: ByteBuffer
@@ -71,17 +84,20 @@ class VisionStyleYoloDetector(
             setNumThreads(interpreterThreadCount.coerceAtLeast(1))
         }
         interpreter = Interpreter(modelBuffer, options)
-
-        val inputShape = interpreter.getInputTensor(0).shape()
-        if (inputShape.size == 4) {
-            if (inputShape[1] == 3) {
-                inputHeight = inputShape[2]
-                inputWidth = inputShape[3]
-            } else {
-                inputHeight = inputShape[1]
-                inputWidth = inputShape[2]
-            }
+        Log.i(TAG, "[TENSOR_METADATA] inputs=${interpreter.inputTensorCount} outputs=${interpreter.outputTensorCount}")
+        repeat(interpreter.inputTensorCount) { Log.i(TAG, tensorDescription("InputTensor[$it]", interpreter.getInputTensor(it))) }
+        repeat(interpreter.outputTensorCount) { Log.i(TAG, tensorDescription("OutputTensor[$it]", interpreter.getOutputTensor(it))) }
+        require(interpreter.inputTensorCount == 1 && interpreter.outputTensorCount == 1) {
+            "Only a single RGB input / raw YOLO detection output is supported; see TENSOR_METADATA for every tensor"
         }
+        val inputTensor = interpreter.getInputTensor(0)
+        val outputTensor = interpreter.getOutputTensor(0)
+        val inputShape = inputTensor.shape()
+        inputRgbShape = RgbTensorShape.from(inputShape)
+        inputWidth = inputRgbShape.width
+        inputHeight = inputRgbShape.height
+        inputCodec = codec(inputTensor)
+        outputCodec = codec(outputTensor)
         require(inputWidth == MODEL_INPUT_SIZE && inputHeight == MODEL_INPUT_SIZE) {
             "Model input mismatch: expected ${MODEL_INPUT_SIZE}x$MODEL_INPUT_SIZE, " +
                 "actual ${inputWidth}x$inputHeight (shape=${inputShape.contentToString()})"
@@ -91,19 +107,10 @@ class VisionStyleYoloDetector(
         val inputType = interpreter.getInputTensor(0).dataType().toString()
         val outputType = interpreter.getOutputTensor(0).dataType().toString()
         outputShapeText = outputShape.contentToString()
-        if (outputShape.size != 3) {
-            throw IllegalStateException("Unsupported output shape=${outputShape.contentToString()}")
-        }
-
-        if (outputShape[1] > outputShape[2]) {
-            isTransposed = false
-            boxCount = outputShape[1]
-            outputDim = outputShape[2]
-        } else {
-            isTransposed = true
-            outputDim = outputShape[1]
-            boxCount = outputShape[2]
-        }
+        val parsedShape = YoloOutputShape.from(outputShape, labels.size)
+        isTransposed = parsedShape.channelsFirst
+        boxCount = parsedShape.candidates
+        outputDim = parsedShape.channels
 
         val modelClassCount = outputDim - YOLO_BOX_VALUE_COUNT
         require(modelClassCount > 0) {
@@ -114,9 +121,9 @@ class VisionStyleYoloDetector(
                 "$DEFAULT_LABELS_NAME contains ${labels.size} labels"
         }
 
-        inputBuffer = ByteBuffer.allocateDirect(1 * inputWidth * inputHeight * 3 * 4)
+        inputBuffer = ByteBuffer.allocateDirect(inputTensor.numBytes())
             .order(ByteOrder.nativeOrder())
-        outputBuffer = ByteBuffer.allocateDirect(1 * outputDim * boxCount * 4)
+        outputBuffer = ByteBuffer.allocateDirect(outputTensor.numBytes())
             .order(ByteOrder.nativeOrder())
         pixels = IntArray(inputWidth * inputHeight)
         outputData = Array(outputDim) { FloatArray(boxCount) }
@@ -141,10 +148,17 @@ class VisionStyleYoloDetector(
                 "inputType=$inputType outputShape=${loadedModelIdentity.outputShape} outputType=$outputType " +
                 "labels=${labels.size} classCount=$modelClassCount coordinateScale=${loadedModelIdentity.coordinateScale}"
         )
+        Log.i(TAG, "[INPUT_CONTRACT] layout=${inputRgbShape.layout} RGB channel/255.0f " +
+            "inputCodec=$inputCodec outputCodec=$outputCodec parser=xywh_plus_class_scores_no_objectness_no_sigmoid")
     }
 
     override fun detect(bitmap: Bitmap): List<DetectionResult> {
         latestFrameDiagnostics = null
+        val nowMs = SystemClock.elapsedRealtime()
+        diagnoseTensorThisFrame = goldenDirectory != null ||
+            ((enableDiagnostics || debugRecorder?.config?.debugDetectionLogging == true) &&
+                (lastTensorDiagnosticMs == Long.MIN_VALUE || nowMs - lastTensorDiagnosticMs >= 2000L))
+        if (diagnoseTensorThisFrame) lastTensorDiagnosticMs = nowMs
         val detectorStartNs = SystemClock.elapsedRealtimeNanos()
         return try {
             val resizeStartNs = SystemClock.elapsedRealtimeNanos()
@@ -193,12 +207,30 @@ class VisionStyleYoloDetector(
                         "letterbox=${resizeMode == YoloResizeMode.LETTERBOX} $resizeDescription " +
                         "channelOrder=RGB normalization=channel/255.0f inputRange=0..1 " +
                         "tensorType=${loadedModelIdentity.inputType} inputShape=${loadedModelIdentity.inputShape} " +
-                        "bufferLayout=NHWC_interleaved bufferWrite=putFloat_nativeOrder " +
+                        "bufferLayout=${inputRgbShape.layout} inputCodec=$inputCodec " +
                         "outputShape=$outputShapeText outputType=${loadedModelIdentity.outputType} " +
                         "parser=xywh_plus_class_scores_no_objectness_no_sigmoid transposed=$isTransposed " +
                         "coordinateScale=${loadedModelIdentity.coordinateScale} modelSha256=${loadedModelIdentity.sha256}")
             }
             fillInputBuffer(modelInput)
+            if (diagnoseTensorThisFrame) {
+                val stats = TensorStatistics.measure(inputBuffer, inputCodec, inputRgbShape)
+                diagnostic("[INPUT_TENSOR] ${tensorDescription("InputTensor", interpreter.getInputTensor(0))} " +
+                    "layout=${inputRgbShape.layout} ${stats.description(BuildConfig.DEBUG)}")
+                goldenReport?.put("input", tensorJson(interpreter.getInputTensor(0), stats))
+                goldenReport?.put("preprocessing", JSONObject().put("layout", inputRgbShape.layout.name)
+                    .put("channelOrder", "RGB").put("normalization", "channel/255.0f")
+                    .put("sourceWidth", bitmap.width).put("sourceHeight", bitmap.height)
+                    .put("resizeMode", resizeMode.name).put("scaledWidth", transform.scaledWidth)
+                    .put("scaledHeight", transform.scaledHeight).put("scaleX", transform.scaleX)
+                    .put("scaleY", transform.scaleY).put("padLeft", transform.padLeft)
+                    .put("padTop", transform.padTop).put("padRight", transform.padRight)
+                    .put("padBottom", transform.padBottom).put("paddingRGB", JSONArray(listOf(114,114,114))))
+                goldenDirectory?.let { dir ->
+                    writeBuffer(File(dir, "input.bin"), inputBuffer)
+                    File(dir, "input.png").outputStream().use { check(modelInput.compress(Bitmap.CompressFormat.PNG, 100, it)) }
+                }
+            }
             val inputBufferTimeMs = elapsedMs(inputBufferStartNs)
 
             outputBuffer.rewind()
@@ -206,6 +238,12 @@ class VisionStyleYoloDetector(
             interpreter.run(inputBuffer, outputBuffer)
             val inferenceTimeMs = elapsedMs(inferenceStartNs)
             outputBuffer.rewind()
+            if (diagnoseTensorThisFrame) {
+                val stats = TensorStatistics.measure(outputBuffer, outputCodec)
+                diagnostic("[OUTPUT_TENSOR] ${tensorDescription("OutputTensor[0]", interpreter.getOutputTensor(0))} ${stats.description(BuildConfig.DEBUG)}")
+                goldenReport?.put("output", tensorJson(interpreter.getOutputTensor(0), stats))
+                goldenDirectory?.let { writeBuffer(File(it, "output_0.bin"), outputBuffer) }
+            }
 
             parseOutput(
                 buffer = outputBuffer,
@@ -224,19 +262,14 @@ class VisionStyleYoloDetector(
         } catch (e: Exception) {
             debugFrame?.line("[DETECTOR_ERROR] frame=${debugFrame?.id} error=$e")
             Log.e(TAG, "detect error", e)
+            if (goldenDirectory != null) throw IllegalStateException("Self test inference failed", e)
             emptyList()
         }
     }
 
     private fun fillInputBuffer(bitmap: Bitmap) {
-        inputBuffer.rewind()
         bitmap.getPixels(pixels, 0, inputWidth, 0, 0, inputWidth, inputHeight)
-        for (pixel in pixels) {
-            inputBuffer.putFloat(((pixel shr 16) and 0xFF) / 255.0f)
-            inputBuffer.putFloat(((pixel shr 8) and 0xFF) / 255.0f)
-            inputBuffer.putFloat((pixel and 0xFF) / 255.0f)
-        }
-        inputBuffer.rewind()
+        RgbTensorWriter.fill(inputBuffer, pixels, inputRgbShape.layout, inputCodec)
     }
 
     private fun parseOutput(
@@ -255,13 +288,13 @@ class VisionStyleYoloDetector(
         if (isTransposed) {
             for (c in 0 until outputDim) {
                 for (i in 0 until boxCount) {
-                    if (buffer.hasRemaining()) outputData[c][i] = buffer.float
+                    outputData[c][i] = outputCodec.read(buffer)
                 }
             }
         } else {
             for (i in 0 until boxCount) {
                 for (c in 0 until outputDim) {
-                    if (buffer.hasRemaining()) outputData[c][i] = buffer.float
+                    outputData[c][i] = outputCodec.read(buffer)
                 }
             }
         }
@@ -282,6 +315,9 @@ class VisionStyleYoloDetector(
         var detectorAreaRejectedCount = 0
         var rawCoordinateMin = Float.POSITIVE_INFINITY
         var rawCoordinateMax = Float.NEGATIVE_INFINITY
+        var maxClassScore = 0f
+        val diagnosticThresholds = floatArrayOf(0.01f, 0.05f, 0.1f, 0.2f)
+        val aboveThreshold = IntArray(diagnosticThresholds.size)
         val candidateScanStartNs = SystemClock.elapsedRealtimeNanos()
 
         for (i in 0 until boxCount) {
@@ -298,13 +334,15 @@ class VisionStyleYoloDetector(
 
             for (c in 0 until classCount) {
                 val score = outputData[4 + c][i]
-                if (score > bestScore) {
+                if (score.isFinite() && score > bestScore) {
                     bestScore = score
                     bestClassId = c
                 }
             }
 
             rawConfidences?.add(bestScore)
+            maxClassScore = maxOf(maxClassScore, bestScore)
+            diagnosticThresholds.forEachIndexed { j, threshold -> if (bestScore >= threshold) aboveThreshold[j]++ }
 
             debugFrame?.raw(i, bestClassId, labels.getOrElse(bestClassId) { "none" }, bestScore,
                 outputData[0][i], outputData[1][i], outputData[2][i], outputData[3][i], confidenceThreshold)
@@ -316,6 +354,11 @@ class VisionStyleYoloDetector(
             val cy = outputData[1][i]
             val w = outputData[2][i]
             val h = outputData[3][i]
+            if (!cx.isFinite() || !cy.isFinite() || !w.isFinite() || !h.isFinite() || w <= 0f || h <= 0f) {
+                invalidBoxCount++
+                debugFrame?.line("[INVALID_RAW_BOX] candidate=$i xywh=[$cx,$cy,$w,$h]")
+                continue
+            }
             val rawMin = minOf(cx, cy, w, h)
             val rawMax = maxOf(cx, cy, w, h)
 
@@ -326,16 +369,13 @@ class VisionStyleYoloDetector(
                 )
             }
 
-            // Compatibility: keep the current per-box, per-axis heuristic to avoid shifting boxes.
-            // TODO: replace with a verified NORMALIZED/INPUT_PIXEL export contract after model A/B validation.
-            val scaleW = if (cx > 1.1f || w > 1.1f) inputWidth.toFloat() else 1f
-            val scaleH = if (cy > 1.1f || h > 1.1f) inputHeight.toFloat() else 1f
-
+            // Both checked-in exports normalize xywh in the graph (best: final MUL by 1/640).
+            // Boxes may extend beyond 1 before clipping; their magnitude is not a unit flag.
             val normalized = RectF(
-                ((cx - w / 2f) / scaleW).coerceIn(0f, 1f),
-                ((cy - h / 2f) / scaleH).coerceIn(0f, 1f),
-                ((cx + w / 2f) / scaleW).coerceIn(0f, 1f),
-                ((cy + h / 2f) / scaleH).coerceIn(0f, 1f)
+                (cx - w / 2f).coerceIn(0f, 1f),
+                (cy - h / 2f).coerceIn(0f, 1f),
+                (cx + w / 2f).coerceIn(0f, 1f),
+                (cy + h / 2f).coerceIn(0f, 1f)
             )
 
             val left = transform.sourceX(normalized.left)
@@ -403,6 +443,16 @@ class VisionStyleYoloDetector(
             debugFrame?.line("[RAW_COORDINATE_RANGE] frame=${debugFrame?.id} $rangeDescription")
         }
         debugFrame?.summary(boxCount)
+        if (diagnoseTensorThisFrame) {
+            diagnostic("[RAW_OUTPUT] shape=$outputShapeText maxClassScore=$maxClassScore candidateCount=$boxCount " +
+                "candidateAbove0.01=${aboveThreshold[0]} candidateAbove0.05=${aboveThreshold[1]} " +
+                "candidateAbove0.1=${aboveThreshold[2]} candidateAbove0.2=${aboveThreshold[3]} " +
+                "confidencePassed=$confidencePassedCount invalidBoxes=$invalidBoxCount")
+            goldenReport?.put("raw", JSONObject().put("maxClassScore", maxClassScore).put("candidateCount", boxCount)
+                .put("candidateAbove0.01", aboveThreshold[0]).put("candidateAbove0.05", aboveThreshold[1])
+                .put("candidateAbove0.1", aboveThreshold[2]).put("candidateAbove0.2", aboveThreshold[3])
+                .put("confidencePassed", confidencePassedCount).put("invalidBoxes", invalidBoxCount))
+        }
 
         val nmsInput = candidates.sortedByDescending { it.confidence }.take(maxCandidates.coerceAtLeast(1))
         if (debugFrame != null) candidates.filterNot { it in nmsInput }.forEach {
@@ -517,10 +567,76 @@ class VisionStyleYoloDetector(
     }
 
     private fun loadModelFile(context: Context, modelName: String): MappedByteBuffer {
-        val fd = context.assets.openFd(modelName)
-        FileInputStream(fd.fileDescriptor).use { input ->
-            return input.channel.map(FileChannel.MapMode.READ_ONLY, fd.startOffset, fd.declaredLength)
+        context.assets.openFd(modelName).use { fd ->
+            FileInputStream(fd.fileDescriptor).use { input ->
+                return input.channel.map(FileChannel.MapMode.READ_ONLY, fd.startOffset, fd.declaredLength)
+            }
         }
+    }
+
+    /** Invoke on a background thread, on a separate detector from the live camera analyzer. */
+    fun runSelfTest(bitmap: Bitmap, inputName: String, directory: File): List<DetectionResult> {
+        check(BuildConfig.DEBUG) { "Golden tensor export is debug-only" }
+        check(goldenDirectory == null) { "Self test already running" }
+        require(directory.mkdirs() || directory.isDirectory) { "Cannot create golden directory: $directory" }
+        goldenDirectory = directory
+        selfTestLog = StringBuilder()
+        goldenReport = JSONObject().put("modelAsset", loadedModelIdentity.assetName)
+            .put("modelSha256", loadedModelIdentity.sha256).put("inputName", inputName)
+            .put("confidenceThreshold", confidenceThreshold).put("nmsThreshold", nmsThreshold)
+            .put("maxCandidates", maxCandidates).put("coordinateScale", loadedModelIdentity.coordinateScale)
+            .put("byteOrder", ByteOrder.nativeOrder().toString())
+        try {
+            val results = detect(bitmap)
+            val stats = checkNotNull(latestFrameDiagnostics)
+            diagnostic("[SELF_TEST] input=$inputName rawCandidates=${stats.rawCandidateCount} " +
+                "confidencePassed=${stats.confidencePassedCount} detections=${results.size} path=$directory")
+            goldenReport?.put("detections", JSONArray(results.map { d ->
+                JSONObject().put("label", d.label).put("confidence", d.confidence)
+                    .put("bbox", JSONArray(listOf(d.left, d.top, d.right, d.bottom)))
+                    .put("bboxSpace", "source_image_pixels")
+            }))
+            File(directory, "report.json").writeText(checkNotNull(goldenReport).toString(2))
+            return results
+        } catch (e: Exception) {
+            diagnostic("[SELF_TEST_ERROR] input=$inputName error=$e")
+            File(directory, "error.txt").writeText(e.stackTraceToString())
+            throw e
+        } finally {
+            File(directory, "self_test.txt").writeText(selfTestLog.toString())
+            goldenDirectory = null
+            goldenReport = null
+            selfTestLog = null
+        }
+    }
+
+    private fun diagnostic(message: String) {
+        val line = "$message frame=${debugFrame?.id ?: "self_test_or_standalone"}"
+        Log.i(TAG, line)
+        debugFrame?.line(line)
+        selfTestLog?.appendLine(line)
+    }
+
+    private fun codec(tensor: Tensor): TensorValueCodec = tensor.quantizationParams().let {
+        TensorValueCodec(tensor.dataType(), it.scale, it.zeroPoint)
+    }
+
+    private fun tensorDescription(name: String, tensor: Tensor): String =
+        "$name shape=${tensor.shape().contentToString()} dtype=${tensor.dataType()} " +
+            "scale=${tensor.quantizationParams().scale} zeroPoint=${tensor.quantizationParams().zeroPoint} bytes=${tensor.numBytes()}"
+
+    private fun tensorJson(tensor: Tensor, stats: TensorStatistics): JSONObject = JSONObject()
+        .put("shape", JSONArray(tensor.shape().toList())).put("dtype", tensor.dataType().toString())
+        .put("scale", tensor.quantizationParams().scale).put("zeroPoint", tensor.quantizationParams().zeroPoint)
+        .put("bytes", tensor.numBytes()).put("min", stats.min ?: JSONObject.NULL)
+        .put("max", stats.max ?: JSONObject.NULL).put("mean", stats.mean ?: JSONObject.NULL)
+        .put("nonFinite", stats.nonFinite).put("channelMeansRGB", JSONArray(stats.channelMeans))
+        .put("sha256", stats.sha256)
+
+    private fun writeBuffer(file: File, buffer: ByteBuffer) {
+        val copy = buffer.duplicate().apply { rewind() }
+        // ByteBuffer positions used by Interpreter are left untouched.
+        file.outputStream().channel.use { channel -> while (copy.hasRemaining()) channel.write(copy) }
     }
 
     override fun close() {
@@ -550,7 +666,6 @@ class VisionStyleYoloDetector(
         (SystemClock.elapsedRealtimeNanos() - startNs) / 1_000_000L
 
     companion object {
-        private const val DEFAULT_MODEL_NAME = "best_float32.tflite"
         private const val DEFAULT_LABELS_NAME = "labels.txt"
         private const val MODEL_INPUT_SIZE = 640
         private const val YOLO_BOX_VALUE_COUNT = 4

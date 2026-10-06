@@ -2,6 +2,9 @@
 
 The app includes test-only capture and recording controls on the camera screen.
 
+For the `best.tflite` NCHW input correction, actual PC/Android golden results,
+and camera-free debug Self Test, see [TFLite inference correctness](docs/tflite-inference-correctness.md).
+
 ## Files
 
 Files are saved under the app-specific external files directory, so Android 10+

@@ -1,5 +1,10 @@
 # 객체 인식 실패 원인 분리
 
+2026-10-06: 새 `best.tflite`의 NCHW 입력 불일치를 재현하고 수정했다.
+최신 모델 구조, Self Test, PC/Android 수치 검증과 절차는
+[TFLite inference correctness](tflite-inference-correctness.md)를 참조한다.
+아래의 과거 필드 테스트 기록보다 이 문서의 최신 검증 결과를 우선한다.
+
 ## A. 현재 코드의 파이프라인
 
 ```text
@@ -8,9 +13,9 @@ CameraX (1280×720 요청, RGBA_8888, KEEP_ONLY_LATEST)
  → ImageProxy.rotationDegrees만큼 Matrix.postRotate
  → 전체 프레임 또는 선택적 중앙 정사각형 ROI
  → 모델 tensor에서 읽은 입력 크기로 bilinear stretch 또는 중앙 letterbox (현재 640×640, 기본 LETTERBOX)
- → RGB 순서, 각 채널 /255.0f, native-order FLOAT32 interleaved buffer
+ → RGB 순서, 각 채널 /255.0f, 실제 shape에 따른 NCHW/NHWC 및 dtype/quantization buffer
  → TFLite Interpreter.run
- → output shape 방향에 따라 복사, xywh + 클래스 점수 중 최고 점수 선택
+ → 실제 클래스 채널 축에 따라 복사, normalized xywh + 클래스 점수 중 최고 점수 선택
  → 실제 confidence threshold (기본 0.20)
  → 좌표 정규화/0~1 clamp, 유효 bbox 검사
  → detector 면적 필터 (기본 DISABLED)
@@ -37,9 +42,9 @@ ROI 외부는 추론 전 잘리므로 개별 객체에 `reason=ROI`를 부여하
 |---|---|
 | 모델 confidence | 현장 로그만으로는 모델 반응을 확정할 수 없다. RAW_YOLO_SUMMARY의 전체 tensor 후보 최대값을 확인한다. |
 | Android 전처리 | 기본 LETTERBOX는 비율을 유지하고 RGB 114 padding을 넣는다. STRETCH는 전체 화면의 종횡비를 바꾼다. 저장 PNG에서 형태·회전·색상·padding을 확인하고 같은 조건에서 A/B 비교한다. |
-| output parsing | output을 `4 + classes`, 별도 objectness·sigmoid 없음으로 가정한다. 축 길이 비교로 전치 여부를 결정하며, cx/w 또는 cy/h가 1.1보다 크면 해당 축을 pixel 단위로 판단한다. export 계약과의 일치는 확인이 필요하다. 기존 해석을 변경하지 않았다. |
-| tensor layout/type | 현재 writer는 FLOAT32 NHWC interleaved로 작성한다. 초기화 코드는 NCHW 모양도 읽지만 writer는 NCHW로 재배열하지 않는다. MODEL_INPUT의 실제 shape/type과 bufferLayout을 비교한다. 현재 모델이 이 문제에 해당한다고 단정하지 않는다. |
-| confidence filtering | 최고 클래스 점수가 기본 0.20 미만이면 제거한다. 0.15/0.10으로 설정 비교가 가능하다. 기본값은 유지했다. |
+| output parsing | 현재 asset은 `4 + classes`, normalized xywh, 별도 objectness·sigmoid 없음으로 확인했다. 채널 축은 labels 수와 대조하며 값 크기에 따른 좌표 단위 추정은 제거했다. |
+| tensor layout/type | 새 best.tflite는 NCHW인데 기존 writer가 NHWC여서 detection=0을 재현했다. 현재 writer는 실제 shape/dtype에 맞게 쓴다. 자세한 수치 근거는 최신 검증 문서를 참조한다. |
+| confidence filtering | 기본 0.20을 유지한다. 입력 layout 정확성을 검증한 후 모델 점수를 평가한다. |
 | Geometry/Size | geometry는 bbox 범위·유효성·면적·가로세로 비율을 검사한다. size DISABLED여도 geometry는 독립적으로 동작한다. 단계별 제거 수/이유를 확인한다. |
 | ROI | 기본은 전체 프레임. center-square를 켜면 화면 가장자리 객체가 추론 입력에서 빠질 수 있다. FRAME_INPUT의 ROI로 확인한다. |
 | Preview 좌표 | Preview와 overlay 모두 FIT_CENTER를 사용하지만 CameraX의 별도 Preview/Analysis 출력과 장치 crop 차이는 실기기에서 확인해야 한다. raw tensor, ROI pixel, rotated-frame pixel 좌표를 혼용하지 않는다. |
