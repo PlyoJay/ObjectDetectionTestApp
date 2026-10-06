@@ -1187,7 +1187,7 @@ class MainActivity : ComponentActivity() {
     companion object {
         private const val ENABLE_VERBOSE_LOG = false
         private const val TAG = "ObjectDetectionVision"
-        private const val MODEL_NAME = "best_float32.tflite"
+        private const val MODEL_NAME = "best.tflite"
         private const val DETECTOR_TYPE = "VisionStyleYoloDetector"
         private const val DETECTION_TIMING_TAG = "DetectionTiming"
         private const val WARNING_FEEDBACK_TAG = "GotoroWarning"
