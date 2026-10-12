@@ -19,7 +19,7 @@ class DetectorSelfTestActivity : Activity() {
         setContentView(status)
         val inputPath = intent.getStringExtra("input")
         val asset = intent.getStringExtra("asset") ?: "self_test/known.png"
-        val model = intent.getStringExtra("model") ?: "best.tflite"
+        val model = intent.getStringExtra("model") ?: ModelConfig.MODEL_ASSET_NAME
         worker.execute {
             val result = runCatching {
                 val bitmap = if (inputPath != null) BitmapFactory.decodeFile(inputPath)

@@ -1,5 +1,8 @@
 # best.tflite Android inference 검증 (2026-10-06)
 
+이 문서는 이전 **bollard 1클래스 binary**의 검증 기록이다. 현재 앱 코드는 9클래스 계약을 사용한다.
+모델 교체 상태와 최신 확인 절차는 [9클래스 전환 문서](yolo11s-nine-class-migration.md)를 참조한다.
+
 ## 1. 발견한 문제
 
 작업 시작 시 `HEAD`와 fetch한 `origin/main`은 모두 `05e7da4`였다. 모델 파일이나 threshold를 변경하지 않았다.

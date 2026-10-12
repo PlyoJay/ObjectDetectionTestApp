@@ -2,7 +2,11 @@
 
 The app includes test-only capture and recording controls on the camera screen.
 
-For the `best.tflite` NCHW input correction, actual PC/Android golden results,
+The app now targets the YOLO11s nine-class contract. The checked-in `best.tflite`
+is still the earlier one-class binary and must be replaced before running the app.
+See [nine-class migration and validation](docs/yolo11s-nine-class-migration.md).
+
+For the earlier one-class `best.tflite` NCHW input correction, actual PC/Android golden results,
 and camera-free debug Self Test, see [TFLite inference correctness](docs/tflite-inference-correctness.md).
 
 ## Files

@@ -49,6 +49,7 @@ import com.samin.objectdetection.ui.OverlayDebugMode
 import com.samin.objectdetection.settings.AppSettings
 import com.samin.objectdetection.settings.AppSettingsStore
 import com.samin.objectdetection.settings.SettingsActivity
+import com.samin.objectdetection.detector.ModelConfig
 import com.samin.objectdetection.settings.SettingsPresets
 import com.samin.objectdetection.settings.AppSettingsCodec
 import com.samin.objectdetection.warning.CrowdDecision
@@ -174,7 +175,7 @@ class MainActivity : ComponentActivity() {
         detectionDebugRecorder = com.samin.objectdetection.detector.DetectionDebugRecorder(this, detectionConfig)
         val yoloDetector = VisionStyleYoloDetector(
             context = this,
-            modelName = MODEL_NAME,
+            modelName = ModelConfig.MODEL_ASSET_NAME,
             confidenceThreshold = detectionConfig.confidenceThreshold,
             nmsThreshold = detectionConfig.nmsThreshold,
             sizeFilterMode = detectionConfig.sizeFilterMode,
@@ -190,7 +191,7 @@ class MainActivity : ComponentActivity() {
         evaluationDataRecorder = EvaluationDataRecorder(
             context = this,
             detectionConfig = detectionConfig,
-            modelName = MODEL_NAME,
+            modelName = ModelConfig.MODEL_ASSET_NAME,
             detectorType = DETECTOR_TYPE,
             modelIdentity = detector.modelIdentity(),
             appSettings = appSettings
@@ -240,7 +241,7 @@ class MainActivity : ComponentActivity() {
             activity = this,
             debugMode = detectionConfig.overlayDebugMode,
             presetName = appSettings.presetName,
-            modelDescription = detector.modelIdentity()?.let { "Model: ${it.assetName}\nSHA256: ${it.sha256Prefix}" } ?: "Model: $MODEL_NAME",
+            modelDescription = detector.modelIdentity()?.let { "Model: ${it.assetName}\nSHA256: ${it.sha256Prefix}" } ?: "Model: ${ModelConfig.MODEL_ASSET_NAME}",
             overlayInitiallyEnabled = appSettings.overlay.enabled,
             outputTestMode = !appSettings.warning.enableActualVibration ||
                 !appSettings.warning.enableActualBeep || !appSettings.warning.enableActualTts,
@@ -776,7 +777,7 @@ class MainActivity : ComponentActivity() {
         val startedAtMs = System.currentTimeMillis()
         val header = PerformanceLogHeader(
             startedAtMs = startedAtMs,
-            modelName = detector.modelIdentity()?.assetName ?: MODEL_NAME,
+            modelName = detector.modelIdentity()?.assetName ?: ModelConfig.MODEL_ASSET_NAME,
             detectorName = DETECTOR_TYPE,
             inputWidth = detectionConfig.inputSize,
             inputHeight = detectionConfig.inputSize,
@@ -1187,7 +1188,6 @@ class MainActivity : ComponentActivity() {
     companion object {
         private const val ENABLE_VERBOSE_LOG = false
         private const val TAG = "ObjectDetectionVision"
-        private const val MODEL_NAME = "best.tflite"
         private const val DETECTOR_TYPE = "VisionStyleYoloDetector"
         private const val DETECTION_TIMING_TAG = "DetectionTiming"
         private const val WARNING_FEEDBACK_TAG = "GotoroWarning"

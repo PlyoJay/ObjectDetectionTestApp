@@ -32,6 +32,25 @@ class YoloTensorContractTest {
         YoloOutputShape.from(intArrayOf(1,8400,6),1)
     }
 
+    @Test fun nineClassDetectSupportsBothOutputLayouts() {
+        assertEquals(YoloOutputShape(true, 13, 8400), YoloOutputShape.from(intArrayOf(1, 13, 8400), 9))
+        assertEquals(YoloOutputShape(false, 13, 8400), YoloOutputShape.from(intArrayOf(1, 8400, 13), 9))
+    }
+
+    @Test fun nineClassDetectRejectsOldModelAndExtraObjectnessChannels() {
+        for (channels in listOf(5, 12, 14, 84)) {
+            for (shape in listOf(intArrayOf(1, channels, 8400), intArrayOf(1, 8400, channels))) {
+                val error = assertThrows(IllegalArgumentException::class.java) { YoloOutputShape.from(shape, 9) }
+                assertTrue(error.message!!.contains("9 class scores"))
+                assertTrue(error.message!!.contains(shape.contentToString()))
+            }
+        }
+    }
+
+    @Test fun nineClassDetectRejectsAmbiguousChannelAxis() {
+        assertThrows(IllegalArgumentException::class.java) { YoloOutputShape.from(intArrayOf(1, 13, 13), 9) }
+    }
+
     @Test fun signedAndUnsignedQuantizationUseScaleAndZeroPoint() {
         for (codec in listOf(TensorValueCodec(DataType.INT8,1/255f,-128), TensorValueCodec(DataType.UINT8,1/255f,0))) {
             val bytes = buffer(3)

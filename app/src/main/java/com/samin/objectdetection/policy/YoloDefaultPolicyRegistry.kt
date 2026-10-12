@@ -3,18 +3,19 @@ package com.samin.objectdetection.policy
 object YoloDefaultPolicyRegistry {
 
     fun get(label: String): DetectionPolicy? {
+        if (ObjectTuningPolicyRegistry.normalize(label) !in ObjectTuningPolicyRegistry.currentModelLabels) return null
         val policy = ObjectTuningPolicyRegistry.get(label) ?: return null
         if (!policy.enableWarning) return null
         return policy.toDetectionPolicy()
     }
 
     fun isSupported(label: String): Boolean {
-        return ObjectTuningPolicyRegistry.get(label)?.enableWarning == true
+        return get(label) != null
     }
 
     fun getAll(): List<DetectionPolicy> {
         return ObjectTuningPolicyRegistry.getAll()
-            .filter { it.enableWarning }
+            .filter { it.label in ObjectTuningPolicyRegistry.currentModelLabels && it.enableWarning }
             .map { it.toDetectionPolicy() }
     }
 

@@ -11,6 +11,7 @@ import android.util.Log
 import android.view.View
 import com.samin.objectdetection.detector.DetectionResult
 import com.samin.objectdetection.model.DetectionSource
+import com.samin.objectdetection.warning.RiskObjectCategory
 import java.util.Locale
 
 class BoundingBoxOverlay @JvmOverloads constructor(
@@ -188,6 +189,8 @@ class BoundingBoxOverlay @JvmOverloads constructor(
             boxPaint.color = when {
                 res.isIgnored -> Color.parseColor("#888888")
                 res.label == "person" || res.label == "사람" -> Color.parseColor("#FF69B4")
+                res.riskObjectCategory == RiskObjectCategory.VEHICLE_RISK -> Color.parseColor("#FF9800")
+                res.riskObjectCategory == RiskObjectCategory.TRAFFIC_CONTROL -> Color.parseColor("#00E676")
                 else -> Color.parseColor("#00BFFF")
             }
 

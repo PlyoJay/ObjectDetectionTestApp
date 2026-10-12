@@ -2,6 +2,7 @@ package com.samin.objectdetection.settings
 
 import com.samin.objectdetection.camera.YoloResizeMode
 import com.samin.objectdetection.camera.DetectionConfig
+import com.samin.objectdetection.camera.SizeFilterMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertFalse
@@ -17,6 +18,9 @@ class AppSettingsTest {
         assertEquals(0.20f, config.confidenceThreshold)
         assertEquals(0.45f, config.nmsThreshold)
         assertEquals(YoloResizeMode.LETTERBOX, config.yoloResizeMode)
+        assertEquals(640, config.inputSize)
+        assertFalse(config.useCenterSquareCrop)
+        assertEquals(SizeFilterMode.DISABLED, config.sizeFilterMode)
         assertTrue(config.enableMlKitDetection)
     }
 

@@ -29,11 +29,13 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.samin.objectdetection.camera.SizeFilterMode
 import com.samin.objectdetection.camera.YoloResizeMode
+import com.samin.objectdetection.detector.ModelAssets
+import com.samin.objectdetection.detector.ModelConfig
 import com.samin.objectdetection.ui.OverlayDebugMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.security.MessageDigest
+import org.tensorflow.lite.Interpreter
 import java.util.Locale
 
 class SettingsActivity : ComponentActivity() {
@@ -122,17 +124,23 @@ class SettingsActivity : ComponentActivity() {
 
     private fun buildReadOnlySection(parent: LinearLayout) {
         section(parent, "읽기 전용")
-        note(parent, "모델: best_float32.tflite\n입력 Tensor: 1×640×640×3 (실제 모델 shape 검증)\nSHA256: 계산 중…").also { label ->
+        note(parent, "Model: ${ModelConfig.MODEL_ASSET_NAME}\nInput: 확인 중…\nSHA256: 계산 중…").also { label ->
             lifecycleScope.launch {
-                val sha = withContext(Dispatchers.IO) {
-                    assets.open("best_float32.tflite").use { input ->
-                        val digest = MessageDigest.getInstance("SHA-256")
-                        val buffer = ByteArray(64 * 1024)
-                        while (true) { val n = input.read(buffer); if (n < 0) break; digest.update(buffer, 0, n) }
-                        digest.digest().joinToString("") { "%02x".format(it) }
+                val description = withContext(Dispatchers.IO) {
+                    runCatching {
+                        Interpreter(ModelAssets.load(this@SettingsActivity)).use { interpreter ->
+                            val input = interpreter.getInputTensor(0)
+                            val output = interpreter.getOutputTensor(0)
+                            "Model: ${ModelConfig.MODEL_ASSET_NAME}\n" +
+                                "Input: ${input.shape().contentToString()} (${input.dataType()})\n" +
+                                "Output: ${output.shape().contentToString()} (${output.dataType()})\n" +
+                                "SHA256: ${ModelAssets.sha256(this@SettingsActivity)}"
+                        }
+                    }.getOrElse { error ->
+                        "Model: ${ModelConfig.MODEL_ASSET_NAME}\n모델 정보 읽기 실패: ${error.message}"
                     }
                 }
-                label.text = "모델: best_float32.tflite\n입력 Tensor: 1×640×640×3 (실제 모델 shape 검증)\nSHA256: $sha"
+                label.text = description
             }
         }
     }

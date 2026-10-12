@@ -1,1 +1,9 @@
 bollard
+person
+bicycle
+car
+motorcycle
+bus
+truck
+stop sign
+bench

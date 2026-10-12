@@ -2,6 +2,7 @@ package com.samin.objectdetection.policy
 
 import com.samin.objectdetection.camera.DetectionConfig
 import com.samin.objectdetection.detector.DetectionResult
+import com.samin.objectdetection.detector.ModelConfig
 import com.samin.objectdetection.warning.FeedbackLevel
 import com.samin.objectdetection.warning.ObjectPriority
 import com.samin.objectdetection.warning.RiskObjectCategory
@@ -10,31 +11,12 @@ import java.util.Locale
 object ObjectTuningPolicyRegistry {
 
     private val vehicleLabels = listOf("car", "bus", "truck", "motorcycle", "bicycle")
-    private val staticObstacleLabels = listOf("bench", "fire hydrant")
-    private val excludedCocoLabels = listOf("backpack", "umbrella", "cell phone", "parking meter")
+    private val staticObstacleLabels = listOf("bench")
 
-    val cocoTuningLabels = setOf(
-        "person",
-        "bicycle",
-        "car",
-        "motorcycle",
-        "bus",
-        "truck",
-        "traffic light",
-        "stop sign",
-        "bench",
-        "fire hydrant",
-        "chair",
-        "backpack",
-        "umbrella",
-        "cell phone",
-        "parking meter"
-    )
+    val currentModelLabels: Set<String> = ModelConfig.CLASS_LABELS.toSet()
 
-    // Custom pedestrian-safety labels supported by the policy layer. The packaged model and labels file
-    // are validated together at detector startup, so only labels emitted by that pair can reach this registry.
+    // Reserved policy templates. These are not emitted or enabled by the current nine-class model.
     val futureCustomLabels = setOf(
-        "bollard",
         "stairs",
         "curb",
         "low_obstacle"
@@ -71,19 +53,6 @@ object ObjectTuningPolicyRegistry {
         }
         add(
             ObjectTuningPolicy(
-                label = "traffic light",
-                minConfidence = 0.55f,
-                minAreaRatio = 0.002f,
-                enableOverlay = true,
-                enableWarning = true,
-                enableVoice = true,
-                priority = ObjectPriority.HIGH,
-                category = RiskObjectCategory.TRAFFIC_CONTROL,
-                note = "작게 잡히는 경우가 많아 bbox 면적 기준을 낮게 설정"
-            )
-        )
-        add(
-            ObjectTuningPolicy(
                 label = "stop sign",
                 minConfidence = 0.45f,
                 minAreaRatio = 0.002f,
@@ -110,35 +79,7 @@ object ObjectTuningPolicyRegistry {
                 )
             )
         }
-        add(
-            ObjectTuningPolicy(
-                label = "chair",
-                minConfidence = 0.45f,
-                minAreaRatio = 0.015f,
-                enableOverlay = true,
-                enableWarning = false,
-                enableVoice = false,
-                priority = ObjectPriority.LOW,
-                category = RiskObjectCategory.TEMPORARY_OBSTACLE,
-                note = "실외 보행 기준에서는 오탐/불필요 안내 가능성이 있어 기본 경고 제외"
-            )
-        )
-        excludedCocoLabels.forEach { label ->
-            add(
-                ObjectTuningPolicy(
-                    label = label,
-                    minConfidence = 0.50f,
-                    minAreaRatio = 0.015f,
-                    enableOverlay = false,
-                    enableWarning = false,
-                    enableVoice = false,
-                    priority = ObjectPriority.LOW,
-                    category = RiskObjectCategory.UNKNOWN,
-                    note = "현재 보행 안내 정책에서는 제외"
-                )
-            )
-        }
-        futureCustomLabels.forEach { label ->
+        (listOf("bollard") + futureCustomLabels).forEach { label ->
             val isBollard = label == "bollard"
             add(
                 ObjectTuningPolicy(
@@ -167,7 +108,7 @@ object ObjectTuningPolicyRegistry {
     }.associateBy { normalize(it.label) }
 
     val overlayLabels: Set<String> = policies.values
-        .filter { it.enableOverlay }
+        .filter { it.label in currentModelLabels && it.enableOverlay }
         .map { normalize(it.label) }
         .toSet()
 
@@ -180,12 +121,12 @@ object ObjectTuningPolicyRegistry {
     }
 
     fun shouldShowOverlay(label: String): Boolean {
-        return get(label)?.enableOverlay == true
+        return normalize(label) in currentModelLabels && get(label)?.enableOverlay == true
     }
 
     fun shouldWarn(detection: DetectionResult): Boolean {
         val policy = get(detection.label) ?: return false
-        return policy.enableWarning &&
+        return normalize(detection.label) in currentModelLabels && policy.enableWarning &&
             !detection.isIgnored &&
             detection.confidence >= policy.minConfidence
     }

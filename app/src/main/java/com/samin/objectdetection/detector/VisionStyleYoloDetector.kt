@@ -16,16 +16,12 @@ import org.tensorflow.lite.Tensor
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
-import java.io.FileInputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import java.nio.MappedByteBuffer
-import java.nio.channels.FileChannel
-import java.security.MessageDigest
 
 class VisionStyleYoloDetector(
     private val context: Context,
-    modelName: String,
+    modelName: String = ModelConfig.MODEL_ASSET_NAME,
     private val confidenceThreshold: Float,
     private val nmsThreshold: Float,
     private val sizeFilterMode: SizeFilterMode = SizeFilterMode.NORMAL,
@@ -63,11 +59,11 @@ class VisionStyleYoloDetector(
     private val resizePaint = Paint(Paint.FILTER_BITMAP_FLAG)
 
     private val labels: List<String> = runCatching {
-        context.assets.open(DEFAULT_LABELS_NAME).bufferedReader().useLines { lines ->
+        context.assets.open(ModelConfig.LABEL_ASSET_NAME).bufferedReader().useLines { lines ->
             lines.map(String::trim).filter(String::isNotEmpty).toList()
         }
     }.getOrElse { cause ->
-        throw IllegalStateException("Failed to load labels asset: $DEFAULT_LABELS_NAME", cause)
+        throw IllegalStateException("Failed to load labels asset: ${ModelConfig.LABEL_ASSET_NAME}", cause)
     }
 
     var enableDiagnostics: Boolean = false
@@ -79,7 +75,10 @@ class VisionStyleYoloDetector(
     override fun setDebugFrame(frame: DetectionDebugFrame?) { debugFrame = frame }
 
     init {
-        val modelBuffer = loadModelFile(context, modelName)
+        require(labels == ModelConfig.CLASS_LABELS) {
+            "Label order mismatch: ${ModelConfig.LABEL_ASSET_NAME} must contain ${ModelConfig.CLASS_LABELS}, actual=$labels"
+        }
+        val modelBuffer = ModelAssets.load(context, modelName)
         val options = Interpreter.Options().apply {
             setNumThreads(interpreterThreadCount.coerceAtLeast(1))
         }
@@ -107,7 +106,16 @@ class VisionStyleYoloDetector(
         val inputType = interpreter.getInputTensor(0).dataType().toString()
         val outputType = interpreter.getOutputTensor(0).dataType().toString()
         outputShapeText = outputShape.contentToString()
-        val parsedShape = YoloOutputShape.from(outputShape, labels.size)
+        val parsedShape = try {
+            YoloOutputShape.from(outputShape, labels.size)
+        } catch (error: IllegalArgumentException) {
+            interpreter.close()
+            throw IllegalArgumentException(
+                "Model/label mismatch: model=$modelName labels=${labels.size} " +
+                    "expectedChannels=${YOLO_BOX_VALUE_COUNT + labels.size} actualOutput=$outputShapeText. ${error.message}",
+                error
+            )
+        }
         isTransposed = parsedShape.channelsFirst
         boxCount = parsedShape.candidates
         outputDim = parsedShape.channels
@@ -118,7 +126,7 @@ class VisionStyleYoloDetector(
         }
         require(labels.size == modelClassCount) {
             "Model/label mismatch: model=$modelName exposes $modelClassCount classes, " +
-                "$DEFAULT_LABELS_NAME contains ${labels.size} labels"
+                "${ModelConfig.LABEL_ASSET_NAME} contains ${labels.size} labels"
         }
 
         inputBuffer = ByteBuffer.allocateDirect(inputTensor.numBytes())
@@ -130,16 +138,7 @@ class VisionStyleYoloDetector(
         reusableInputBitmap = Bitmap.createBitmap(inputWidth, inputHeight, Bitmap.Config.ARGB_8888)
         reusableInputCanvas = Canvas(reusableInputBitmap)
 
-        loadedModelIdentity = ModelIdentity(
-            assetName = modelName,
-            assetSizeBytes = context.assets.openFd(modelName).use { it.declaredLength },
-            sha256 = calculateAssetSha256(modelName),
-            inputShape = inputShape.contentToString(),
-            inputType = inputType,
-            outputShape = outputShape.contentToString(),
-            outputType = outputType,
-            classCount = modelClassCount
-        )
+        loadedModelIdentity = ModelAssets.identity(context, interpreter, modelName, modelClassCount)
 
         Log.i(
             TAG,
@@ -369,7 +368,7 @@ class VisionStyleYoloDetector(
                 )
             }
 
-            // Both checked-in exports normalize xywh in the graph (best: final MUL by 1/640).
+            // Parser contract: export must normalize xywh in the graph; verify this when replacing the asset.
             // Boxes may extend beyond 1 before clipping; their magnitude is not a unit flag.
             val normalized = RectF(
                 (cx - w / 2f).coerceIn(0f, 1f),
@@ -566,14 +565,6 @@ class VisionStyleYoloDetector(
         )
     }
 
-    private fun loadModelFile(context: Context, modelName: String): MappedByteBuffer {
-        context.assets.openFd(modelName).use { fd ->
-            FileInputStream(fd.fileDescriptor).use { input ->
-                return input.channel.map(FileChannel.MapMode.READ_ONLY, fd.startOffset, fd.declaredLength)
-            }
-        }
-    }
-
     /** Invoke on a background thread, on a separate detector from the live camera analyzer. */
     fun runSelfTest(bitmap: Bitmap, inputName: String, directory: File): List<DetectionResult> {
         check(BuildConfig.DEBUG) { "Golden tensor export is debug-only" }
@@ -649,28 +640,13 @@ class VisionStyleYoloDetector(
 
     override fun frameDiagnostics(): DetectorFrameDiagnostics? = latestFrameDiagnostics
 
-    private fun calculateAssetSha256(assetName: String): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-        context.assets.open(assetName).use { input ->
-            val buffer = ByteArray(HASH_BUFFER_SIZE)
-            while (true) {
-                val read = input.read(buffer)
-                if (read < 0) break
-                digest.update(buffer, 0, read)
-            }
-        }
-        return digest.digest().joinToString("") { byte -> "%02x".format(byte) }
-    }
-
     private fun elapsedMs(startNs: Long): Long =
         (SystemClock.elapsedRealtimeNanos() - startNs) / 1_000_000L
 
     companion object {
-        private const val DEFAULT_LABELS_NAME = "labels.txt"
         private const val MODEL_INPUT_SIZE = 640
         private const val YOLO_BOX_VALUE_COUNT = 4
         private const val RAW_TOP_CONFIDENCE_COUNT = 5
-        private const val HASH_BUFFER_SIZE = 64 * 1024
         private const val NORMAL_MIN_AREA_RATIO = 0.0005f
         private const val NORMAL_MAX_AREA_RATIO = 0.95f
         private const val RELAXED_MIN_AREA_RATIO = 0.00005f

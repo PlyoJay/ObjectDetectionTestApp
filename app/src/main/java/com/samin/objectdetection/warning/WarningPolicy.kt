@@ -160,7 +160,11 @@ object WarningPolicy {
             "bicycle" -> DetectionCategory.VEHICLE
             "chair",
             "bench",
-            "fire hydrant" -> DetectionCategory.OBSTACLE
+            "fire hydrant",
+            "bollard",
+            "stairs",
+            "curb",
+            "low_obstacle" -> DetectionCategory.OBSTACLE
             "person" -> DetectionCategory.HUMAN
             else -> DetectionCategory.ETC
         }

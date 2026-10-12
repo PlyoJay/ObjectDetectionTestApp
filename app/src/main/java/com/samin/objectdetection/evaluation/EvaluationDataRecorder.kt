@@ -15,6 +15,7 @@ import android.util.Log
 import com.samin.objectdetection.camera.DetectionConfig
 import com.samin.objectdetection.detector.DetectionResult
 import com.samin.objectdetection.detector.ModelIdentity
+import com.samin.objectdetection.detector.ModelConfig
 import com.samin.objectdetection.settings.AppSettings
 import org.json.JSONArray
 import org.json.JSONObject
@@ -28,7 +29,7 @@ import java.util.Locale
 class EvaluationDataRecorder(
     private val context: Context,
     private val detectionConfig: DetectionConfig = DetectionConfig(),
-    private val modelName: String = "yolo11n_float32.tflite",
+    private val modelName: String = ModelConfig.MODEL_ASSET_NAME,
     private val detectorType: String = "VisionStyleYoloDetector",
     private val modelIdentity: ModelIdentity? = null,
     private val appSettings: AppSettings = AppSettings()

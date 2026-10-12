@@ -2,12 +2,9 @@ package com.samin.objectdetection.policy
 
 object OverlayObjectFilter {
 
-    val cocoAllowedLabels = ObjectTuningPolicyRegistry.cocoTuningLabels
-        .filter { ObjectTuningPolicyRegistry.shouldShowOverlay(it) }
-        .toSet()
+    val currentModelLabels = ObjectTuningPolicyRegistry.currentModelLabels
 
-    // The current yolo11n_float32.tflite model uses COCO labels, so these custom labels may not be emitted
-    // until a future custom model and matching labels.txt are shipped.
+    // Policy templates only; excluded from allowedLabels until the model contract is extended.
     val futureCustomLabels = ObjectTuningPolicyRegistry.futureCustomLabels
 
     val allowedLabels = ObjectTuningPolicyRegistry.overlayLabels
