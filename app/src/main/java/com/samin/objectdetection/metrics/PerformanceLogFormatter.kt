@@ -26,7 +26,9 @@ data class PerformanceLogHeader(
     val requestedCameraWidth: Int = cameraWidth,
     val requestedCameraHeight: Int = cameraHeight,
     val appVersion: String = "unknown",
-    val settingsSnapshot: String = ""
+    val settingsSnapshot: String = "",
+    val sessionId: String = "unknown",
+    val startedElapsedNs: Long = 0L
 )
 
 data class PerformanceFrameRecord(
@@ -46,7 +48,10 @@ data class PerformanceFrameRecord(
     val detectionCount: Int,
     val visibleDetectionCount: Int,
     val warningDetectionCount: Int,
-    val fps: Int
+    val fps: Int,
+    val analyzerFps: Double = 0.0,
+    val inferenceFps: Double = fps.toDouble(),
+    val trace: FrameTrace? = null
 )
 
 object PerformanceLogFormatter {
@@ -63,6 +68,11 @@ object PerformanceLogFormatter {
         appendLine("========================================")
         appendLine()
         appendLine("Start Time: ${dateTimeFormat.get()!!.format(Date(header.startedAtMs))}")
+        appendLine("Session ID: ${header.sessionId}")
+        appendLine("Start Unix Ms: ${header.startedAtMs}; Start Elapsed Ns: ${header.startedElapsedNs}")
+        appendLine("Clock: *AtMs/UnixMs=Unix wall ms; *ElapsedNs=elapsedRealtimeNanos; cameraTimestampNs=camera source")
+        appendLine("FPS: fps/Average FPS=successful pipeline completions; analyzerFps=delivered analyzer frames; droppedFrames=explicit app skips")
+        appendLine("Unknown camera capture latency=-1; FRAME time is pipeline completion, OVERLAY is a separate draw event")
         appendLine()
         appendLine("Model: ${header.modelName}")
         appendLine("Model SHA256: ${header.modelSha256}")
@@ -99,7 +109,18 @@ object PerformanceLogFormatter {
             "nms=${frame.nmsMs}ms | post=${frame.postprocessMs}ms | pipeline=${frame.pipelineMs}ms | " +
             "frameAgeInference=${frame.frameAgeAtInferenceStartMs}ms | " +
             "frameAgeOverlay=${frame.frameAgeAtOverlayMs}ms | detect=${frame.detectionCount} | " +
-            "visible=${frame.visibleDetectionCount} | warning=${frame.warningDetectionCount} | fps=${frame.fps}"
+            "visible=${frame.visibleDetectionCount} | warning=${frame.warningDetectionCount} | fps=${frame.fps}" +
+            " | analyzerFps=${frame.analyzerFps} | inferenceFps=${frame.inferenceFps}" +
+            (frame.trace?.let { " | ${formatTrace(it)}" } ?: "")
+
+    fun formatTrace(trace: FrameTrace): String = with(trace) {
+        "sessionId=$sessionId frameId=$frameId status=$status captureUnixMs=$frameTimestampMs " +
+            "cameraTimestampNs=$cameraTimestampNs captureTimestampReliable=$captureTimestampReliable " +
+            "analyzerUnixMs=$analyzerReceivedMs analyzerElapsedNs=$analyzerReceivedElapsedNs " +
+            "inferenceStartUnixMs=$inferenceStartedAtMs inferenceStartElapsedNs=$inferenceStartedElapsedNs " +
+            "completedUnixMs=$completedAtMs completedElapsedNs=$completedElapsedNs analyzerToInferenceMs=$analyzerToInferenceMs " +
+            "errorStage=$errorStage error=${error?.replace('\n', ' ')?.replace('\r', ' ')}"
+    }
 
     fun formatFinalSummary(snapshot: PerformanceSnapshot, droppedLogLines: Long): String = buildString {
         appendLine()
@@ -112,11 +133,14 @@ object PerformanceLogFormatter {
         appendLine("Dropped Frames: ${snapshot.droppedFrames}")
         appendLine("Dropped Log Lines: $droppedLogLines")
         appendLine("Average FPS: ${snapshot.averageFps}")
+        appendLine("Analyzer FPS: ${snapshot.analyzerFps}; Successful Inference FPS: ${snapshot.inferenceFps}")
+        appendLine("Successful Frames: ${snapshot.successfulFrames}; Failed Frames: ${snapshot.failedFrames}")
         appendStats("Preprocess", snapshot.preprocess)
         appendStats("Inference", snapshot.inference)
         appendStats("Postprocess", snapshot.postprocess)
         appendStats("Pipeline", snapshot.pipeline)
         appendStats("Frame Age At Overlay", snapshot.frameAgeAtOverlay)
+        appendLine("Overlay Latency Samples: ${snapshot.overlayLatencySamples} (0 means unavailable)")
         appendLine("YOLO Detections: ${snapshot.yoloDetections}")
         appendLine("Visible Detections: ${snapshot.visibleDetections}")
         appendLine("Warnings: ${snapshot.warnings}")

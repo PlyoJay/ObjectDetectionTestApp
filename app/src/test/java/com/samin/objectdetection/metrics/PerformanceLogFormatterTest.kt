@@ -29,7 +29,8 @@ class PerformanceLogFormatterTest {
                 requestedCameraWidth = 1920,
                 requestedCameraHeight = 1080,
                 appVersion = "1.2.3",
-                settingsSnapshot = "camera.detectIntervalMs=0\nyolo.maxCandidates=100"
+                settingsSnapshot = "camera.detectIntervalMs=0\nyolo.maxCandidates=100",
+                sessionId = "test-session", startedElapsedNs = 123L
             )
         )
 
@@ -41,6 +42,8 @@ class PerformanceLogFormatterTest {
         assertTrue(text.contains("Model SHA256: abc123"))
         assertTrue(text.contains("Requested Camera Resolution: 1920x1080"))
         assertTrue(text.contains("yolo.maxCandidates=100"))
+        assertTrue(text.contains("Session ID: test-session"))
+        assertTrue(text.contains("Start Elapsed Ns: 123"))
     }
 
     @Test
@@ -63,7 +66,9 @@ class PerformanceLogFormatterTest {
                 detectionCount = 2,
                 visibleDetectionCount = 1,
                 warningDetectionCount = 1,
-                fps = 8
+                fps = 8, analyzerFps = 12.5, inferenceFps = 8.25,
+                trace = FrameTrace("test-session", 42, 1000, 0, false, 1000, 100,
+                    completedAtMs = 1100, completedElapsedNs = 200)
             )
         )
 
@@ -71,6 +76,8 @@ class PerformanceLogFormatterTest {
         assertTrue(text.contains("inference=87ms"))
         assertTrue(text.contains("frameAgeOverlay=137ms"))
         assertTrue(!text.contains('\n'))
+        assertTrue(text.contains("sessionId=test-session frameId=42 status=SUCCESS"))
+        assertTrue(text.contains("analyzerFps=12.5 | inferenceFps=8.25"))
     }
 
     @Test

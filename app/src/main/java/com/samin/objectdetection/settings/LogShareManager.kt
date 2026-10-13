@@ -80,7 +80,9 @@ class LogShareManager(private val activity: ComponentActivity) {
 
     private fun latestEvaluationFiles(): List<File> {
         val root = File(activity.getExternalFilesDir(null), "ObjectDetectionTestApp")
-        return listOf("recordings", "captures").flatMap { child ->
+        val errors = root.listFiles()?.filter { it.isFile && it.name.startsWith("errors_") && it.length() > 0 }
+            ?.sortedByDescending(File::lastModified)?.take(1).orEmpty()
+        return errors + listOf("recordings", "captures").flatMap { child ->
             File(root, child).listFiles()?.filter { file ->
                 file.isFile && file.extension.lowercase() in setOf("json", "jsonl", "txt")
             }.orEmpty()

@@ -159,6 +159,9 @@ class VisionStyleYoloDetector(
                 (lastTensorDiagnosticMs == Long.MIN_VALUE || nowMs - lastTensorDiagnosticMs >= 2000L))
         if (diagnoseTensorThisFrame) lastTensorDiagnosticMs = nowMs
         val detectorStartNs = SystemClock.elapsedRealtimeNanos()
+        var stage = "PREPROCESS"
+        var runStartedAtMs: Long? = null
+        var runStartedNs: Long? = null
         return try {
             val resizeStartNs = SystemClock.elapsedRealtimeNanos()
             val transform = cachedTransform?.takeIf {
@@ -233,9 +236,13 @@ class VisionStyleYoloDetector(
             val inputBufferTimeMs = elapsedMs(inputBufferStartNs)
 
             outputBuffer.rewind()
+            stage = "INFERENCE"
+            runStartedAtMs = System.currentTimeMillis()
             val inferenceStartNs = SystemClock.elapsedRealtimeNanos()
+            runStartedNs = inferenceStartNs
             interpreter.run(inputBuffer, outputBuffer)
             val inferenceTimeMs = elapsedMs(inferenceStartNs)
+            stage = "POSTPROCESS"
             outputBuffer.rewind()
             if (diagnoseTensorThisFrame) {
                 val stats = TensorStatistics.measure(outputBuffer, outputCodec)
@@ -250,7 +257,9 @@ class VisionStyleYoloDetector(
                 resizeTimeMs = resizeTimeMs,
                 inputBufferTimeMs = inputBufferTimeMs,
                 inferenceTimeMs = inferenceTimeMs,
-                detectorStartNs = detectorStartNs
+                detectorStartNs = detectorStartNs,
+                inferenceStartedAtMs = runStartedAtMs,
+                inferenceStartedElapsedNs = inferenceStartNs
             ).also { results ->
                 debugFrame?.let { debugRecorder?.saveInput(it, modelInput, results) }
                 if (enableDiagnostics && results.isNotEmpty()) {
@@ -262,7 +271,7 @@ class VisionStyleYoloDetector(
             debugFrame?.line("[DETECTOR_ERROR] frame=${debugFrame?.id} error=$e")
             Log.e(TAG, "detect error", e)
             if (goldenDirectory != null) throw IllegalStateException("Self test inference failed", e)
-            emptyList()
+            throw InferenceException(stage, runStartedAtMs, runStartedNs, e)
         }
     }
 
@@ -277,7 +286,9 @@ class VisionStyleYoloDetector(
         resizeTimeMs: Long,
         inputBufferTimeMs: Long,
         inferenceTimeMs: Long,
-        detectorStartNs: Long
+        detectorStartNs: Long,
+        inferenceStartedAtMs: Long,
+        inferenceStartedElapsedNs: Long
     ): List<DetectionResult> {
         val sourceWidth = transform.sourceWidth
         val sourceHeight = transform.sourceHeight
@@ -484,7 +495,9 @@ class VisionStyleYoloDetector(
             postprocessTimeMs = elapsedMs(postprocessStartNs),
             detectorTotalTimeMs = elapsedMs(detectorStartNs),
             rawCoordinateMin = rawCoordinateMin.takeIf { it.isFinite() },
-            rawCoordinateMax = rawCoordinateMax.takeIf { it.isFinite() }
+            rawCoordinateMax = rawCoordinateMax.takeIf { it.isFinite() },
+            inferenceStartedAtMs = inferenceStartedAtMs,
+            inferenceStartedElapsedNs = inferenceStartedElapsedNs
         )
         if (enableDiagnostics) {
             Log.d(

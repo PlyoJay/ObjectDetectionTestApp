@@ -12,6 +12,7 @@ import android.graphics.Bitmap
 import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
 import android.util.Log
 import android.view.View
 import android.widget.Toast
@@ -33,6 +34,10 @@ import com.samin.objectdetection.detector.VisionStyleYoloDetector
 import com.samin.objectdetection.evaluation.DetectionFrameSnapshot
 import com.samin.objectdetection.evaluation.EvaluationDataRecorder
 import com.samin.objectdetection.evaluation.ScreenRecordService
+import com.samin.objectdetection.evaluation.RecordingState
+import com.samin.objectdetection.detector.InferenceException
+import com.samin.objectdetection.metrics.FrameTrace
+import com.samin.objectdetection.metrics.FrameRateMeter
 import com.samin.objectdetection.location.UserLocationTracker
 import com.samin.objectdetection.metrics.DetectionMetricsCollector
 import com.samin.objectdetection.metrics.PerformanceFrameRecord
@@ -66,10 +71,20 @@ import com.samin.objectdetection.warning.output.WarningOutputController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.joinAll
+import java.util.concurrent.TimeUnit
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.CompletableFuture
+import java.util.UUID
+import kotlin.math.roundToInt
 
 class MainActivity : ComponentActivity() {
 
@@ -106,16 +121,22 @@ class MainActivity : ComponentActivity() {
 
     @Volatile
     private var lastMlKitTimeMs = 0L
-    private var lastFpsTime = 0L
+    private val sessionId = UUID.randomUUID().toString()
+    private val frameRates = FrameRateMeter()
+    private val recordingState = RecordingState()
+    private val recordingWork = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val captureWork = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    @Volatile private var destroying = false
+    private var recordingFinished = CompletableFuture.completedFuture(Unit)
+    private var performanceJob: Job? = null
+    private var receiverRegistered = false
     private var lastMlKitDetectionTime = 0L
-    private var frameCount = 0
-    private var currentFps = 0
     private val captureRequested = AtomicBoolean(false)
     private val pendingDetectionUiUpdate = AtomicReference<(() -> Unit)?>(null)
     private val detectionUiUpdateScheduled = AtomicBoolean(false)
     private var activeRecordingVideoFile: File? = null
     private var activeRecordingDetectionsFile: File? = null
-    private var isRecording = false
+    private val isRecording get() = recordingState.busy
     @Volatile private var actualAnalysisWidth = 0
     @Volatile private var actualAnalysisHeight = 0
 
@@ -127,17 +148,28 @@ class MainActivity : ComponentActivity() {
 
     private val screenRecordingReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            when (intent?.action) {
-                ScreenRecordService.ACTION_RECORDING_STOPPED -> {
-                    if (isRecording) {
-                        finishRecordingState("화면 녹화 저장: ${activeRecordingVideoFile?.name ?: "mp4"}")
+            if (intent == null) return
+            val id = intent.getStringExtra(ScreenRecordService.EXTRA_SESSION_ID) ?: return
+            when (intent.action) {
+                ScreenRecordService.ACTION_RECORDING_STARTED -> {
+                    evaluationDataRecorder.markRecordingStarted(id,
+                        intent.getLongExtra(ScreenRecordService.EXTRA_STARTED_AT_MS, 0),
+                        intent.getLongExtra(ScreenRecordService.EXTRA_STARTED_ELAPSED_NS, 0))
+                    if (recordingState.started(id) && !destroying) {
+                        recordingButton.text = "녹화 중지"
+                        recordingButton.isEnabled = true
+                        Toast.makeText(this@MainActivity, "화면 녹화 시작: ${activeRecordingVideoFile?.name}", Toast.LENGTH_SHORT).show()
                     }
+                }
+                ScreenRecordService.ACTION_RECORDING_STOPPED -> {
+                    finishRecordingState(id, "FINALIZED", "화면 녹화 저장: ${activeRecordingVideoFile?.name ?: "mp4"}", intent)
                 }
                 ScreenRecordService.ACTION_RECORDING_ERROR -> {
                     val message = intent.getStringExtra(ScreenRecordService.EXTRA_MESSAGE)
-                    if (isRecording) {
-                        finishRecordingState("화면 녹화 실패: ${message ?: "unknown"}")
-                    }
+                    finishRecordingState(id, "ERROR", "화면 녹화 실패: ${message ?: "unknown"}", intent)
+                }
+                ScreenRecordService.ACTION_RECORDING_PUBLISH_ERROR -> {
+                    if (!destroying) Toast.makeText(this@MainActivity, intent.getStringExtra(ScreenRecordService.EXTRA_MESSAGE), Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -160,6 +192,7 @@ class MainActivity : ComponentActivity() {
             if (result.resultCode == Activity.RESULT_OK && result.data != null) {
                 startScreenRecording(result.resultCode, result.data!!)
             } else {
+                recordingButton.isEnabled = true
                 Toast.makeText(this, "화면 녹화 권한이 거부되었습니다.", Toast.LENGTH_SHORT).show()
             }
         }
@@ -172,7 +205,7 @@ class MainActivity : ComponentActivity() {
         detectionConfig = appSettings.toDetectionConfig()
         warningCooldownManager = WarningCooldownManager(appSettings.warning.cooldownMs)
 
-        detectionDebugRecorder = com.samin.objectdetection.detector.DetectionDebugRecorder(this, detectionConfig)
+        detectionDebugRecorder = com.samin.objectdetection.detector.DetectionDebugRecorder(this, detectionConfig, sessionId)
         val yoloDetector = VisionStyleYoloDetector(
             context = this,
             modelName = ModelConfig.MODEL_ASSET_NAME,
@@ -194,9 +227,18 @@ class MainActivity : ComponentActivity() {
             modelName = ModelConfig.MODEL_ASSET_NAME,
             detectorType = DETECTOR_TYPE,
             modelIdentity = detector.modelIdentity(),
-            appSettings = appSettings
+            appSettings = appSettings,
+            onFailure = { id, error -> onLogFailure(id, error) },
+            appSessionId = sessionId
         )
-        performanceLogRecorder = PerformanceLogRecorder(this)
+        performanceLogRecorder = PerformanceLogRecorder(this) { error ->
+            runOnUiThread {
+                if (!destroying) {
+                    Toast.makeText(this, "성능 로그 저장 실패: ${error.message}", Toast.LENGTH_LONG).show()
+                    stopPerformanceLogging()
+                }
+            }
+        }
         userLocationTracker = UserLocationTracker(this)
         detectionPipeline = DetectionPipeline(
             detector = detector,
@@ -252,6 +294,22 @@ class MainActivity : ComponentActivity() {
             onOpenQuickSettings = ::openQuickSettings
         )
         overlayView = screen.overlayView
+        overlayView.onFrameDrawn = { trace, wallMs, elapsedNs, enabled ->
+            val age = if (trace.captureTimestampReliable) ((elapsedNs - trace.cameraTimestampNs) / 1_000_000L).coerceAtLeast(0) else -1
+            if (trace.status == "SUCCESS" && enabled) metricsCollector.recordOverlayAge(age)
+            performanceLogRecorder.recordOverlay(trace, wallMs, elapsedNs, age)
+            evaluationDataRecorder.recordOverlay(trace, wallMs, elapsedNs, enabled)
+        }
+        recordingWork.launch {
+            while (!destroying) {
+                delay(1000)
+                if (destroying) break
+                val nowNs = SystemClock.elapsedRealtimeNanos()
+                val rates = frameRates.snapshot(nowNs)
+                overlayView.updateFrameRates(rates.analyzerFps, rates.inferenceFps)
+                metricsCollector.recordFps(rates.inferenceFps.roundToInt(), nowNs)
+            }
+        }
         overlayView.configure(
             enabled = appSettings.overlay.enabled,
             showYoloBoxes = appSettings.overlay.showYoloBoxes,
@@ -353,16 +411,20 @@ class MainActivity : ComponentActivity() {
         val filter = IntentFilter().apply {
             addAction(ScreenRecordService.ACTION_RECORDING_STOPPED)
             addAction(ScreenRecordService.ACTION_RECORDING_ERROR)
+            addAction(ScreenRecordService.ACTION_RECORDING_STARTED)
+            addAction(ScreenRecordService.ACTION_RECORDING_PUBLISH_ERROR)
         }
         ContextCompat.registerReceiver(
-            this,
+            applicationContext,
             screenRecordingReceiver,
             filter,
             ContextCompat.RECEIVER_NOT_EXPORTED
         )
+        receiverRegistered = true
     }
 
     private fun startCamera() {
+        frameRates.start(SystemClock.elapsedRealtimeNanos())
         cameraController = CameraController(
             context = this,
             lifecycleOwner = this,
@@ -373,8 +435,8 @@ class MainActivity : ComponentActivity() {
             targetHeight = appSettings.camera.requestedHeight,
             listener = object : CameraController.Listener {
                 override fun onFrameReceived(frameTimestampMs: Long, analyzerReceivedMs: Long) {
-                    metricsCollector.recordFrameReceived()
-                    calculateFps()
+                    metricsCollector.recordFrameReceived(SystemClock.elapsedRealtimeNanos())
+                    frameRates.received(SystemClock.elapsedRealtimeNanos())
                     verboseLog(
                         DETECTION_TIMING_TAG,
                         "frameTimestamp=$frameTimestampMs analyzerReceived=$analyzerReceivedMs " +
@@ -400,8 +462,9 @@ class MainActivity : ComponentActivity() {
                     debugTextView.text = "카메라 시작 실패: ${error.message}"
                 }
 
-                override fun onFrameError(error: Throwable) {
-                    Log.e(TAG, "analyze error", error)
+                override fun onFrameError(error: Throwable, timing: CameraFrameTiming?) {
+                    if (timing != null) recordFrameFailure(error, timing)
+                    else Log.e(TAG, "analyze error", error)
                 }
             }
         )
@@ -409,6 +472,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun processBitmap(bitmap: Bitmap, frameTiming: CameraFrameTiming, rotationDegrees: Int) {
+        if (destroying) return
         actualAnalysisWidth = bitmap.width
         actualAnalysisHeight = bitmap.height
         val start = System.currentTimeMillis()
@@ -422,7 +486,14 @@ class MainActivity : ComponentActivity() {
         // vision-mlkit-lab 방식: 중앙 정방형 crop으로 모델 입력 왜곡을 줄임
         maybeRunMlKitDetection(bitmap, bitmap.width, bitmap.height)
 
-        val pipelineResult = detectionPipeline.process(bitmap, frameReceivedTimeMs, rotationDegrees)
+        val pipelineResult = detectionPipeline.process(bitmap, frameReceivedTimeMs, rotationDegrees, frameTiming.frameId)
+        val completedNs = SystemClock.elapsedRealtimeNanos()
+        val completedAtMs = System.currentTimeMillis()
+        metricsCollector.recordInferenceSucceeded(completedNs)
+        frameRates.succeeded(completedNs)
+        val rates = frameRates.snapshot(completedNs)
+        val currentFps = rates.inferenceFps.roundToInt()
+        metricsCollector.recordFps(currentFps, completedNs)
         val width = pipelineResult.frameWidth
         val height = pipelineResult.frameHeight
         val cropRect = pipelineResult.cropRect
@@ -434,6 +505,10 @@ class MainActivity : ComponentActivity() {
         val userLocationSnapshot = pipelineResult.userLocationSnapshot
         val inferenceTime = pipelineResult.inferenceTimeMs
         val detectorDiagnostics = detector.frameDiagnostics()
+        val trace = frameTrace(frameTiming).copy(
+            inferenceStartedAtMs = detectorDiagnostics?.inferenceStartedAtMs,
+            inferenceStartedElapsedNs = detectorDiagnostics?.inferenceStartedElapsedNs,
+            completedAtMs = completedAtMs, completedElapsedNs = completedNs)
         val topOverlayObject = pipelineResult.topOverlayObject
         metricsCollector.recordYoloDetections(
             beforeFilter = mapped,
@@ -442,21 +517,16 @@ class MainActivity : ComponentActivity() {
             timestampMs = start
         )
         metricsCollector.recordYoloInferenceTime(inferenceTime)
-        val warningCandidates = overlayDetections
-            .filter { it.centerYRatio >= detectionConfig.ignoreTopRatioForGuide }
-            .take(detectionConfig.maxGuideObjectCount.coerceAtLeast(1))
-            .map { detection ->
-            WarningCandidate.fromDetection(
-                detection = detection,
-                warningKey = warningCooldownManager.buildKey(
+        val warningCandidates = warningCandidateSelector.eligibleCandidates(warningDetections,
+            detectionConfig.ignoreTopRatioForGuide, detectionConfig.maxGuideObjectCount) { detection ->
+            warningCooldownManager.buildKey(
                     label = detection.label,
                     priority = detection.objectPriority,
                     proximityLevel = detection.proximityLevel,
                     horizontalPosition = detection.horizontalPosition
                 )
-            )
         }
-        val crowdDecision = WarningPolicy.resolveCrowdDecision(overlayDetections)
+        val crowdDecision = WarningPolicy.resolveCrowdDecision(warningDetections)
         val crowdCandidate = crowdDecision.toWarningCandidate()
         val selectedCandidate = warningCandidateSelector.selectWithCrowd(warningCandidates, crowdCandidate)
         val selectedCooldownPassed = selectedCandidate?.let { candidate ->
@@ -540,7 +610,7 @@ class MainActivity : ComponentActivity() {
                 "nmsMs=${detectorDiagnostics?.nmsTimeMs ?: -1} " +
                 "postprocessMs=${pipelineResult.timing.postprocessTimeMs} " +
                 "pipelineMs=${pipelineResult.timing.pipelineTimeMs} " +
-                "frameAgeAtInferenceStartMs=${(pipelineResult.timing.inferenceStartedAtMs - frameTiming.frameTimestampMs).coerceAtLeast(0L)} " +
+                "frameAgeAtInferenceStartMs=${trace.frameAgeAtInferenceMs} " +
                 "rawCount=${mapped.size} visibleCount=${visibleMapped.size} " +
                 "overlayWhitelistCount=${overlayDetections.size} policyFilteredCount=${warningDetections.size} " +
                 "ignoredLabels=${formatIgnoredLabels(ignoredLabels)} " +
@@ -565,56 +635,56 @@ class MainActivity : ComponentActivity() {
                 userLocationSnapshot = userLocationSnapshot,
                 stageCounts = pipelineResult.stageCounts,
                 rawCoordinateMin = detectorDiagnostics?.rawCoordinateMin,
-                rawCoordinateMax = detectorDiagnostics?.rawCoordinateMax
+                rawCoordinateMax = detectorDiagnostics?.rawCoordinateMax,
+                trace = trace, rates = rates
             )
             if (needsCapture) saveEvaluationSnapshot(evaluationSnapshot)
             if (isRecording) {
-                lifecycleScope.launch(Dispatchers.IO) {
-                    evaluationDataRecorder.appendRecordingDetections(evaluationSnapshot)
-                }
+                evaluationDataRecorder.appendRecordingDetections(evaluationSnapshot)
             }
         }
 
+        // Every successful pipeline completion is measured, even if its UI callback is replaced.
+        val performanceSummary = metricsCollector.recordPerformance(
+            preprocessMs = detectorDiagnostics?.preprocessTimeMs ?: -1L,
+            inferenceMs = inferenceTime,
+            postprocessMs = (detectorDiagnostics?.postprocessTimeMs ?: 0L) +
+                pipelineResult.timing.postprocessTimeMs,
+            pipelineMs = pipelineResult.timing.pipelineTimeMs,
+            frameAgeAtOverlayMs = -1L,
+            fps = currentFps
+        )
+        performanceSummary?.let { summary -> Log.i(DETECTION_TIMING_TAG, summary) }
+        if (performanceLogRecorder.isRecording) {
+            performanceLogRecorder.recordFrame(
+                PerformanceFrameRecord(
+                    timestampMs = completedAtMs,
+                    bitmapConversionMs = frameTiming.bitmapConversionMs,
+                    preprocessMs = detectorDiagnostics?.preprocessTimeMs ?: -1L,
+                    cropMs = pipelineResult.timing.cropTimeMs,
+                    resizeMs = detectorDiagnostics?.resizeTimeMs ?: -1L,
+                    inferenceMs = inferenceTime,
+                    outputParsingMs = (detectorDiagnostics?.outputCopyTimeMs ?: 0L) +
+                        (detectorDiagnostics?.candidateScanTimeMs ?: 0L),
+                    nmsMs = detectorDiagnostics?.nmsTimeMs ?: -1L,
+                    postprocessMs = (detectorDiagnostics?.postprocessTimeMs ?: 0L) +
+                        pipelineResult.timing.postprocessTimeMs,
+                    pipelineMs = pipelineResult.timing.pipelineTimeMs,
+                    frameAgeAtInferenceStartMs = trace.frameAgeAtInferenceMs,
+                    frameAgeAtOverlayMs = -1L,
+                    detectionCount = mapped.size,
+                    visibleDetectionCount = visibleMapped.size,
+                    warningDetectionCount = warningDetections.size,
+                    fps = currentFps, analyzerFps = rates.analyzerFps,
+                    inferenceFps = rates.inferenceFps, trace = trace
+                )
+            )
+            performanceSummary?.let(performanceLogRecorder::recordSummary)
+        }
         postLatestDetectionUiUpdate {
             val overlayUpdateTimeMs = System.currentTimeMillis()
-            val resultAgeMs = (overlayUpdateTimeMs - frameTiming.frameTimestampMs).coerceAtLeast(0L)
-            val performanceSummary = metricsCollector.recordPerformance(
-                preprocessMs = detectorDiagnostics?.preprocessTimeMs ?: -1L,
-                inferenceMs = inferenceTime,
-                postprocessMs = (detectorDiagnostics?.postprocessTimeMs ?: 0L) +
-                    pipelineResult.timing.postprocessTimeMs,
-                pipelineMs = pipelineResult.timing.pipelineTimeMs,
-                frameAgeAtOverlayMs = resultAgeMs,
-                fps = currentFps
-            )
-            performanceSummary?.let { summary -> Log.i(DETECTION_TIMING_TAG, summary) }
-            if (performanceLogRecorder.isRecording) {
-                performanceLogRecorder.recordFrame(
-                    PerformanceFrameRecord(
-                        timestampMs = overlayUpdateTimeMs,
-                        bitmapConversionMs = frameTiming.bitmapConversionMs,
-                        preprocessMs = detectorDiagnostics?.preprocessTimeMs ?: -1L,
-                        cropMs = pipelineResult.timing.cropTimeMs,
-                        resizeMs = detectorDiagnostics?.resizeTimeMs ?: -1L,
-                        inferenceMs = inferenceTime,
-                        outputParsingMs = (detectorDiagnostics?.outputCopyTimeMs ?: 0L) +
-                            (detectorDiagnostics?.candidateScanTimeMs ?: 0L),
-                        nmsMs = detectorDiagnostics?.nmsTimeMs ?: -1L,
-                        postprocessMs = (detectorDiagnostics?.postprocessTimeMs ?: 0L) +
-                            pipelineResult.timing.postprocessTimeMs,
-                        pipelineMs = pipelineResult.timing.pipelineTimeMs,
-                        frameAgeAtInferenceStartMs =
-                            (pipelineResult.timing.inferenceStartedAtMs - frameTiming.frameTimestampMs)
-                                .coerceAtLeast(0L),
-                        frameAgeAtOverlayMs = resultAgeMs,
-                        detectionCount = mapped.size,
-                        visibleDetectionCount = visibleMapped.size,
-                        warningDetectionCount = warningDetections.size,
-                        fps = currentFps
-                    )
-                )
-                performanceSummary?.let(performanceLogRecorder::recordSummary)
-            }
+            val resultAgeMs = if (trace.captureTimestampReliable)
+                ((SystemClock.elapsedRealtimeNanos() - trace.cameraTimestampNs) / 1_000_000L).coerceAtLeast(0) else -1
             logDetectionTiming(
                 DETECTION_TIMING_TAG,
                     "overlayUpdate=$overlayUpdateTimeMs frameAgeAtOverlayMs=${resultAgeMs} " +
@@ -624,7 +694,7 @@ class MainActivity : ComponentActivity() {
                     "emptyReason=${buildEmptyOverlayReason(mapped, visibleMapped, warningDetections, overlayDetections)}"
             )
             overlayView.updateDetections(overlayDetections, width, height, inferenceTime, currentFps,
-                pipelineResult.debugFrameId)
+                pipelineResult.debugFrameId, trace, rates.analyzerFps, rates.inferenceFps)
             if (
                 detectionConfig.overlayDebugMode == OverlayDebugMode.NONE ||
                 feedbackMessage == null ||
@@ -651,7 +721,7 @@ class MainActivity : ComponentActivity() {
                     appendLine("user-object relation: $warningUserObjectRelation")
                     appendLine("user motion state: ${userLocationSnapshot.motionState}")
                     appendLine("GPS speed: ${formatSpeed(userLocationSnapshot.speedMps)}")
-                    appendLine("YOLO inference time: ${inferenceTime}ms / FPS=$currentFps")
+                    appendLine("YOLO inference time: ${inferenceTime}ms / FPS=${rates.inferenceFps} / Analyzer FPS=${rates.analyzerFps}")
                     appendLine("ML Kit detection count: $lastMlKitCount / ${lastMlKitTimeMs}ms")
                     if (topOverlayObject != null) {
                         append("Top overlay: ${topOverlayObject.label} ${String.format(Locale.US, "%.2f", topOverlayObject.confidence)}")
@@ -703,7 +773,9 @@ class MainActivity : ComponentActivity() {
         userLocationSnapshot: com.samin.objectdetection.location.UserLocationSnapshot,
         stageCounts: com.samin.objectdetection.detector.DetectionStageCounts?,
         rawCoordinateMin: Float?,
-        rawCoordinateMax: Float?
+        rawCoordinateMax: Float?,
+        trace: FrameTrace,
+        rates: FrameRateMeter.Rates
     ): DetectionFrameSnapshot {
         return DetectionFrameSnapshot(
             bitmap = if (copyBitmap) bitmap.copy(Bitmap.Config.ARGB_8888, false) else bitmap,
@@ -724,7 +796,8 @@ class MainActivity : ComponentActivity() {
             userLocationSnapshot = userLocationSnapshot,
             stageCounts = stageCounts,
             rawCoordinateMin = rawCoordinateMin,
-            rawCoordinateMax = rawCoordinateMax
+            rawCoordinateMax = rawCoordinateMax,
+            trace = trace, analyzerFps = rates.analyzerFps, inferenceFps = rates.inferenceFps
         )
     }
 
@@ -734,7 +807,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun saveEvaluationSnapshot(snapshot: DetectionFrameSnapshot) {
-        lifecycleScope.launch(Dispatchers.IO) {
+        captureWork.launch {
             try {
                 val timestamp = snapshot.frameTimestampMs.toString()
                 val files = evaluationDataRecorder.saveCapture(snapshot, timestamp)
@@ -775,6 +848,7 @@ class MainActivity : ComponentActivity() {
 
     private fun startPerformanceLogging() {
         val startedAtMs = System.currentTimeMillis()
+        val startedElapsedNs = SystemClock.elapsedRealtimeNanos()
         val header = PerformanceLogHeader(
             startedAtMs = startedAtMs,
             modelName = detector.modelIdentity()?.assetName ?: ModelConfig.MODEL_ASSET_NAME,
@@ -796,18 +870,20 @@ class MainActivity : ComponentActivity() {
             requestedCameraWidth = appSettings.camera.requestedWidth,
             requestedCameraHeight = appSettings.camera.requestedHeight,
             appVersion = runCatching { packageManager.getPackageInfo(packageName, 0).versionName }.getOrNull() ?: "unknown",
-            settingsSnapshot = AppSettingsCodec.snapshotLines(appSettings)
+            settingsSnapshot = AppSettingsCodec.snapshotLines(appSettings),
+            sessionId = sessionId, startedElapsedNs = startedElapsedNs
         )
         performanceLogButton.isEnabled = false
-        metricsCollector.startPerformanceSession(startedAtMs)
-        lifecycleScope.launch {
+        metricsCollector.startPerformanceSession(startedAtMs, startedElapsedNs)
+        performanceJob = recordingWork.launch {
             try {
                 val saved = withContext(Dispatchers.IO) { performanceLogRecorder.start(header) }
+                if (destroying) return@launch
                 performanceLogButton.text = "성능 로그 종료"
                 performanceRecordingTextView.visibility = View.VISIBLE
                 Toast.makeText(this@MainActivity, "성능 로그 시작: ${saved.displayName}", Toast.LENGTH_SHORT).show()
             } catch (error: Exception) {
-                metricsCollector.stopPerformanceSessionSnapshot()
+                metricsCollector.stopPerformanceSessionSnapshot(stoppedElapsedNs = SystemClock.elapsedRealtimeNanos())
                 Log.e(TAG, "start performance logging failed", error)
                 Toast.makeText(this@MainActivity, "성능 로그 시작 실패: ${error.message}", Toast.LENGTH_SHORT).show()
             } finally {
@@ -819,10 +895,11 @@ class MainActivity : ComponentActivity() {
     private fun stopPerformanceLogging() {
         performanceLogButton.isEnabled = false
         performanceRecordingTextView.visibility = View.GONE
-        val snapshot = metricsCollector.stopPerformanceSessionSnapshot()
-        lifecycleScope.launch {
+        val snapshot = metricsCollector.stopPerformanceSessionSnapshot(stoppedElapsedNs = SystemClock.elapsedRealtimeNanos())
+        performanceJob = recordingWork.launch {
             try {
-                val saved = withContext(Dispatchers.IO) { performanceLogRecorder.stop(snapshot) }
+                val saved = performanceLogRecorder.stop(snapshot)
+                if (destroying) return@launch
                 performanceLogButton.text = "성능 로그 시작"
                 Toast.makeText(
                     this@MainActivity,
@@ -844,6 +921,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun startEvaluationRecording() {
+        recordingButton.isEnabled = false
         val projectionManager =
             getSystemService(Context.MEDIA_PROJECTION_SERVICE) as android.media.projection.MediaProjectionManager
         screenCapturePermissionLauncher.launch(projectionManager.createScreenCaptureIntent())
@@ -851,50 +929,122 @@ class MainActivity : ComponentActivity() {
 
     private fun startScreenRecording(resultCode: Int, data: Intent) {
         val timestamp = System.currentTimeMillis().toString()
-        val videoFile = File(evaluationDataRecorder.recordingsDir, "${timestamp}_screen.mp4")
-        val detectionsFile = evaluationDataRecorder.startRecordingLog(timestamp)
-        activeRecordingVideoFile = videoFile
-        activeRecordingDetectionsFile = detectionsFile
-
-        try {
-            val serviceIntent = Intent(this, ScreenRecordService::class.java)
+        val id = UUID.randomUUID().toString()
+        if (!recordingState.begin(id)) return
+        recordingFinished = CompletableFuture()
+        recordingButton.text = "녹화 시작 중…"
+        recordingButton.isEnabled = false
+        recordingWork.launch {
+          try {
+            val files = withContext(Dispatchers.IO) {
+                val video = File(evaluationDataRecorder.recordingsDir, "${timestamp}_screen.mp4")
+                video to evaluationDataRecorder.startRecordingLog(timestamp, id)
+            }
+            activeRecordingVideoFile = files.first
+            activeRecordingDetectionsFile = files.second
+            if (destroying || recordingState.phase != RecordingState.Phase.STARTING) {
+                finishRecordingState(id, "ERROR", "앱 종료로 녹화를 시작하지 못했습니다.")
+                return@launch
+            }
+            val serviceIntent = Intent(this@MainActivity, ScreenRecordService::class.java)
                 .setAction(ScreenRecordService.ACTION_START)
                 .putExtra(ScreenRecordService.EXTRA_RESULT_CODE, resultCode)
                 .putExtra(ScreenRecordService.EXTRA_RESULT_DATA, data)
-                .putExtra(ScreenRecordService.EXTRA_OUTPUT_PATH, videoFile.absolutePath)
-            ContextCompat.startForegroundService(this, serviceIntent)
-            isRecording = true
-            recordingButton.text = "녹화 중지"
-            Toast.makeText(this, "화면 녹화 시작: ${videoFile.name}", Toast.LENGTH_SHORT).show()
-        } catch (e: Exception) {
+                .putExtra(ScreenRecordService.EXTRA_OUTPUT_PATH, files.first.absolutePath)
+                .putExtra(ScreenRecordService.EXTRA_SESSION_ID, id)
+                .putExtra(ScreenRecordService.EXTRA_APP_SESSION_ID, sessionId)
+            ContextCompat.startForegroundService(this@MainActivity, serviceIntent)
+            awaitRecordingAcknowledgement(id)
+          } catch (e: Exception) {
             Log.e(TAG, "start screen record service failed", e)
-            evaluationDataRecorder.stopRecordingLog()
-            activeRecordingVideoFile = null
-            activeRecordingDetectionsFile = null
-            Toast.makeText(this, "화면 녹화 시작 실패: ${e.message}", Toast.LENGTH_SHORT).show()
+            finishRecordingState(id, "ERROR", "화면 녹화 시작 실패: ${e.message}")
+          }
         }
     }
 
     private fun stopEvaluationRecording() {
+        val wasStarting = recordingState.phase == RecordingState.Phase.STARTING
+        if (!recordingState.requestStop()) return
+        val id = recordingState.sessionId ?: return
+        if (!destroying) { recordingButton.text = "녹화 저장 중…"; recordingButton.isEnabled = false }
+        // If log preparation is still running, that job aborts before starting the service.
+        if (wasStarting && activeRecordingVideoFile == null) return
         try {
             val serviceIntent = Intent(this, ScreenRecordService::class.java)
                 .setAction(ScreenRecordService.ACTION_STOP)
+                .putExtra(ScreenRecordService.EXTRA_SESSION_ID, id)
             startService(serviceIntent)
+            awaitRecordingAcknowledgement(id)
         } catch (e: Exception) {
             Log.e(TAG, "stop screen record service failed", e)
+            finishRecordingState(id, "ERROR", "녹화 종료 요청 실패: ${e.message}")
         }
-        finishRecordingState(
-            "화면 녹화 저장: ${activeRecordingVideoFile?.name ?: "mp4"}"
-        )
     }
 
-    private fun finishRecordingState(message: String) {
-        evaluationDataRecorder.stopRecordingLog()
-        isRecording = false
-        recordingButton.text = "녹화 시작"
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-        activeRecordingVideoFile = null
-        activeRecordingDetectionsFile = null
+    private fun awaitRecordingAcknowledgement(id: String, expectedPhase: RecordingState.Phase = recordingState.phase) {
+        recordingWork.launch {
+            delay(15_000L)
+            if (recordingState.isAwaiting(id, expectedPhase)) {
+                runCatching { startService(Intent(this@MainActivity, ScreenRecordService::class.java)
+                    .setAction(ScreenRecordService.ACTION_STOP).putExtra(ScreenRecordService.EXTRA_SESSION_ID, id)) }
+                finishRecordingState(id, "ERROR", "녹화 서비스 응답 시간 초과; MP4 저장 여부를 확인하세요.")
+            }
+        }
+    }
+
+    private fun finishRecordingState(id: String, status: String, message: String, event: Intent? = null) {
+        if (!recordingState.finalizing(id)) return
+        val completion = recordingFinished
+        val pending = evaluationDataRecorder.stopRecordingLog(status,
+            event?.getLongExtra(ScreenRecordService.EXTRA_STOPPED_AT_MS, System.currentTimeMillis()) ?: System.currentTimeMillis(),
+            event?.getLongExtra(ScreenRecordService.EXTRA_STOPPED_ELAPSED_NS, SystemClock.elapsedRealtimeNanos()) ?: SystemClock.elapsedRealtimeNanos())
+        recordingWork.launch {
+            var resultMessage = message
+            try { withContext(Dispatchers.IO) { pending.get() } }
+            catch (error: Exception) { Log.e(TAG, "drain detection log failed", error); resultMessage = "$message / 탐지 로그 저장 실패: ${error.cause?.message ?: error.message}" }
+            finally {
+                recordingState.finished(id)
+                activeRecordingVideoFile = null; activeRecordingDetectionsFile = null
+                if (!destroying) {
+                    recordingButton.text = "녹화 시작"; recordingButton.isEnabled = true
+                    Toast.makeText(this@MainActivity, resultMessage, Toast.LENGTH_LONG).show()
+                }
+                completion.complete(Unit)
+            }
+        }
+    }
+
+    private fun onLogFailure(id: String?, error: Throwable) {
+        Log.e(TAG, "log write failed session=$id", error)
+        runOnUiThread {
+            if (!destroying) Toast.makeText(this, "로그 저장 실패: ${error.message}", Toast.LENGTH_LONG).show()
+            if (id != null && recordingState.sessionId == id) stopEvaluationRecording()
+        }
+    }
+
+    private fun frameTrace(timing: CameraFrameTiming) = FrameTrace(sessionId, timing.frameId,
+        timing.frameTimestampMs, timing.cameraTimestampNs, timing.captureTimestampReliable,
+        timing.analyzerReceivedMs, timing.analyzerReceivedElapsedNs)
+
+    private fun recordFrameFailure(error: Throwable, timing: CameraFrameTiming) {
+        Log.e(TAG, "frame failed session=$sessionId frame=${timing.frameId}", error)
+        metricsCollector.recordFrameFailed()
+        val inferenceError = error as? InferenceException
+        val trace = frameTrace(timing).copy(status = "ERROR",
+            errorStage = inferenceError?.stage ?: if (error is com.samin.objectdetection.camera.BitmapConversionException) "BITMAP_CONVERSION" else "PIPELINE",
+            error = error.stackTraceToString(), inferenceStartedAtMs = inferenceError?.inferenceStartedAtMs,
+            inferenceStartedElapsedNs = inferenceError?.inferenceStartedElapsedNs,
+            completedAtMs = System.currentTimeMillis(), completedElapsedNs = SystemClock.elapsedRealtimeNanos())
+        evaluationDataRecorder.recordError(trace, timing.frameWidth.takeIf { it > 0 } ?: actualAnalysisWidth,
+            timing.frameHeight.takeIf { it > 0 } ?: actualAnalysisHeight)
+        performanceLogRecorder.recordEvent(trace)
+        val rates = frameRates.snapshot(checkNotNull(trace.completedElapsedNs))
+        postLatestDetectionUiUpdate {
+            overlayView.updateDetections(emptyList(), actualAnalysisWidth, actualAnalysisHeight, -1,
+                rates.inferenceFps.roundToInt(), trace = trace, analyzerFps = rates.analyzerFps, inferenceFps = rates.inferenceFps)
+            warningMessageTextView.text = "추론 오류: ${inferenceError?.stage ?: "프레임 처리"}"
+            warningMessageTextView.visibility = View.VISIBLE
+        }
     }
 
     private fun verboseLog(tag: String, message: String) {
@@ -905,9 +1055,11 @@ class MainActivity : ComponentActivity() {
 
     /** Coalesces queued UI work so an old bbox update cannot build a main-thread backlog. */
     private fun postLatestDetectionUiUpdate(update: () -> Unit) {
+        if (destroying) return
         pendingDetectionUiUpdate.set(update)
         if (!detectionUiUpdateScheduled.compareAndSet(false, true)) return
         runOnUiThread {
+            if (destroying) { pendingDetectionUiUpdate.set(null); detectionUiUpdateScheduled.set(false); return@runOnUiThread }
             pendingDetectionUiUpdate.getAndSet(null)?.invoke()
             detectionUiUpdateScheduled.set(false)
             pendingDetectionUiUpdate.get()?.let(::postLatestDetectionUiUpdate)
@@ -1059,7 +1211,7 @@ class MainActivity : ComponentActivity() {
         // The camera bitmap is recycled immediately after processBitmap returns.
         val mlBitmap = Bitmap.createScaledBitmap(bitmap, mlInputWidth, mlInputHeight, true)
 
-        lifecycleScope.launch(Dispatchers.Default) {
+        captureWork.launch {
             try {
                 val mlStart = System.currentTimeMillis()
 
@@ -1087,6 +1239,7 @@ class MainActivity : ComponentActivity() {
                     )
                 }
                 runOnUiThread {
+                    if (destroying) return@runOnUiThread
                     overlayView.updateMlKitDetections(
                         results,
                         frameWidth,
@@ -1102,17 +1255,6 @@ class MainActivity : ComponentActivity() {
                 }
                 isMlKitProcessing.set(false)
             }
-        }
-    }
-
-    private fun calculateFps() {
-        frameCount++
-        val now = System.currentTimeMillis()
-        if (now - lastFpsTime >= 1000) {
-            currentFps = frameCount
-            metricsCollector.recordFps(currentFps)
-            frameCount = 0
-            lastFpsTime = now
         }
     }
 
@@ -1151,38 +1293,42 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        destroying = true
+        pendingDetectionUiUpdate.set(null)
         super.onDestroy()
-        try {
-            unregisterReceiver(screenRecordingReceiver)
-        } catch (e: Exception) {
-            Log.e(TAG, "unregister screen recording receiver failed", e)
-        }
-        try {
-            if (isRecording) {
-                startService(
-                    Intent(this, ScreenRecordService::class.java)
-                        .setAction(ScreenRecordService.ACTION_STOP)
-                )
+        if (isRecording) stopEvaluationRecording()
+        val stopped = if (::cameraController.isInitialized) cameraController.stopAsync() else CompletableFuture.completedFuture(Unit)
+        // This scope survives Activity lifecycle cancellation. Waiting/draining never blocks main.
+        recordingWork.launch {
+            val analyzerStopped = runCatching { withContext(Dispatchers.IO) { stopped.get() } }
+                .onFailure { Log.e(TAG, "analyzer shutdown failed; interpreter retained", it) }.isSuccess
+            captureWork.coroutineContext[Job]?.children?.toList()?.joinAll()
+            captureWork.cancel()
+            if (analyzerStopped && ::detector.isInitialized) withContext(Dispatchers.IO) { detector.close() }
+            if (::mlKitDetector.isInitialized) mlKitDetector.close()
+            if (::userLocationTracker.isInitialized) userLocationTracker.stop()
+            if (::warningOutputController.isInitialized) warningOutputController.release()
+            if (::vibrationWarningPlayer.isInitialized) vibrationWarningPlayer.release()
+            if (::beepWarningPlayer.isInitialized) beepWarningPlayer.release()
+            if (::ttsWarningPlayer.isInitialized) ttsWarningPlayer.release()
+            performanceJob?.join()
+            if (::performanceLogRecorder.isInitialized && performanceLogRecorder.isRecording) {
+                runCatching { performanceLogRecorder.stop(metricsCollector.stopPerformanceSessionSnapshot(stoppedElapsedNs = SystemClock.elapsedRealtimeNanos())) }
+                    .onFailure { Log.e(TAG, "performance log shutdown failed", it) }
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "stop screen record service on destroy failed", e)
+            if (isRecording) {
+                val acknowledged = runCatching { withContext(Dispatchers.IO) { recordingFinished.get(20, TimeUnit.SECONDS) } }.isSuccess
+                if (!acknowledged) {
+                    recordingState.sessionId?.let { finishRecordingState(it, "ERROR", "앱 종료 중 녹화 응답 없음") }
+                    runCatching { withContext(Dispatchers.IO) { recordingFinished.get() } }
+                }
+            }
+            if (::evaluationDataRecorder.isInitialized) runCatching { withContext(Dispatchers.IO) { evaluationDataRecorder.close().get() } }
+                .onFailure { Log.e(TAG, "evaluation log shutdown failed", it) }
+            if (::detectionDebugRecorder.isInitialized) detectionDebugRecorder.close()
+            if (receiverRegistered) runCatching { applicationContext.unregisterReceiver(screenRecordingReceiver) }
+            recordingWork.cancel()
         }
-        // Stop CameraX and wait for its single analyzer to finish before closing any component it uses.
-        if (::cameraController.isInitialized) {
-            cameraController.close()
-        }
-        if (::performanceLogRecorder.isInitialized && performanceLogRecorder.isRecording) {
-            performanceLogRecorder.stopAsync(metricsCollector.stopPerformanceSessionSnapshot())
-        }
-        evaluationDataRecorder.close()
-        userLocationTracker.stop()
-        mlKitDetector.close()
-        detector.close()
-        if (::detectionDebugRecorder.isInitialized) detectionDebugRecorder.close()
-        warningOutputController.release()
-        vibrationWarningPlayer.release()
-        beepWarningPlayer.release()
-        ttsWarningPlayer.release()
     }
 
     companion object {

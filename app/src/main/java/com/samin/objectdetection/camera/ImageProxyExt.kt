@@ -5,6 +5,8 @@ import android.graphics.Matrix
 import android.util.Log
 import androidx.camera.core.ImageProxy
 
+class BitmapConversionException(cause: Throwable) : RuntimeException("Camera bitmap conversion failed", cause)
+
 fun ImageProxy.toBitmapSafe(enableDiagnostics: Boolean = false): Bitmap? {
     return try {
         if (enableDiagnostics) {
@@ -35,7 +37,7 @@ fun ImageProxy.toBitmapSafe(enableDiagnostics: Boolean = false): Bitmap? {
 
     } catch (e: Exception) {
         Log.e("ImageProxyExt", "Camera bitmap conversion failed format=$format size=${width}x$height", e)
-        null
+        throw BitmapConversionException(e)
     }
 }
 

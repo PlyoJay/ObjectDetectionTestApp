@@ -34,14 +34,15 @@ class DetectionPipeline(
     fun process(
         bitmap: Bitmap,
         timestampMs: Long,
-        rotationDegrees: Int
+        rotationDegrees: Int,
+        frameId: Long? = null
     ): DetectionPipelineResult {
         val pipelineStartedAtMs = System.currentTimeMillis()
         val pipelineStartNs = SystemClock.elapsedRealtimeNanos()
         val width = bitmap.width
         val height = bitmap.height
         val cropRect = createInferenceRect(width, height)
-        val debugFrame = debugRecorder?.begin(timestampMs)
+        val debugFrame = debugRecorder?.begin(timestampMs, frameId)
         detector.setDebugFrame(debugFrame)
         debugFrame?.sourceDescription = (
             "camera=${if (rotationDegrees % 180 == 0) width else height}x${if (rotationDegrees % 180 == 0) height else width} " +
@@ -183,7 +184,7 @@ class DetectionPipeline(
                 inferenceTimeMs = detectorDiagnostics?.inferenceTimeMs ?: detectorTimeMs,
                 timing = PipelineTiming(
                     pipelineStartedAtMs = pipelineStartedAtMs,
-                    inferenceStartedAtMs = inferenceStartedAtMs,
+                    inferenceStartedAtMs = detectorDiagnostics?.inferenceStartedAtMs ?: inferenceStartedAtMs,
                     cropTimeMs = cropTimeMs,
                     detectorTimeMs = detectorTimeMs,
                     postprocessTimeMs = postprocessTimeMs,

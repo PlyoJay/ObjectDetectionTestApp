@@ -13,6 +13,8 @@ import com.samin.objectdetection.detector.DetectionResult
 import com.samin.objectdetection.model.DetectionSource
 import com.samin.objectdetection.warning.RiskObjectCategory
 import java.util.Locale
+import android.os.SystemClock
+import com.samin.objectdetection.metrics.FrameTrace
 
 class BoundingBoxOverlay @JvmOverloads constructor(
     context: Context,
@@ -25,6 +27,11 @@ class BoundingBoxOverlay @JvmOverloads constructor(
     private var frameHeight: Int = 1
     private var inferenceTimeMs: Long = 0L
     private var fps: Int = 0
+    private var analyzerFps = 0.0
+    private var inferenceFps = 0.0
+    private var frameTrace: FrameTrace? = null
+    private var drawnFrameId: Long? = null
+    var onFrameDrawn: ((FrameTrace, Long, Long, Boolean) -> Unit)? = null
     private var enabled = true
     private var showYoloBoxes = true
     private var showMlKitBoxes = true
@@ -83,7 +90,10 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         frameHeight: Int,
         inferenceTimeMs: Long,
         fps: Int,
-        debugFrameId: Long? = null
+        debugFrameId: Long? = null,
+        trace: FrameTrace? = null,
+        analyzerFps: Double = fps.toDouble(),
+        inferenceFps: Double = fps.toDouble()
     ) {
         this.debugFrameId?.let { previous ->
             if (previous != loggedDrawFrame) diagnosticLog?.invoke("[OVERLAY_SKIPPED] frame=$previous reason=REPLACED_BEFORE_DRAW")
@@ -94,6 +104,9 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         this.frameHeight = frameHeight.coerceAtLeast(1)
         this.inferenceTimeMs = inferenceTimeMs
         this.fps = fps
+        this.frameTrace = trace
+        this.analyzerFps = analyzerFps
+        this.inferenceFps = inferenceFps
         lastDetectionUpdatedAtMs = System.currentTimeMillis()
         if (debugMode == OverlayDebugMode.FULL) {
             logOverlayAge(this.detections)
@@ -124,6 +137,11 @@ class BoundingBoxOverlay @JvmOverloads constructor(
     fun setDebugMode(debugMode: OverlayDebugMode) {
         this.debugMode = debugMode
         postInvalidateOnAnimation()
+    }
+
+    fun updateFrameRates(analyzerFps: Double, inferenceFps: Double) {
+        this.analyzerFps = analyzerFps; this.inferenceFps = inferenceFps
+        if (showFps) postInvalidateOnAnimation()
     }
 
     fun setDrawingEnabled(enabled: Boolean) {
@@ -169,7 +187,10 @@ class BoundingBoxOverlay @JvmOverloads constructor(
                 loggedDrawFrame = frame
             }
         }
-        if (!enabled) return
+        if (!enabled) {
+            notifyFrameDrawn(false)
+            return
+        }
 
         val transform = calculateFitCenterTransform(
             frameWidth = frameWidth,
@@ -208,8 +229,16 @@ class BoundingBoxOverlay @JvmOverloads constructor(
             drawLabelIfNeeded(canvas, res, DetectionSource.ML_KIT, left, top)
         }
         if (showFps) {
-            canvas.drawText("FPS=$fps  inference=${inferenceTimeMs}ms", 24f, 56f, infoPaint)
+            canvas.drawText(String.format(Locale.US, "FPS=%.1f A=%.1f inference=%dms F=%d", inferenceFps, analyzerFps, inferenceTimeMs, frameTrace?.frameId ?: 0), 24f, 56f, infoPaint)
         }
+        notifyFrameDrawn(showYoloBoxes)
+    }
+
+    private fun notifyFrameDrawn(drawingEnabled: Boolean) {
+        val trace = frameTrace ?: return
+        if (drawnFrameId == trace.frameId) return
+        drawnFrameId = trace.frameId
+        onFrameDrawn?.invoke(trace, System.currentTimeMillis(), SystemClock.elapsedRealtimeNanos(), drawingEnabled)
     }
 
     private fun drawLabelIfNeeded(

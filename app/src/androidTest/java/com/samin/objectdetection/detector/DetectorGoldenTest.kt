@@ -19,6 +19,20 @@ class DetectorGoldenTest {
     private fun detector(model: String = ModelConfig.MODEL_ASSET_NAME) = VisionStyleYoloDetector(context,model,0.2f,0.45f,
         sizeFilterMode = SizeFilterMode.DISABLED,resizeMode = YoloResizeMode.LETTERBOX)
 
+    @Test fun failedInputIsReportedAndNextFrameCanRecover() {
+        val d = detector()
+        val bad = Bitmap.createBitmap(640, 640, Bitmap.Config.ARGB_8888).apply { recycle() }
+        val good = Bitmap.createBitmap(640, 640, Bitmap.Config.ARGB_8888)
+        try {
+            try { d.detect(bad); fail("A recycled bitmap must not become a successful empty detection") }
+            catch (error: InferenceException) { assertEquals("PREPROCESS", error.stage); assertNotNull(error.cause) }
+            assertNull(d.frameDiagnostics())
+            d.detect(good)
+            assertNotNull(d.frameDiagnostics())
+            assertTrue(d.frameDiagnostics()!!.inferenceStartedElapsedNs > 0)
+        } finally { d.close(); good.recycle() }
+    }
+
     @Test fun actualBestModelReceivesRgbInItsTensorLayoutAndFiniteNineClassOutput() {
         val bitmap = Bitmap.createBitmap(640,640,Bitmap.Config.ARGB_8888).apply { eraseColor(Color.RED) }
         val dir = File(context.filesDir,"golden/color_contract")

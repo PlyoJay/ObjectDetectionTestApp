@@ -7,6 +7,7 @@ import com.samin.objectdetection.detector.DetectionStageCounts
 import com.samin.objectdetection.location.UserLocationSnapshot
 import com.samin.objectdetection.warning.RiskLevel
 import com.samin.objectdetection.warning.WarningCandidate
+import com.samin.objectdetection.metrics.FrameTrace
 
 data class DetectionFrameSnapshot(
     val bitmap: Bitmap,
@@ -27,7 +28,10 @@ data class DetectionFrameSnapshot(
     val userLocationSnapshot: UserLocationSnapshot? = null,
     val stageCounts: DetectionStageCounts? = null,
     val rawCoordinateMin: Float? = null,
-    val rawCoordinateMax: Float? = null
+    val rawCoordinateMax: Float? = null,
+    val trace: FrameTrace? = null,
+    val analyzerFps: Double = 0.0,
+    val inferenceFps: Double = fps.toDouble()
 )
 
 data class EvaluationFrameSummary(

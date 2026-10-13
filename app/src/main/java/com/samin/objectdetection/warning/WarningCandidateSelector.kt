@@ -1,18 +1,33 @@
 package com.samin.objectdetection.warning
 
+import com.samin.objectdetection.detector.DetectionResult
+import com.samin.objectdetection.policy.ObjectTuningPolicyRegistry
+
 class WarningCandidateSelector {
 
+    fun eligibleCandidates(detections: List<DetectionResult>, ignoreTopRatio: Float, limit: Int,
+        warningKey: (DetectionResult) -> String): List<WarningCandidate> = ranked(
+        detections.filter { ObjectTuningPolicyRegistry.shouldWarn(it) && it.centerYRatio >= ignoreTopRatio }
+            .map { WarningCandidate.fromDetection(it, warningKey(it)) }, limit)
+
     fun select(candidates: List<WarningCandidate>): WarningCandidate? {
+        return ranked(candidates).firstOrNull()
+    }
+
+    /** Limit only after risk/priority/proximity ranking, never detector confidence order. */
+    fun ranked(candidates: List<WarningCandidate>, limit: Int = Int.MAX_VALUE): List<WarningCandidate> {
         return candidates
             .asSequence()
             .filter { it.feedback.shouldNotify }
-            .maxWithOrNull(
+            .sortedWith(
                 compareBy<WarningCandidate> { riskRank(it.riskLevel) }
                     .thenBy { priorityRank(it.priority) }
                     .thenBy { proximityRank(it.proximityLevel) }
                     .thenBy { horizontalPositionRank(it.horizontalPosition) }
-                    .thenBy { it.confidence }
+                    .thenBy { it.confidence }.reversed()
             )
+            .take(limit.coerceAtLeast(1))
+            .toList()
     }
 
     fun selectWithCrowd(

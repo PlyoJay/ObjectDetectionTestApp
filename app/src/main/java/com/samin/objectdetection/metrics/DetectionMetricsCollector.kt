@@ -35,10 +35,26 @@ data class PerformanceSnapshot(
     val yoloDetections: Long,
     val visibleDetections: Long,
     val warnings: Long,
-    val mlKitAverageMs: Long
+    val mlKitAverageMs: Long,
+    val successfulFrames: Long = 0L,
+    val failedFrames: Long = 0L,
+    val analyzerFps: Double = 0.0,
+    val inferenceFps: Double = 0.0,
+    val overlayLatencySamples: Int = 0
 )
 
 class DetectionMetricsCollector {
+    var successfulFrameCount: Long = 0L
+        private set
+    var failedFrameCount: Long = 0L
+        private set
+    private var rateStartedNs: Long? = null
+    @Synchronized fun recordInferenceSucceeded(nowNs: Long = System.nanoTime()) {
+        successfulFrameCount++
+        val duration = nowNs - (rateStartedNs ?: nowNs)
+        averageFps = if (duration > 0) kotlin.math.round(successfulFrameCount * 1_000_000_000.0 / duration).toInt() else 0
+    }
+    @Synchronized fun recordFrameFailed() { failedFrameCount++ }
     var totalFrameCount: Long = 0L
         private set
     var analyzedFrameCount: Long = 0L
@@ -80,14 +96,17 @@ class DetectionMetricsCollector {
     private val records = ArrayDeque<DetectionMetricRecord>()
     private var yoloInferenceTimeSumMs = 0L
     private var yoloInferenceSampleCount = 0L
-    private var fpsSum = 0L
-    private var fpsSampleCount = 0L
     private var mlKitInferenceTimeSumMs = 0L
     private var mlKitInferenceSampleCount = 0L
     private val performanceSamples = ArrayDeque<PerformanceSample>()
     private var performanceSampleCount = 0L
-    private val sessionPerformanceSamples = ArrayList<PerformanceSample>()
+    private val sessionPerformanceSamples = ArrayDeque<PerformanceSample>()
     private var performanceSessionStartedAtMs = 0L
+    private var performanceSessionStartedElapsedNs = 0L
+    private var sessionSucceededBaseline = 0L
+    private var sessionFailedBaseline = 0L
+    private val overlaySamples = ArrayDeque<Long>()
+    private val recentOverlayAges = ArrayDeque<Long>()
     private var performanceSessionActive = false
     private var sessionReceivedFrameBaseline = 0L
     private var sessionProcessedFrameBaseline = 0L
@@ -99,7 +118,8 @@ class DetectionMetricsCollector {
     private var sessionMlKitSampleBaseline = 0L
 
     @Synchronized
-    fun recordFrameReceived() {
+    fun recordFrameReceived(nowNs: Long = System.nanoTime()) {
+        if (rateStartedNs == null) rateStartedNs = nowNs
         totalFrameCount++
     }
 
@@ -158,11 +178,10 @@ class DetectionMetricsCollector {
     }
 
     @Synchronized
-    fun recordFps(fps: Int) {
+    fun recordFps(fps: Int, nowNs: Long = System.nanoTime()) {
         latestFps = fps
-        fpsSum += fps
-        fpsSampleCount++
-        averageFps = (fpsSum / fpsSampleCount).toInt()
+        val duration = nowNs - (rateStartedNs ?: nowNs)
+        averageFps = if (duration > 0) kotlin.math.round(successfulFrameCount * 1_000_000_000.0 / duration).toInt() else 0
     }
 
     @Synchronized
@@ -192,8 +211,9 @@ class DetectionMetricsCollector {
         )
         performanceSamples.addLast(sample)
         if (performanceSamples.size > PERF_SUMMARY_WINDOW) performanceSamples.removeFirst()
-        if (performanceSessionActive && sessionPerformanceSamples.size < MAX_SESSION_PERFORMANCE_SAMPLES) {
-            sessionPerformanceSamples += sample
+        if (performanceSessionActive) {
+            sessionPerformanceSamples.addLast(sample)
+            if (sessionPerformanceSamples.size > MAX_SESSION_PERFORMANCE_SAMPLES) sessionPerformanceSamples.removeFirst()
         }
         performanceSampleCount++
         if (performanceSampleCount % PERF_SUMMARY_WINDOW != 0L) return null
@@ -204,12 +224,16 @@ class DetectionMetricsCollector {
             summarize("inference", performanceSamples.map { it.inferenceMs }) + " " +
             summarize("postprocess", performanceSamples.map { it.postprocessMs }) + " " +
             summarize("pipeline", performanceSamples.map { it.pipelineMs }) + " " +
-            summarize("frameAgeAtOverlay", performanceSamples.map { it.frameAgeAtOverlayMs })
+            summarize("frameAgeAtOverlay", recentOverlayAges.toList())
     }
 
     @Synchronized
-    fun startPerformanceSession(startedAtMs: Long = System.currentTimeMillis()) {
+    fun startPerformanceSession(startedAtMs: Long = System.currentTimeMillis(), startedElapsedNs: Long = startedAtMs * 1_000_000L) {
         performanceSessionStartedAtMs = startedAtMs
+        performanceSessionStartedElapsedNs = startedElapsedNs
+        sessionSucceededBaseline = successfulFrameCount
+        sessionFailedBaseline = failedFrameCount
+        overlaySamples.clear()
         performanceSessionActive = true
         sessionPerformanceSamples.clear()
         sessionReceivedFrameBaseline = totalFrameCount
@@ -223,21 +247,24 @@ class DetectionMetricsCollector {
     }
 
     @Synchronized
-    fun stopPerformanceSessionSnapshot(stoppedAtMs: Long = System.currentTimeMillis()): PerformanceSnapshot {
+    fun stopPerformanceSessionSnapshot(stoppedAtMs: Long = System.currentTimeMillis(), stoppedElapsedNs: Long = stoppedAtMs * 1_000_000L): PerformanceSnapshot {
         performanceSessionActive = false
         val samples = sessionPerformanceSamples.toList()
         val mlKitSamples = mlKitInferenceSampleCount - sessionMlKitSampleBaseline
+        val durationMs = ((stoppedElapsedNs - performanceSessionStartedElapsedNs) / 1_000_000L).coerceAtLeast(0)
+        val successes = successfulFrameCount - sessionSucceededBaseline
+        val inferenceFps = if (durationMs > 0) successes * 1000.0 / durationMs else 0.0
         return PerformanceSnapshot(
-            durationMs = (stoppedAtMs - performanceSessionStartedAtMs).coerceAtLeast(0L),
+            durationMs = durationMs,
             receivedFrames = totalFrameCount - sessionReceivedFrameBaseline,
             processedFrames = analyzedFrameCount - sessionProcessedFrameBaseline,
             droppedFrames = skippedFrameCount - sessionDroppedFrameBaseline,
-            averageFps = samples.map { it.fps.toLong() }.averageLong().toInt(),
+            averageFps = kotlin.math.round(inferenceFps).toInt(),
             preprocess = stats(samples.map { it.preprocessMs }),
             inference = stats(samples.map { it.inferenceMs }),
             postprocess = stats(samples.map { it.postprocessMs }),
             pipeline = stats(samples.map { it.pipelineMs }),
-            frameAgeAtOverlay = stats(samples.map { it.frameAgeAtOverlayMs }),
+            frameAgeAtOverlay = stats(overlaySamples.toList()),
             yoloDetections = yoloDetectionCountBeforeFilter - sessionYoloDetectionBaseline,
             visibleDetections = yoloVisibleDetectionCount - sessionVisibleDetectionBaseline,
             warnings = warningCount - sessionWarningBaseline,
@@ -245,8 +272,23 @@ class DetectionMetricsCollector {
                 (mlKitInferenceTimeSumMs - sessionMlKitTimeBaseline) / mlKitSamples
             } else {
                 0L
-            }
+            },
+            successfulFrames = successes,
+            failedFrames = failedFrameCount - sessionFailedBaseline,
+            analyzerFps = if (durationMs > 0) (totalFrameCount - sessionReceivedFrameBaseline) * 1000.0 / durationMs else 0.0,
+            inferenceFps = inferenceFps,
+            overlayLatencySamples = overlaySamples.size
         )
+    }
+
+    @Synchronized fun recordOverlayAge(ageMs: Long) {
+        if (ageMs < 0) return
+        recentOverlayAges.addLast(ageMs)
+        if (recentOverlayAges.size > PERF_SUMMARY_WINDOW) recentOverlayAges.removeFirst()
+        if (performanceSessionActive) {
+            overlaySamples.addLast(ageMs)
+            if (overlaySamples.size > MAX_SESSION_PERFORMANCE_SAMPLES) overlaySamples.removeFirst()
+        }
     }
 
     // TODO: Connect TTS emitted/skipped counts when TtsWarningPlayer exposes playback metrics.
@@ -270,7 +312,7 @@ class DetectionMetricsCollector {
 
         return buildString {
             appendLine("[Metrics]")
-            appendLine("Frames: $totalFrameCount / analyzed $analyzedFrameCount / skipped $skippedFrameCount")
+            appendLine("Frames: $totalFrameCount / analyzed $analyzedFrameCount / succeeded $successfulFrameCount / failed $failedFrameCount / skipped $skippedFrameCount")
             appendLine("YOLO avg: ${yoloInferenceTimeAverageMs}ms / max ${yoloInferenceTimeMaxMs}ms")
             appendLine(
                 "Detect: before $yoloDetectionCountBeforeFilter / " +

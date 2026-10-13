@@ -2,10 +2,13 @@ package com.samin.objectdetection.camera
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.hardware.camera2.CameraCharacteristics
 import android.os.SystemClock
 import android.util.Log
 import android.util.Size
 import androidx.camera.core.CameraSelector
+import androidx.camera.camera2.interop.Camera2CameraInfo
+import androidx.camera.camera2.interop.ExperimentalCamera2Interop
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.core.resolutionselector.ResolutionSelector
@@ -15,17 +18,24 @@ import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.CompletableFuture
 
 data class CameraFrameTiming(
     val frameTimestampMs: Long,
     val analyzerReceivedMs: Long,
     val bitmapConversionStartMs: Long,
-    val bitmapConversionEndMs: Long
+    val bitmapConversionEndMs: Long,
+    val frameId: Long = 0L,
+    val cameraTimestampNs: Long = 0L,
+    val analyzerReceivedElapsedNs: Long = 0L,
+    val captureTimestampReliable: Boolean = false,
+    val bitmapConversionDurationMs: Long = bitmapConversionEndMs - bitmapConversionStartMs,
+    val frameWidth: Int = 0,
+    val frameHeight: Int = 0
 ) {
-    val cameraToAnalyzerMs: Long get() = (analyzerReceivedMs - frameTimestampMs).coerceAtLeast(0L)
+    val cameraToAnalyzerMs: Long get() = if (captureTimestampReliable) (analyzerReceivedMs - frameTimestampMs).coerceAtLeast(0L) else -1L
     val bitmapConversionMs: Long get() =
-        (bitmapConversionEndMs - bitmapConversionStartMs).coerceAtLeast(0L)
+        bitmapConversionDurationMs.coerceAtLeast(0L)
 }
 
 class CameraController(
@@ -45,7 +55,7 @@ class CameraController(
         fun onFrame(bitmap: Bitmap, timing: CameraFrameTiming, rotationDegrees: Int)
         fun onCameraStarted()
         fun onCameraError(error: Throwable)
-        fun onFrameError(error: Throwable)
+        fun onFrameError(error: Throwable, timing: CameraFrameTiming? = null)
     }
 
     enum class SkipReason { INTERVAL, BITMAP_CONVERSION }
@@ -55,10 +65,15 @@ class CameraController(
     private var lastDetectionStartTimeMs = 0L
     private var skippedFrameCount = 0L
     private var loggedCameraShape = false
+    private var sequence = 0L
+    @Volatile private var closed = false
+    @Volatile private var realtimeTimestamps = false
+    private val stopped = CompletableFuture<Unit>()
 
     fun start() {
         val providerFuture = ProcessCameraProvider.getInstance(context)
         providerFuture.addListener({
+            if (closed) return@addListener
             try {
                 provider = providerFuture.get().also(::bindUseCases)
                 listener.onCameraStarted()
@@ -68,6 +83,7 @@ class CameraController(
         }, ContextCompat.getMainExecutor(context))
     }
 
+    @androidx.annotation.OptIn(markerClass = [ExperimentalCamera2Interop::class])
     private fun bindUseCases(cameraProvider: ProcessCameraProvider) {
         val resolutionSelector = ResolutionSelector.Builder()
             .setResolutionStrategy(
@@ -89,14 +105,24 @@ class CameraController(
 
         analysis.setAnalyzer(analyzerExecutor) { imageProxy ->
             val analyzerReceivedMs = System.currentTimeMillis()
-            val frameTimestampMs = estimateCaptureWallTimeMs(imageProxy.imageInfo.timestamp, analyzerReceivedMs)
-            listener.onFrameReceived(frameTimestampMs, analyzerReceivedMs)
+            val receivedNs = SystemClock.elapsedRealtimeNanos()
+            val cameraNs = imageProxy.imageInfo.timestamp
+            val reliable = realtimeTimestamps && cameraNs > 0 && cameraNs <= receivedNs
+            val frameTimestampMs = if (reliable) analyzerReceivedMs - (receivedNs - cameraNs) / 1_000_000L else analyzerReceivedMs
+            val frameId = ++sequence
+            var timing = CameraFrameTiming(frameTimestampMs, analyzerReceivedMs, analyzerReceivedMs,
+                analyzerReceivedMs, frameId, cameraNs, receivedNs, reliable,
+                frameWidth = if (imageProxy.imageInfo.rotationDegrees % 180 == 0) imageProxy.width else imageProxy.height,
+                frameHeight = if (imageProxy.imageInfo.rotationDegrees % 180 == 0) imageProxy.height else imageProxy.width)
             try {
-                if (analyzerReceivedMs - lastDetectionStartTimeMs < detectIntervalMs) {
+                if (closed) return@setAnalyzer
+                listener.onFrameReceived(frameTimestampMs, analyzerReceivedMs)
+                val receivedElapsedMs = receivedNs / 1_000_000L
+                if (receivedElapsedMs - lastDetectionStartTimeMs < detectIntervalMs) {
                     recordSkipped(SkipReason.INTERVAL)
                     return@setAnalyzer
                 }
-                lastDetectionStartTimeMs = analyzerReceivedMs
+                lastDetectionStartTimeMs = receivedElapsedMs
                 if (!loggedCameraShape || enableDiagnostics) {
                     Log.i(TAG, "[CAMERA_SHAPE] requested=${targetWidth}x$targetHeight " +
                         "actual=${imageProxy.width}x${imageProxy.height} format=${imageProxy.format} " +
@@ -104,21 +130,21 @@ class CameraController(
                     loggedCameraShape = true
                 }
                 val bitmapConversionStartMs = System.currentTimeMillis()
+                val conversionStartNs = SystemClock.elapsedRealtimeNanos()
                 val bitmap = imageProxy.toBitmapSafe(enableDiagnostics)
                 val bitmapConversionEndMs = System.currentTimeMillis()
+                timing = timing.copy(bitmapConversionStartMs = bitmapConversionStartMs,
+                    bitmapConversionEndMs = bitmapConversionEndMs,
+                    bitmapConversionDurationMs = (SystemClock.elapsedRealtimeNanos() - conversionStartNs) / 1_000_000L)
                 if (bitmap == null) {
                     recordSkipped(SkipReason.BITMAP_CONVERSION)
+                    listener.onFrameError(IllegalStateException("Camera bitmap conversion failed; see ImageProxyExt cause"), timing)
                     return@setAnalyzer
                 }
                 try {
                     listener.onFrame(
                         bitmap,
-                        CameraFrameTiming(
-                            frameTimestampMs = frameTimestampMs,
-                            analyzerReceivedMs = analyzerReceivedMs,
-                            bitmapConversionStartMs = bitmapConversionStartMs,
-                            bitmapConversionEndMs = bitmapConversionEndMs
-                        ),
+                        timing,
                         imageProxy.imageInfo.rotationDegrees
                     )
                 } finally {
@@ -127,19 +153,24 @@ class CameraController(
                     }
                 }
             } catch (error: Exception) {
-                listener.onFrameError(error)
+                if (error is BitmapConversionException) recordSkipped(SkipReason.BITMAP_CONVERSION)
+                listener.onFrameError(error, timing)
             } finally {
                 imageProxy.close()
             }
         }
 
         cameraProvider.unbindAll()
-        cameraProvider.bindToLifecycle(
+        val camera = cameraProvider.bindToLifecycle(
             lifecycleOwner,
             CameraSelector.DEFAULT_BACK_CAMERA,
             preview,
             analysis
         )
+        realtimeTimestamps = runCatching {
+            Camera2CameraInfo.from(camera.cameraInfo).getCameraCharacteristic(CameraCharacteristics.SENSOR_INFO_TIMESTAMP_SOURCE) ==
+                CameraCharacteristics.SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME
+        }.getOrDefault(false)
     }
 
     private fun recordSkipped(reason: SkipReason) {
@@ -147,32 +178,25 @@ class CameraController(
         listener.onFrameSkipped(reason, skippedFrameCount)
     }
 
-    private fun estimateCaptureWallTimeMs(cameraTimestampNs: Long, nowWallMs: Long): Long {
-        if (cameraTimestampNs <= 0L) return nowWallMs
-        val ageNs = (SystemClock.elapsedRealtimeNanos() - cameraTimestampNs).coerceAtLeast(0L)
-        // Guard against a device using a different timestamp source.
-        val ageMs = (ageNs / 1_000_000L).coerceAtMost(MAX_REASONABLE_FRAME_AGE_MS)
-        return nowWallMs - ageMs
+    /** Called on main for unbind; completion is delivered only after the analyzer really exits. */
+    fun stopAsync(): CompletableFuture<Unit> {
+        if (closed) return stopped
+        closed = true
+        runCatching { provider?.unbindAll() }.onFailure { Log.e(TAG, "camera unbind failed", it) }
+        provider = null
+        shutdownAnalyzer(analyzerExecutor).whenComplete { _, error ->
+            if (error == null) stopped.complete(Unit) else stopped.completeExceptionally(error)
+        }
+        return stopped
     }
 
     override fun close() {
-        provider?.unbindAll()
-        provider = null
-        analyzerExecutor.shutdown()
-        try {
-            if (!analyzerExecutor.awaitTermination(ANALYZER_SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
-                Log.w(TAG, "Analyzer did not finish before detector shutdown timeout")
-            }
-        } catch (_: InterruptedException) {
-            Thread.currentThread().interrupt()
-        }
+        stopAsync()
     }
 
     companion object {
         const val TARGET_WIDTH = 1280
         const val TARGET_HEIGHT = 720
-        const val MAX_REASONABLE_FRAME_AGE_MS = 10_000L
-        private const val ANALYZER_SHUTDOWN_TIMEOUT_SECONDS = 10L
         private const val TAG = "CameraController"
     }
 }

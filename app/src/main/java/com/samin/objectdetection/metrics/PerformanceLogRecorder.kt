@@ -8,10 +8,9 @@ import android.provider.MediaStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
-import java.io.BufferedWriter
+import kotlinx.coroutines.withContext
+import com.samin.objectdetection.logging.OrderedLogWriter
 import java.util.concurrent.atomic.AtomicLong
 
 data class SavedPerformanceLog(
@@ -21,7 +20,7 @@ data class SavedPerformanceLog(
     val droppedLogLines: Long
 )
 
-class PerformanceLogRecorder(private val context: Context) {
+class PerformanceLogRecorder(private val context: Context, private val onFailure: (Throwable) -> Unit = {}) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val lock = Any()
     @Volatile private var activeSession: Session? = null
@@ -48,26 +47,10 @@ class PerformanceLogRecorder(private val context: Context) {
             context.contentResolver.delete(uri, null, null)
             throw error
         }
-        val channel = Channel<String>(capacity = MAX_QUEUE_SIZE)
-        val session = Session(displayName, relativePath, uri, writer, channel)
-        session.worker = scope.async {
-            try {
-                writer.append(PerformanceLogFormatter.formatHeader(header))
-                writer.flush()
-                var linesSinceFlush = 0
-                for (line in channel) {
-                    writer.appendLine(line)
-                    linesSinceFlush++
-                    if (linesSinceFlush >= FLUSH_BATCH_SIZE) {
-                        writer.flush()
-                        linesSinceFlush = 0
-                    }
-                }
-                writer.flush()
-            } finally {
-                writer.close()
-            }
-        }
+        try { writer.append(PerformanceLogFormatter.formatHeader(header)); writer.flush() }
+        catch (error: Throwable) { runCatching { writer.close() }; throw error }
+        val ordered = OrderedLogWriter(writer, MAX_QUEUE_SIZE, onFailure)
+        val session = Session(displayName, relativePath, uri, ordered)
         synchronized(lock) {
             check(activeSession == null) { "Performance logging is already active" }
             activeSession = session
@@ -86,21 +69,25 @@ class PerformanceLogRecorder(private val context: Context) {
         enqueue(session, "\n$summary\n")
     }
 
+    fun recordEvent(trace: FrameTrace) {
+        val session = activeSession ?: return
+        enqueue(session, "ERROR | ${PerformanceLogFormatter.formatTrace(trace)}")
+    }
+
+    fun recordOverlay(trace: FrameTrace, wallMs: Long, elapsedNs: Long, ageMs: Long) {
+        val session = activeSession ?: return
+        enqueue(session, "OVERLAY | sessionId=${trace.sessionId} frameId=${trace.frameId} drawUnixMs=$wallMs drawElapsedNs=$elapsedNs frameAgeOverlay=${ageMs}ms")
+    }
+
     suspend fun stop(snapshot: PerformanceSnapshot): SavedPerformanceLog? {
         val session = synchronized(lock) {
             val current = activeSession ?: return null
             activeSession = null
             current
         }
-        session.channel.send(PerformanceLogFormatter.formatFinalSummary(snapshot, session.droppedLines.get()))
-        session.channel.close()
-        var failure: Throwable? = null
-        try {
-            session.worker.await()
-        } catch (error: Throwable) {
-            failure = error
+        withContext(Dispatchers.IO) {
+            session.writer.close { PerformanceLogFormatter.formatFinalSummary(snapshot, session.writer.droppedLines.get()) }.get()
         }
-        failure?.let { throw it }
         return session.saved()
     }
 
@@ -109,26 +96,22 @@ class PerformanceLogRecorder(private val context: Context) {
     }
 
     private fun enqueue(session: Session, line: String) {
-        if (session.channel.trySend(line).isFailure) session.droppedLines.incrementAndGet()
+        session.writer.append { line }
     }
 
     private class Session(
         val displayName: String,
         val relativePath: String,
         val uri: Uri,
-        val writer: BufferedWriter,
-        val channel: Channel<String>
+        val writer: OrderedLogWriter
     ) {
-        lateinit var worker: kotlinx.coroutines.Deferred<Unit>
         val frameIndex = AtomicLong(0L)
-        val droppedLines = AtomicLong(0L)
-        fun saved() = SavedPerformanceLog(displayName, relativePath, uri, droppedLines.get())
+        fun saved() = SavedPerformanceLog(displayName, relativePath, uri, writer.droppedLines.get())
     }
 
     private companion object {
         const val RELATIVE_DIRECTORY = "GOTORO/performance"
         const val MAX_QUEUE_SIZE = 512
-        const val FLUSH_BATCH_SIZE = 50
         val FILE_NAME_FORMAT = ThreadLocal.withInitial {
             java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US)
         }

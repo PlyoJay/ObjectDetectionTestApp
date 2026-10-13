@@ -17,6 +17,8 @@ import com.samin.objectdetection.detector.DetectionResult
 import com.samin.objectdetection.detector.ModelIdentity
 import com.samin.objectdetection.detector.ModelConfig
 import com.samin.objectdetection.settings.AppSettings
+import com.samin.objectdetection.metrics.FrameTrace
+import com.samin.objectdetection.logging.OrderedLogWriter
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.BufferedWriter
@@ -25,6 +27,7 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.io.OutputStreamWriter
 import java.util.Locale
+import java.util.concurrent.CompletableFuture
 
 class EvaluationDataRecorder(
     private val context: Context,
@@ -32,11 +35,21 @@ class EvaluationDataRecorder(
     private val modelName: String = ModelConfig.MODEL_ASSET_NAME,
     private val detectorType: String = "VisionStyleYoloDetector",
     private val modelIdentity: ModelIdentity? = null,
-    private val appSettings: AppSettings = AppSettings()
+    private val appSettings: AppSettings = AppSettings(),
+    private val onFailure: (String?, Throwable) -> Unit = { _, _ -> },
+    private val appSessionId: String = "unknown"
 ) {
     private val lock = Any()
-    private var detectionsWriter: BufferedWriter? = null
-    private var activeDetectionsFile: File? = null
+    private data class PendingRecording(val time: Long, val timeline: Boolean, val json: () -> JSONObject)
+    private data class Session(val id: String, val file: File, val writer: OrderedLogWriter, val timeline: OrderedLogWriter,
+        var startedAtMs: Long? = null, var startedElapsedNs: Long? = null,
+        val pendingStart: MutableList<PendingRecording> = mutableListOf(),
+        var preStartFramesExcluded: Long = 0)
+    private var activeSession: Session? = null
+    private val errorWriter = runCatching {
+        OrderedLogWriter(File(rootDir, "errors_${System.currentTimeMillis()}.jsonl").bufferedWriter(),
+            onFailure = { onFailure(null, it) })
+    }.getOrElse { onFailure(null, it); null }
     // Settings and model are fixed for this recorder's lifetime. Avoid encoding them every frame.
     private val metadataJson by lazy { buildMetadataJson() }
 
@@ -87,53 +100,96 @@ class EvaluationDataRecorder(
         )
     }
 
-    fun startRecordingLog(timestamp: String): File {
+    fun startRecordingLog(timestamp: String, sessionId: String = timestamp): File {
         synchronized(lock) {
-            closeRecordingLogLocked()
+            check(activeSession == null) { "A recording log is already active" }
             val file = File(recordingsDir, "${timestamp}_detections.jsonl")
-            detectionsWriter = BufferedWriter(OutputStreamWriter(FileOutputStream(file), Charsets.UTF_8))
-            activeDetectionsFile = file
+            val writer = OrderedLogWriter(file.bufferedWriter(), onFailure = { onFailure(sessionId, it) })
+            val timeline = try { OrderedLogWriter(File(recordingsDir, "${timestamp}_timeline.jsonl").bufferedWriter(),
+                onFailure = { onFailure(sessionId, it) }) }
+            catch (error: Exception) { writer.close(); throw error }
+            activeSession = Session(sessionId, file, writer, timeline)
             return file
         }
+    }
+
+    fun markRecordingStarted(sessionId: String, wallMs: Long, elapsedNs: Long) = synchronized(lock) {
+        val session = activeSession?.takeIf { it.id == sessionId } ?: return@synchronized
+        session.startedAtMs = wallMs; session.startedElapsedNs = elapsedNs
+        session.timeline.append { JSONObject().put("recordType", "RECORDING_STARTED").put("recordingSessionId", sessionId).put("sessionId", appSessionId)
+            .put("timestampMs", wallMs).put("recordingStartedAtMs", wallMs).put("recordingStartedElapsedNs", elapsedNs)
+            .put("detections", JSONArray()).toString() }
+        session.pendingStart.forEach { pending -> enqueueRecording(session, pending.time, pending.timeline, pending.json) }
+        session.pendingStart.clear()
+    }
+
+    /** Buffer during the service start handshake so frames after recorder.start are not lost. */
+    private fun enqueueRecording(session: Session, eventElapsedNs: Long, timeline: Boolean = false, json: () -> JSONObject) {
+        val writer = if (timeline) session.timeline else session.writer
+        val anchor = session.startedElapsedNs
+        if (anchor == null) {
+            if (session.pendingStart.size < 512) session.pendingStart += PendingRecording(eventElapsedNs, timeline, json)
+            else writer.droppedLines.incrementAndGet()
+            return
+        }
+        if (eventElapsedNs < anchor) { session.preStartFramesExcluded++; return }
+        writer.append { json().put("recordingSessionId", session.id).put("recordingStartedAtMs", session.startedAtMs)
+            .put("recordingStartedElapsedNs", anchor).put("videoElapsedMs", (eventElapsedNs - anchor) / 1_000_000L).toString() }
     }
 
     fun appendRecordingDetections(snapshot: DetectionFrameSnapshot) {
         synchronized(lock) {
-            val writer = detectionsWriter ?: return
-            try {
-                writer.write(buildFrameJson(snapshot, snapshot.frameTimestampMs.toString()).toString())
-                writer.newLine()
-                writer.flush()
-            } catch (e: Exception) {
-                Log.e(TAG, "append recording detections failed", e)
+            val session = activeSession ?: return
+            val completed = snapshot.trace?.completedElapsedNs ?: return
+            enqueueRecording(session, completed) { buildFrameJson(snapshot, snapshot.frameTimestampMs.toString()) }
+        }
+    }
+
+    fun recordError(trace: FrameTrace, width: Int, height: Int) {
+        val json = JSONObject().put("recordType", "FRAME").put("timestampMs", trace.frameTimestampMs)
+            .put("frameTimestampMs", trace.frameTimestampMs).put("frameWidth", width).put("frameHeight", height)
+            .put("detections", JSONArray()).putTrace(trace).toString()
+        errorWriter?.append { json }
+        synchronized(lock) {
+            val session = activeSession ?: return
+            val completed = trace.completedElapsedNs ?: return
+            enqueueRecording(session, completed) { JSONObject(json) }
+        }
+    }
+
+    fun recordOverlay(trace: FrameTrace, wallMs: Long, elapsedNs: Long, drawingEnabled: Boolean) = synchronized(lock) {
+        val session = activeSession ?: return@synchronized
+        enqueueRecording(session, elapsedNs, timeline = true) { JSONObject().put("recordType", "OVERLAY_DRAW").put("sessionId", trace.sessionId)
+            .put("frameId", trace.frameId).put("timestampMs", wallMs).put("drawElapsedNs", elapsedNs)
+            .put("drawingEnabled", drawingEnabled).put("detections", JSONArray()) }
+    }
+
+    fun stopRecordingLog(status: String = "FINALIZED", wallMs: Long = System.currentTimeMillis(), elapsedNs: Long = android.os.SystemClock.elapsedRealtimeNanos()): CompletableFuture<File?> {
+        synchronized(lock) {
+            val session = activeSession ?: return CompletableFuture.completedFuture(null)
+            activeSession = null
+            session.preStartFramesExcluded += session.pendingStart.size
+            session.pendingStart.clear()
+            return session.writer.close().handle { _, frameError ->
+                session.timeline.close { JSONObject().put("recordType", "RECORDING_STOPPED")
+                .put("recordingSessionId", session.id).put("sessionId", appSessionId).put("timestampMs", wallMs).put("stoppedElapsedNs", elapsedNs)
+                .put("status", if (frameError == null) status else "LOG_ERROR")
+                .put("droppedLogLines", session.writer.droppedLines.get() + session.timeline.droppedLines.get())
+                .put("droppedFrameLogLines", session.writer.droppedLines.get())
+                .put("droppedTimelineLogLines", session.timeline.droppedLines.get())
+                .put("preStartEventsExcluded", session.preStartFramesExcluded)
+                .put("detections", JSONArray()).toString() }
+            }.thenCompose { it }.thenApply {
+                session.writer.failure?.let { throw it }
+                session.file
             }
         }
     }
 
-    fun stopRecordingLog(): File? {
-        synchronized(lock) {
-            val file = activeDetectionsFile
-            closeRecordingLogLocked()
-            return file
-        }
-    }
-
-    fun close() {
-        synchronized(lock) {
-            closeRecordingLogLocked()
-        }
-    }
-
-
-    private fun closeRecordingLogLocked() {
-        try {
-            detectionsWriter?.close()
-        } catch (e: Exception) {
-            Log.e(TAG, "close recording detections failed", e)
-        } finally {
-            detectionsWriter = null
-            activeDetectionsFile = null
-        }
+    fun close(): CompletableFuture<Unit> {
+        val recording = stopRecordingLog("APP_CLOSED")
+        val errors = errorWriter?.close() ?: CompletableFuture.completedFuture(Unit)
+        return CompletableFuture.allOf(recording, errors).thenApply { Unit }
     }
 
     private fun saveJpegIfAbsent(bitmap: Bitmap, file: File) {
@@ -245,6 +301,7 @@ class EvaluationDataRecorder(
     private fun buildFrameJson(snapshot: DetectionFrameSnapshot, id: String): JSONObject {
         val summary = snapshot.toFrameSummary()
         return JSONObject()
+            .put("recordType", "FRAME")
             .put("id", id)
             .put("timestampMs", snapshot.frameTimestampMs)
             .put("frameTimestampMs", snapshot.frameTimestampMs)
@@ -264,6 +321,8 @@ class EvaluationDataRecorder(
             .put("detections", JSONArray(snapshot.evaluationDetections.mapIndexed { index, detection ->
                 detection.toJson(snapshot, summary, index)
             }))
+            .apply { snapshot.trace?.let { putTrace(it) } }
+            .put("analyzerFps", snapshot.analyzerFps).put("inferenceFps", snapshot.inferenceFps)
     }
 
     private fun DetectionResult.toJson(
@@ -274,6 +333,7 @@ class EvaluationDataRecorder(
         val detectionId = buildDetectionId(snapshot.frameTimestampMs, index, label)
         return JSONObject()
             .put("detectionIndex", index)
+            .apply { snapshot.trace?.let { putTrace(it) } }
             .put("detectionId", detectionId)
             .put("timestampMs", snapshot.frameTimestampMs)
             .put("frameWidth", snapshot.imageWidth)

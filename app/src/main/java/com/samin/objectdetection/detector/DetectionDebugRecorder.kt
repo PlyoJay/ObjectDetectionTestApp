@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
 /** Bounded, best-effort diagnostics. Never run disk work on the analyzer/UI threads. */
-class DetectionDebugRecorder(context: Context, val config: DetectionConfig) : AutoCloseable {
+class DetectionDebugRecorder(context: Context, val config: DetectionConfig, private val appSessionId: String = "unknown") : AutoCloseable {
     private val session = SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.US).format(Date())
     private val root = File(context.getExternalFilesDir(null) ?: context.filesDir, "debug_detection/$session")
     private val logFile = File(root, "detection_debug_$session.txt")
@@ -28,9 +28,9 @@ class DetectionDebugRecorder(context: Context, val config: DetectionConfig) : Au
     private var lastInputDescription: String? = null
     private var sequence = 0L
 
-    fun begin(timestampMs: Long): DetectionDebugFrame? {
+    fun begin(timestampMs: Long, frameId: Long? = null): DetectionDebugFrame? {
         if (!config.debugDetectionLogging && !config.debugSaveInferenceInput && !config.enableDetectorDebugImage) return null
-        return DetectionDebugFrame(++sequence, timestampMs, config)
+        return DetectionDebugFrame(frameId ?: ++sequence, timestampMs, config).also { it.line("[SESSION] sessionId=$appSessionId frame=${it.id}") }
     }
 
     fun modelInput(frame: DetectionDebugFrame, description: String) {

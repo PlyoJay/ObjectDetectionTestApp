@@ -16,12 +16,14 @@ import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.os.IBinder
 import android.os.Environment
+import android.os.SystemClock
 import android.provider.MediaStore
 import android.util.Log
 import com.samin.objectdetection.R
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.Executors
+import org.json.JSONObject
 
 class ScreenRecordService : Service() {
     private val projectionCallback = object : MediaProjection.Callback() {
@@ -37,6 +39,12 @@ class ScreenRecordService : Service() {
     private var outputFile: File? = null
     private var isStoppingProjection = false
     private var recorderStarted = false
+    private var sessionId: String? = null
+    private var appSessionId: String? = null
+    private var recordingStartedAtMs = 0L
+    private var recordingStartedElapsedNs = 0L
+    private var startRequestedElapsedNs = 0L
+    private var recordingFailure: String? = null
     private val galleryExecutor = Executors.newSingleThreadExecutor()
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -44,10 +52,23 @@ class ScreenRecordService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_START -> {
-                startForegroundForMediaProjection()
-                startRecording(intent)
+                if (mediaRecorder != null) return START_NOT_STICKY
+                sessionId = intent.getStringExtra(EXTRA_SESSION_ID)
+                appSessionId = intent.getStringExtra(EXTRA_APP_SESSION_ID)
+                recordingFailure = null; recordingStartedAtMs = 0; recordingStartedElapsedNs = 0; startRequestedElapsedNs = 0
+                try { startForegroundForMediaProjection(); startRecording(intent) }
+                catch (error: Exception) {
+                    Log.e(TAG, "start foreground recording failed", error)
+                    broadcastState(ACTION_RECORDING_ERROR, error.toString())
+                    stopRecording(sendBroadcast = false, stopProjection = true)
+                    stopSelf()
+                }
             }
             ACTION_STOP -> {
+                if (intent.getStringExtra(EXTRA_SESSION_ID)?.let { it != sessionId } == true) {
+                    if (sessionId == null && mediaRecorder == null) stopSelf()
+                    return START_NOT_STICKY
+                }
                 stopRecording(sendBroadcast = true, stopProjection = true)
                 stopSelf()
             }
@@ -116,11 +137,16 @@ class ScreenRecordService : Service() {
             )
 
             virtualDisplay = display
+            startRequestedElapsedNs = SystemClock.elapsedRealtimeNanos()
             recorder.start()
+            recordingStartedElapsedNs = SystemClock.elapsedRealtimeNanos()
+            recordingStartedAtMs = System.currentTimeMillis()
             recorderStarted = true
+            persistSession(file, "RECORDING", null)
             broadcastState(ACTION_RECORDING_STARTED, file.absolutePath)
         } catch (e: Exception) {
             Log.e(TAG, "start screen recording failed", e)
+            recordingFailure = e.toString()
             broadcastState(ACTION_RECORDING_ERROR, e.message ?: "Screen recording failed")
             stopRecording(sendBroadcast = false, stopProjection = true)
             stopSelf()
@@ -144,6 +170,12 @@ class ScreenRecordService : Service() {
                 setVideoEncodingBitRate(VIDEO_BIT_RATE)
                 setVideoFrameRate(VIDEO_FRAME_RATE)
                 setVideoSize(width, height)
+                setOnErrorListener { _, what, extra ->
+                    Log.e(TAG, "MediaRecorder error what=$what extra=$extra")
+                    recordingFailure = "MediaRecorder error what=$what extra=$extra"
+                    stopRecording(sendBroadcast = true, stopProjection = true)
+                    stopSelf()
+                }
                 prepare()
             }
             return recorder
@@ -202,7 +234,9 @@ class ScreenRecordService : Service() {
                 }
             }
         }
-        val validRecording = finalized && file != null && file.isFile && file.length() > 0L
+        val validRecording = finalized && recordingFailure == null && file != null && file.isFile && file.length() > 0L
+        file?.let { persistSession(it, if (validRecording) "FINALIZED" else "ERROR",
+            if (validRecording) null else recordingFailure ?: "Recording did not finalize") }
         if (validRecording) {
             galleryExecutor.execute { publishVideoSafely(requireNotNull(file)) }
         }
@@ -211,8 +245,23 @@ class ScreenRecordService : Service() {
             if (validRecording) {
                 broadcastState(ACTION_RECORDING_STOPPED, file?.absolutePath)
             } else if (recorder != null || file != null) {
-                broadcastState(ACTION_RECORDING_ERROR, "Recording did not finalize; gallery publish skipped")
+                broadcastState(ACTION_RECORDING_ERROR, recordingFailure ?: "Recording did not finalize; gallery publish skipped")
             }
+        }
+    }
+
+    private fun persistSession(file: File, status: String, error: String?) {
+        val json = JSONObject().put("recordingSessionId", sessionId).put("sessionId", appSessionId).put("status", status)
+            .put("videoFile", file.name).put("recordingStartedAtMs", recordingStartedAtMs)
+            .put("startRequestedElapsedNs", startRequestedElapsedNs).put("recordingStartedElapsedNs", recordingStartedElapsedNs)
+            .put("stoppedAtMs", if (status == "RECORDING") JSONObject.NULL else System.currentTimeMillis())
+            .put("stoppedElapsedNs", if (status == "RECORDING") JSONObject.NULL else SystemClock.elapsedRealtimeNanos())
+            .put("error", error ?: JSONObject.NULL)
+            .put("clock", "Unix milliseconds and elapsedRealtimeNanos; videoElapsedMs uses recorder.start return anchor, not encoded PTS")
+            .toString(2)
+        galleryExecutor.execute {
+            runCatching { File(file.parentFile, "${file.nameWithoutExtension}_session.json").writeText(json) }
+                .onFailure { Log.e(TAG, "recording session metadata save failed", it); broadcastState(ACTION_RECORDING_PUBLISH_ERROR, "Session metadata save failed: $it") }
         }
     }
 
@@ -269,6 +318,7 @@ class ScreenRecordService : Service() {
                     .onFailure { Log.e(TAG, "failed to delete pending video uri=$uri", it) }
             }
             Log.e(TAG, "gallery video publish failed privatePath=${file.absolutePath}", error)
+            broadcastState(ACTION_RECORDING_PUBLISH_ERROR, "Gallery copy failed; private MP4 retained: ${file.absolutePath}")
         }
     }
 
@@ -303,6 +353,11 @@ class ScreenRecordService : Service() {
             Intent(action)
                 .setPackage(packageName)
                 .putExtra(EXTRA_MESSAGE, message)
+                .putExtra(EXTRA_SESSION_ID, sessionId)
+                .putExtra(EXTRA_STARTED_AT_MS, recordingStartedAtMs)
+                .putExtra(EXTRA_STARTED_ELAPSED_NS, recordingStartedElapsedNs)
+                .putExtra(EXTRA_STOPPED_AT_MS, System.currentTimeMillis())
+                .putExtra(EXTRA_STOPPED_ELAPSED_NS, SystemClock.elapsedRealtimeNanos())
         )
     }
 
@@ -334,6 +389,13 @@ class ScreenRecordService : Service() {
         const val EXTRA_RESULT_DATA = "extra_result_data"
         const val EXTRA_OUTPUT_PATH = "extra_output_path"
         const val EXTRA_MESSAGE = "extra_message"
+        const val ACTION_RECORDING_PUBLISH_ERROR = "com.samin.objectdetection.action.SCREEN_RECORDING_PUBLISH_ERROR"
+        const val EXTRA_SESSION_ID = "extra_session_id"
+        const val EXTRA_APP_SESSION_ID = "extra_app_session_id"
+        const val EXTRA_STARTED_AT_MS = "extra_started_at_ms"
+        const val EXTRA_STARTED_ELAPSED_NS = "extra_started_elapsed_ns"
+        const val EXTRA_STOPPED_AT_MS = "extra_stopped_at_ms"
+        const val EXTRA_STOPPED_ELAPSED_NS = "extra_stopped_elapsed_ns"
 
         private const val TAG = "ScreenRecordService"
         private const val CHANNEL_ID = "screen_record_channel"
