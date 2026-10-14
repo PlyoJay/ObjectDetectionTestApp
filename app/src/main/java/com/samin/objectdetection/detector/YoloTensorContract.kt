@@ -2,6 +2,7 @@ package com.samin.objectdetection.detector
 
 import org.tensorflow.lite.DataType
 import java.nio.ByteBuffer
+import java.nio.FloatBuffer
 import java.security.MessageDigest
 import kotlin.math.roundToInt
 
@@ -66,6 +67,27 @@ internal data class TensorValueCodec(val type: DataType, val scale: Float = 0f, 
 }
 
 internal object RgbTensorWriter {
+    // Use division, exactly as the original writer did (multiplying by 1/255 changes rounding).
+    private val normalizedChannels = FloatArray(256) { it / 255.0f }
+
+    /** Reuse a view of the input ByteBuffer; no additional full input tensor allocation. */
+    fun fillFloat32(view: FloatBuffer, pixels: IntArray, layout: RgbTensorLayout) {
+        view.clear()
+        require(view.capacity() == pixels.size * 3) { "Input element count differs from tensor" }
+        if (layout == RgbTensorLayout.NCHW) {
+            for (pixel in pixels) view.put(normalizedChannels[(pixel shr 16) and 255])
+            for (pixel in pixels) view.put(normalizedChannels[(pixel shr 8) and 255])
+            for (pixel in pixels) view.put(normalizedChannels[pixel and 255])
+        } else {
+            for (pixel in pixels) {
+                view.put(normalizedChannels[(pixel shr 16) and 255])
+                view.put(normalizedChannels[(pixel shr 8) and 255])
+                view.put(normalizedChannels[pixel and 255])
+            }
+        }
+        view.rewind()
+    }
+
     // Both checked-in Ultralytics exports expect RGB /255, without graph-side input normalization.
     fun fill(buffer: ByteBuffer, pixels: IntArray, layout: RgbTensorLayout, codec: TensorValueCodec) {
         buffer.rewind()
@@ -77,6 +99,24 @@ internal object RgbTensorWriter {
             for (pixel in pixels) for (channel in 0..2) write(pixel, channel)
         }
         require(buffer.position() == buffer.capacity()) { "Input byte count differs from tensor.numBytes()" }
+        buffer.rewind()
+    }
+}
+
+internal object YoloOutputReader {
+    /** FLOAT32 channels-first outputs can be copied in bulk to the existing reusable rows. */
+    fun copy(buffer: ByteBuffer, floatView: FloatBuffer?, codec: TensorValueCodec,
+             channelsFirst: Boolean, rows: Array<FloatArray>) {
+        buffer.rewind()
+        if (floatView != null && channelsFirst) {
+            floatView.clear()
+            for (row in rows) floatView.get(row)
+            floatView.rewind()
+        } else if (channelsFirst) {
+            for (row in rows) for (i in row.indices) row[i] = codec.read(buffer)
+        } else {
+            for (i in rows[0].indices) for (row in rows) row[i] = codec.read(buffer)
+        }
         buffer.rewind()
     }
 }

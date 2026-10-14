@@ -1,6 +1,7 @@
 package com.samin.objectdetection.metrics
 
 import com.samin.objectdetection.camera.YoloResizeMode
+import com.samin.objectdetection.detector.InferenceExecutionInfo
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -30,7 +31,8 @@ class PerformanceLogFormatterTest {
                 requestedCameraHeight = 1080,
                 appVersion = "1.2.3",
                 settingsSnapshot = "camera.detectIntervalMs=0\nyolo.maxCandidates=100",
-                sessionId = "test-session", startedElapsedNs = 123L
+                sessionId = "test-session", startedElapsedNs = 123L,
+                execution = InferenceExecutionInfo(cpuThreads = 2, xnnpackRequested = true)
             )
         )
 
@@ -44,6 +46,10 @@ class PerformanceLogFormatterTest {
         assertTrue(text.contains("yolo.maxCandidates=100"))
         assertTrue(text.contains("Session ID: test-session"))
         assertTrue(text.contains("Start Elapsed Ns: 123"))
+        assertTrue(text.contains("requestedBackend=CPU appliedBackend=CPU cpuThreads=2"))
+        assertTrue(text.contains("xnnpackRequested=true"))
+        assertTrue(text.contains("delegateVerification=UNAVAILABLE_JAVA_API"))
+        assertTrue(text.contains("gpuSupport=UNSUPPORTED_INTERPRETER_LITERT_2_1_1"))
     }
 
     @Test
@@ -68,7 +74,10 @@ class PerformanceLogFormatterTest {
                 warningDetectionCount = 1,
                 fps = 8, analyzerFps = 12.5, inferenceFps = 8.25,
                 trace = FrameTrace("test-session", 42, 1000, 0, false, 1000, 100,
-                    completedAtMs = 1100, completedElapsedNs = 200)
+                    completedAtMs = 1100, completedElapsedNs = 200),
+                totalProcessingMs = 117,
+                execution = InferenceExecutionInfo(cpuThreads = 4, xnnpackRequested = true,
+                    lastInference = "SUCCESS", inferenceErrors = 1)
             )
         )
 
@@ -78,6 +87,8 @@ class PerformanceLogFormatterTest {
         assertTrue(!text.contains('\n'))
         assertTrue(text.contains("sessionId=test-session frameId=42 status=SUCCESS"))
         assertTrue(text.contains("analyzerFps=12.5 | inferenceFps=8.25"))
+        assertTrue(text.contains("totalProcessing=117ms"))
+        assertTrue(text.contains("lastInference=SUCCESS inferenceErrors=1 cpuFallbackCount=0"))
     }
 
     @Test

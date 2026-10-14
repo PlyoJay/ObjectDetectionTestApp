@@ -1,6 +1,7 @@
 package com.samin.objectdetection.metrics
 
 import com.samin.objectdetection.camera.YoloResizeMode
+import com.samin.objectdetection.detector.InferenceExecutionInfo
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -30,7 +31,8 @@ data class PerformanceLogHeader(
     val sessionId: String = "unknown",
     val startedElapsedNs: Long = 0L,
     val systemDiagnosticsEnabled: Boolean = false,
-    val systemSampleIntervalMs: Long = 5_000L
+    val systemSampleIntervalMs: Long = 5_000L,
+    val execution: InferenceExecutionInfo? = null
 )
 
 data class PerformanceFrameRecord(
@@ -54,7 +56,10 @@ data class PerformanceFrameRecord(
     val analyzerFps: Double = 0.0,
     val inferenceFps: Double = fps.toDouble(),
     val trace: FrameTrace? = null,
-    val elapsedSeconds: Double? = null
+    val elapsedSeconds: Double? = null,
+    val execution: InferenceExecutionInfo? = null,
+    // Analyzer receipt through successful pipeline completion, including camera conversion/ML input.
+    val totalProcessingMs: Long = -1L
 )
 
 object PerformanceLogFormatter {
@@ -94,6 +99,9 @@ object PerformanceLogFormatter {
         appendLine("Camera Resolution: ${header.cameraWidth}x${header.cameraHeight}")
         appendLine("resizeMode=${header.resizeMode}")
         appendLine("YOLO Threads: ${header.yoloThreads}")
+        appendLine("Inference Execution: ${header.execution?.logFields() ?: "N/A"}")
+        appendLine("CPU thread count is the accepted Interpreter option; active worker count/partition coverage are unavailable in Java. Confirm native delegate application with Logcat/profiling.")
+        appendLine("pipeline=DetectionPipeline.process only; totalProcessing=analyzer receipt through pipeline completion (includes bitmap conversion and ML Kit input preparation; excludes UI draw/warning output)")
         appendLine("ML Kit Enabled: ${header.mlKitEnabled}")
         appendLine("Geometry Filter Enabled: ${header.geometryFilterEnabled}")
         appendLine("Adaptive Temporal Enabled: ${header.adaptiveTemporalEnabled}")
@@ -121,6 +129,8 @@ object PerformanceLogFormatter {
             "visible=${frame.visibleDetectionCount} | warning=${frame.warningDetectionCount} | fps=${frame.fps}" +
             " | analyzerFps=${frame.analyzerFps} | inferenceFps=${frame.inferenceFps}" +
             " | elapsedSeconds=${number(frame.elapsedSeconds)}" +
+            " | totalProcessing=${frame.totalProcessingMs}ms" +
+            " | ${frame.execution?.logFields() ?: "execution=N/A"}" +
             (frame.trace?.let { " | ${formatTrace(it)}" } ?: "")
 
     fun formatTrace(trace: FrameTrace): String = with(trace) {
@@ -179,6 +189,8 @@ object PerformanceLogFormatter {
             "startSeconds=${number(value.startSeconds)} endSeconds=${number(value.endSeconds)} elapsedSeconds=${number(value.endSeconds)} " +
             "successfulFrames=${value.successfulFrames} inferenceAvgMs=${number(value.inference.averageMs)} inferenceP95Ms=${value.inference.p95Ms ?: "N/A"} " +
             "preprocessAvgMs=${number(value.preprocess.averageMs)} pipelineAvgMs=${number(value.pipeline.averageMs)} pipelineP95Ms=${value.pipeline.p95Ms ?: "N/A"} " +
+            "totalProcessingAvgMs=${number(value.totalProcessing.averageMs)} totalProcessingP95Ms=${value.totalProcessing.p95Ms ?: "N/A"} totalProcessingSamples=${value.totalProcessing.samples} " +
+            "${(value.execution ?: header.execution)?.logFields() ?: "execution=N/A"} " +
             "inferenceFps=${number(value.inferenceFps)} inferenceSamples=${value.inference.samples} preprocessSamples=${value.preprocess.samples} pipelineSamples=${value.pipeline.samples} " +
             systemFields(header, value.lastSystemSample)
 

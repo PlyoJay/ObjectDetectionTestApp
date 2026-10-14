@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Environment
 import android.os.SystemClock
 import android.provider.MediaStore
+import com.samin.objectdetection.detector.InferenceExecutionInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -70,9 +71,9 @@ class PerformanceLogRecorder(private val context: Context, private val onFailure
         enqueue(session, "\n$summary\n")
     }
 
-    fun recordEvent(trace: FrameTrace) {
+    fun recordEvent(trace: FrameTrace, execution: InferenceExecutionInfo? = null) {
         val session = activeSession ?: return
-        enqueue(session, "ERROR | ${PerformanceLogFormatter.formatTrace(trace)}")
+        session.logging.recordEvent(trace, execution)
     }
 
     fun recordOverlay(trace: FrameTrace, wallMs: Long, elapsedNs: Long, ageMs: Long) {

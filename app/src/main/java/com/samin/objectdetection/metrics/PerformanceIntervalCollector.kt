@@ -1,5 +1,6 @@
 package com.samin.objectdetection.metrics
 
+import com.samin.objectdetection.detector.InferenceExecutionInfo
 import kotlin.math.ceil
 
 data class ExactMetricStats(val samples: Long, val averageMs: Double?, val p95Ms: Long?)
@@ -13,7 +14,9 @@ data class PerformanceIntervalSummary(
     val preprocess: ExactMetricStats,
     val pipeline: ExactMetricStats,
     val inferenceFps: Double?,
-    val lastSystemSample: SystemMetricsSample?
+    val lastSystemSample: SystemMetricsSample?,
+    val totalProcessing: ExactMetricStats = ExactMetricStats(0, null, null),
+    val execution: InferenceExecutionInfo? = null
 )
 
 /** Only small histogram updates/copies hold the lock. Sorting/formatting runs on a worker.
@@ -34,6 +37,12 @@ class PerformanceIntervalCollector(private val startedElapsedNs: Long) {
         if (sample.elapsedNs < startedElapsedNs) return
         buckets.getOrPut((sample.elapsedNs - startedElapsedNs) / INTERVAL_NS) { Bucket() }.system = sample
         cumulative.system = sample
+    }
+
+    @Synchronized fun recordExecution(execution: InferenceExecutionInfo?, completedNs: Long) {
+        if (execution == null || completedNs < startedElapsedNs) return
+        buckets.getOrPut((completedNs - startedElapsedNs) / INTERVAL_NS) { Bucket() }.execution = execution
+        cumulative.execution = execution
     }
 
     fun interval(index: Long, stoppedElapsedNs: Long): PerformanceIntervalSummary {
@@ -61,20 +70,26 @@ class PerformanceIntervalCollector(private val startedElapsedNs: Long) {
         val inference = Histogram()
         val preprocess = Histogram()
         val pipeline = Histogram()
+        val totalProcessing = Histogram()
         var system: SystemMetricsSample? = null
+        var execution: InferenceExecutionInfo? = null
         fun record(frame: PerformanceFrameRecord) {
             frames++
             inference.add(frame.inferenceMs); preprocess.add(frame.preprocessMs); pipeline.add(frame.pipelineMs)
+            totalProcessing.add(frame.totalProcessingMs)
+            frame.execution?.let { execution = it }
         }
         fun copy() = Bucket().also {
             it.frames = frames; it.inference.copyFrom(inference); it.preprocess.copyFrom(preprocess)
             it.pipeline.copyFrom(pipeline); it.system = system
+            it.totalProcessing.copyFrom(totalProcessing)
+            it.execution = execution
         }
         fun summarize(index: Long?, startNs: Long, endNs: Long): PerformanceIntervalSummary {
             val durationNs = (endNs - startNs).coerceAtLeast(0)
             return PerformanceIntervalSummary(index, startNs / 1e9, endNs / 1e9, frames,
                 inference.stats(), preprocess.stats(), pipeline.stats(),
-                if (durationNs > 0) frames * 1e9 / durationNs else null, system)
+                if (durationNs > 0) frames * 1e9 / durationNs else null, system, totalProcessing.stats(), execution)
         }
     }
 

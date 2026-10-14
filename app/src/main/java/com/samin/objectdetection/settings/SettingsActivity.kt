@@ -4,6 +4,8 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.ImageFormat
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
 import android.os.Bundle
@@ -11,9 +13,11 @@ import android.text.InputType
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.InputMethodManager
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.SeekBar
@@ -26,7 +30,9 @@ import androidx.activity.OnBackPressedCallback
 import androidx.lifecycle.lifecycleScope
 import androidx.core.widget.doAfterTextChanged
 import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.doOnLayout
 import com.samin.objectdetection.camera.SizeFilterMode
 import com.samin.objectdetection.camera.YoloResizeMode
 import com.samin.objectdetection.detector.ModelAssets
@@ -48,14 +54,36 @@ class SettingsActivity : ComponentActivity() {
     private var editing = AppSettings()
     private var binding = false
     private var dirty = false
+    private lateinit var pageTitle: TextView
+    private lateinit var backButton: Button
+    private val screens = linkedMapOf<String, ScrollView>()
+    private val inputs = linkedMapOf<String, View>()
+    private val summaries = linkedMapOf<String, TextView>()
+    private val restoredScrollOffsets = linkedMapOf<String, Int>()
+    private var currentScreen = HOME
+    private var selectedPresetName = SettingsPresets.DEFAULT
+
+    private enum class Category(val title: String, val description: String, val icon: Int) {
+        CAMERA("카메라 및 입력", "해상도, ROI, 탐지 간격과 Resize / Letterbox", android.R.drawable.ic_menu_camera),
+        YOLO("YOLO 모델 및 추론", "모델 정보, 스레드 수, Confidence와 NMS", android.R.drawable.ic_menu_manage),
+        FILTERS("탐지 필터 및 경고", "Size / Geometry / Temporal, 추적, ML Kit와 경고 출력", android.R.drawable.ic_dialog_alert),
+        PERFORMANCE("성능 측정 및 로그", "시스템 진단, 샘플 간격과 로그 내보내기", android.R.drawable.ic_menu_recent_history),
+        DEBUG("디버그 및 고급 설정", "상세 로그, 입력 PNG, 텐서 진단과 Overlay 표시", android.R.drawable.ic_menu_info_details)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            isAppearanceLightStatusBars = true
+            isAppearanceLightNavigationBars = true
+        }
         store = AppSettingsStore(this)
-        applied = store.loadApplied()
-        editing = applied
+        // Recreating this editor must not advance the store's runtime rollback state.
+        applied = savedInstanceState?.getString("applied")?.let(AppSettingsCodec::decode) ?: store.loadApplied()
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() = leave()
+            override fun handleOnBackPressed() {
+                if (currentScreen != HOME) showScreen(HOME) else leave()
+            }
         })
 
         val page = LinearLayout(this).apply {
@@ -63,61 +91,176 @@ class SettingsActivity : ComponentActivity() {
             setBackgroundColor(Color.rgb(245, 245, 245))
         }
         ViewCompat.setOnApplyWindowInsetsListener(page) { view, insets ->
-            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.ime())
             view.setPadding(0, bars.top, 0, bars.bottom)
             insets
         }
-        val scrollContent = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(16), dp(12), dp(16), dp(24))
+        backButton = Button(this).apply {
+            text = "‹ 설정 목록"
+            setOnClickListener { showScreen(HOME) }
         }
-        val scroll = ScrollView(this).apply { addView(scrollContent) }
-        page.addView(scroll, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
-
-        addHeader(scrollContent, "객체 인식 설정", "값은 적용 및 저장을 누르기 전까지 실행 중인 파이프라인에 반영되지 않습니다.")
-        buildPresetSection(scrollContent)
-        form = Form(scrollContent)
-        buildReadOnlySection(scrollContent)
-        buildCameraSection(scrollContent)
-        buildYoloSection(scrollContent)
-        buildFilterSection(scrollContent)
-        buildMotionSection(scrollContent)
-        buildWarningSection(scrollContent)
-        buildOverlaySection(scrollContent)
-        buildMlKitSection(scrollContent)
-        buildPerformanceLogSection(scrollContent)
-        buildDebugSection(scrollContent)
-        buildShareSection(scrollContent)
+        page.addView(backButton, match())
+        pageTitle = TextView(this).apply {
+            textSize = 24f; setTextColor(Color.BLACK); setPadding(dp(16), dp(8), dp(16), 0)
+            accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
+            isFocusableInTouchMode = true
+        }
+        page.addView(pageTitle, match())
+        presetStatus = note(page, "").apply { setPadding(dp(16), dp(4), dp(16), dp(8)) }
+        val host = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        page.addView(host, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
+        form = Form(host)
+        val home = createScreen(host, HOME)
+        note(home, "각 카테고리에서 편집한 값은 ‘적용 및 저장’을 누를 때 함께 반영됩니다. 요약은 현재 적용값입니다.")
+        Category.entries.forEach { category ->
+            buildCategoryCard(home, category)
+            val content = createScreen(host, category.name)
+            note(content, category.description)
+            when (category) {
+                Category.CAMERA -> buildCameraSection(content)
+                Category.YOLO -> { buildYoloSection(content); buildReadOnlySection(content) }
+                Category.FILTERS -> {
+                    buildFilterSection(content); buildMotionSection(content)
+                    buildMlKitSection(content); buildWarningSection(content)
+                }
+                Category.PERFORMANCE -> { buildPerformanceLogSection(content); buildShareSection(content) }
+                Category.DEBUG -> { buildDebugSection(content); buildOverlaySection(content) }
+            }
+        }
+        buildPresetSection(home)
 
         val actions = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
+            orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
             setPadding(dp(8), dp(8), dp(8), dp(8))
             setBackgroundColor(Color.WHITE)
         }
-        actions.addView(Button(this).apply { text = "초기화"; setOnClickListener { bind(SettingsPresets.byName(SettingsPresets.DEFAULT)!!) } }, weighted())
-        actions.addView(Button(this).apply { text = "취소"; setOnClickListener { leave() } }, weighted())
-        actions.addView(Button(this).apply { text = "적용 및 저장"; setOnClickListener { applyAndFinish() } }, weighted())
+        actions.addView(Button(this).apply { text = "적용 및 저장"; setOnClickListener { applyAndFinish() } }, match())
+        val secondary = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        secondary.addView(Button(this).apply { text = "초기화"; setOnClickListener { bind(SettingsPresets.byName(SettingsPresets.DEFAULT)!!) } }, weighted())
+        secondary.addView(Button(this).apply { text = "취소"; setOnClickListener { leave() } }, weighted())
+        actions.addView(secondary, match())
         page.addView(actions)
         setContentView(page)
         bind(applied)
+        savedInstanceState?.let { restoreDraft(it) }
+        if (savedInstanceState != null) screens.keys.forEach { key ->
+            restoredScrollOffsets[key] = savedInstanceState.getInt("scroll.$key")
+        }
+        showScreen(savedInstanceState?.getString("screen") ?: HOME)
+    }
+
+    private fun createScreen(host: LinearLayout, key: String): LinearLayout {
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(4), dp(16), dp(24))
+        }
+        val scroll = ScrollView(this).apply {
+            isFillViewport = true; visibility = View.GONE
+            addView(content, match())
+        }
+        screens[key] = scroll
+        host.addView(scroll, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        return content
+    }
+
+    private fun buildCategoryCard(parent: LinearLayout, category: Category) {
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(12), dp(12), dp(12), dp(12))
+            background = GradientDrawable().apply { setColor(Color.WHITE); cornerRadius = dp(8).toFloat() }
+            isFocusable = true
+            val attrs = obtainStyledAttributes(intArrayOf(android.R.attr.selectableItemBackground))
+            foreground = attrs.getDrawable(0); attrs.recycle()
+            setOnClickListener { showScreen(category.name) }
+            contentDescription = "${category.title}. ${category.description}"
+        }
+        card.addView(ImageView(this).apply {
+            setImageResource(category.icon); setColorFilter(Color.rgb(30, 70, 130))
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        }, LinearLayout.LayoutParams(dp(28), dp(28)).apply { marginEnd = dp(12) })
+        val labels = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+        }
+        labels.addView(TextView(this).apply {
+            text = category.title; textSize = 18f; setTextColor(Color.rgb(30, 70, 130))
+            setTypeface(typeface, Typeface.BOLD)
+        }, match())
+        note(labels, category.description)
+        summaries[category.name] = note(labels, "")
+        card.addView(labels, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        parent.addView(card, match().apply { bottomMargin = dp(8) })
+    }
+
+    private fun showScreen(key: String) {
+        currentFocus?.clearFocus()
+        pageTitle.requestFocus()
+        getSystemService(InputMethodManager::class.java).hideSoftInputFromWindow(pageTitle.windowToken, 0)
+        currentScreen = key.takeIf { it in screens } ?: HOME
+        screens.forEach { (name, scroll) -> scroll.visibility = if (name == currentScreen) View.VISIBLE else View.GONE }
+        pageTitle.text = Category.entries.firstOrNull { it.name == currentScreen }?.title ?: "객체 인식 설정"
+        backButton.visibility = if (currentScreen == HOME) View.GONE else View.VISIBLE
+        restoredScrollOffsets.remove(currentScreen)?.let { offset ->
+            val scroll = screens.getValue(currentScreen)
+            scroll.doOnLayout { scroll.scrollTo(0, offset) }
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString("applied", AppSettingsCodec.encode(applied))
+        outState.putString("editing", AppSettingsCodec.encode(editing))
+        outState.putString("preset", selectedPresetName)
+        outState.putString("customName", customName.text.toString())
+        outState.putString("screen", currentScreen)
+        screens.forEach { (key, scroll) -> outState.putInt("scroll.$key", restoredScrollOffsets[key] ?: scroll.scrollY) }
+        inputs.forEach { (key, view) ->
+            // Store raw text too: a temporarily empty/invalid field is still an editor draft.
+            when (view) {
+                is EditText -> outState.putString(key, view.text.toString())
+                is Switch -> outState.putBoolean(key, view.isChecked)
+                is Spinner -> outState.putString(key, view.selectedItem.toString())
+            }
+        }
+    }
+
+    private fun restoreDraft(state: Bundle) {
+        binding = true
+        editing = state.getString("editing")?.let(AppSettingsCodec::decode) ?: applied
+        selectedPresetName = state.getString("preset") ?: editing.presetName
+        select(presetSpinner, selectedPresetName)
+        customName.setText(state.getString("customName"))
+        inputs.forEach { (key, view) ->
+            if (state.containsKey(key)) when (view) {
+                is EditText -> view.setText(state.getString(key))
+                is Switch -> view.isChecked = state.getBoolean(key)
+                is Spinner -> select(view, state.getString(key).orEmpty())
+            }
+        }
+        updateDependentState()
+        binding = false
+        markDirty()
     }
 
     private fun buildPresetSection(parent: LinearLayout) {
         section(parent, "프리셋")
         presetSpinner = Spinner(this)
+        presetSpinner.isSaveEnabled = false
         parent.addView(presetSpinner, match())
-        presetStatus = note(parent, "현재 적용: ${applied.presetName}")
         customName = EditText(this).apply { hint = "사용자 프리셋 이름"; inputType = InputType.TYPE_CLASS_TEXT }
+        customName.isSaveEnabled = false
         parent.addView(customName, match())
-        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        row.addView(Button(this).apply { text = "저장"; setOnClickListener { saveCustom() } }, weighted())
-        row.addView(Button(this).apply { text = "이름 변경"; setOnClickListener { renameCustom() } }, weighted())
-        row.addView(Button(this).apply { text = "삭제"; setOnClickListener { deleteCustom() } }, weighted())
+        note(parent, "프리셋 저장은 현재 편집값을 이름으로 보관합니다. 실행 중인 설정은 ‘적용 및 저장’으로 변경합니다.")
+        val row = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        row.addView(Button(this).apply { text = "프리셋 저장"; setOnClickListener { saveCustom() } }, match())
+        row.addView(Button(this).apply { text = "이름 변경"; setOnClickListener { renameCustom() } }, match())
+        row.addView(Button(this).apply { text = "삭제"; setOnClickListener { deleteCustom() } }, match())
         parent.addView(row)
         refreshPresetSpinner(applied.presetName)
         presetSpinner.onItemSelectedListener = SimpleItemSelectedListener { name ->
-            if (binding) return@SimpleItemSelectedListener
+            if (binding || name == selectedPresetName) return@SimpleItemSelectedListener
+            selectedPresetName = name
             val chosen = SettingsPresets.byName(name) ?: store.loadCustomPreset(name)
             if (chosen != null) bind(chosen)
         }
@@ -160,12 +303,13 @@ class SettingsActivity : ComponentActivity() {
         form.confidence = floatSlider(parent, "Confidence Threshold", 0f, 1f)
         form.nms = floatSlider(parent, "NMS Threshold", 0f, 1f)
         form.threads = number(parent, "Interpreter Thread Count", "1..16")
+        note(parent, "추론 실행 방식: CPU (XNNPACK 요청). 같은 조건에서 기존 스레드 설정 2 / 4를 비교하세요. 현재 LiteRT 2.1.1 Interpreter는 GPU Delegate를 지원하지 않습니다. 실제 실행·오류 상태는 성능 로그에 기록됩니다.")
         form.maxCandidates = number(parent, "Max Candidates", "1..10000")
-        form.sizeMode = choice(parent, "Size Filter Mode", SizeFilterMode.entries.map { it.name })
     }
 
     private fun buildFilterSection(parent: LinearLayout) {
         section(parent, "객체 필터")
+        form.sizeMode = choice(parent, "Size Filter Mode", SizeFilterMode.entries.map { it.name })
         form.geometry = toggle(parent, "Geometry Filter")
         form.minArea = number(parent, "Min Box Area Ratio", "0..1", decimal = true)
         form.minWidth = number(parent, "Min Box Width Ratio", "0..1", decimal = true)
@@ -180,6 +324,7 @@ class SettingsActivity : ComponentActivity() {
 
     private fun buildMotionSection(parent: LinearLayout) {
         section(parent, "Motion / Tracking")
+        note(parent, "Min Sample Interval은 객체 추적 간격입니다. 시스템 성능 로그의 Sample Interval은 ‘성능 측정 및 로그’에서 설정합니다.")
         form.maxHistory = number(parent, "Max History Size", "1..100")
         form.minHistory = number(parent, "Min History Size", "1..Max")
         form.matchDistance = number(parent, "Max Match Distance Ratio", "0..1", true)
@@ -258,7 +403,7 @@ class SettingsActivity : ComponentActivity() {
         if (!::form.isInitialized) return
         binding = true
         editing = value
-        val expectedDirty = value != applied
+        selectedPresetName = value.presetName
         select(presetSpinner, value.presetName)
         customName.setText(if (value.presetName in SettingsPresets.builtInNames) "" else value.presetName)
         with(value.camera) {
@@ -308,16 +453,9 @@ class SettingsActivity : ComponentActivity() {
         }
         updateDependentState()
         binding = false
-        dirty = expectedDirty
-        updateStatus()
         installDirtyListeners(form.container)
-        // Spinner listeners receive an initial selection callback after binding; it is not a user edit.
-        presetStatus.post {
-            if (editing == value) {
-                dirty = expectedDirty
-                updateStatus()
-            }
-        }
+        markDirty()
+        updateSummaries()
     }
 
     private fun readForm(presetName: String = SettingsPresets.CUSTOM): AppSettings {
@@ -348,8 +486,8 @@ class SettingsActivity : ComponentActivity() {
     private fun applyAndFinish() {
         val value = parseOrShow() ?: return
         val finalName = value.presetName.takeIf { selectedPresetMatches(value) } ?: SettingsPresets.CUSTOM
-        val finalValue = value.copy(presetName = finalName)
-        store.saveApplied(finalValue)
+        val finalValue = if (value == applied) applied else value.copy(presetName = finalName)
+        if (finalValue != applied) store.saveApplied(finalValue)
         setResult(RESULT_OK, Intent().putExtra(EXTRA_APPLIED, true))
         finish()
     }
@@ -373,14 +511,23 @@ class SettingsActivity : ComponentActivity() {
     private fun saveCustom() {
         val value = parseOrShow(SettingsPresets.CUSTOM) ?: return
         runCatching { store.saveCustomPreset(customName.text.toString(), value) }
-            .onSuccess { refreshPresetSpinner(customName.text.toString().trim()); Toast.makeText(this, "프리셋 저장 완료", Toast.LENGTH_SHORT).show() }
+            .onSuccess {
+                val name = customName.text.toString().trim()
+                refreshPresetSpinner(name)
+                bind(requireNotNull(store.loadCustomPreset(name)))
+                Toast.makeText(this, "프리셋 저장 완료", Toast.LENGTH_SHORT).show()
+            }
             .onFailure { Toast.makeText(this, it.message, Toast.LENGTH_LONG).show() }
     }
 
     private fun renameCustom() {
         val old = presetSpinner.selectedItem?.toString().orEmpty()
         runCatching { store.renameCustomPreset(old, customName.text.toString()) }
-            .onSuccess { refreshPresetSpinner(customName.text.toString().trim()) }
+            .onSuccess {
+                val name = customName.text.toString().trim()
+                refreshPresetSpinner(name)
+                bind(requireNotNull(store.loadCustomPreset(name)))
+            }
             .onFailure { Toast.makeText(this, it.message, Toast.LENGTH_LONG).show() }
     }
 
@@ -392,7 +539,8 @@ class SettingsActivity : ComponentActivity() {
 
     private fun refreshPresetSpinner(selected: String) {
         val names = SettingsPresets.builtInNames + SettingsPresets.CUSTOM + store.customPresetNames()
-        presetSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, names)
+        selectedPresetName = selected
+        presetSpinner.adapter = wrappingAdapter(names + listOf(selected).filterNot { it in names })
         select(presetSpinner, selected)
     }
 
@@ -417,8 +565,41 @@ class SettingsActivity : ComponentActivity() {
         form.systemSampleInterval.isEnabled = form.systemDiagnostics.isChecked
     }
 
-    private fun markDirty() { if (!binding) { dirty = true; updateStatus() } }
+    private fun markDirty() {
+        if (!binding) {
+            // Compare values, so initial Spinner callbacks, focus changes and edits reverted
+            // to their original value cannot turn navigation into a settings change.
+            dirty = runCatching { readForm(editing.presetName) != applied }.getOrDefault(true)
+            updateStatus()
+        }
+    }
     private fun updateStatus() { presetStatus.text = "현재 적용: ${applied.presetName}" + if (dirty) "  •  미적용 변경 있음" else "" }
+
+    private fun updateSummaries() {
+        fun Boolean.onOff() = if (this) "ON" else "OFF"
+        summaries[Category.CAMERA.name]?.text = with(applied) {
+            "현재 적용: ${camera.requestedWidth}×${camera.requestedHeight} · ${camera.detectIntervalMs} ms\n" +
+                "ROI ${if (camera.useCenterSquareCrop) "Center Square" else "Full Frame"} · ${yolo.resizeMode}"
+        }
+        summaries[Category.YOLO.name]?.text = with(applied.yolo) {
+            "현재 적용: $interpreterThreadCount threads · Confidence $confidenceThreshold · NMS $nmsThreshold"
+        }
+        summaries[Category.FILTERS.name]?.text = with(applied) {
+            "현재 적용: Size ${filters.sizeFilterMode} · Geometry ${filters.geometryFilterEnabled.onOff()}\n" +
+                "Temporal ${filters.adaptiveTemporalEnabled.onOff()} · ML Kit ${mlKit.enabled.onOff()}"
+        }
+        summaries[Category.PERFORMANCE.name]?.text = with(applied.performanceLog) {
+            "현재 적용: 시스템 진단 ${systemDiagnosticsEnabled.onOff()} · $sampleIntervalMs ms"
+        }
+        summaries[Category.DEBUG.name]?.text = with(applied) {
+            "현재 적용: 상세 로그 ${debug.debugDetectionLogging.onOff()} · 입력 PNG ${debug.debugSaveInferenceInput.onOff()}\n" +
+                "Overlay ${overlay.enabled.onOff()} · ${overlay.debugMode}"
+        }
+        summaries.values.forEach { label ->
+            (label.parent.parent as View).contentDescription =
+                Category.entries.first { summaries[it.name] === label }.let { "${it.title}. ${it.description}. ${label.text}" }
+        }
+    }
 
     private fun leave() {
         if (!dirty) { finish(); return }
@@ -426,10 +607,6 @@ class SettingsActivity : ComponentActivity() {
             .setNegativeButton("계속 편집", null).setPositiveButton("버리기") { _, _ -> finish() }.show()
     }
 
-    private fun addHeader(parent: LinearLayout, title: String, description: String) {
-        parent.addView(TextView(this).apply { text = title; textSize = 24f; setTextColor(Color.BLACK) })
-        note(parent, description)
-    }
     private fun section(parent: LinearLayout, title: String) {
         parent.addView(TextView(this).apply { text = title; textSize = 19f; setTextColor(Color.rgb(30, 70, 130)); setPadding(0, dp(24), 0, dp(6)) })
     }
@@ -440,13 +617,40 @@ class SettingsActivity : ComponentActivity() {
         parent.addView(TextView(this).apply { text = label; setTextColor(Color.BLACK) })
         return EditText(this).apply {
             hint = hintText; inputType = InputType.TYPE_CLASS_NUMBER or if (decimal) InputType.TYPE_NUMBER_FLAG_DECIMAL else 0
+            registerInput(label, this)
             parent.addView(this, match())
         }
     }
-    private fun toggle(parent: LinearLayout, label: String): Switch = Switch(this).apply { text = label; parent.addView(this, match()) }
+    private fun toggle(parent: LinearLayout, label: String): Switch = Switch(this).apply {
+        text = label; minHeight = dp(48); setPadding(0, dp(8), 0, dp(8))
+        registerInput(label, this); parent.addView(this, match())
+    }
     private fun choice(parent: LinearLayout, label: String, values: List<String>): Spinner {
         parent.addView(TextView(this).apply { text = label; setTextColor(Color.BLACK) })
-        return Spinner(this).apply { adapter = ArrayAdapter(this@SettingsActivity, android.R.layout.simple_spinner_dropdown_item, values); parent.addView(this, match()) }
+        return Spinner(this).apply {
+            adapter = wrappingAdapter(values); registerInput(label, this); parent.addView(this, match())
+        }
+    }
+
+    private fun registerInput(label: String, view: View) {
+        check(label !in inputs) { "Duplicate setting label: $label" }
+        inputs[label] = view
+        view.tag = label
+        view.contentDescription = label
+        view.isSaveEnabled = false // Draft restoration is explicit, including disabled fields.
+    }
+
+    private fun wrappingAdapter(values: List<String>) = object : ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, values) {
+        override fun getView(position: Int, convertView: View?, parent: ViewGroup): View =
+            wrap(super.getView(position, convertView, parent))
+        override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View =
+            wrap(super.getDropDownView(position, convertView, parent))
+        private fun wrap(view: View): View = view.apply {
+            (this as TextView).apply {
+                setSingleLine(false); ellipsize = null; minHeight = dp(48)
+                setPadding(dp(8), dp(8), dp(8), dp(8))
+            }
+        }
     }
     private fun floatSlider(parent: LinearLayout, label: String, min: Float, max: Float): EditText {
         val edit = number(parent, label, "$min..$max", true)
@@ -462,10 +666,15 @@ class SettingsActivity : ComponentActivity() {
                 seek.progress = (((it - min) / (max - min)) * 1000).toInt().coerceIn(0, 1000)
             }
         }
-        edit.setOnFocusChangeListener { _, hasFocus -> if (!hasFocus) { edit.text.toString().toFloatOrNull()?.let { seek.progress = (((it - min) / (max - min)) * 1000).toInt().coerceIn(0, 1000) }; markDirty() } }
         return edit
     }
     private fun select(spinner: Spinner, value: String) {
+        // Keep saved resolutions even when this device cannot offer them. CameraX still
+        // negotiates the actual resolution; visiting this screen must not rewrite it.
+        if (spinner === form.cameraResolution && (0 until spinner.adapter.count).none { spinner.adapter.getItem(it).toString() == value }) {
+            val existing = (0 until spinner.adapter.count).map { spinner.adapter.getItem(it).toString() }
+            spinner.adapter = wrappingAdapter(existing + value)
+        }
         val index = (0 until spinner.adapter.count).firstOrNull { spinner.adapter.getItem(it).toString() == value } ?: 0
         spinner.setSelection(index)
     }
@@ -490,7 +699,7 @@ class SettingsActivity : ComponentActivity() {
     private fun weighted() = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 
-    private inner class Form(val container: LinearLayout) {
+    private inner class Form(val container: ViewGroup) {
         lateinit var systemDiagnostics: Switch; lateinit var systemSampleInterval: EditText
         lateinit var detectInterval: EditText; lateinit var centerCrop: Switch; lateinit var resizeMode: Spinner; lateinit var cameraResolution: Spinner
         lateinit var confidence: EditText; lateinit var nms: EditText; lateinit var threads: EditText; lateinit var maxCandidates: EditText; lateinit var sizeMode: Spinner
@@ -512,6 +721,7 @@ class SettingsActivity : ComponentActivity() {
 
     companion object {
         const val EXTRA_APPLIED = "settings_applied"
+        private const val HOME = "home"
         private const val DIRTY_TAG_KEY = 0x1f0b00aa
     }
 }

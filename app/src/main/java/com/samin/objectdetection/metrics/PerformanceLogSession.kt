@@ -1,6 +1,7 @@
 package com.samin.objectdetection.metrics
 
 import com.samin.objectdetection.logging.OrderedLogWriter
+import com.samin.objectdetection.detector.InferenceExecutionInfo
 import java.io.BufferedWriter
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicLong
@@ -63,6 +64,12 @@ class PerformanceLogSession(
 
     fun append(line: () -> String) = synchronized(lock) {
         if (!closing) writer.append(line)
+    }
+
+    fun recordEvent(trace: FrameTrace, execution: InferenceExecutionInfo?) = synchronized(lock) {
+        if (closing) return@synchronized
+        stats.recordExecution(execution, trace.completedElapsedNs ?: elapsedNow())
+        writer.append { "ERROR | ${PerformanceLogFormatter.formatTrace(trace)} | ${execution?.logFields() ?: "execution=N/A"}" }
     }
 
     fun close(snapshot: PerformanceSnapshot): CompletableFuture<Unit> = synchronized(lock) {

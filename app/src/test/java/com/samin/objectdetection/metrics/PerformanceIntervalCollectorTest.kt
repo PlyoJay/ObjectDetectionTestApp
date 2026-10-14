@@ -2,8 +2,32 @@ package com.samin.objectdetection.metrics
 
 import org.junit.Assert.*
 import org.junit.Test
+import com.samin.objectdetection.detector.InferenceExecutionInfo
 
 class PerformanceIntervalCollectorTest {
+    @Test fun failedInferenceExecutionRemainsInFinalSummaryWithoutBecomingLatencySample() {
+        val collector = PerformanceIntervalCollector(0)
+        val ready = InferenceExecutionInfo(cpuThreads = 4, xnnpackRequested = true, lastInference = "SUCCESS")
+        collector.record(frame().copy(execution = ready), 1_000_000_000L)
+        collector.recordExecution(ready.copy(lastInference = "ERROR", inferenceErrors = 1), 31_000_000_000L)
+        val summaries = collector.finalSummaries(32_000_000_000L)
+        assertEquals(1L, summaries.first().inference.samples)
+        assertEquals(1L, summaries.first().execution?.inferenceErrors)
+        assertEquals("ERROR", summaries.last().execution?.lastInference)
+        assertEquals(0L, summaries.last().inference.samples)
+    }
+    @Test fun totalProcessingIncludesConversionWithoutChangingLegacyPipelineStatistics() {
+        val collector = PerformanceIntervalCollector(0)
+        collector.record(frame(100).copy(totalProcessingMs = 150), 1_000_000_000L)
+        collector.record(frame(200).copy(totalProcessingMs = 270), 2_000_000_000L)
+        collector.record(frame(300), 3_000_000_000L) // missing value is excluded
+        val all = collector.finalSummaries(4_000_000_000L).first()
+        assertEquals(2L, all.totalProcessing.samples)
+        assertEquals(210.0, all.totalProcessing.averageMs!!, 0.0)
+        assertEquals(270L, all.totalProcessing.p95Ms)
+        assertEquals(222.0, all.pipeline.averageMs!!, 0.0)
+        assertEquals(322L, all.pipeline.p95Ms)
+    }
     @Test fun completionBoundariesAndFinalPartialUseActualFrames() {
         val collector = PerformanceIntervalCollector(1_000_000_000L)
         collector.record(frame(100), 2_000_000_000L)

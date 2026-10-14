@@ -676,7 +676,10 @@ class MainActivity : ComponentActivity() {
                     visibleDetectionCount = visibleMapped.size,
                     warningDetectionCount = warningDetections.size,
                     fps = currentFps, analyzerFps = rates.analyzerFps,
-                    inferenceFps = rates.inferenceFps, trace = trace
+                    inferenceFps = rates.inferenceFps, trace = trace,
+                    execution = detector.executionInfo(),
+                    totalProcessingMs = if (frameTiming.analyzerReceivedElapsedNs > 0L)
+                        (completedNs - frameTiming.analyzerReceivedElapsedNs).coerceAtLeast(0L) / 1_000_000L else -1L
                 )
             )
             performanceSummary?.let(performanceLogRecorder::recordSummary)
@@ -873,7 +876,8 @@ class MainActivity : ComponentActivity() {
             settingsSnapshot = AppSettingsCodec.snapshotLines(appSettings),
             sessionId = sessionId, startedElapsedNs = startedElapsedNs,
             systemDiagnosticsEnabled = appSettings.performanceLog.systemDiagnosticsEnabled,
-            systemSampleIntervalMs = appSettings.performanceLog.sampleIntervalMs
+            systemSampleIntervalMs = appSettings.performanceLog.sampleIntervalMs,
+            execution = detector.executionInfo()
         )
         performanceLogButton.isEnabled = false
         metricsCollector.startPerformanceSession(startedAtMs, startedElapsedNs)
@@ -1039,7 +1043,7 @@ class MainActivity : ComponentActivity() {
             completedAtMs = System.currentTimeMillis(), completedElapsedNs = SystemClock.elapsedRealtimeNanos())
         evaluationDataRecorder.recordError(trace, timing.frameWidth.takeIf { it > 0 } ?: actualAnalysisWidth,
             timing.frameHeight.takeIf { it > 0 } ?: actualAnalysisHeight)
-        performanceLogRecorder.recordEvent(trace)
+        performanceLogRecorder.recordEvent(trace, detector.executionInfo())
         val rates = frameRates.snapshot(checkNotNull(trace.completedElapsedNs))
         postLatestDetectionUiUpdate {
             overlayView.updateDetections(emptyList(), actualAnalysisWidth, actualAnalysisHeight, -1,

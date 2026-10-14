@@ -9,6 +9,59 @@ import java.nio.ByteOrder
 class YoloTensorContractTest {
     private fun buffer(size: Int) = ByteBuffer.allocate(size).order(ByteOrder.LITTLE_ENDIAN)
 
+    @Test fun floatFastPathIsByteIdenticalForEveryChannelValueAndBothLayoutsOnReuse() {
+        val pixels = IntArray(256) { (0xff shl 24) or (it shl 16) or ((255 - it) shl 8) or ((it * 73 % 256)) }
+        for (order in listOf(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
+            for (layout in RgbTensorLayout.entries) {
+                val legacy = ByteBuffer.allocate(pixels.size * 12).order(order)
+                val optimized = ByteBuffer.allocateDirect(pixels.size * 12).order(order)
+                val view = optimized.asFloatBuffer()
+                repeat(3) { iteration ->
+                    val frame = if (iteration % 2 == 0) pixels else pixels.reversedArray()
+                    RgbTensorWriter.fill(legacy, frame, layout, TensorValueCodec(DataType.FLOAT32))
+                    RgbTensorWriter.fillFloat32(view, frame, layout)
+                    val actual = ByteArray(optimized.capacity())
+                    optimized.rewind(); optimized.get(actual); optimized.rewind()
+                    assertArrayEquals("layout=$layout order=$order frame=$iteration", legacy.array(), actual)
+                    assertEquals(0, view.position())
+                }
+            }
+        }
+    }
+
+    @Test fun outputReaderPreservesValuesAndAxesForFloatAndQuantizedOutputsOnReuse() {
+        val codecs = listOf(TensorValueCodec(DataType.FLOAT32), TensorValueCodec(DataType.UINT8, 1/255f, 0),
+            TensorValueCodec(DataType.INT8, 1/255f, -128))
+        val values = floatArrayOf(0f, 0.01f, 0.2f, 0.5f, 1f, 0.45f)
+        for (codec in codecs) for (channelsFirst in listOf(true, false)) {
+            val bytes = buffer(values.size * if (codec.type == DataType.FLOAT32) 4 else 1)
+            val view = if (codec.type == DataType.FLOAT32) bytes.asFloatBuffer() else null
+            val rows = Array(3) { FloatArray(2) }
+            repeat(2) { iteration ->
+                bytes.clear()
+                val frame = if (iteration == 0) values else values.reversedArray()
+                frame.forEach { codec.write(bytes, it) }
+                bytes.rewind()
+                val expected = FloatArray(values.size) { codec.read(bytes) }
+                YoloOutputReader.copy(bytes, view, codec, channelsFirst, rows)
+                for (c in rows.indices) for (i in rows[c].indices) {
+                    assertEquals(expected[if (channelsFirst) c * 2 + i else i * 3 + c], rows[c][i], 0f)
+                }
+                assertEquals(0, bytes.position())
+            }
+        }
+    }
+
+    @Test fun bulkOutputCopyPreservesNonFiniteAndSignedZeroBitsForParserDiagnostics() {
+        val bits = intArrayOf(0x80000000.toInt(), 0x7fc01234, 0x7f800000, 0xff800000.toInt())
+        val bytes = buffer(16)
+        bits.forEach { bytes.putInt(it) }
+        val rows = Array(2) { FloatArray(2) }
+        bytes.rewind()
+        YoloOutputReader.copy(bytes, bytes.asFloatBuffer(), TensorValueCodec(DataType.FLOAT32), true, rows)
+        assertArrayEquals(bits, rows.flatMap { row -> row.map { it.toRawBits() } }.toIntArray())
+    }
+
     @Test fun nchwWritesCompleteRgbPlanesAndNhwcPreservesInterleaving() {
         val pixels = intArrayOf(0xffff0000.toInt(), 0xff00ff00.toInt(), 0xff0000ff.toInt(), 0xff804020.toInt())
         val codec = TensorValueCodec(DataType.FLOAT32)

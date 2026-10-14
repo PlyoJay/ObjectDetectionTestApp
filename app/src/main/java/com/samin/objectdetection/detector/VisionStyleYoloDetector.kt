@@ -13,11 +13,14 @@ import com.samin.objectdetection.camera.SizeFilterMode
 import com.samin.objectdetection.camera.YoloResizeMode
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.Tensor
+import org.tensorflow.lite.DataType
+import org.tensorflow.lite.TensorFlowLite
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.nio.FloatBuffer
 
 class VisionStyleYoloDetector(
     private val context: Context,
@@ -32,6 +35,8 @@ class VisionStyleYoloDetector(
 ) : ObjectDetector {
 
     private val interpreter: Interpreter
+    private var closed = false
+    @Volatile private var execution: InferenceExecutionInfo
     private var inputWidth = 640
     private var inputHeight = 640
     private var outputDim = 0
@@ -52,6 +57,8 @@ class VisionStyleYoloDetector(
     private var outputBuffer: ByteBuffer
     private var pixels: IntArray
     private var outputData: Array<FloatArray>
+    private val inputFloatView: FloatBuffer?
+    private val outputFloatView: FloatBuffer?
     private lateinit var reusableInputBitmap: Bitmap
     private lateinit var reusableInputCanvas: Canvas
     private val inputDestination = RectF()
@@ -81,77 +88,99 @@ class VisionStyleYoloDetector(
         val modelBuffer = ModelAssets.load(context, modelName)
         val options = Interpreter.Options().apply {
             setNumThreads(interpreterThreadCount.coerceAtLeast(1))
+            // The bundled 2.1.1 API already defaults to true; make the request explicit.
+            setUseXNNPACK(true)
         }
         interpreter = Interpreter(modelBuffer, options)
-        Log.i(TAG, "[TENSOR_METADATA] inputs=${interpreter.inputTensorCount} outputs=${interpreter.outputTensorCount}")
-        repeat(interpreter.inputTensorCount) { Log.i(TAG, tensorDescription("InputTensor[$it]", interpreter.getInputTensor(it))) }
-        repeat(interpreter.outputTensorCount) { Log.i(TAG, tensorDescription("OutputTensor[$it]", interpreter.getOutputTensor(it))) }
-        require(interpreter.inputTensorCount == 1 && interpreter.outputTensorCount == 1) {
-            "Only a single RGB input / raw YOLO detection output is supported; see TENSOR_METADATA for every tensor"
-        }
-        val inputTensor = interpreter.getInputTensor(0)
-        val outputTensor = interpreter.getOutputTensor(0)
-        val inputShape = inputTensor.shape()
-        inputRgbShape = RgbTensorShape.from(inputShape)
-        inputWidth = inputRgbShape.width
-        inputHeight = inputRgbShape.height
-        inputCodec = codec(inputTensor)
-        outputCodec = codec(outputTensor)
-        require(inputWidth == MODEL_INPUT_SIZE && inputHeight == MODEL_INPUT_SIZE) {
-            "Model input mismatch: expected ${MODEL_INPUT_SIZE}x$MODEL_INPUT_SIZE, " +
-                "actual ${inputWidth}x$inputHeight (shape=${inputShape.contentToString()})"
-        }
-
-        val outputShape = interpreter.getOutputTensor(0).shape()
-        val inputType = interpreter.getInputTensor(0).dataType().toString()
-        val outputType = interpreter.getOutputTensor(0).dataType().toString()
-        outputShapeText = outputShape.contentToString()
-        val parsedShape = try {
-            YoloOutputShape.from(outputShape, labels.size)
-        } catch (error: IllegalArgumentException) {
-            interpreter.close()
-            throw IllegalArgumentException(
-                "Model/label mismatch: model=$modelName labels=${labels.size} " +
-                    "expectedChannels=${YOLO_BOX_VALUE_COUNT + labels.size} actualOutput=$outputShapeText. ${error.message}",
-                error
-            )
-        }
-        isTransposed = parsedShape.channelsFirst
-        boxCount = parsedShape.candidates
-        outputDim = parsedShape.channels
-
-        val modelClassCount = outputDim - YOLO_BOX_VALUE_COUNT
-        require(modelClassCount > 0) {
-            "Invalid YOLO output shape=$outputShapeText: output dimension must include box values and classes"
-        }
-        require(labels.size == modelClassCount) {
-            "Model/label mismatch: model=$modelName exposes $modelClassCount classes, " +
-                "${ModelConfig.LABEL_ASSET_NAME} contains ${labels.size} labels"
-        }
-
-        inputBuffer = ByteBuffer.allocateDirect(inputTensor.numBytes())
-            .order(ByteOrder.nativeOrder())
-        outputBuffer = ByteBuffer.allocateDirect(outputTensor.numBytes())
-            .order(ByteOrder.nativeOrder())
-        pixels = IntArray(inputWidth * inputHeight)
-        outputData = Array(outputDim) { FloatArray(boxCount) }
-        reusableInputBitmap = Bitmap.createBitmap(inputWidth, inputHeight, Bitmap.Config.ARGB_8888)
-        reusableInputCanvas = Canvas(reusableInputBitmap)
-
-        loadedModelIdentity = ModelAssets.identity(context, interpreter, modelName, modelClassCount)
-
-        Log.i(
-            TAG,
-            "modelAsset=asset://$modelName sizeBytes=${loadedModelIdentity.assetSizeBytes} " +
-                "sha256=${loadedModelIdentity.sha256} inputShape=${loadedModelIdentity.inputShape} " +
-                "inputType=$inputType outputShape=${loadedModelIdentity.outputShape} outputType=$outputType " +
-                "labels=${labels.size} classCount=$modelClassCount coordinateScale=${loadedModelIdentity.coordinateScale}"
+        execution = InferenceExecutionInfo(
+            cpuThreads = options.numThreads,
+            xnnpackRequested = options.useXNNPACK,
+            runtimeVersion = runCatching { TensorFlowLite.runtimeVersion() }.getOrDefault("unknown")
         )
-        Log.i(TAG, "[INPUT_CONTRACT] layout=${inputRgbShape.layout} RGB channel/255.0f " +
-            "inputCodec=$inputCodec outputCodec=$outputCodec parser=xywh_plus_class_scores_no_objectness_no_sigmoid")
+        try {
+            Log.i(TAG, "[TENSOR_METADATA] inputs=${interpreter.inputTensorCount} outputs=${interpreter.outputTensorCount}")
+            repeat(interpreter.inputTensorCount) { Log.i(TAG, tensorDescription("InputTensor[$it]", interpreter.getInputTensor(it))) }
+            repeat(interpreter.outputTensorCount) { Log.i(TAG, tensorDescription("OutputTensor[$it]", interpreter.getOutputTensor(it))) }
+            require(interpreter.inputTensorCount == 1 && interpreter.outputTensorCount == 1) {
+                "Only a single RGB input / raw YOLO detection output is supported; see TENSOR_METADATA for every tensor"
+            }
+            val inputTensor = interpreter.getInputTensor(0)
+            val outputTensor = interpreter.getOutputTensor(0)
+            val inputShape = inputTensor.shape()
+            inputRgbShape = RgbTensorShape.from(inputShape)
+            inputWidth = inputRgbShape.width
+            inputHeight = inputRgbShape.height
+            inputCodec = codec(inputTensor)
+            outputCodec = codec(outputTensor)
+            require(inputWidth == MODEL_INPUT_SIZE && inputHeight == MODEL_INPUT_SIZE) {
+                "Model input mismatch: expected ${MODEL_INPUT_SIZE}x$MODEL_INPUT_SIZE, " +
+                    "actual ${inputWidth}x$inputHeight (shape=${inputShape.contentToString()})"
+            }
+
+            val outputShape = interpreter.getOutputTensor(0).shape()
+            val inputType = interpreter.getInputTensor(0).dataType().toString()
+            val outputType = interpreter.getOutputTensor(0).dataType().toString()
+            outputShapeText = outputShape.contentToString()
+            val parsedShape = try {
+                YoloOutputShape.from(outputShape, labels.size)
+            } catch (error: IllegalArgumentException) {
+                throw IllegalArgumentException(
+                    "Model/label mismatch: model=$modelName labels=${labels.size} " +
+                        "expectedChannels=${YOLO_BOX_VALUE_COUNT + labels.size} actualOutput=$outputShapeText. ${error.message}",
+                    error
+                )
+            }
+            isTransposed = parsedShape.channelsFirst
+            boxCount = parsedShape.candidates
+            outputDim = parsedShape.channels
+
+            val modelClassCount = outputDim - YOLO_BOX_VALUE_COUNT
+            require(modelClassCount > 0) {
+                "Invalid YOLO output shape=$outputShapeText: output dimension must include box values and classes"
+            }
+            require(labels.size == modelClassCount) {
+                "Model/label mismatch: model=$modelName exposes $modelClassCount classes, " +
+                    "${ModelConfig.LABEL_ASSET_NAME} contains ${labels.size} labels"
+            }
+
+            inputBuffer = ByteBuffer.allocateDirect(inputTensor.numBytes())
+                .order(ByteOrder.nativeOrder())
+            outputBuffer = ByteBuffer.allocateDirect(outputTensor.numBytes())
+                .order(ByteOrder.nativeOrder())
+            inputFloatView = if (inputCodec.type == DataType.FLOAT32) inputBuffer.asFloatBuffer() else null
+            outputFloatView = if (outputCodec.type == DataType.FLOAT32) outputBuffer.asFloatBuffer() else null
+            pixels = IntArray(inputWidth * inputHeight)
+            outputData = Array(outputDim) { FloatArray(boxCount) }
+            reusableInputBitmap = Bitmap.createBitmap(inputWidth, inputHeight, Bitmap.Config.ARGB_8888)
+            reusableInputCanvas = Canvas(reusableInputBitmap)
+
+            loadedModelIdentity = ModelAssets.identity(context, interpreter, modelName, modelClassCount)
+
+            Log.i(
+                TAG,
+                "modelAsset=asset://$modelName sizeBytes=${loadedModelIdentity.assetSizeBytes} " +
+                    "sha256=${loadedModelIdentity.sha256} inputShape=${loadedModelIdentity.inputShape} " +
+                    "inputType=$inputType outputShape=${loadedModelIdentity.outputShape} outputType=$outputType " +
+                    "labels=${labels.size} classCount=$modelClassCount coordinateScale=${loadedModelIdentity.coordinateScale}"
+            )
+            Log.i(TAG, "[INPUT_CONTRACT] layout=${inputRgbShape.layout} RGB channel/255.0f " +
+                "inputCodec=$inputCodec outputCodec=$outputCodec parser=xywh_plus_class_scores_no_objectness_no_sigmoid")
+            Log.i(TAG, "[INFERENCE_EXECUTION] ${execution.logFields()}")
+        } catch (error: Throwable) {
+            Log.e(TAG, "[INFERENCE_INIT_ERROR] ${execution.logFields()}", error)
+            // Any contract/metadata/bitmap initialization failure must release the native runtime.
+            runCatching { if (::reusableInputCanvas.isInitialized) reusableInputCanvas.setBitmap(null) }
+                .onFailure { error.addSuppressed(it) }
+            runCatching { if (::reusableInputBitmap.isInitialized) reusableInputBitmap.recycle() }
+                .onFailure { error.addSuppressed(it) }
+            runCatching { interpreter.close() }.onFailure { error.addSuppressed(it) }
+            throw error
+        }
     }
 
+    @Synchronized
     override fun detect(bitmap: Bitmap): List<DetectionResult> {
+        check(!closed) { "Detector is closed" }
         latestFrameDiagnostics = null
         val nowMs = SystemClock.elapsedRealtime()
         diagnoseTensorThisFrame = goldenDirectory != null ||
@@ -240,8 +269,18 @@ class VisionStyleYoloDetector(
             runStartedAtMs = System.currentTimeMillis()
             val inferenceStartNs = SystemClock.elapsedRealtimeNanos()
             runStartedNs = inferenceStartNs
-            interpreter.run(inputBuffer, outputBuffer)
+            try {
+                interpreter.run(inputBuffer, outputBuffer)
+            } catch (error: Exception) {
+                execution = execution.copy(lastInference = "ERROR", inferenceErrors = execution.inferenceErrors + 1)
+                Log.e(TAG, "[INFERENCE_EXECUTION] ${execution.logFields()}", error)
+                throw error
+            }
             val inferenceTimeMs = elapsedMs(inferenceStartNs)
+            if (execution.lastInference != "SUCCESS") {
+                execution = execution.copy(lastInference = "SUCCESS")
+                Log.i(TAG, "[INFERENCE_EXECUTION] ${execution.logFields()}")
+            }
             stage = "POSTPROCESS"
             outputBuffer.rewind()
             if (diagnoseTensorThisFrame) {
@@ -277,7 +316,12 @@ class VisionStyleYoloDetector(
 
     private fun fillInputBuffer(bitmap: Bitmap) {
         bitmap.getPixels(pixels, 0, inputWidth, 0, 0, inputWidth, inputHeight)
-        RgbTensorWriter.fill(inputBuffer, pixels, inputRgbShape.layout, inputCodec)
+        if (inputFloatView != null) {
+            RgbTensorWriter.fillFloat32(inputFloatView, pixels, inputRgbShape.layout)
+            inputBuffer.rewind()
+        } else {
+            RgbTensorWriter.fill(inputBuffer, pixels, inputRgbShape.layout, inputCodec)
+        }
     }
 
     private fun parseOutput(
@@ -294,20 +338,7 @@ class VisionStyleYoloDetector(
         val sourceHeight = transform.sourceHeight
         val postprocessStartNs = SystemClock.elapsedRealtimeNanos()
         val outputCopyStartNs = SystemClock.elapsedRealtimeNanos()
-        buffer.rewind()
-        if (isTransposed) {
-            for (c in 0 until outputDim) {
-                for (i in 0 until boxCount) {
-                    outputData[c][i] = outputCodec.read(buffer)
-                }
-            }
-        } else {
-            for (i in 0 until boxCount) {
-                for (c in 0 until outputDim) {
-                    outputData[c][i] = outputCodec.read(buffer)
-                }
-            }
-        }
+        YoloOutputReader.copy(buffer, outputFloatView, outputCodec, isTransposed, outputData)
         val outputCopyTimeMs = elapsedMs(outputCopyStartNs)
 
         if (enableDiagnostics) {
@@ -326,8 +357,7 @@ class VisionStyleYoloDetector(
         var rawCoordinateMin = Float.POSITIVE_INFINITY
         var rawCoordinateMax = Float.NEGATIVE_INFINITY
         var maxClassScore = 0f
-        val diagnosticThresholds = floatArrayOf(0.01f, 0.05f, 0.1f, 0.2f)
-        val aboveThreshold = IntArray(diagnosticThresholds.size)
+        val aboveThreshold = if (diagnoseTensorThisFrame) IntArray(DIAGNOSTIC_THRESHOLDS.size) else null
         val candidateScanStartNs = SystemClock.elapsedRealtimeNanos()
 
         for (i in 0 until boxCount) {
@@ -352,7 +382,9 @@ class VisionStyleYoloDetector(
 
             rawConfidences?.add(bestScore)
             maxClassScore = maxOf(maxClassScore, bestScore)
-            diagnosticThresholds.forEachIndexed { j, threshold -> if (bestScore >= threshold) aboveThreshold[j]++ }
+            if (aboveThreshold != null) {
+                for (j in DIAGNOSTIC_THRESHOLDS.indices) if (bestScore >= DIAGNOSTIC_THRESHOLDS[j]) aboveThreshold[j]++
+            }
 
             debugFrame?.raw(i, bestClassId, labels.getOrElse(bestClassId) { "none" }, bestScore,
                 outputData[0][i], outputData[1][i], outputData[2][i], outputData[3][i], confidenceThreshold)
@@ -381,17 +413,15 @@ class VisionStyleYoloDetector(
 
             // Parser contract: export must normalize xywh in the graph; verify this when replacing the asset.
             // Boxes may extend beyond 1 before clipping; their magnitude is not a unit flag.
-            val normalized = RectF(
-                (cx - w / 2f).coerceIn(0f, 1f),
-                (cy - h / 2f).coerceIn(0f, 1f),
-                (cx + w / 2f).coerceIn(0f, 1f),
-                (cy + h / 2f).coerceIn(0f, 1f)
-            )
+            val normalizedLeft = (cx - w / 2f).coerceIn(0f, 1f)
+            val normalizedTop = (cy - h / 2f).coerceIn(0f, 1f)
+            val normalizedRight = (cx + w / 2f).coerceIn(0f, 1f)
+            val normalizedBottom = (cy + h / 2f).coerceIn(0f, 1f)
 
-            val left = transform.sourceX(normalized.left)
-            val top = transform.sourceY(normalized.top)
-            val right = transform.sourceX(normalized.right)
-            val bottom = transform.sourceY(normalized.bottom)
+            val left = transform.sourceX(normalizedLeft)
+            val top = transform.sourceY(normalizedTop)
+            val right = transform.sourceX(normalizedRight)
+            val bottom = transform.sourceY(normalizedBottom)
 
             val diagnosticBox = if (debugFrame != null) DetectionResult(
                 label = labels.getOrElse(bestClassId) { "class_$bestClassId" }, confidence = bestScore,
@@ -406,7 +436,7 @@ class VisionStyleYoloDetector(
             }
 
             val area = if (resizeMode == YoloResizeMode.STRETCH) {
-                normalized.width() * normalized.height()
+                (normalizedRight - normalizedLeft) * (normalizedBottom - normalizedTop)
             } else {
                 (right - left) * (bottom - top) / (sourceWidth.toFloat() * sourceHeight)
             }
@@ -454,6 +484,7 @@ class VisionStyleYoloDetector(
         }
         debugFrame?.summary(boxCount)
         if (diagnoseTensorThisFrame) {
+            checkNotNull(aboveThreshold)
             diagnostic("[RAW_OUTPUT] shape=$outputShapeText maxClassScore=$maxClassScore candidateCount=$boxCount " +
                 "candidateAbove0.01=${aboveThreshold[0]} candidateAbove0.05=${aboveThreshold[1]} " +
                 "candidateAbove0.1=${aboveThreshold[2]} candidateAbove0.2=${aboveThreshold[3]} " +
@@ -579,6 +610,7 @@ class VisionStyleYoloDetector(
     }
 
     /** Invoke on a background thread, on a separate detector from the live camera analyzer. */
+    @Synchronized
     fun runSelfTest(bitmap: Bitmap, inputName: String, directory: File): List<DetectionResult> {
         check(BuildConfig.DEBUG) { "Golden tensor export is debug-only" }
         check(goldenDirectory == null) { "Self test already running" }
@@ -590,6 +622,7 @@ class VisionStyleYoloDetector(
             .put("confidenceThreshold", confidenceThreshold).put("nmsThreshold", nmsThreshold)
             .put("maxCandidates", maxCandidates).put("coordinateScale", loadedModelIdentity.coordinateScale)
             .put("byteOrder", ByteOrder.nativeOrder().toString())
+            .put("execution", execution.logFields())
         try {
             val results = detect(bitmap)
             val stats = checkNotNull(latestFrameDiagnostics)
@@ -643,11 +676,19 @@ class VisionStyleYoloDetector(
         file.outputStream().channel.use { channel -> while (copy.hasRemaining()) channel.write(copy) }
     }
 
+    @Synchronized
     override fun close() {
-        reusableInputCanvas.setBitmap(null)
-        reusableInputBitmap.recycle()
-        interpreter.close()
+        if (closed) return
+        closed = true
+        try {
+            interpreter.close()
+        } finally {
+            reusableInputCanvas.setBitmap(null)
+            reusableInputBitmap.recycle()
+        }
     }
+
+    override fun executionInfo(): InferenceExecutionInfo = execution
 
     override fun modelIdentity(): ModelIdentity = loadedModelIdentity
 
@@ -670,5 +711,6 @@ class VisionStyleYoloDetector(
         private const val BOLLARD_DIAGNOSTICS_TAG = "BollardDiagnostics"
         private val LETTERBOX_PADDING_COLOR = Color.rgb(114, 114, 114)
         private val INPUT_RECT = RectF(0f, 0f, MODEL_INPUT_SIZE.toFloat(), MODEL_INPUT_SIZE.toFloat())
+        private val DIAGNOSTIC_THRESHOLDS = floatArrayOf(0.01f, 0.05f, 0.1f, 0.2f)
     }
 }

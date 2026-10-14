@@ -48,6 +48,7 @@ interface ObjectDetector {
     fun close()
     fun modelIdentity(): ModelIdentity? = null
     fun frameDiagnostics(): DetectorFrameDiagnostics? = null
+    fun executionInfo(): InferenceExecutionInfo? = null
 }
 
 fun DetectionResult.mapToOriginalFrame(
