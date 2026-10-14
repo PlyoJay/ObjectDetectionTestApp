@@ -89,6 +89,12 @@ data class DebugSettings(
     val legacyDebugImageEnabled: Boolean = false
 )
 
+/** Independent of detector debug/PNG settings; active only during Performance Log recording. */
+data class PerformanceLogSettings(
+    val systemDiagnosticsEnabled: Boolean = false,
+    val sampleIntervalMs: Long = 5_000L
+)
+
 data class AppSettings(
     val schemaVersion: Int = APP_SETTINGS_SCHEMA_VERSION,
     val presetName: String = SettingsPresets.DEFAULT,
@@ -99,9 +105,11 @@ data class AppSettings(
     val warning: WarningSettings = WarningSettings(),
     val overlay: OverlaySettings = OverlaySettings(),
     val mlKit: MlKitSettings = MlKitSettings(),
-    val debug: DebugSettings = DebugSettings()
+    val debug: DebugSettings = DebugSettings(),
+    val performanceLog: PerformanceLogSettings = PerformanceLogSettings()
 ) {
     fun validationErrors(): List<String> = buildList {
+        if (performanceLog.sampleIntervalMs !in 1_000L..60_000L) add("System Sample Interval은 1000~60000ms여야 합니다.")
         if (schemaVersion <= 0) add("설정 버전이 올바르지 않습니다.")
         if (camera.detectIntervalMs !in 0L..60_000L) add("Detect Interval은 0~60000ms여야 합니다.")
         if (camera.requestedWidth !in 320..7680 || camera.requestedHeight !in 240..4320) add("카메라 해상도가 허용 범위를 벗어났습니다.")

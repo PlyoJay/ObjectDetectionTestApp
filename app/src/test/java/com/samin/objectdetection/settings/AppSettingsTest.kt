@@ -9,6 +9,20 @@ import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class AppSettingsTest {
+    @Test fun systemDiagnosticsDefaultsAndOldStoredSettingsLeaveDetectorDebugIndependent() {
+        val defaults = AppSettingsCodec.decode("schemaVersion=2")
+        assertFalse(defaults.performanceLog.systemDiagnosticsEnabled)
+        assertEquals(5_000L, defaults.performanceLog.sampleIntervalMs)
+        val enabled = defaults.copy(performanceLog = PerformanceLogSettings(true, 1_000))
+        val decoded = AppSettingsCodec.decode(AppSettingsCodec.encode(enabled))
+        assertEquals(enabled, decoded)
+        assertEquals(defaults.toDetectionConfig(), decoded.toDetectionConfig())
+        assertEquals(defaults.debug, decoded.debug)
+        assertTrue(decoded.validationErrors().isEmpty())
+        assertTrue(defaults.copy(performanceLog = PerformanceLogSettings(true, 999)).validationErrors().isNotEmpty())
+        assertTrue(defaults.copy(performanceLog = PerformanceLogSettings(false, 60_001)).validationErrors().isNotEmpty())
+    }
+
     @Test
     fun defaultsRemainValidAndMapToLegacyConfigDefaults() {
         val settings = AppSettings()

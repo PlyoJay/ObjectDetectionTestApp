@@ -871,7 +871,9 @@ class MainActivity : ComponentActivity() {
             requestedCameraHeight = appSettings.camera.requestedHeight,
             appVersion = runCatching { packageManager.getPackageInfo(packageName, 0).versionName }.getOrNull() ?: "unknown",
             settingsSnapshot = AppSettingsCodec.snapshotLines(appSettings),
-            sessionId = sessionId, startedElapsedNs = startedElapsedNs
+            sessionId = sessionId, startedElapsedNs = startedElapsedNs,
+            systemDiagnosticsEnabled = appSettings.performanceLog.systemDiagnosticsEnabled,
+            systemSampleIntervalMs = appSettings.performanceLog.sampleIntervalMs
         )
         performanceLogButton.isEnabled = false
         metricsCollector.startPerformanceSession(startedAtMs, startedElapsedNs)

@@ -156,6 +156,10 @@ object AppSettingsCodec {
             put("overlay.staleTimeoutMs", staleTimeoutMs)
         }
         with(value.mlKit) { put("mlKit.enabled", enabled); put("mlKit.detectionIntervalMs", detectionIntervalMs) }
+        with(value.performanceLog) {
+            put("performanceLog.systemDiagnosticsEnabled", systemDiagnosticsEnabled)
+            put("performanceLog.sampleIntervalMs", sampleIntervalMs)
+        }
         with(value.debug) {
             put("debug.enableDetectorDiagnostics", enableDetectorDiagnostics)
             put("debug.debugDetectionLogging", debugDetectionLogging)
@@ -234,6 +238,10 @@ object AppSettingsCodec {
                 l("overlay.staleTimeoutMs", d.overlay.staleTimeoutMs)
             ),
             mlKit = MlKitSettings(b("mlKit.enabled", d.mlKit.enabled), l("mlKit.detectionIntervalMs", d.mlKit.detectionIntervalMs)),
+            performanceLog = PerformanceLogSettings(
+                b("performanceLog.systemDiagnosticsEnabled", d.performanceLog.systemDiagnosticsEnabled),
+                l("performanceLog.sampleIntervalMs", d.performanceLog.sampleIntervalMs)
+            ),
             debug = DebugSettings(
                 b("debug.enableDetectorDiagnostics", d.debug.enableDetectorDiagnostics),
                 b("debug.debugDetectionLogging", d.debug.debugDetectionLogging),

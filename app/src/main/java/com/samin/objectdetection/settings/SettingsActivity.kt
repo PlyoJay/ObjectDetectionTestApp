@@ -85,6 +85,7 @@ class SettingsActivity : ComponentActivity() {
         buildWarningSection(scrollContent)
         buildOverlaySection(scrollContent)
         buildMlKitSection(scrollContent)
+        buildPerformanceLogSection(scrollContent)
         buildDebugSection(scrollContent)
         buildShareSection(scrollContent)
 
@@ -224,6 +225,14 @@ class SettingsActivity : ComponentActivity() {
         form.mlKitInterval = number(parent, "Detection Interval (ms)", "0..60000")
     }
 
+    private fun buildPerformanceLogSection(parent: LinearLayout) {
+        section(parent, "Performance Log")
+        note(parent, "성능 로그 시작/종료 버튼은 기존대로 사용합니다. 시스템 진단은 로그 기록 중에만 수집하며 상세 Debug·PNG 저장을 켜지 않습니다.")
+        form.systemDiagnostics = toggle(parent, "System Performance Diagnostics")
+        form.systemSampleInterval = number(parent, "Sample Interval (ms)", "1000..60000 (기본 5000)")
+        note(parent, "30초 구간 통계와 전체 누적 통계를 함께 저장합니다. 확인할 수 없는 지표는 N/A입니다. Thermal Headroom은 최소 10초 간격으로 조회합니다.")
+    }
+
     private fun buildDebugSection(parent: LinearLayout) {
         section(parent, "Debug / Logging")
         note(parent, "후보별 로그와 PNG 저장은 성능에 영향을 줄 수 있습니다.")
@@ -287,6 +296,10 @@ class SettingsActivity : ComponentActivity() {
             form.overlayStale.setText(staleTimeoutMs.toString())
         }
         with(value.mlKit) { form.mlKitEnabled.isChecked = enabled; form.mlKitInterval.setText(detectionIntervalMs.toString()) }
+        with(value.performanceLog) {
+            form.systemDiagnostics.isChecked = systemDiagnosticsEnabled
+            form.systemSampleInterval.setText(sampleIntervalMs.toString())
+        }
         with(value.debug) {
             form.diagnostics.isChecked = enableDetectorDiagnostics; form.debugLogging.isChecked = debugDetectionLogging
             form.rawConfidence.setText(diagnosticRawConfidenceThreshold.toString()); form.rawCandidates.setText(diagnosticMaxRawCandidates.toString())
@@ -326,6 +339,7 @@ class SettingsActivity : ComponentActivity() {
             overlay = OverlaySettings(form.overlayEnabled.isChecked, OverlayDebugMode.valueOf(form.debugMode.selectedItem.toString()),
                 form.yoloBoxes.isChecked, form.mlKitBoxes.isChecked, form.confidenceLabel.isChecked, form.fps.isChecked, form.overlayStale.l()),
             mlKit = MlKitSettings(form.mlKitEnabled.isChecked, form.mlKitInterval.l()),
+            performanceLog = PerformanceLogSettings(form.systemDiagnostics.isChecked, form.systemSampleInterval.l()),
             debug = DebugSettings(form.diagnostics.isChecked, form.debugLogging.isChecked, form.rawConfidence.f(), form.rawCandidates.i(),
                 form.saveInput.isChecked, form.saveInterval.l(), form.saveOnDetection.isChecked, form.legacyDebugImage.isChecked)
         )
@@ -400,6 +414,7 @@ class SettingsActivity : ComponentActivity() {
         val temporalEnabled = form.temporal.isChecked
         listOf(form.temporalImmediate, form.temporalConfirmation, form.temporalIou).forEach { it.isEnabled = temporalEnabled }
         form.mlKitInterval.isEnabled = form.mlKitEnabled.isChecked
+        form.systemSampleInterval.isEnabled = form.systemDiagnostics.isChecked
     }
 
     private fun markDirty() { if (!binding) { dirty = true; updateStatus() } }
@@ -476,6 +491,7 @@ class SettingsActivity : ComponentActivity() {
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 
     private inner class Form(val container: LinearLayout) {
+        lateinit var systemDiagnostics: Switch; lateinit var systemSampleInterval: EditText
         lateinit var detectInterval: EditText; lateinit var centerCrop: Switch; lateinit var resizeMode: Spinner; lateinit var cameraResolution: Spinner
         lateinit var confidence: EditText; lateinit var nms: EditText; lateinit var threads: EditText; lateinit var maxCandidates: EditText; lateinit var sizeMode: Spinner
         lateinit var geometry: Switch; lateinit var minArea: EditText; lateinit var minWidth: EditText; lateinit var minHeight: EditText

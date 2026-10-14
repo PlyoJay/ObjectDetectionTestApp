@@ -4,14 +4,13 @@ import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
 import android.os.Environment
+import android.os.SystemClock
 import android.provider.MediaStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import com.samin.objectdetection.logging.OrderedLogWriter
-import java.util.concurrent.atomic.AtomicLong
 
 data class SavedPerformanceLog(
     val displayName: String,
@@ -49,19 +48,21 @@ class PerformanceLogRecorder(private val context: Context, private val onFailure
         }
         try { writer.append(PerformanceLogFormatter.formatHeader(header)); writer.flush() }
         catch (error: Throwable) { runCatching { writer.close() }; throw error }
-        val ordered = OrderedLogWriter(writer, MAX_QUEUE_SIZE, onFailure)
-        val session = Session(displayName, relativePath, uri, ordered)
+        val logging = PerformanceLogSession(header, writer,
+            if (header.systemDiagnosticsEnabled) AndroidSystemMetricSource(context) else null,
+            SystemClock::elapsedRealtimeNanos, System::currentTimeMillis, onFailure, MAX_QUEUE_SIZE)
+        val session = Session(displayName, relativePath, uri, logging)
         synchronized(lock) {
             check(activeSession == null) { "Performance logging is already active" }
             activeSession = session
         }
+        logging.start()
         return session.saved()
     }
 
     fun recordFrame(frame: PerformanceFrameRecord) {
         val session = activeSession ?: return
-        val indexed = frame.copy(frameIndex = session.frameIndex.incrementAndGet())
-        enqueue(session, PerformanceLogFormatter.formatFrame(indexed))
+        session.logging.recordFrame(frame)
     }
 
     fun recordSummary(summary: String) {
@@ -86,7 +87,7 @@ class PerformanceLogRecorder(private val context: Context, private val onFailure
             current
         }
         withContext(Dispatchers.IO) {
-            session.writer.close { PerformanceLogFormatter.formatFinalSummary(snapshot, session.writer.droppedLines.get()) }.get()
+            session.logging.close(snapshot).get()
         }
         return session.saved()
     }
@@ -96,17 +97,16 @@ class PerformanceLogRecorder(private val context: Context, private val onFailure
     }
 
     private fun enqueue(session: Session, line: String) {
-        session.writer.append { line }
+        session.logging.append { line }
     }
 
     private class Session(
         val displayName: String,
         val relativePath: String,
         val uri: Uri,
-        val writer: OrderedLogWriter
+        val logging: PerformanceLogSession
     ) {
-        val frameIndex = AtomicLong(0L)
-        fun saved() = SavedPerformanceLog(displayName, relativePath, uri, writer.droppedLines.get())
+        fun saved() = SavedPerformanceLog(displayName, relativePath, uri, logging.droppedLogLines)
     }
 
     private companion object {

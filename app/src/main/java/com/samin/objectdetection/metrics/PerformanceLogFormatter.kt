@@ -28,7 +28,9 @@ data class PerformanceLogHeader(
     val appVersion: String = "unknown",
     val settingsSnapshot: String = "",
     val sessionId: String = "unknown",
-    val startedElapsedNs: Long = 0L
+    val startedElapsedNs: Long = 0L,
+    val systemDiagnosticsEnabled: Boolean = false,
+    val systemSampleIntervalMs: Long = 5_000L
 )
 
 data class PerformanceFrameRecord(
@@ -51,7 +53,8 @@ data class PerformanceFrameRecord(
     val fps: Int,
     val analyzerFps: Double = 0.0,
     val inferenceFps: Double = fps.toDouble(),
-    val trace: FrameTrace? = null
+    val trace: FrameTrace? = null,
+    val elapsedSeconds: Double? = null
 )
 
 object PerformanceLogFormatter {
@@ -73,6 +76,12 @@ object PerformanceLogFormatter {
         appendLine("Clock: *AtMs/UnixMs=Unix wall ms; *ElapsedNs=elapsedRealtimeNanos; cameraTimestampNs=camera source")
         appendLine("FPS: fps/Average FPS=successful pipeline completions; analyzerFps=delivered analyzer frames; droppedFrames=explicit app skips")
         appendLine("Unknown camera capture latency=-1; FRAME time is pipeline completion, OVERLAY is a separate draw event")
+        appendLine("System Performance Diagnostics: ${header.systemDiagnosticsEnabled}; Sample Interval: ${header.systemSampleIntervalMs}ms")
+        appendLine("System metrics unavailable=N/A; processCpuUsage=all app process threads, 100%=one CPU core (may exceed 100%); cpuFrequency=device cpufreq policy, not process scope")
+        appendLine("Thermal Headroom: forecastSeconds=0, minimum API call interval=10000ms; cached values include sample time/age, 1.0=SEVERE threshold, not a temperature")
+        appendLine("INTERVAL_SUMMARY=[start,end) by successful completion time, 30 seconds plus final partial/empty intervals; P95=nearest rank of actual valid frame samples")
+        appendLine("INTERVAL_PREVIEW may miss delayed submissions; final INTERVAL_SUMMARY/CUMULATIVE_SUMMARY are authoritative and include frame data even if file lines were dropped")
+        appendLine("Interval system fields=last system sample within that interval (not averages); OFF/no samples=N/A")
         appendLine()
         appendLine("Model: ${header.modelName}")
         appendLine("Model SHA256: ${header.modelSha256}")
@@ -111,6 +120,7 @@ object PerformanceLogFormatter {
             "frameAgeOverlay=${frame.frameAgeAtOverlayMs}ms | detect=${frame.detectionCount} | " +
             "visible=${frame.visibleDetectionCount} | warning=${frame.warningDetectionCount} | fps=${frame.fps}" +
             " | analyzerFps=${frame.analyzerFps} | inferenceFps=${frame.inferenceFps}" +
+            " | elapsedSeconds=${number(frame.elapsedSeconds)}" +
             (frame.trace?.let { " | ${formatTrace(it)}" } ?: "")
 
     fun formatTrace(trace: FrameTrace): String = with(trace) {
@@ -126,6 +136,7 @@ object PerformanceLogFormatter {
         appendLine()
         appendLine("========================================")
         appendLine("FINAL SUMMARY")
+        appendLine("Scope: legacy metrics collector cumulative snapshot (up to latest 100000 latency samples); exact recorder session statistics follow below")
         appendLine("========================================")
         appendLine("Duration: ${formatDuration(snapshot.durationMs)}")
         appendLine("Received Frames: ${snapshot.receivedFrames}")
@@ -151,6 +162,37 @@ object PerformanceLogFormatter {
     private fun StringBuilder.appendStats(name: String, stats: PerformanceMetricStats) {
         appendLine("Average $name: ${stats.averageMs} ms")
         appendLine("P95 $name: ${stats.p95Ms} ms")
+    }
+
+    fun formatSystemSample(header: PerformanceLogHeader, sample: SystemMetricsSample): String =
+        "SYSTEM | sessionId=${header.sessionId} elapsedSeconds=${number((sample.elapsedNs - header.startedElapsedNs) / 1e9)} " +
+            "sampleUnixMs=${sample.unixMs} sampleElapsedNs=${sample.elapsedNs} ${systemFields(header, sample)} " +
+            "collectionDurationMs=${number(sample.collectionDurationMs)}"
+
+    fun formatThermalEvent(header: PerformanceLogHeader, event: ThermalStatusEvent): String =
+        "THERMAL_STATUS | sessionId=${header.sessionId} elapsedSeconds=${number((event.elapsedNs - header.startedElapsedNs) / 1e9)} " +
+            "observedUnixMs=${event.unixMs} observedElapsedNs=${event.elapsedNs} previousThermalStatus=${thermal(event.previous)} " +
+            "thermalStatus=${thermal(event.status)} source=${event.source}"
+
+    fun formatInterval(header: PerformanceLogHeader, value: PerformanceIntervalSummary, recordType: String): String =
+        "$recordType | sessionId=${header.sessionId} intervalIndex=${value.index ?: "ALL"} " +
+            "startSeconds=${number(value.startSeconds)} endSeconds=${number(value.endSeconds)} elapsedSeconds=${number(value.endSeconds)} " +
+            "successfulFrames=${value.successfulFrames} inferenceAvgMs=${number(value.inference.averageMs)} inferenceP95Ms=${value.inference.p95Ms ?: "N/A"} " +
+            "preprocessAvgMs=${number(value.preprocess.averageMs)} pipelineAvgMs=${number(value.pipeline.averageMs)} pipelineP95Ms=${value.pipeline.p95Ms ?: "N/A"} " +
+            "inferenceFps=${number(value.inferenceFps)} inferenceSamples=${value.inference.samples} preprocessSamples=${value.preprocess.samples} pipelineSamples=${value.pipeline.samples} " +
+            systemFields(header, value.lastSystemSample)
+
+    private fun systemFields(header: PerformanceLogHeader, sample: SystemMetricsSample?): String =
+        "thermalStatus=${thermal(sample?.thermalStatus)} thermalHeadroom=${number(sample?.thermalHeadroom?.toDouble())} " +
+            "headroomSampleElapsedSeconds=${number(sample?.headroomSampleElapsedNs?.let { (it - header.startedElapsedNs) / 1e9 })} " +
+            "headroomAgeMs=${number(sample?.headroomSampleElapsedNs?.let { (sample.elapsedNs - it) / 1e6 })} " +
+            "processCpuUsage=${number(sample?.processCpuUsage)} processCpuScope=process_all_threads_percent_one_core " +
+            "cpuUsageWindowMs=${number(sample?.cpuUsageWindowMs)} cpuFrequency=${sample?.cpuFrequency ?: "N/A"} cpuFrequencyScope=device_policy_kHz " +
+            "systemSampleElapsedSeconds=${number(sample?.let { (it.elapsedNs - header.startedElapsedNs) / 1e9 })}"
+
+    private fun number(value: Double?): String = value?.takeIf(Double::isFinite)?.let { String.format(Locale.US, "%.3f", it) } ?: "N/A"
+    private fun thermal(value: Int?): String = when (value) {
+        0 -> "NONE"; 1 -> "LIGHT"; 2 -> "MODERATE"; 3 -> "SEVERE"; 4 -> "CRITICAL"; 5 -> "EMERGENCY"; 6 -> "SHUTDOWN"; else -> "N/A"
     }
 
     private fun formatDuration(durationMs: Long): String {
