@@ -1,8 +1,48 @@
 import unittest
-from analyze_performance_logs import analyze
+from analyze_performance_logs import analyze, fields, battery_consistency
 
 
 class PerformanceLogAnalysisTest(unittest.TestCase):
+    def test_cpu_policy_spaces_preserve_all_policies_and_no_current_fallback(self):
+        line = "SYSTEM | elapsedSeconds=1 cpuFrequency=policy0:currentKHz=1000,relatedCpus=0 1 2 3,governor=energy_aware;policy9:currentKHz=N/A,scalingMaxKHz=2000,relatedCpus=9,governor=energy_aware cpuFrequencyScope=device_policy_kHz"
+        self.assertIn("policy9:", fields(line)["cpuFrequency"])
+        result = analyze(self.log() + line, interval_seconds=30)["longRun"]
+        self.assertEqual(2, len(result["windows"]))
+        policy = result["windows"][0]["cpuPolicies"]["policy9"]
+        self.assertEqual("N/A", policy["currentKHz"]["average"])
+        self.assertEqual(2000, policy["scalingMaxKHz"]["average"])
+        self.assertEqual("N/A", result["policyInferenceCorrelations"]["policy0.currentKHz"]["pearsonR"])
+
+    def test_long_run_correlation_uses_matching_windows_and_keeps_partial_and_mlkit_groups(self):
+        text = "Dropped Log Lines: 0\nCUMULATIVE_SUMMARY | endSeconds=95 successfulFrames=4\n"
+        for elapsed, latency, clock in [(1, 100, 3000), (31, 200, 2000), (61, 300, 1000), (94, 400, 500)]:
+            text += f"FRAME 1 | elapsedSeconds={elapsed} inference={latency}ms nativeInvoke={latency}.250ms mlKitInFlight=true\n"
+            text += f"SYSTEM | elapsedSeconds={elapsed} cpuFrequency=policy9:currentKHz={clock},scalingMaxKHz={clock},governor=energy_aware cpuFrequencyScope=device_policy_kHz\n"
+        result = analyze(text, interval_seconds=30)["longRun"]
+        self.assertEqual(4, len(result["windows"]))
+        self.assertEqual(5, result["windows"][-1]["endSeconds"] - result["windows"][-1]["startSeconds"])
+        self.assertEqual(400.25, result["windows"][-1]["nativeInvoke"]["averageMs"])
+        self.assertLess(result["policyInferenceCorrelations"]["policy9.currentKHz"]["pearsonR"], -0.98)
+        self.assertEqual(0, result["inferenceByMlKitInFlightAtDispatch"]["false"]["samples"])
+        self.assertEqual(2, len(analyze(text, start_seconds=30, exclude_tail_seconds=5, interval_seconds=30)["longRun"]["windows"]))
+        with self.assertRaises(ValueError):
+            analyze(text, interval_seconds=0)
+
+    def test_current_counter_mismatch_flags_unreliable_power_without_rescaling(self):
+        before = dict(elapsedSeconds="0", batteryCurrentMa="-2", batteryChargeCounterUah="4000000", chargingStatus="Discharging", pluggedType="None")
+        after = {**before, "elapsedSeconds": "120", "batteryChargeCounterUah": "3900000"}
+        result = battery_consistency([before, after])
+        self.assertEqual("SUSPECT_CURRENT_COUNTER_MISMATCH", result["powerReliability"])
+        self.assertEqual(100, result["chargeCounterDropMah"])
+        self.assertAlmostEqual(2 * 120 / 3600, result["integratedCurrentDischargeMah"])
+        self.assertEqual("-2", before["batteryCurrentMa"])
+        valid = battery_consistency([{**before, "batteryCurrentMa": "-3000"}, {**after, "batteryCurrentMa": "-3000"}])
+        self.assertAlmostEqual(1, valid["currentToCounterRatio"])
+        self.assertEqual("NOT_VALIDATED", valid["powerReliability"])
+        self.assertEqual("N/A", battery_consistency([before, {**after, "pluggedType": "USB"}])["currentToCounterRatio"])
+        self.assertEqual("N/A", battery_consistency([before, {**after, "batteryCurrentMa": "N/A"}])["currentToCounterRatio"])
+        self.assertEqual("N/A", battery_consistency([before, {**after, "batteryChargeCounterUah": "4100000"}])["currentToCounterRatio"])
+
     def log(self, dropped=0):
         return f"""Start Elapsed Ns: 1000000000
 FRAME 000001 | inference=100ms | pipeline=120ms | totalProcessing=150ms | elapsedSeconds=1.000 | requestedBackend=CPU appliedBackend=CPU cpuThreads=2 xnnpackRequested=true cpuFallbackCount=0 | status=SUCCESS completedElapsedNs=2000000000

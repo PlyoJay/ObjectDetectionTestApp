@@ -12,7 +12,12 @@ from pathlib import Path
 
 
 def fields(line):
-    return dict(re.findall(r"(?:^|[\s|])(\w+)=([^\s|]+)", line))
+    result = dict(re.findall(r"(?:^|[\s|])(\w+)=([^\s|]+)", line))
+    # relatedCpus contains spaces; the generic token parser truncated all later policies.
+    frequency = re.search(r"(?:^|[\s|])cpuFrequency=(.*?)\s+cpuFrequencyScope=", line)
+    if frequency:
+        result["cpuFrequency"] = frequency.group(1)
+    return result
 
 
 def stats(records, key):
@@ -44,6 +49,82 @@ def metric(records, key):
             "average": sum(values) / len(values) if values else "N/A",
             "first": values[0] if values else "N/A", "last": values[-1] if values else "N/A",
             "maximum": max(values) if values else "N/A"}
+
+
+def battery_consistency(records):
+    """Independent cross-check, never auto-correct a vendor's units or attribute power to the app."""
+    records = sorted(records, key=lambda r: numeric(r, "elapsedSeconds") or 0)
+    charge_mah = current_mah = covered = 0.0
+    pairs = 0
+    for before, after in zip(records, records[1:]):
+        if any(r.get("chargingStatus") != "Discharging" or r.get("pluggedType") != "None" for r in (before, after)):
+            continue
+        t0, t1 = numeric(before, "elapsedSeconds"), numeric(after, "elapsedSeconds")
+        i0, i1 = numeric(before, "batteryCurrentMa"), numeric(after, "batteryCurrentMa")
+        q0, q1 = numeric(before, "batteryChargeCounterUah"), numeric(after, "batteryChargeCounterUah")
+        if None in (t0, t1, i0, i1, q0, q1) or not 0 < t1 - t0 <= 120 or q1 > q0 or max(i0, i1) > 0:
+            continue  # missing values, transitions, counter reset/sign mismatch or large gap
+        charge_mah += (q0 - q1) / 1000
+        current_mah += -(i0 + i1) / 2 * (t1 - t0) / 3600
+        covered += t1 - t0
+        pairs += 1
+    ratio = current_mah / charge_mah if charge_mah > 0 else None
+    suspect = covered >= 60 and charge_mah >= 1 and ratio is not None and not 0.1 <= ratio <= 10
+    return {"pairedIntervals": pairs, "coveredDischargingSeconds": covered,
+            "chargeCounterDropMah": charge_mah if pairs else "N/A",
+            "integratedCurrentDischargeMah": current_mah if pairs else "N/A",
+            "currentToCounterRatio": ratio if ratio is not None else "N/A",
+            "powerReliability": "SUSPECT_CURRENT_COUNTER_MISMATCH" if suspect else "NOT_VALIDATED",
+            "note": "Trapezoidal sampled current vs charge counter on the same contiguous unplugged discharging intervals (gaps <=120s). A factor >10 mismatch after >=60s and >=1mAh counter drop is a diagnostic heuristic, not calibration. Do not multiply current by 1000 automatically. Counter/firmware errors, sampling and unit violations require device verification; power remains a device estimate."}
+
+
+def cpu_policies(record):
+    result = {}
+    for encoded in record.get("cpuFrequency", "").split(";"):
+        name, separator, attributes = encoded.partition(":")
+        if separator:
+            result[name] = dict(item.split("=", 1) for item in attributes.split(",") if "=" in item)
+    return result
+
+
+def correlation(pairs):
+    if len(pairs) < 3:
+        return "N/A"
+    xs, ys = zip(*pairs)
+    mx, my = sum(xs) / len(xs), sum(ys) / len(ys)
+    xx, yy = sum((x - mx)**2 for x in xs), sum((y - my)**2 for y in ys)
+    return sum((x - mx) * (y - my) for x, y in pairs) / math.sqrt(xx * yy) if xx > 0 and yy > 0 else "N/A"
+
+
+def long_run_analysis(frames, systems, start, end, interval_seconds):
+    windows = []
+    policy_pairs = {}
+    for index in range(math.ceil((end - start) / interval_seconds)):
+        lo, hi = start + index * interval_seconds, min(end, start + (index + 1) * interval_seconds)
+        group = [r for r in frames if lo <= r["_elapsed"] < hi]
+        samples = [r for r in systems if (t := numeric(r, "elapsedSeconds")) is not None and lo <= t < hi]
+        names = sorted({name for r in samples for name in cpu_policies(r)})
+        policies = {}
+        inference = stats(group, "inference")
+        for name in names:
+            values = [cpu_policies(r)[name] for r in samples if name in cpu_policies(r)]
+            policies[name] = {key: metric(values, key) for key in ("currentKHz", "scalingMaxKHz", "cpuinfoMaxKHz")}
+            policies[name]["governors"] = sorted({r["governor"] for r in values if "governor" in r})
+            for key in ("currentKHz", "scalingMaxKHz"):
+                value = policies[name][key]["average"]
+                if value != "N/A" and inference["averageMs"] is not None:
+                    policy_pairs.setdefault((name, key), []).append((value, inference["averageMs"]))
+        windows.append({"startSeconds": lo, "endSeconds": hi, "frames": len(group),
+                        "fps": len(group) / (hi - lo), "inference": inference,
+                        "nativeInvoke": detail_stats(group, "nativeInvoke"),
+                        "processCpuUsage": metric(samples, "processCpuUsage"),
+                        "thermalHeadroom": metric(samples, "thermalHeadroom"), "cpuPolicies": policies})
+    return {"intervalSeconds": interval_seconds, "windows": windows,
+            "policyInferenceCorrelations": {f"{name}.{key}": {"pairedWindows": len(pairs), "pearsonR": correlation(pairs)}
+                                            for (name, key), pairs in sorted(policy_pairs.items())},
+            "inferenceByMlKitInFlightAtDispatch": {value: stats([r for r in frames if r.get("mlKitInFlight") == value], "inference")
+                                                  for value in ("true", "false")},
+            "note": "Correlations use equal-weight interval means of device cpufreq snapshots, not app core frequencies or causal evidence. Includes the final partial interval; time/thermal/ML Kit can confound correlations. mlKitInFlight is a dispatch-time hint, not verified overlap or CPU attribution. No missing policy current is filled with its maximum."}
 
 
 def diagnostic_analysis(lines, start, end, duration):
@@ -81,6 +162,7 @@ def diagnostic_analysis(lines, start, end, duration):
                     "temperatureC": {**endpoints("batteryTemperatureC"),
                                      "sampledMaximum": metric(batteries, "batteryTemperatureC")["maximum"]},
                     "byChargingStatus": by_status,
+                    "consistency": battery_consistency(batteries),
                     "averageDischargingCurrentMa": by_status.get("Discharging", {}).get("batteryCurrentMa", {}).get("average", "N/A"),
                     "averageEstimatedDischargingPowerMw": by_status.get("Discharging", {}).get("estimatedBatteryPowerMw", {}).get("average", "N/A"),
                     "fullSessionSummary": summary if start == 0 and end == duration and summary else "N/A",
@@ -91,7 +173,7 @@ def diagnostic_analysis(lines, start, end, duration):
                     "note": "Device battery, signed current/power; estimates are not app consumption. Means use valid recorded samples grouped by status. Battery temperature is not CPU/GPU temperature. 0% level delta does not mean zero power. Polls can miss transitions; headroom may be cached. See fullSessionSummary for authoritative full-session counts/endpoints if sample lines were dropped."}}
 
 
-def analyze(text, start_seconds=0.0, exclude_tail_seconds=0.0):
+def analyze(text, start_seconds=0.0, exclude_tail_seconds=0.0, interval_seconds=None):
     lines = text.splitlines()
     cumulative = next((fields(line) for line in lines if line.startswith("CUMULATIVE_SUMMARY |")), None)
     if cumulative is None:
@@ -100,6 +182,8 @@ def analyze(text, start_seconds=0.0, exclude_tail_seconds=0.0):
     end = duration - exclude_tail_seconds
     if not 0 <= start_seconds < end <= duration:
         raise ValueError("The requested measurement window is empty or outside the recording")
+    if interval_seconds is not None and (not math.isfinite(interval_seconds) or interval_seconds < 1):
+        raise ValueError("interval_seconds must be finite and >=1")
     elapsed_start = re.search(r"Start Elapsed Ns: (\d+)", text)
     start_ns = int(elapsed_start.group(1)) if elapsed_start else None
 
@@ -111,6 +195,8 @@ def analyze(text, start_seconds=0.0, exclude_tail_seconds=0.0):
     all_frames = [fields(line) for line in lines if line.startswith("FRAME ")]
     frames = [r for r in all_frames if r.get("status", "SUCCESS") == "SUCCESS" and
               start_seconds <= elapsed(r) < end]
+    for record in frames:
+        record["_elapsed"] = elapsed(record)
     errors = [fields(line) for line in lines if line.startswith("ERROR |")]
     errors_in_window = sum(start_seconds <= elapsed(r) < end for r in errors)
     dropped = re.search(r"Dropped Log Lines: (\d+)", text)
@@ -120,7 +206,7 @@ def analyze(text, start_seconds=0.0, exclude_tail_seconds=0.0):
     execution_keys = ("requestedBackend", "appliedBackend", "cpuThreads", "xnnpackRequested",
                       "initialization", "delegateVerification", "gpuSupport", "runtimeVersion")
     configurations = sorted({tuple(r.get(key, "N/A") for key in execution_keys) for r in frames})
-    return {
+    result = {
         "windowStartSeconds": start_seconds, "windowEndSeconds": end,
         "excludedTailSeconds": exclude_tail_seconds,
         "successfulFrameSamples": len(frames), "errorLinesInWindow": errors_in_window,
@@ -141,6 +227,10 @@ def analyze(text, start_seconds=0.0, exclude_tail_seconds=0.0):
         "diagnostics": diagnostic_analysis(lines, start_seconds, end, duration),
         "note": "Statistics use recorded successful FRAME samples. If frameLogComplete=false, FPS/P95/averages are incomplete. Error lines count only recorded errors; fallback counters have detector lifetime scope."
     }
+    if interval_seconds is not None:
+        result["longRun"] = long_run_analysis(frames, [fields(l) for l in lines if l.startswith("SYSTEM |")],
+                                              start_seconds, end, interval_seconds)
+    return result
 
 
 def main():
@@ -148,10 +238,11 @@ def main():
     parser.add_argument("logs", nargs="+", type=Path)
     parser.add_argument("--start-seconds", type=float, default=0.0)
     parser.add_argument("--exclude-tail-seconds", type=float, default=0.0)
+    parser.add_argument("--interval-seconds", type=float, help="Optional long-run windows and device policy correlations (e.g. 30)")
     args = parser.parse_args()
     results = []
     for path in args.logs:
-        result = analyze(path.read_text(encoding="utf-8-sig"), args.start_seconds, args.exclude_tail_seconds)
+        result = analyze(path.read_text(encoding="utf-8-sig"), args.start_seconds, args.exclude_tail_seconds, args.interval_seconds)
         results.append({"file": str(path), **result})
     print(json.dumps(results, ensure_ascii=False, indent=2, allow_nan=False))
 

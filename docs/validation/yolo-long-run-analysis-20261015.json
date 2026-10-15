@@ -1,0 +1,4876 @@
+{
+  "windowStartSeconds": 0.0,
+  "windowEndSeconds": 710.657,
+  "excludedTailSeconds": 0.0,
+  "successfulFrameSamples": 1439,
+  "errorLinesInWindow": 0,
+  "droppedLogLines": 0,
+  "frameLogComplete": true,
+  "fpsFromRecordedFrames": 2.0248868300741427,
+  "inference": {
+    "samples": 1439,
+    "averageMs": 452.2612925642807,
+    "p95Ms": 542
+  },
+  "pipeline": {
+    "samples": 1439,
+    "averageMs": 464.70048644892285,
+    "p95Ms": 557
+  },
+  "totalProcessing": {
+    "samples": 1439,
+    "averageMs": 481.52397498262684,
+    "p95Ms": 577
+  },
+  "preprocess": {
+    "samples": 1439,
+    "averageMs": 4.184155663655316,
+    "p95Ms": 5
+  },
+  "bitmap": {
+    "samples": 1439,
+    "averageMs": 15.710215427380126,
+    "p95Ms": 21
+  },
+  "details": {
+    "cameraToBitmap": {
+      "samples": 1439,
+      "averageMs": 2.9488054204308547,
+      "p95Ms": 5.26
+    },
+    "rotation": {
+      "samples": 1439,
+      "averageMs": 13.22526893676164,
+      "p95Ms": 16.326
+    },
+    "inputBuffer": {
+      "samples": 1439,
+      "averageMs": 3.1737317581653928,
+      "p95Ms": 4.0
+    },
+    "getPixels": {
+      "samples": 1439,
+      "averageMs": 0.8026275191104933,
+      "p95Ms": 0.967
+    },
+    "rgbWrite": {
+      "samples": 1439,
+      "averageMs": 2.8766608756080614,
+      "p95Ms": 3.402
+    },
+    "inputDiagnostics": {
+      "samples": 1439,
+      "averageMs": 0.0,
+      "p95Ms": 0.0
+    },
+    "outputDiagnostics": {
+      "samples": 1439,
+      "averageMs": 0.0,
+      "p95Ms": 0.0
+    },
+    "nativeInvoke": {
+      "samples": 1439,
+      "averageMs": 452.3836567060459,
+      "p95Ms": 542.47
+    },
+    "mlKitPrepare": {
+      "samples": 1439,
+      "averageMs": 0.5435913829047949,
+      "p95Ms": 2.113
+    }
+  },
+  "preprocessByInputDiagnostics": {
+    "off": {
+      "samples": 1439,
+      "averageMs": 4.184155663655316,
+      "p95Ms": 5
+    },
+    "on": {
+      "samples": 0,
+      "averageMs": null,
+      "p95Ms": null
+    }
+  },
+  "execution": [
+    {
+      "requestedBackend": "CPU",
+      "appliedBackend": "CPU",
+      "cpuThreads": "4",
+      "xnnpackRequested": "true",
+      "initialization": "INTERPRETER_CREATED",
+      "delegateVerification": "UNAVAILABLE_JAVA_API",
+      "gpuSupport": "UNSUPPORTED_INTERPRETER_LITERT_2_1_1",
+      "runtimeVersion": "2.21.0"
+    }
+  ],
+  "cpuFallbackCountLifetimeObserved": 0,
+  "diagnostics": {
+    "systemSampleCount": 142,
+    "processCpuUsage": {
+      "validSamples": 141,
+      "unavailableSamples": 1,
+      "average": 124.01286524822694,
+      "first": 123.739,
+      "last": 123.647,
+      "maximum": 127.976
+    },
+    "thermalStatusSamples": [
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE"
+    ],
+    "thermalStatusEvents": [
+      {
+        "sessionId": "b32cd446-c417-4960-a6de-efa2248b4403",
+        "elapsedSeconds": "0.131",
+        "observedUnixMs": "1792031024514",
+        "observedElapsedNs": "869150291142539",
+        "previousThermalStatus": "N/A",
+        "thermalStatus": "NONE",
+        "source": "poll"
+      }
+    ],
+    "thermalHeadroom": {
+      "validSamples": 142,
+      "unavailableSamples": 0,
+      "average": 0.764943661971831,
+      "first": 0.663,
+      "last": 0.773,
+      "maximum": 0.78
+    },
+    "thermalTrend": [
+      {
+        "elapsedSeconds": "0.130",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.663",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "5.158",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.663",
+        "headroomAgeMs": "5027.662"
+      },
+      {
+        "elapsedSeconds": "10.173",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.690",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "15.189",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.690",
+        "headroomAgeMs": "5015.823"
+      },
+      {
+        "elapsedSeconds": "20.206",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.713",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "25.224",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.713",
+        "headroomAgeMs": "5017.186"
+      },
+      {
+        "elapsedSeconds": "30.238",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.727",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "35.256",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.727",
+        "headroomAgeMs": "5017.809"
+      },
+      {
+        "elapsedSeconds": "40.271",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.740",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "45.287",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.740",
+        "headroomAgeMs": "5015.952"
+      },
+      {
+        "elapsedSeconds": "50.304",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.753",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "55.313",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.753",
+        "headroomAgeMs": "5008.111"
+      },
+      {
+        "elapsedSeconds": "60.326",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.780",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "65.335",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.780",
+        "headroomAgeMs": "5008.783"
+      },
+      {
+        "elapsedSeconds": "70.368",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.777",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "75.385",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.777",
+        "headroomAgeMs": "5016.953"
+      },
+      {
+        "elapsedSeconds": "80.408",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "85.423",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "5015.183"
+      },
+      {
+        "elapsedSeconds": "90.439",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "95.468",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "5029.233"
+      },
+      {
+        "elapsedSeconds": "100.487",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "105.500",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "5013.241"
+      },
+      {
+        "elapsedSeconds": "110.517",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "115.532",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "5015.628"
+      },
+      {
+        "elapsedSeconds": "120.549",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "125.570",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "5020.821"
+      },
+      {
+        "elapsedSeconds": "130.590",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "135.629",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "5038.649"
+      },
+      {
+        "elapsedSeconds": "140.645",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "145.662",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "5017.448"
+      },
+      {
+        "elapsedSeconds": "150.681",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.767",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "155.697",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.767",
+        "headroomAgeMs": "5016.550"
+      },
+      {
+        "elapsedSeconds": "160.711",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.767",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "165.730",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.767",
+        "headroomAgeMs": "5019.258"
+      },
+      {
+        "elapsedSeconds": "170.746",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.763",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "175.764",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.763",
+        "headroomAgeMs": "5017.656"
+      },
+      {
+        "elapsedSeconds": "180.780",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.760",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "185.799",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.760",
+        "headroomAgeMs": "5019.319"
+      },
+      {
+        "elapsedSeconds": "190.814",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.763",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "195.824",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.763",
+        "headroomAgeMs": "5010.741"
+      },
+      {
+        "elapsedSeconds": "200.841",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.763",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "205.851",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.763",
+        "headroomAgeMs": "5010.422"
+      },
+      {
+        "elapsedSeconds": "210.866",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.763",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "215.883",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.763",
+        "headroomAgeMs": "5017.136"
+      },
+      {
+        "elapsedSeconds": "220.898",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.763",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "225.919",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.763",
+        "headroomAgeMs": "5020.780"
+      },
+      {
+        "elapsedSeconds": "230.939",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.767",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "235.956",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.767",
+        "headroomAgeMs": "5017.643"
+      },
+      {
+        "elapsedSeconds": "240.972",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.767",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "245.989",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.767",
+        "headroomAgeMs": "5016.417"
+      },
+      {
+        "elapsedSeconds": "251.007",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.767",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "256.023",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.767",
+        "headroomAgeMs": "5016.144"
+      },
+      {
+        "elapsedSeconds": "261.038",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "266.054",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "5016.230"
+      },
+      {
+        "elapsedSeconds": "271.068",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.767",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "276.087",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.767",
+        "headroomAgeMs": "5019.097"
+      },
+      {
+        "elapsedSeconds": "281.101",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.767",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "286.117",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.767",
+        "headroomAgeMs": "5015.927"
+      },
+      {
+        "elapsedSeconds": "291.132",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.763",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "296.152",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.763",
+        "headroomAgeMs": "5019.547"
+      },
+      {
+        "elapsedSeconds": "301.169",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.763",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "306.186",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.763",
+        "headroomAgeMs": "5017.976"
+      },
+      {
+        "elapsedSeconds": "311.199",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.763",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "316.219",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.763",
+        "headroomAgeMs": "5019.988"
+      },
+      {
+        "elapsedSeconds": "321.234",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.763",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "326.250",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.763",
+        "headroomAgeMs": "5016.521"
+      },
+      {
+        "elapsedSeconds": "331.266",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.767",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "336.284",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.767",
+        "headroomAgeMs": "5017.712"
+      },
+      {
+        "elapsedSeconds": "341.302",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.767",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "346.318",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.767",
+        "headroomAgeMs": "5016.593"
+      },
+      {
+        "elapsedSeconds": "351.335",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.767",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "356.352",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.767",
+        "headroomAgeMs": "5017.032"
+      },
+      {
+        "elapsedSeconds": "361.370",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.763",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "366.388",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.763",
+        "headroomAgeMs": "5018.033"
+      },
+      {
+        "elapsedSeconds": "371.406",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "376.422",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "5016.467"
+      },
+      {
+        "elapsedSeconds": "381.436",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "386.453",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "5017.892"
+      },
+      {
+        "elapsedSeconds": "391.473",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "396.489",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "5016.159"
+      },
+      {
+        "elapsedSeconds": "401.511",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.767",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "406.528",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.767",
+        "headroomAgeMs": "5016.879"
+      },
+      {
+        "elapsedSeconds": "411.547",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.767",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "416.556",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.767",
+        "headroomAgeMs": "5008.976"
+      },
+      {
+        "elapsedSeconds": "421.578",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "426.600",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "5021.554"
+      },
+      {
+        "elapsedSeconds": "431.618",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "436.633",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "5015.451"
+      },
+      {
+        "elapsedSeconds": "441.651",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.767",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "446.668",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.767",
+        "headroomAgeMs": "5017.034"
+      },
+      {
+        "elapsedSeconds": "451.685",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.767",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "456.712",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.767",
+        "headroomAgeMs": "5027.543"
+      },
+      {
+        "elapsedSeconds": "461.729",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "466.748",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "5018.624"
+      },
+      {
+        "elapsedSeconds": "471.762",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "476.778",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "5016.728"
+      },
+      {
+        "elapsedSeconds": "481.796",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "486.811",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "5014.998"
+      },
+      {
+        "elapsedSeconds": "491.827",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "496.843",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "5015.959"
+      },
+      {
+        "elapsedSeconds": "501.859",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "506.873",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "5014.014"
+      },
+      {
+        "elapsedSeconds": "511.898",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "516.927",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "5029.405"
+      },
+      {
+        "elapsedSeconds": "521.937",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "526.953",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "5016.675"
+      },
+      {
+        "elapsedSeconds": "531.965",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.780",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "536.980",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.780",
+        "headroomAgeMs": "5015.471"
+      },
+      {
+        "elapsedSeconds": "541.997",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.777",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "547.014",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.777",
+        "headroomAgeMs": "5016.451"
+      },
+      {
+        "elapsedSeconds": "552.035",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.773",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "557.052",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.773",
+        "headroomAgeMs": "5017.116"
+      },
+      {
+        "elapsedSeconds": "562.068",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "567.081",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "5013.359"
+      },
+      {
+        "elapsedSeconds": "572.099",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "577.117",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "5018.331"
+      },
+      {
+        "elapsedSeconds": "582.137",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "587.155",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "5017.463"
+      },
+      {
+        "elapsedSeconds": "592.173",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "597.191",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "5018.489"
+      },
+      {
+        "elapsedSeconds": "602.207",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "607.228",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "5021.569"
+      },
+      {
+        "elapsedSeconds": "612.247",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "617.267",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.770",
+        "headroomAgeMs": "5020.312"
+      },
+      {
+        "elapsedSeconds": "622.284",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.773",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "627.303",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.773",
+        "headroomAgeMs": "5018.809"
+      },
+      {
+        "elapsedSeconds": "632.319",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.773",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "637.332",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.773",
+        "headroomAgeMs": "5013.599"
+      },
+      {
+        "elapsedSeconds": "642.349",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.777",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "647.367",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.777",
+        "headroomAgeMs": "5017.828"
+      },
+      {
+        "elapsedSeconds": "652.383",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.780",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "657.401",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.780",
+        "headroomAgeMs": "5018.046"
+      },
+      {
+        "elapsedSeconds": "662.417",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.780",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "667.436",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.780",
+        "headroomAgeMs": "5018.606"
+      },
+      {
+        "elapsedSeconds": "672.456",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.780",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "677.479",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.780",
+        "headroomAgeMs": "5022.823"
+      },
+      {
+        "elapsedSeconds": "682.496",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.777",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "687.512",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.777",
+        "headroomAgeMs": "5016.358"
+      },
+      {
+        "elapsedSeconds": "692.530",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.777",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "697.547",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.777",
+        "headroomAgeMs": "5017.239"
+      },
+      {
+        "elapsedSeconds": "702.569",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.773",
+        "headroomAgeMs": "0.000"
+      },
+      {
+        "elapsedSeconds": "707.585",
+        "thermalStatus": "NONE",
+        "thermalHeadroom": "0.773",
+        "headroomAgeMs": "5016.427"
+      }
+    ],
+    "battery": {
+      "sampleCount": 143,
+      "levelPct": {
+        "start": 94.0,
+        "end": 84.0,
+        "delta": -10.0
+      },
+      "temperatureC": {
+        "start": 31.2,
+        "end": 35.4,
+        "delta": 4.199999999999999,
+        "sampledMaximum": 35.4
+      },
+      "byChargingStatus": {
+        "Discharging": {
+          "batteryCurrentMa": {
+            "validSamples": 143,
+            "unavailableSamples": 0,
+            "average": -1.5791468531468533,
+            "first": -1.992,
+            "last": -1.453,
+            "maximum": -1.125
+          },
+          "estimatedBatteryPowerMw": {
+            "validSamples": 143,
+            "unavailableSamples": 0,
+            "average": -6.177615384615384,
+            "first": -8.374,
+            "last": -5.619,
+            "maximum": -4.411
+          }
+        }
+      },
+      "consistency": {
+        "pairedIntervals": 142,
+        "coveredDischargingSeconds": 710.517,
+        "chargeCounterDropMah": 380.2399999999999,
+        "integratedCurrentDischargeMah": 0.31155737708333336,
+        "currentToCounterRatio": 0.0008193703373746408,
+        "powerReliability": "SUSPECT_CURRENT_COUNTER_MISMATCH",
+        "note": "Trapezoidal sampled current vs charge counter on the same contiguous unplugged discharging intervals (gaps <=120s). A factor >10 mismatch after >=60s and >=1mAh counter drop is a diagnostic heuristic, not calibration. Do not multiply current by 1000 automatically. Counter/firmware errors, sampling and unit violations require device verification; power remains a device estimate."
+      },
+      "averageDischargingCurrentMa": -1.5791468531468533,
+      "averageEstimatedDischargingPowerMw": -6.177615384615384,
+      "fullSessionSummary": {
+        "sessionId": "b32cd446-c417-4960-a6de-efa2248b4403",
+        "measurementDurationSeconds": "710.657",
+        "firstSampleSeconds": "0.140",
+        "lastSampleSeconds": "710.657",
+        "sampleSpanSeconds": "710.517",
+        "startBatteryLevelPct": "94.000",
+        "endBatteryLevelPct": "84.000",
+        "batteryLevelDeltaPct": "-10.000",
+        "startBatteryTemperatureC": "31.200",
+        "endBatteryTemperatureC": "35.400",
+        "maxBatteryTemperatureC": "35.400",
+        "batteryTemperatureDeltaC": "4.200",
+        "samples": "143",
+        "validSamples": "0",
+        "unavailableSamples": "143",
+        "currentValidSamples": "143",
+        "currentUnavailableSamples": "0",
+        "powerValidSamples": "143",
+        "powerUnavailableSamples": "0",
+        "temperatureValidSamples": "143",
+        "chargingStatusChanged": "false",
+        "pluggedTypeChanged": "false",
+        "thermalStatusChanged": "false",
+        "scope": "device_battery",
+        "power": "estimated_signed",
+        "sampleMean": "true"
+      },
+      "sampleLogComplete": true,
+      "fullSessionStatusSummaries": [
+        {
+          "sessionId": "b32cd446-c417-4960-a6de-efa2248b4403",
+          "chargingStatus": "Discharging",
+          "averageBatteryCurrentMa": "-1.579",
+          "currentValidSamples": "143",
+          "averageEstimatedBatteryPowerMw": "-6.178",
+          "powerValidSamples": "143",
+          "scope": "device_battery"
+        }
+      ],
+      "note": "Device battery, signed current/power; estimates are not app consumption. Means use valid recorded samples grouped by status. Battery temperature is not CPU/GPU temperature. 0% level delta does not mean zero power. Polls can miss transitions; headroom may be cached. See fullSessionSummary for authoritative full-session counts/endpoints if sample lines were dropped."
+    }
+  },
+  "note": "Statistics use recorded successful FRAME samples. If frameLogComplete=false, FPS/P95/averages are incomplete. Error lines count only recorded errors; fallback counters have detector lifetime scope.",
+  "longRun": {
+    "intervalSeconds": 30,
+    "windows": [
+      {
+        "startSeconds": 0.0,
+        "endSeconds": 30.0,
+        "frames": 75,
+        "fps": 2.5,
+        "inference": {
+          "samples": 75,
+          "averageMs": 362.41333333333336,
+          "p95Ms": 375
+        },
+        "nativeInvoke": {
+          "samples": 75,
+          "averageMs": 362.51712,
+          "p95Ms": 374.773
+        },
+        "processCpuUsage": {
+          "validSamples": 5,
+          "unavailableSamples": 1,
+          "average": 124.9016,
+          "first": 123.739,
+          "last": 126.97,
+          "maximum": 126.97
+        },
+        "thermalHeadroom": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 0.6886666666666666,
+          "first": 0.663,
+          "last": 0.713,
+          "maximum": 0.713
+        },
+        "cpuPolicies": {
+          "policy0": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 880000.0,
+              "first": 960000.0,
+              "last": 576000.0,
+              "maximum": 1728000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1728000.0,
+              "first": 1728000.0,
+              "last": 1728000.0,
+              "maximum": 1728000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1959000.0,
+              "first": 1959000.0,
+              "last": 1959000.0,
+              "maximum": 1959000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy4": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 960000.0,
+              "first": 2304000.0,
+              "last": 672000.0,
+              "maximum": 2304000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2304000.0,
+              "first": 2304000.0,
+              "last": 2304000.0,
+              "maximum": 2304000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2592000.0,
+              "first": 2592000.0,
+              "last": 2592000.0,
+              "maximum": 2592000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy7": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 912000.0,
+              "first": 2112000.0,
+              "last": 672000.0,
+              "maximum": 2112000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2496000.0,
+              "first": 2592000.0,
+              "last": 2496000.0,
+              "maximum": 2592000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2900000.0,
+              "first": 2900000.0,
+              "last": 2900000.0,
+              "maximum": 2900000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy9": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2496000.0,
+              "first": 2592000.0,
+              "last": 2496000.0,
+              "maximum": 2592000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2496000.0,
+              "first": 2592000.0,
+              "last": 2496000.0,
+              "maximum": 2592000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 3207000.0,
+              "first": 3207000.0,
+              "last": 3207000.0,
+              "maximum": 3207000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          }
+        }
+      },
+      {
+        "startSeconds": 30.0,
+        "endSeconds": 60.0,
+        "frames": 75,
+        "fps": 2.5,
+        "inference": {
+          "samples": 75,
+          "averageMs": 367.72,
+          "p95Ms": 465
+        },
+        "nativeInvoke": {
+          "samples": 75,
+          "averageMs": 367.87873333333334,
+          "p95Ms": 465.181
+        },
+        "processCpuUsage": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 124.06366666666668,
+          "first": 125.181,
+          "last": 117.058,
+          "maximum": 126.529
+        },
+        "thermalHeadroom": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 0.7399999999999999,
+          "first": 0.727,
+          "last": 0.753,
+          "maximum": 0.753
+        },
+        "cpuPolicies": {
+          "policy0": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1136000.0,
+              "first": 1344000.0,
+              "last": 1728000.0,
+              "maximum": 1728000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1728000.0,
+              "first": 1728000.0,
+              "last": 1728000.0,
+              "maximum": 1728000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1959000.0,
+              "first": 1959000.0,
+              "last": 1959000.0,
+              "maximum": 1959000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy4": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1184000.0,
+              "first": 672000.0,
+              "last": 2304000.0,
+              "maximum": 2304000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2304000.0,
+              "first": 2304000.0,
+              "last": 2304000.0,
+              "maximum": 2304000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2592000.0,
+              "first": 2592000.0,
+              "last": 2592000.0,
+              "maximum": 2592000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy7": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1296000.0,
+              "first": 672000.0,
+              "last": 2400000.0,
+              "maximum": 2400000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2496000.0,
+              "first": 2592000.0,
+              "last": 2400000.0,
+              "maximum": 2592000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2900000.0,
+              "first": 2900000.0,
+              "last": 2900000.0,
+              "maximum": 2900000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy9": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2496000.0,
+              "first": 2592000.0,
+              "last": 2400000.0,
+              "maximum": 2592000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2496000.0,
+              "first": 2592000.0,
+              "last": 2400000.0,
+              "maximum": 2592000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 3207000.0,
+              "first": 3207000.0,
+              "last": 3207000.0,
+              "maximum": 3207000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          }
+        }
+      },
+      {
+        "startSeconds": 60.0,
+        "endSeconds": 90.0,
+        "frames": 60,
+        "fps": 2.0,
+        "inference": {
+          "samples": 60,
+          "averageMs": 455.23333333333335,
+          "p95Ms": 469
+        },
+        "nativeInvoke": {
+          "samples": 60,
+          "averageMs": 455.3621,
+          "p95Ms": 468.617
+        },
+        "processCpuUsage": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 125.49733333333334,
+          "first": 122.849,
+          "last": 125.643,
+          "maximum": 127.976
+        },
+        "thermalHeadroom": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 0.7756666666666666,
+          "first": 0.78,
+          "last": 0.77,
+          "maximum": 0.78
+        },
+        "cpuPolicies": {
+          "policy0": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1136000.0,
+              "first": 1632000.0,
+              "last": 576000.0,
+              "maximum": 1632000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1632000.0,
+              "first": 1632000.0,
+              "last": 1632000.0,
+              "maximum": 1632000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1959000.0,
+              "first": 1959000.0,
+              "last": 1959000.0,
+              "maximum": 1959000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy4": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 880000.0,
+              "first": 1920000.0,
+              "last": 672000.0,
+              "maximum": 1920000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1952000.0,
+              "first": 1920000.0,
+              "last": 2016000.0,
+              "maximum": 2016000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2592000.0,
+              "first": 2592000.0,
+              "last": 2592000.0,
+              "maximum": 2592000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy7": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 928000.0,
+              "first": 1920000.0,
+              "last": 672000.0,
+              "maximum": 1920000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1952000.0,
+              "first": 1920000.0,
+              "last": 2016000.0,
+              "maximum": 2016000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2900000.0,
+              "first": 2900000.0,
+              "last": 2900000.0,
+              "maximum": 2900000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy9": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1952000.0,
+              "first": 1920000.0,
+              "last": 2016000.0,
+              "maximum": 2016000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1952000.0,
+              "first": 1920000.0,
+              "last": 2016000.0,
+              "maximum": 2016000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 3207000.0,
+              "first": 3207000.0,
+              "last": 3207000.0,
+              "maximum": 3207000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          }
+        }
+      },
+      {
+        "startSeconds": 90.0,
+        "endSeconds": 120.0,
+        "frames": 60,
+        "fps": 2.0,
+        "inference": {
+          "samples": 60,
+          "averageMs": 456.4,
+          "p95Ms": 463
+        },
+        "nativeInvoke": {
+          "samples": 60,
+          "averageMs": 456.51121666666666,
+          "p95Ms": 463.339
+        },
+        "processCpuUsage": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 125.134,
+          "first": 125.299,
+          "last": 126.879,
+          "maximum": 126.879
+        },
+        "thermalHeadroom": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 0.77,
+          "first": 0.77,
+          "last": 0.77,
+          "maximum": 0.77
+        },
+        "cpuPolicies": {
+          "policy0": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1008000.0,
+              "first": 960000.0,
+              "last": 576000.0,
+              "maximum": 1632000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1632000.0,
+              "first": 1632000.0,
+              "last": 1632000.0,
+              "maximum": 1632000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1959000.0,
+              "first": 1959000.0,
+              "last": 1959000.0,
+              "maximum": 1959000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy4": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 672000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 672000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1952000.0,
+              "first": 2016000.0,
+              "last": 1920000.0,
+              "maximum": 2016000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2592000.0,
+              "first": 2592000.0,
+              "last": 2592000.0,
+              "maximum": 2592000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy7": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 880000.0,
+              "first": 1920000.0,
+              "last": 672000.0,
+              "maximum": 1920000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1952000.0,
+              "first": 2016000.0,
+              "last": 1920000.0,
+              "maximum": 2016000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2900000.0,
+              "first": 2900000.0,
+              "last": 2900000.0,
+              "maximum": 2900000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy9": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1952000.0,
+              "first": 2016000.0,
+              "last": 1920000.0,
+              "maximum": 2016000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1952000.0,
+              "first": 2016000.0,
+              "last": 1920000.0,
+              "maximum": 2016000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 3207000.0,
+              "first": 3207000.0,
+              "last": 3207000.0,
+              "maximum": 3207000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          }
+        }
+      },
+      {
+        "startSeconds": 120.0,
+        "endSeconds": 150.0,
+        "frames": 60,
+        "fps": 2.0,
+        "inference": {
+          "samples": 60,
+          "averageMs": 461.98333333333335,
+          "p95Ms": 465
+        },
+        "nativeInvoke": {
+          "samples": 60,
+          "averageMs": 462.09208333333333,
+          "p95Ms": 464.745
+        },
+        "processCpuUsage": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 124.766,
+          "first": 123.298,
+          "last": 125.94,
+          "maximum": 125.997
+        },
+        "thermalHeadroom": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 0.77,
+          "first": 0.77,
+          "last": 0.77,
+          "maximum": 0.77
+        },
+        "cpuPolicies": {
+          "policy0": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1472000.0,
+              "first": 960000.0,
+              "last": 1632000.0,
+              "maximum": 1632000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1632000.0,
+              "first": 1632000.0,
+              "last": 1632000.0,
+              "maximum": 1632000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1959000.0,
+              "first": 1959000.0,
+              "last": 1959000.0,
+              "maximum": 1959000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy4": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 672000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 672000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1856000.0,
+              "first": 1920000.0,
+              "last": 1824000.0,
+              "maximum": 1920000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2592000.0,
+              "first": 2592000.0,
+              "last": 2592000.0,
+              "maximum": 2592000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy7": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 672000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 672000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1856000.0,
+              "first": 1920000.0,
+              "last": 1824000.0,
+              "maximum": 1920000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2900000.0,
+              "first": 2900000.0,
+              "last": 2900000.0,
+              "maximum": 2900000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy9": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1920000.0,
+              "first": 1920000.0,
+              "last": 1920000.0,
+              "maximum": 1920000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1920000.0,
+              "first": 1920000.0,
+              "last": 1920000.0,
+              "maximum": 1920000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 3207000.0,
+              "first": 3207000.0,
+              "last": 3207000.0,
+              "maximum": 3207000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          }
+        }
+      },
+      {
+        "startSeconds": 150.0,
+        "endSeconds": 180.0,
+        "frames": 60,
+        "fps": 2.0,
+        "inference": {
+          "samples": 60,
+          "averageMs": 451.76666666666665,
+          "p95Ms": 463
+        },
+        "nativeInvoke": {
+          "samples": 60,
+          "averageMs": 451.90005,
+          "p95Ms": 463.374
+        },
+        "processCpuUsage": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 124.8455,
+          "first": 124.809,
+          "last": 122.639,
+          "maximum": 127.114
+        },
+        "thermalHeadroom": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 0.7656666666666667,
+          "first": 0.767,
+          "last": 0.763,
+          "maximum": 0.767
+        },
+        "cpuPolicies": {
+          "policy0": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1328000.0,
+              "first": 1632000.0,
+              "last": 1632000.0,
+              "maximum": 1632000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1632000.0,
+              "first": 1632000.0,
+              "last": 1632000.0,
+              "maximum": 1632000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1959000.0,
+              "first": 1959000.0,
+              "last": 1959000.0,
+              "maximum": 1959000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy4": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 672000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 672000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1952000.0,
+              "first": 1920000.0,
+              "last": 2016000.0,
+              "maximum": 2016000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2592000.0,
+              "first": 2592000.0,
+              "last": 2592000.0,
+              "maximum": 2592000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy7": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 672000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 672000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1952000.0,
+              "first": 1920000.0,
+              "last": 2016000.0,
+              "maximum": 2016000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2900000.0,
+              "first": 2900000.0,
+              "last": 2900000.0,
+              "maximum": 2900000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy9": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1952000.0,
+              "first": 1920000.0,
+              "last": 2016000.0,
+              "maximum": 2016000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1952000.0,
+              "first": 1920000.0,
+              "last": 2016000.0,
+              "maximum": 2016000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 3207000.0,
+              "first": 3207000.0,
+              "last": 3207000.0,
+              "maximum": 3207000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          }
+        }
+      },
+      {
+        "startSeconds": 180.0,
+        "endSeconds": 210.0,
+        "frames": 64,
+        "fps": 2.1333333333333333,
+        "inference": {
+          "samples": 64,
+          "averageMs": 427.859375,
+          "p95Ms": 443
+        },
+        "nativeInvoke": {
+          "samples": 64,
+          "averageMs": 428.052765625,
+          "p95Ms": 442.678
+        },
+        "processCpuUsage": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 123.62583333333333,
+          "first": 125.169,
+          "last": 124.436,
+          "maximum": 125.169
+        },
+        "thermalHeadroom": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 0.762,
+          "first": 0.76,
+          "last": 0.763,
+          "maximum": 0.763
+        },
+        "cpuPolicies": {
+          "policy0": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1040000.0,
+              "first": 672000.0,
+              "last": 576000.0,
+              "maximum": 1728000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1696000.0,
+              "first": 1728000.0,
+              "last": 1728000.0,
+              "maximum": 1728000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1959000.0,
+              "first": 1959000.0,
+              "last": 1959000.0,
+              "maximum": 1959000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy4": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1136000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 2112000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2080000.0,
+              "first": 2112000.0,
+              "last": 2112000.0,
+              "maximum": 2112000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2592000.0,
+              "first": 2592000.0,
+              "last": 2592000.0,
+              "maximum": 2592000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy7": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 672000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 672000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2080000.0,
+              "first": 2112000.0,
+              "last": 2112000.0,
+              "maximum": 2112000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2900000.0,
+              "first": 2900000.0,
+              "last": 2900000.0,
+              "maximum": 2900000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy9": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2080000.0,
+              "first": 2112000.0,
+              "last": 2112000.0,
+              "maximum": 2112000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2080000.0,
+              "first": 2112000.0,
+              "last": 2112000.0,
+              "maximum": 2112000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 3207000.0,
+              "first": 3207000.0,
+              "last": 3207000.0,
+              "maximum": 3207000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          }
+        }
+      },
+      {
+        "startSeconds": 210.0,
+        "endSeconds": 240.0,
+        "frames": 65,
+        "fps": 2.1666666666666665,
+        "inference": {
+          "samples": 65,
+          "averageMs": 421.7230769230769,
+          "p95Ms": 423
+        },
+        "nativeInvoke": {
+          "samples": 65,
+          "averageMs": 421.80370769230774,
+          "p95Ms": 423.109
+        },
+        "processCpuUsage": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 123.44733333333333,
+          "first": 124.296,
+          "last": 122.081,
+          "maximum": 124.296
+        },
+        "thermalHeadroom": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 0.7643333333333334,
+          "first": 0.763,
+          "last": 0.767,
+          "maximum": 0.767
+        },
+        "cpuPolicies": {
+          "policy0": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1504000.0,
+              "first": 1728000.0,
+              "last": 1728000.0,
+              "maximum": 1728000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1728000.0,
+              "first": 1728000.0,
+              "last": 1728000.0,
+              "maximum": 1728000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1959000.0,
+              "first": 1959000.0,
+              "last": 1959000.0,
+              "maximum": 1959000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy4": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 752000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 1152000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2112000.0,
+              "first": 2112000.0,
+              "last": 2112000.0,
+              "maximum": 2112000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2592000.0,
+              "first": 2592000.0,
+              "last": 2592000.0,
+              "maximum": 2592000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy7": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 672000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 672000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2112000.0,
+              "first": 2112000.0,
+              "last": 2112000.0,
+              "maximum": 2112000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2900000.0,
+              "first": 2900000.0,
+              "last": 2900000.0,
+              "maximum": 2900000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy9": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2112000.0,
+              "first": 2112000.0,
+              "last": 2112000.0,
+              "maximum": 2112000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2112000.0,
+              "first": 2112000.0,
+              "last": 2112000.0,
+              "maximum": 2112000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 3207000.0,
+              "first": 3207000.0,
+              "last": 3207000.0,
+              "maximum": 3207000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          }
+        }
+      },
+      {
+        "startSeconds": 240.0,
+        "endSeconds": 270.0,
+        "frames": 64,
+        "fps": 2.1333333333333333,
+        "inference": {
+          "samples": 64,
+          "averageMs": 429.09375,
+          "p95Ms": 442
+        },
+        "nativeInvoke": {
+          "samples": 64,
+          "averageMs": 429.249375,
+          "p95Ms": 442.501
+        },
+        "processCpuUsage": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 123.73783333333334,
+          "first": 124.846,
+          "last": 124.072,
+          "maximum": 124.846
+        },
+        "thermalHeadroom": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 0.7680000000000001,
+          "first": 0.767,
+          "last": 0.77,
+          "maximum": 0.77
+        },
+        "cpuPolicies": {
+          "policy0": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1248000.0,
+              "first": 864000.0,
+              "last": 1632000.0,
+              "maximum": 1728000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1696000.0,
+              "first": 1728000.0,
+              "last": 1632000.0,
+              "maximum": 1728000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1959000.0,
+              "first": 1959000.0,
+              "last": 1959000.0,
+              "maximum": 1959000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy4": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 672000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 672000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2080000.0,
+              "first": 2112000.0,
+              "last": 2016000.0,
+              "maximum": 2112000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2592000.0,
+              "first": 2592000.0,
+              "last": 2592000.0,
+              "maximum": 2592000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy7": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 672000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 672000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2080000.0,
+              "first": 2112000.0,
+              "last": 2016000.0,
+              "maximum": 2112000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2900000.0,
+              "first": 2900000.0,
+              "last": 2900000.0,
+              "maximum": 2900000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy9": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2080000.0,
+              "first": 2112000.0,
+              "last": 2016000.0,
+              "maximum": 2112000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2080000.0,
+              "first": 2112000.0,
+              "last": 2016000.0,
+              "maximum": 2112000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 3207000.0,
+              "first": 3207000.0,
+              "last": 3207000.0,
+              "maximum": 3207000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          }
+        }
+      },
+      {
+        "startSeconds": 270.0,
+        "endSeconds": 300.0,
+        "frames": 64,
+        "fps": 2.1333333333333333,
+        "inference": {
+          "samples": 64,
+          "averageMs": 432.96875,
+          "p95Ms": 442
+        },
+        "nativeInvoke": {
+          "samples": 64,
+          "averageMs": 433.089109375,
+          "p95Ms": 442.211
+        },
+        "processCpuUsage": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 124.0835,
+          "first": 123.871,
+          "last": 122.092,
+          "maximum": 125.235
+        },
+        "thermalHeadroom": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 0.7656666666666667,
+          "first": 0.767,
+          "last": 0.763,
+          "maximum": 0.767
+        },
+        "cpuPolicies": {
+          "policy0": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1152000.0,
+              "first": 768000.0,
+              "last": 672000.0,
+              "maximum": 1632000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1664000.0,
+              "first": 1632000.0,
+              "last": 1728000.0,
+              "maximum": 1728000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1959000.0,
+              "first": 1959000.0,
+              "last": 1959000.0,
+              "maximum": 1959000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy4": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 672000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 672000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2048000.0,
+              "first": 2016000.0,
+              "last": 2112000.0,
+              "maximum": 2112000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2592000.0,
+              "first": 2592000.0,
+              "last": 2592000.0,
+              "maximum": 2592000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy7": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 672000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 672000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2048000.0,
+              "first": 2016000.0,
+              "last": 2112000.0,
+              "maximum": 2112000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2900000.0,
+              "first": 2900000.0,
+              "last": 2900000.0,
+              "maximum": 2900000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy9": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2048000.0,
+              "first": 2016000.0,
+              "last": 2112000.0,
+              "maximum": 2112000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2048000.0,
+              "first": 2016000.0,
+              "last": 2112000.0,
+              "maximum": 2112000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 3207000.0,
+              "first": 3207000.0,
+              "last": 3207000.0,
+              "maximum": 3207000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          }
+        }
+      },
+      {
+        "startSeconds": 300.0,
+        "endSeconds": 330.0,
+        "frames": 67,
+        "fps": 2.2333333333333334,
+        "inference": {
+          "samples": 67,
+          "averageMs": 409.8358208955224,
+          "p95Ms": 423
+        },
+        "nativeInvoke": {
+          "samples": 67,
+          "averageMs": 409.93205970149256,
+          "p95Ms": 422.737
+        },
+        "processCpuUsage": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 124.49150000000002,
+          "first": 125.078,
+          "last": 124.739,
+          "maximum": 125.46
+        },
+        "thermalHeadroom": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 0.763,
+          "first": 0.763,
+          "last": 0.763,
+          "maximum": 0.763
+        },
+        "cpuPolicies": {
+          "policy0": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1200000.0,
+              "first": 1728000.0,
+              "last": 672000.0,
+              "maximum": 1728000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1728000.0,
+              "first": 1728000.0,
+              "last": 1728000.0,
+              "maximum": 1728000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1959000.0,
+              "first": 1959000.0,
+              "last": 1959000.0,
+              "maximum": 1959000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy4": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 672000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 672000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2176000.0,
+              "first": 2112000.0,
+              "last": 2208000.0,
+              "maximum": 2208000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2592000.0,
+              "first": 2592000.0,
+              "last": 2592000.0,
+              "maximum": 2592000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy7": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 672000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 672000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2176000.0,
+              "first": 2112000.0,
+              "last": 2208000.0,
+              "maximum": 2208000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2900000.0,
+              "first": 2900000.0,
+              "last": 2900000.0,
+              "maximum": 2900000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy9": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2176000.0,
+              "first": 2112000.0,
+              "last": 2208000.0,
+              "maximum": 2208000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2176000.0,
+              "first": 2112000.0,
+              "last": 2208000.0,
+              "maximum": 2208000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 3207000.0,
+              "first": 3207000.0,
+              "last": 3207000.0,
+              "maximum": 3207000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          }
+        }
+      },
+      {
+        "startSeconds": 330.0,
+        "endSeconds": 360.0,
+        "frames": 65,
+        "fps": 2.1666666666666665,
+        "inference": {
+          "samples": 65,
+          "averageMs": 420.5692307692308,
+          "p95Ms": 423
+        },
+        "nativeInvoke": {
+          "samples": 65,
+          "averageMs": 420.62690769230767,
+          "p95Ms": 423.521
+        },
+        "processCpuUsage": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 124.48116666666665,
+          "first": 124.972,
+          "last": 124.647,
+          "maximum": 125.586
+        },
+        "thermalHeadroom": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 0.767,
+          "first": 0.767,
+          "last": 0.767,
+          "maximum": 0.767
+        },
+        "cpuPolicies": {
+          "policy0": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1360000.0,
+              "first": 1728000.0,
+              "last": 672000.0,
+              "maximum": 1728000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1728000.0,
+              "first": 1728000.0,
+              "last": 1728000.0,
+              "maximum": 1728000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1959000.0,
+              "first": 1959000.0,
+              "last": 1959000.0,
+              "maximum": 1959000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy4": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 672000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 672000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2112000.0,
+              "first": 2112000.0,
+              "last": 2112000.0,
+              "maximum": 2112000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2592000.0,
+              "first": 2592000.0,
+              "last": 2592000.0,
+              "maximum": 2592000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy7": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 672000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 672000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2112000.0,
+              "first": 2112000.0,
+              "last": 2112000.0,
+              "maximum": 2112000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2900000.0,
+              "first": 2900000.0,
+              "last": 2900000.0,
+              "maximum": 2900000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy9": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2112000.0,
+              "first": 2112000.0,
+              "last": 2112000.0,
+              "maximum": 2112000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2112000.0,
+              "first": 2112000.0,
+              "last": 2112000.0,
+              "maximum": 2112000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 3207000.0,
+              "first": 3207000.0,
+              "last": 3207000.0,
+              "maximum": 3207000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          }
+        }
+      },
+      {
+        "startSeconds": 360.0,
+        "endSeconds": 390.0,
+        "frames": 65,
+        "fps": 2.1666666666666665,
+        "inference": {
+          "samples": 65,
+          "averageMs": 418.03076923076924,
+          "p95Ms": 436
+        },
+        "nativeInvoke": {
+          "samples": 65,
+          "averageMs": 418.13023076923076,
+          "p95Ms": 436.597
+        },
+        "processCpuUsage": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 123.42633333333333,
+          "first": 121.416,
+          "last": 124.607,
+          "maximum": 124.607
+        },
+        "thermalHeadroom": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 0.7676666666666666,
+          "first": 0.763,
+          "last": 0.77,
+          "maximum": 0.77
+        },
+        "cpuPolicies": {
+          "policy0": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 880000.0,
+              "first": 864000.0,
+              "last": 672000.0,
+              "maximum": 1728000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1728000.0,
+              "first": 1728000.0,
+              "last": 1728000.0,
+              "maximum": 1728000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1959000.0,
+              "first": 1959000.0,
+              "last": 1959000.0,
+              "maximum": 1959000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy4": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 672000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 672000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2144000.0,
+              "first": 2208000.0,
+              "last": 2112000.0,
+              "maximum": 2208000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2592000.0,
+              "first": 2592000.0,
+              "last": 2592000.0,
+              "maximum": 2592000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy7": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 672000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 672000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2144000.0,
+              "first": 2208000.0,
+              "last": 2112000.0,
+              "maximum": 2208000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2900000.0,
+              "first": 2900000.0,
+              "last": 2900000.0,
+              "maximum": 2900000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy9": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2144000.0,
+              "first": 2208000.0,
+              "last": 2112000.0,
+              "maximum": 2208000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2144000.0,
+              "first": 2208000.0,
+              "last": 2112000.0,
+              "maximum": 2208000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 3207000.0,
+              "first": 3207000.0,
+              "last": 3207000.0,
+              "maximum": 3207000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          }
+        }
+      },
+      {
+        "startSeconds": 390.0,
+        "endSeconds": 420.0,
+        "frames": 64,
+        "fps": 2.1333333333333333,
+        "inference": {
+          "samples": 64,
+          "averageMs": 427.75,
+          "p95Ms": 441
+        },
+        "nativeInvoke": {
+          "samples": 64,
+          "averageMs": 427.912640625,
+          "p95Ms": 441.602
+        },
+        "processCpuUsage": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 123.853,
+          "first": 124.219,
+          "last": 124.964,
+          "maximum": 124.964
+        },
+        "thermalHeadroom": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 0.7680000000000001,
+          "first": 0.77,
+          "last": 0.767,
+          "maximum": 0.77
+        },
+        "cpuPolicies": {
+          "policy0": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1328000.0,
+              "first": 672000.0,
+              "last": 1440000.0,
+              "maximum": 1728000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1696000.0,
+              "first": 1632000.0,
+              "last": 1728000.0,
+              "maximum": 1728000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1959000.0,
+              "first": 1959000.0,
+              "last": 1959000.0,
+              "maximum": 1959000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy4": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 912000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 2112000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2080000.0,
+              "first": 2016000.0,
+              "last": 2112000.0,
+              "maximum": 2112000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2592000.0,
+              "first": 2592000.0,
+              "last": 2592000.0,
+              "maximum": 2592000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy7": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 672000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 672000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2080000.0,
+              "first": 2016000.0,
+              "last": 2112000.0,
+              "maximum": 2112000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2900000.0,
+              "first": 2900000.0,
+              "last": 2900000.0,
+              "maximum": 2900000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy9": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2080000.0,
+              "first": 2016000.0,
+              "last": 2112000.0,
+              "maximum": 2112000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2080000.0,
+              "first": 2016000.0,
+              "last": 2112000.0,
+              "maximum": 2112000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 3207000.0,
+              "first": 3207000.0,
+              "last": 3207000.0,
+              "maximum": 3207000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          }
+        }
+      },
+      {
+        "startSeconds": 420.0,
+        "endSeconds": 450.0,
+        "frames": 63,
+        "fps": 2.1,
+        "inference": {
+          "samples": 63,
+          "averageMs": 438.3333333333333,
+          "p95Ms": 443
+        },
+        "nativeInvoke": {
+          "samples": 63,
+          "averageMs": 438.50196825396824,
+          "p95Ms": 443.204
+        },
+        "processCpuUsage": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 123.25283333333334,
+          "first": 123.258,
+          "last": 123.477,
+          "maximum": 124.303
+        },
+        "thermalHeadroom": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 0.769,
+          "first": 0.77,
+          "last": 0.767,
+          "maximum": 0.77
+        },
+        "cpuPolicies": {
+          "policy0": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1184000.0,
+              "first": 768000.0,
+              "last": 672000.0,
+              "maximum": 1632000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1632000.0,
+              "first": 1632000.0,
+              "last": 1632000.0,
+              "maximum": 1632000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1959000.0,
+              "first": 1959000.0,
+              "last": 1959000.0,
+              "maximum": 1959000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy4": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 672000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 672000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2016000.0,
+              "first": 2016000.0,
+              "last": 2016000.0,
+              "maximum": 2016000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2592000.0,
+              "first": 2592000.0,
+              "last": 2592000.0,
+              "maximum": 2592000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy7": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 672000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 672000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2016000.0,
+              "first": 2016000.0,
+              "last": 2016000.0,
+              "maximum": 2016000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2900000.0,
+              "first": 2900000.0,
+              "last": 2900000.0,
+              "maximum": 2900000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy9": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2016000.0,
+              "first": 2016000.0,
+              "last": 2016000.0,
+              "maximum": 2016000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2016000.0,
+              "first": 2016000.0,
+              "last": 2016000.0,
+              "maximum": 2016000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 3207000.0,
+              "first": 3207000.0,
+              "last": 3207000.0,
+              "maximum": 3207000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          }
+        }
+      },
+      {
+        "startSeconds": 450.0,
+        "endSeconds": 480.0,
+        "frames": 61,
+        "fps": 2.033333333333333,
+        "inference": {
+          "samples": 61,
+          "averageMs": 449.0327868852459,
+          "p95Ms": 463
+        },
+        "nativeInvoke": {
+          "samples": 61,
+          "averageMs": 449.121737704918,
+          "p95Ms": 462.922
+        },
+        "processCpuUsage": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 123.46483333333333,
+          "first": 123.519,
+          "last": 126.411,
+          "maximum": 126.411
+        },
+        "thermalHeadroom": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 0.769,
+          "first": 0.767,
+          "last": 0.77,
+          "maximum": 0.77
+        },
+        "cpuPolicies": {
+          "policy0": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1040000.0,
+              "first": 960000.0,
+              "last": 672000.0,
+              "maximum": 1632000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1632000.0,
+              "first": 1632000.0,
+              "last": 1632000.0,
+              "maximum": 1632000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1959000.0,
+              "first": 1959000.0,
+              "last": 1959000.0,
+              "maximum": 1959000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy4": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 672000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 672000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1984000.0,
+              "first": 2016000.0,
+              "last": 1920000.0,
+              "maximum": 2016000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2592000.0,
+              "first": 2592000.0,
+              "last": 2592000.0,
+              "maximum": 2592000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy7": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 704000.0,
+              "first": 864000.0,
+              "last": 672000.0,
+              "maximum": 864000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1984000.0,
+              "first": 2016000.0,
+              "last": 1920000.0,
+              "maximum": 2016000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2900000.0,
+              "first": 2900000.0,
+              "last": 2900000.0,
+              "maximum": 2900000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy9": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1984000.0,
+              "first": 2016000.0,
+              "last": 1920000.0,
+              "maximum": 2016000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1984000.0,
+              "first": 2016000.0,
+              "last": 1920000.0,
+              "maximum": 2016000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 3207000.0,
+              "first": 3207000.0,
+              "last": 3207000.0,
+              "maximum": 3207000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          }
+        }
+      },
+      {
+        "startSeconds": 480.0,
+        "endSeconds": 510.0,
+        "frames": 60,
+        "fps": 2.0,
+        "inference": {
+          "samples": 60,
+          "averageMs": 462.0,
+          "p95Ms": 464
+        },
+        "nativeInvoke": {
+          "samples": 60,
+          "averageMs": 462.15788333333336,
+          "p95Ms": 463.987
+        },
+        "processCpuUsage": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 124.246,
+          "first": 123.62,
+          "last": 126.141,
+          "maximum": 126.141
+        },
+        "thermalHeadroom": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 0.77,
+          "first": 0.77,
+          "last": 0.77,
+          "maximum": 0.77
+        },
+        "cpuPolicies": {
+          "policy0": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1024000.0,
+              "first": 1632000.0,
+              "last": 864000.0,
+              "maximum": 1632000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1632000.0,
+              "first": 1632000.0,
+              "last": 1632000.0,
+              "maximum": 1632000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1959000.0,
+              "first": 1959000.0,
+              "last": 1959000.0,
+              "maximum": 1959000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy4": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 688000.0,
+              "first": 672000.0,
+              "last": 768000.0,
+              "maximum": 768000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1888000.0,
+              "first": 1920000.0,
+              "last": 1824000.0,
+              "maximum": 1920000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2592000.0,
+              "first": 2592000.0,
+              "last": 2592000.0,
+              "maximum": 2592000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy7": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 704000.0,
+              "first": 672000.0,
+              "last": 864000.0,
+              "maximum": 864000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1888000.0,
+              "first": 1920000.0,
+              "last": 1824000.0,
+              "maximum": 1920000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2900000.0,
+              "first": 2900000.0,
+              "last": 2900000.0,
+              "maximum": 2900000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy9": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1920000.0,
+              "first": 1920000.0,
+              "last": 1920000.0,
+              "maximum": 1920000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1920000.0,
+              "first": 1920000.0,
+              "last": 1920000.0,
+              "maximum": 1920000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 3207000.0,
+              "first": 3207000.0,
+              "last": 3207000.0,
+              "maximum": 3207000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          }
+        }
+      },
+      {
+        "startSeconds": 510.0,
+        "endSeconds": 540.0,
+        "frames": 56,
+        "fps": 1.8666666666666667,
+        "inference": {
+          "samples": 56,
+          "averageMs": 492.67857142857144,
+          "p95Ms": 543
+        },
+        "nativeInvoke": {
+          "samples": 56,
+          "averageMs": 492.78035714285716,
+          "p95Ms": 543.455
+        },
+        "processCpuUsage": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 122.05216666666666,
+          "first": 124.186,
+          "last": 123.433,
+          "maximum": 124.186
+        },
+        "thermalHeadroom": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 0.7733333333333334,
+          "first": 0.77,
+          "last": 0.78,
+          "maximum": 0.78
+        },
+        "cpuPolicies": {
+          "policy0": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1392000.0,
+              "first": 1632000.0,
+              "last": 768000.0,
+              "maximum": 1632000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1600000.0,
+              "first": 1632000.0,
+              "last": 1536000.0,
+              "maximum": 1632000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1959000.0,
+              "first": 1959000.0,
+              "last": 1959000.0,
+              "maximum": 1959000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy4": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1248000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 1824000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1760000.0,
+              "first": 1824000.0,
+              "last": 1632000.0,
+              "maximum": 1824000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2592000.0,
+              "first": 2592000.0,
+              "last": 2592000.0,
+              "maximum": 2592000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy7": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 880000.0,
+              "first": 768000.0,
+              "last": 672000.0,
+              "maximum": 1824000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1760000.0,
+              "first": 1824000.0,
+              "last": 1632000.0,
+              "maximum": 1824000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2900000.0,
+              "first": 2900000.0,
+              "last": 2900000.0,
+              "maximum": 2900000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy9": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1824000.0,
+              "first": 1920000.0,
+              "last": 1632000.0,
+              "maximum": 1920000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1824000.0,
+              "first": 1920000.0,
+              "last": 1632000.0,
+              "maximum": 1920000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 3207000.0,
+              "first": 3207000.0,
+              "last": 3207000.0,
+              "maximum": 3207000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          }
+        }
+      },
+      {
+        "startSeconds": 540.0,
+        "endSeconds": 570.0,
+        "frames": 52,
+        "fps": 1.7333333333333334,
+        "inference": {
+          "samples": 52,
+          "averageMs": 530.7692307692307,
+          "p95Ms": 544
+        },
+        "nativeInvoke": {
+          "samples": 52,
+          "averageMs": 530.9303846153846,
+          "p95Ms": 543.78
+        },
+        "processCpuUsage": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 124.15666666666668,
+          "first": 123.272,
+          "last": 124.744,
+          "maximum": 124.744
+        },
+        "thermalHeadroom": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 0.7733333333333334,
+          "first": 0.777,
+          "last": 0.77,
+          "maximum": 0.777
+        },
+        "cpuPolicies": {
+          "policy0": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1392000.0,
+              "first": 1536000.0,
+              "last": 1344000.0,
+              "maximum": 1632000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1568000.0,
+              "first": 1536000.0,
+              "last": 1632000.0,
+              "maximum": 1632000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1959000.0,
+              "first": 1959000.0,
+              "last": 1959000.0,
+              "maximum": 1959000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy4": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 688000.0,
+              "first": 672000.0,
+              "last": 768000.0,
+              "maximum": 768000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1632000.0,
+              "first": 1632000.0,
+              "last": 1632000.0,
+              "maximum": 1632000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2592000.0,
+              "first": 2592000.0,
+              "last": 2592000.0,
+              "maximum": 2592000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy7": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1168000.0,
+              "first": 672000.0,
+              "last": 1536000.0,
+              "maximum": 1632000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1632000.0,
+              "first": 1632000.0,
+              "last": 1632000.0,
+              "maximum": 1632000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2900000.0,
+              "first": 2900000.0,
+              "last": 2900000.0,
+              "maximum": 2900000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy9": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1664000.0,
+              "first": 1632000.0,
+              "last": 1728000.0,
+              "maximum": 1728000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1664000.0,
+              "first": 1632000.0,
+              "last": 1728000.0,
+              "maximum": 1728000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 3207000.0,
+              "first": 3207000.0,
+              "last": 3207000.0,
+              "maximum": 3207000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          }
+        }
+      },
+      {
+        "startSeconds": 570.0,
+        "endSeconds": 600.0,
+        "frames": 51,
+        "fps": 1.7,
+        "inference": {
+          "samples": 51,
+          "averageMs": 540.4509803921569,
+          "p95Ms": 543
+        },
+        "nativeInvoke": {
+          "samples": 51,
+          "averageMs": 540.5535098039215,
+          "p95Ms": 543.456
+        },
+        "processCpuUsage": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 123.74033333333334,
+          "first": 122.44,
+          "last": 124.902,
+          "maximum": 124.902
+        },
+        "thermalHeadroom": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 0.77,
+          "first": 0.77,
+          "last": 0.77,
+          "maximum": 0.77
+        },
+        "cpuPolicies": {
+          "policy0": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1104000.0,
+              "first": 1536000.0,
+              "last": 1536000.0,
+              "maximum": 1536000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1536000.0,
+              "first": 1536000.0,
+              "last": 1536000.0,
+              "maximum": 1536000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1959000.0,
+              "first": 1959000.0,
+              "last": 1959000.0,
+              "maximum": 1959000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy4": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 672000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 672000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1600000.0,
+              "first": 1632000.0,
+              "last": 1536000.0,
+              "maximum": 1632000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2592000.0,
+              "first": 2592000.0,
+              "last": 2592000.0,
+              "maximum": 2592000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy7": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 672000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 672000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1600000.0,
+              "first": 1632000.0,
+              "last": 1536000.0,
+              "maximum": 1632000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2900000.0,
+              "first": 2900000.0,
+              "last": 2900000.0,
+              "maximum": 2900000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy9": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1632000.0,
+              "first": 1632000.0,
+              "last": 1632000.0,
+              "maximum": 1632000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1632000.0,
+              "first": 1632000.0,
+              "last": 1632000.0,
+              "maximum": 1632000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 3207000.0,
+              "first": 3207000.0,
+              "last": 3207000.0,
+              "maximum": 3207000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          }
+        }
+      },
+      {
+        "startSeconds": 600.0,
+        "endSeconds": 630.0,
+        "frames": 51,
+        "fps": 1.7,
+        "inference": {
+          "samples": 51,
+          "averageMs": 541.7843137254902,
+          "p95Ms": 546
+        },
+        "nativeInvoke": {
+          "samples": 51,
+          "averageMs": 541.8825294117647,
+          "p95Ms": 546.181
+        },
+        "processCpuUsage": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 123.78283333333333,
+          "first": 124.728,
+          "last": 124.484,
+          "maximum": 124.728
+        },
+        "thermalHeadroom": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 0.771,
+          "first": 0.77,
+          "last": 0.773,
+          "maximum": 0.773
+        },
+        "cpuPolicies": {
+          "policy0": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 880000.0,
+              "first": 864000.0,
+              "last": 1536000.0,
+              "maximum": 1536000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1536000.0,
+              "first": 1536000.0,
+              "last": 1536000.0,
+              "maximum": 1536000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1959000.0,
+              "first": 1959000.0,
+              "last": 1959000.0,
+              "maximum": 1959000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy4": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 752000.0,
+              "first": 1152000.0,
+              "last": 672000.0,
+              "maximum": 1152000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1536000.0,
+              "first": 1536000.0,
+              "last": 1536000.0,
+              "maximum": 1536000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2592000.0,
+              "first": 2592000.0,
+              "last": 2592000.0,
+              "maximum": 2592000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy7": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 752000.0,
+              "first": 1152000.0,
+              "last": 672000.0,
+              "maximum": 1152000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1536000.0,
+              "first": 1536000.0,
+              "last": 1536000.0,
+              "maximum": 1536000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2900000.0,
+              "first": 2900000.0,
+              "last": 2900000.0,
+              "maximum": 2900000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy9": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1632000.0,
+              "first": 1632000.0,
+              "last": 1632000.0,
+              "maximum": 1632000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1632000.0,
+              "first": 1632000.0,
+              "last": 1632000.0,
+              "maximum": 1632000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 3207000.0,
+              "first": 3207000.0,
+              "last": 3207000.0,
+              "maximum": 3207000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          }
+        }
+      },
+      {
+        "startSeconds": 630.0,
+        "endSeconds": 660.0,
+        "frames": 51,
+        "fps": 1.7,
+        "inference": {
+          "samples": 51,
+          "averageMs": 541.1176470588235,
+          "p95Ms": 545
+        },
+        "nativeInvoke": {
+          "samples": 51,
+          "averageMs": 541.2269803921569,
+          "p95Ms": 545.369
+        },
+        "processCpuUsage": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 123.70316666666668,
+          "first": 124.409,
+          "last": 124.826,
+          "maximum": 124.826
+        },
+        "thermalHeadroom": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 0.7766666666666667,
+          "first": 0.773,
+          "last": 0.78,
+          "maximum": 0.78
+        },
+        "cpuPolicies": {
+          "policy0": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1280000.0,
+              "first": 768000.0,
+              "last": 1536000.0,
+              "maximum": 1536000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1536000.0,
+              "first": 1536000.0,
+              "last": 1536000.0,
+              "maximum": 1536000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1959000.0,
+              "first": 1959000.0,
+              "last": 1959000.0,
+              "maximum": 1959000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy4": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 672000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 672000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1536000.0,
+              "first": 1536000.0,
+              "last": 1536000.0,
+              "maximum": 1536000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2592000.0,
+              "first": 2592000.0,
+              "last": 2592000.0,
+              "maximum": 2592000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy7": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 672000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 672000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1536000.0,
+              "first": 1536000.0,
+              "last": 1536000.0,
+              "maximum": 1536000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2900000.0,
+              "first": 2900000.0,
+              "last": 2900000.0,
+              "maximum": 2900000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy9": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1632000.0,
+              "first": 1632000.0,
+              "last": 1632000.0,
+              "maximum": 1632000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1632000.0,
+              "first": 1632000.0,
+              "last": 1632000.0,
+              "maximum": 1632000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 3207000.0,
+              "first": 3207000.0,
+              "last": 3207000.0,
+              "maximum": 3207000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          }
+        }
+      },
+      {
+        "startSeconds": 660.0,
+        "endSeconds": 690.0,
+        "frames": 51,
+        "fps": 1.7,
+        "inference": {
+          "samples": 51,
+          "averageMs": 540.5882352941177,
+          "p95Ms": 545
+        },
+        "nativeInvoke": {
+          "samples": 51,
+          "averageMs": 540.7237450980392,
+          "p95Ms": 545.06
+        },
+        "processCpuUsage": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 124.10516666666666,
+          "first": 124.381,
+          "last": 125.343,
+          "maximum": 125.343
+        },
+        "thermalHeadroom": {
+          "validSamples": 6,
+          "unavailableSamples": 0,
+          "average": 0.779,
+          "first": 0.78,
+          "last": 0.777,
+          "maximum": 0.78
+        },
+        "cpuPolicies": {
+          "policy0": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 720000.0,
+              "first": 768000.0,
+              "last": 768000.0,
+              "maximum": 768000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1536000.0,
+              "first": 1536000.0,
+              "last": 1536000.0,
+              "maximum": 1536000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1959000.0,
+              "first": 1959000.0,
+              "last": 1959000.0,
+              "maximum": 1959000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy4": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 672000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 672000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1536000.0,
+              "first": 1536000.0,
+              "last": 1536000.0,
+              "maximum": 1536000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2592000.0,
+              "first": 2592000.0,
+              "last": 2592000.0,
+              "maximum": 2592000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy7": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 672000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 672000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1536000.0,
+              "first": 1536000.0,
+              "last": 1536000.0,
+              "maximum": 1536000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 2900000.0,
+              "first": 2900000.0,
+              "last": 2900000.0,
+              "maximum": 2900000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy9": {
+            "currentKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1632000.0,
+              "first": 1632000.0,
+              "last": 1632000.0,
+              "maximum": 1632000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 1632000.0,
+              "first": 1632000.0,
+              "last": 1632000.0,
+              "maximum": 1632000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 6,
+              "unavailableSamples": 0,
+              "average": 3207000.0,
+              "first": 3207000.0,
+              "last": 3207000.0,
+              "maximum": 3207000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          }
+        }
+      },
+      {
+        "startSeconds": 690.0,
+        "endSeconds": 710.657,
+        "frames": 35,
+        "fps": 1.6943409013893562,
+        "inference": {
+          "samples": 35,
+          "averageMs": 540.9428571428572,
+          "p95Ms": 544
+        },
+        "nativeInvoke": {
+          "samples": 35,
+          "averageMs": 541.0224571428571,
+          "p95Ms": 543.736
+        },
+        "processCpuUsage": {
+          "validSamples": 4,
+          "unavailableSamples": 0,
+          "average": 123.39099999999999,
+          "first": 124.823,
+          "last": 123.647,
+          "maximum": 124.823
+        },
+        "thermalHeadroom": {
+          "validSamples": 4,
+          "unavailableSamples": 0,
+          "average": 0.775,
+          "first": 0.777,
+          "last": 0.773,
+          "maximum": 0.777
+        },
+        "cpuPolicies": {
+          "policy0": {
+            "currentKHz": {
+              "validSamples": 4,
+              "unavailableSamples": 0,
+              "average": 1200000.0,
+              "first": 1536000.0,
+              "last": 1536000.0,
+              "maximum": 1536000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 4,
+              "unavailableSamples": 0,
+              "average": 1536000.0,
+              "first": 1536000.0,
+              "last": 1536000.0,
+              "maximum": 1536000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 4,
+              "unavailableSamples": 0,
+              "average": 1959000.0,
+              "first": 1959000.0,
+              "last": 1959000.0,
+              "maximum": 1959000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy4": {
+            "currentKHz": {
+              "validSamples": 4,
+              "unavailableSamples": 0,
+              "average": 888000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 1536000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 4,
+              "unavailableSamples": 0,
+              "average": 1536000.0,
+              "first": 1536000.0,
+              "last": 1536000.0,
+              "maximum": 1536000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 4,
+              "unavailableSamples": 0,
+              "average": 2592000.0,
+              "first": 2592000.0,
+              "last": 2592000.0,
+              "maximum": 2592000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy7": {
+            "currentKHz": {
+              "validSamples": 4,
+              "unavailableSamples": 0,
+              "average": 672000.0,
+              "first": 672000.0,
+              "last": 672000.0,
+              "maximum": 672000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 4,
+              "unavailableSamples": 0,
+              "average": 1536000.0,
+              "first": 1536000.0,
+              "last": 1536000.0,
+              "maximum": 1536000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 4,
+              "unavailableSamples": 0,
+              "average": 2900000.0,
+              "first": 2900000.0,
+              "last": 2900000.0,
+              "maximum": 2900000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          },
+          "policy9": {
+            "currentKHz": {
+              "validSamples": 4,
+              "unavailableSamples": 0,
+              "average": 1632000.0,
+              "first": 1632000.0,
+              "last": 1632000.0,
+              "maximum": 1632000.0
+            },
+            "scalingMaxKHz": {
+              "validSamples": 4,
+              "unavailableSamples": 0,
+              "average": 1632000.0,
+              "first": 1632000.0,
+              "last": 1632000.0,
+              "maximum": 1632000.0
+            },
+            "cpuinfoMaxKHz": {
+              "validSamples": 4,
+              "unavailableSamples": 0,
+              "average": 3207000.0,
+              "first": 3207000.0,
+              "last": 3207000.0,
+              "maximum": 3207000.0
+            },
+            "governors": [
+              "energy_aware"
+            ]
+          }
+        }
+      }
+    ],
+    "policyInferenceCorrelations": {
+      "policy0.currentKHz": {
+        "pairedWindows": 24,
+        "pearsonR": -0.04414042467832307
+      },
+      "policy0.scalingMaxKHz": {
+        "pairedWindows": 24,
+        "pearsonR": -0.9540564993005786
+      },
+      "policy4.currentKHz": {
+        "pairedWindows": 24,
+        "pearsonR": -0.24641246822123813
+      },
+      "policy4.scalingMaxKHz": {
+        "pairedWindows": 24,
+        "pearsonR": -0.9942017206672606
+      },
+      "policy7.currentKHz": {
+        "pairedWindows": 24,
+        "pearsonR": -0.1559533844679217
+      },
+      "policy7.scalingMaxKHz": {
+        "pairedWindows": 24,
+        "pearsonR": -0.9908596364285318
+      },
+      "policy9.currentKHz": {
+        "pairedWindows": 24,
+        "pearsonR": -0.9846706731772481
+      },
+      "policy9.scalingMaxKHz": {
+        "pairedWindows": 24,
+        "pearsonR": -0.9846706731772481
+      }
+    },
+    "inferenceByMlKitInFlightAtDispatch": {
+      "true": {
+        "samples": 408,
+        "averageMs": 459.80882352941177,
+        "p95Ms": 543
+      },
+      "false": {
+        "samples": 1031,
+        "averageMs": 449.274490785645,
+        "p95Ms": 540
+      }
+    },
+    "note": "Correlations use equal-weight interval means of device cpufreq snapshots, not app core frequencies or causal evidence. Includes the final partial interval; time/thermal/ML Kit can confound correlations. mlKitInFlight is a dispatch-time hint, not verified overlap or CPU attribution. No missing policy current is filled with its maximum."
+  },
+  "sourceFile": "perf_20261015_112344.txt",
+  "sourceSha256": "f32e700496619881621bb14c9ac4bc678816fa96c279bd3d129098428d963979"
+}

@@ -469,16 +469,15 @@ class MainActivity : ComponentActivity() {
                 override fun onFrameReceived(frameTimestampMs: Long, analyzerReceivedMs: Long) {
                     metricsCollector.recordFrameReceived(SystemClock.elapsedRealtimeNanos())
                     frameRates.received(SystemClock.elapsedRealtimeNanos())
-                    verboseLog(
-                        DETECTION_TIMING_TAG,
+                    verboseLog(DETECTION_TIMING_TAG) {
                         "frameTimestamp=$frameTimestampMs analyzerReceived=$analyzerReceivedMs " +
                             "cameraToAnalyzerMs=${(analyzerReceivedMs - frameTimestampMs).coerceAtLeast(0L)}"
-                    )
+                    }
                 }
 
                 override fun onFrameSkipped(reason: CameraController.SkipReason, skippedFrameCount: Long) {
                     metricsCollector.recordFrameSkipped()
-                    verboseLog(DETECTION_TIMING_TAG, "skipFrame reason=$reason skipped=$skippedFrameCount")
+                    verboseLog(DETECTION_TIMING_TAG) { "skipFrame reason=$reason skipped=$skippedFrameCount" }
                 }
 
                 override fun onFrame(bitmap: Bitmap, timing: CameraFrameTiming, rotationDegrees: Int) {
@@ -510,10 +509,9 @@ class MainActivity : ComponentActivity() {
         val start = System.currentTimeMillis()
         val frameReceivedTimeMs = frameTiming.frameTimestampMs
         metricsCollector.recordFrameAnalyzed()
-        verboseLog(
-            DETECTION_TIMING_TAG,
+        verboseLog(DETECTION_TIMING_TAG) {
             "detectionStart=$start frameReceived=$frameReceivedTimeMs"
-        )
+        }
 
         // vision-mlkit-lab 방식: 중앙 정방형 crop으로 모델 입력 왜곡을 줄임
         val mlKitPrepareStartNs = SystemClock.elapsedRealtimeNanos()
@@ -632,8 +630,7 @@ class MainActivity : ComponentActivity() {
                 "enableActualVibration=${appSettings.warning.enableActualVibration} enableActualBeep=${appSettings.warning.enableActualBeep} enableActualTts=${appSettings.warning.enableActualTts} " +
                 "shouldNotify=$feedbackShouldNotify key=$feedbackWarningKey"
         )
-        logDetectionTiming(
-            DETECTION_TIMING_TAG,
+        logDetectionTiming(DETECTION_TIMING_TAG) {
                 "[DetectionTiming] frameTimestamp=${frameTiming.frameTimestampMs} " +
                 "analyzerReceived=${frameTiming.analyzerReceivedMs} " +
                 "cameraToAnalyzerMs=${frameTiming.cameraToAnalyzerMs} " +
@@ -654,7 +651,7 @@ class MainActivity : ComponentActivity() {
                 "overlayWhitelistCount=${overlayDetections.size} policyFilteredCount=${warningDetections.size} " +
                 "ignoredLabels=${formatIgnoredLabels(ignoredLabels)} " +
                 "emptyReason=${buildEmptyOverlayReason(mapped, visibleMapped, warningDetections, overlayDetections)}"
-        )
+        }
         val needsCapture = captureRequested.getAndSet(false)
         if (isRecording || needsCapture) {
             val evaluationSnapshot = buildEvaluationSnapshot(
@@ -734,17 +731,16 @@ class MainActivity : ComponentActivity() {
             performanceSummary?.let(performanceLogRecorder::recordSummary)
         }
         postLatestDetectionUiUpdate {
-            val overlayUpdateTimeMs = System.currentTimeMillis()
-            val resultAgeMs = if (trace.captureTimestampReliable)
-                ((SystemClock.elapsedRealtimeNanos() - trace.cameraTimestampNs) / 1_000_000L).coerceAtLeast(0) else -1
-            logDetectionTiming(
-                DETECTION_TIMING_TAG,
+            logDetectionTiming(DETECTION_TIMING_TAG) {
+                val overlayUpdateTimeMs = System.currentTimeMillis()
+                val resultAgeMs = if (trace.captureTimestampReliable)
+                    ((SystemClock.elapsedRealtimeNanos() - trace.cameraTimestampNs) / 1_000_000L).coerceAtLeast(0) else -1
                     "overlayUpdate=$overlayUpdateTimeMs frameAgeAtOverlayMs=${resultAgeMs} " +
                     "rawCount=${mapped.size} visibleCount=${visibleMapped.size} " +
                     "overlayWhitelistCount=${overlayDetections.size} policyFilteredCount=${warningDetections.size} " +
                     "ignoredLabels=${formatIgnoredLabels(ignoredLabels)} " +
                     "emptyReason=${buildEmptyOverlayReason(mapped, visibleMapped, warningDetections, overlayDetections)}"
-            )
+            }
             overlayView.updateDetections(overlayDetections, width, height, inferenceTime, currentFps,
                 pipelineResult.debugFrameId, trace, rates.analyzerFps, rates.inferenceFps)
             if (
@@ -800,12 +796,11 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        verboseLog(
-            TAG,
+        verboseLog(TAG) {
             "frame=${width}x$height, warningDetections=${warningDetections.size}, " +
                 "overlayDetections=${overlayDetections.size}, ignoredLabels=${formatIgnoredLabels(ignoredLabels)}, " +
                 "time=${inferenceTime}ms"
-        )
+        }
     }
 
     private fun buildEvaluationSnapshot(
@@ -1104,9 +1099,9 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun verboseLog(tag: String, message: String) {
+    private inline fun verboseLog(tag: String, message: () -> String) {
         if (ENABLE_VERBOSE_LOG) {
-            Log.d(tag, message)
+            Log.d(tag, message())
         }
     }
 
@@ -1123,8 +1118,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun logDetectionTiming(tag: String, message: String) {
-        if (detectionConfig.enableDetectorDiagnostics) Log.d(tag, message)
+    private inline fun logDetectionTiming(tag: String, message: () -> String) {
+        if (detectionConfig.enableDetectorDiagnostics) Log.d(tag, message())
     }
 
     private fun logSelectedWarningCandidate(
