@@ -58,6 +58,8 @@ class VisionStyleYoloDetector(
 
     private var inputBuffer: ByteBuffer
     private var outputBuffer: ByteBuffer
+    private val interpreterInputs: Array<Any>
+    private val interpreterOutputs: Map<Int, Any>
     private var pixels: IntArray
     private var outputData: Array<FloatArray>
     private val inputFloatView: FloatBuffer?
@@ -153,6 +155,10 @@ class VisionStyleYoloDetector(
                 .order(ByteOrder.nativeOrder())
             outputBuffer = ByteBuffer.allocateDirect(outputTensor.numBytes())
                 .order(ByteOrder.nativeOrder())
+            // Interpreter.run wraps these same buffers in a new array/HashMap per call.
+            // detect/runSelfTest/close are synchronized; buffers and containers stay detector-owned.
+            interpreterInputs = arrayOf(inputBuffer)
+            interpreterOutputs = mapOf(0 to outputBuffer)
             inputFloatView = if (inputCodec.type == DataType.FLOAT32) inputBuffer.asFloatBuffer() else null
             inputFloatData = inputFloatView?.let { FloatArray(it.capacity()) }
             outputFloatView = if (outputCodec.type == DataType.FLOAT32) outputBuffer.asFloatBuffer() else null
@@ -280,7 +286,10 @@ class VisionStyleYoloDetector(
             val inferenceStartNs = SystemClock.elapsedRealtimeNanos()
             runStartedNs = inferenceStartNs
             try {
-                trace("YOLO.Interpreter.run") { interpreter.run(inputBuffer, outputBuffer) }
+                // Preserve the existing trace/log timing boundary around the same native path.
+                trace("YOLO.Interpreter.run") {
+                    interpreter.runForMultipleInputsOutputs(interpreterInputs, interpreterOutputs)
+                }
             } catch (error: Exception) {
                 execution = execution.copy(lastInference = "ERROR", inferenceErrors = execution.inferenceErrors + 1)
                 Log.e(TAG, "[INFERENCE_EXECUTION] ${execution.logFields()}", error)

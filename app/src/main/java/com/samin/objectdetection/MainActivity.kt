@@ -926,6 +926,7 @@ class MainActivity : ComponentActivity() {
             settingsSnapshot = AppSettingsCodec.snapshotLines(appSettings),
             sessionId = sessionId, startedElapsedNs = startedElapsedNs,
             systemDiagnosticsEnabled = appSettings.performanceLog.systemDiagnosticsEnabled,
+            batteryDiagnosticsEnabled = appSettings.performanceLog.batteryDiagnosticsEnabled,
             systemSampleIntervalMs = appSettings.performanceLog.sampleIntervalMs,
             execution = detector.executionInfo()
         )

@@ -380,6 +380,8 @@ class SettingsActivity : ComponentActivity() {
         section(parent, "Performance Log")
         note(parent, "성능 로그 시작/종료 버튼은 기존대로 사용합니다. 시스템 진단은 로그 기록 중에만 수집하며 상세 Debug·PNG 저장을 켜지 않습니다.")
         form.systemDiagnostics = toggle(parent, "System Performance Diagnostics")
+        form.batteryDiagnostics = toggle(parent, "배터리·발열 진단")
+        note(parent, "시스템 성능 진단 ON + 로그 기록 중에만 배터리 정보를 수집합니다 (기본 OFF, 최소 5초 간격). 배터리 온도는 CPU/GPU 온도와 다르며 전류·추정 전력은 단말 전체 배터리 기준입니다.")
         form.systemSampleInterval = number(parent, "Sample Interval (ms)", "1000..60000 (기본 5000)")
         note(parent, "30초 구간 통계와 전체 누적 통계를 함께 저장합니다. 확인할 수 없는 지표는 N/A입니다. Thermal Headroom은 최소 10초 간격으로 조회합니다.")
     }
@@ -450,6 +452,7 @@ class SettingsActivity : ComponentActivity() {
         with(value.mlKit) { form.mlKitEnabled.isChecked = enabled; form.mlKitInterval.setText(detectionIntervalMs.toString()) }
         with(value.performanceLog) {
             form.systemDiagnostics.isChecked = systemDiagnosticsEnabled
+            form.batteryDiagnostics.isChecked = batteryDiagnosticsEnabled
             form.systemSampleInterval.setText(sampleIntervalMs.toString())
         }
         with(value.debug) {
@@ -484,7 +487,7 @@ class SettingsActivity : ComponentActivity() {
             overlay = OverlaySettings(form.overlayEnabled.isChecked, OverlayDebugMode.valueOf(form.debugMode.selectedItem.toString()),
                 form.yoloBoxes.isChecked, form.mlKitBoxes.isChecked, form.confidenceLabel.isChecked, form.fps.isChecked, form.overlayStale.l()),
             mlKit = MlKitSettings(form.mlKitEnabled.isChecked, form.mlKitInterval.l()),
-            performanceLog = PerformanceLogSettings(form.systemDiagnostics.isChecked, form.systemSampleInterval.l()),
+            performanceLog = PerformanceLogSettings(form.systemDiagnostics.isChecked, form.systemSampleInterval.l(), form.batteryDiagnostics.isChecked),
             debug = DebugSettings(form.diagnostics.isChecked, form.debugLogging.isChecked, form.rawConfidence.f(), form.rawCandidates.i(),
                 form.saveInput.isChecked, form.saveInterval.l(), form.saveOnDetection.isChecked, form.legacyDebugImage.isChecked)
         )
@@ -570,6 +573,7 @@ class SettingsActivity : ComponentActivity() {
         listOf(form.temporalImmediate, form.temporalConfirmation, form.temporalIou).forEach { it.isEnabled = temporalEnabled }
         form.mlKitInterval.isEnabled = form.mlKitEnabled.isChecked
         form.systemSampleInterval.isEnabled = form.systemDiagnostics.isChecked
+        form.batteryDiagnostics.isEnabled = form.systemDiagnostics.isChecked
     }
 
     private fun markDirty() {
@@ -597,7 +601,7 @@ class SettingsActivity : ComponentActivity() {
                 "Temporal ${filters.adaptiveTemporalEnabled.onOff()} · ML Kit ${mlKit.enabled.onOff()}"
         }
         summaries[Category.PERFORMANCE.name]?.text = with(applied.performanceLog) {
-            "현재 적용: 시스템 진단 ${systemDiagnosticsEnabled.onOff()} · $sampleIntervalMs ms"
+            "현재 적용: 시스템 진단 ${systemDiagnosticsEnabled.onOff()} · 배터리·발열 ${batteryDiagnosticsEnabled.onOff()} · $sampleIntervalMs ms"
         }
         summaries[Category.DEBUG.name]?.text = with(applied) {
             "현재 적용: 상세 로그 ${debug.debugDetectionLogging.onOff()} · 입력 PNG ${debug.debugSaveInferenceInput.onOff()}\n" +
@@ -710,6 +714,7 @@ class SettingsActivity : ComponentActivity() {
     private inner class Form(val container: ViewGroup) {
         lateinit var xnnpack: Switch
         lateinit var systemDiagnostics: Switch; lateinit var systemSampleInterval: EditText
+        lateinit var batteryDiagnostics: Switch
         lateinit var detectInterval: EditText; lateinit var centerCrop: Switch; lateinit var resizeMode: Spinner; lateinit var cameraResolution: Spinner
         lateinit var confidence: EditText; lateinit var nms: EditText; lateinit var threads: EditText; lateinit var maxCandidates: EditText; lateinit var sizeMode: Spinner
         lateinit var geometry: Switch; lateinit var minArea: EditText; lateinit var minWidth: EditText; lateinit var minHeight: EditText

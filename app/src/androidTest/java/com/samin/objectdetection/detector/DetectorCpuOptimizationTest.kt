@@ -2,7 +2,6 @@ package com.samin.objectdetection.detector
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.Color
 import android.graphics.RectF
 import androidx.test.platform.app.InstrumentationRegistry
 import com.samin.objectdetection.camera.SizeFilterMode
@@ -21,20 +20,19 @@ class DetectorCpuOptimizationTest {
     @Test fun cpuTwoAndFourThreadsMatchOriginalInputRawOutputAndDetections() {
         val input = InstrumentationRegistry.getArguments().getString("selfTestImage")
         val bitmap = if (input != null) requireNotNull(BitmapFactory.decodeFile(input)) else
-            Bitmap.createBitmap(720, 1280, Bitmap.Config.ARGB_8888).apply {
-                eraseColor(Color.rgb(128, 64, 32))
-            }
+            context.assets.open("self_test/known.png").use { requireNotNull(BitmapFactory.decodeStream(it)) }
         try {
             for (threads in listOf(2, 4)) for (xnnpack in listOf(true, false)) {
                 val detector = VisionStyleYoloDetector(context, confidenceThreshold = 0.2f, nmsThreshold = 0.45f,
                     sizeFilterMode = SizeFilterMode.DISABLED, interpreterThreadCount = threads, useXnnpack = xnnpack)
                 try {
                     val directory = File(context.filesDir, "golden/cpu_optimization_$threads${if (xnnpack) "" else "_xnnpack_off"}")
-                    val actual = detector.runSelfTest(bitmap, input ?: "portrait_color_control", directory)
+                    val actual = detector.runSelfTest(bitmap, input ?: "self_test/known.png", directory)
                     val modelInput = requireNotNull(BitmapFactory.decodeFile(File(directory, "input.png").path))
                     try {
-                        // Original options: XNNPACK was left at the bundled default (true).
-                        Interpreter(ModelAssets.load(context), Interpreter.Options().setNumThreads(threads)).use { reference ->
+                        // Freeze the original run() API and writer/parser, matching runtime options.
+                        Interpreter(ModelAssets.load(context), Interpreter.Options().setNumThreads(threads)
+                            .setUseXNNPACK(xnnpack)).use { reference ->
                             val inputTensor = reference.getInputTensor(0)
                             val shape = RgbTensorShape.from(inputTensor.shape())
                             val pixels = IntArray(shape.width * shape.height)

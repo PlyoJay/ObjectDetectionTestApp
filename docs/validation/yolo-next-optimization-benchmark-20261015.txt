@@ -1,0 +1,88 @@
+10-15 10:27:32.094 12470 12489 I tflite  : Initialized TensorFlow Lite runtime.
+10-15 10:27:32.096 12470 12489 I tflite  : Created TensorFlow Lite XNNPACK delegate for CPU.
+10-15 10:27:32.096 12470 12489 I tflite  : Replacing 351 out of 353 node(s) with delegate (TfLiteXNNPackDelegate) node, yielding 5 partitions for subgraph 0.
+10-15 10:27:33.240 12470 12489 I tflite  : Replacing 351 out of 353 node(s) with delegate (TfLiteXNNPackDelegate) node, yielding 5 partitions for subgraph 0.
+10-15 10:27:35.848 12470 12489 I tflite  : Replacing 351 out of 353 node(s) with delegate (TfLiteXNNPackDelegate) node, yielding 5 partitions for subgraph 0.
+10-15 10:27:36.743 12470 12489 I tflite  : Replacing 351 out of 353 node(s) with delegate (TfLiteXNNPackDelegate) node, yielding 5 partitions for subgraph 0.
+10-15 10:27:38.750 12470 12489 I tflite  : Replacing 351 out of 353 node(s) with delegate (TfLiteXNNPackDelegate) node, yielding 5 partitions for subgraph 0.
+10-15 10:27:39.973 12470 12489 I tflite  : Replacing 351 out of 353 node(s) with delegate (TfLiteXNNPackDelegate) node, yielding 5 partitions for subgraph 0.
+10-15 10:27:41.191 12470 12489 I tflite  : Replacing 351 out of 353 node(s) with delegate (TfLiteXNNPackDelegate) node, yielding 5 partitions for subgraph 0.
+10-15 10:27:42.406 12470 12489 I tflite  : Replacing 351 out of 353 node(s) with delegate (TfLiteXNNPackDelegate) node, yielding 5 partitions for subgraph 0.
+10-15 10:27:43.631 12470 12489 I tflite  : Replacing 351 out of 353 node(s) with delegate (TfLiteXNNPackDelegate) node, yielding 5 partitions for subgraph 0.
+10-15 10:27:44.846 12470 12489 I tflite  : Replacing 351 out of 353 node(s) with delegate (TfLiteXNNPackDelegate) node, yielding 5 partitions for subgraph 0.
+10-15 10:27:46.071 12470 12489 I tflite  : Replacing 351 out of 353 node(s) with delegate (TfLiteXNNPackDelegate) node, yielding 5 partitions for subgraph 0.
+10-15 10:27:46.751 12470 12489 I tflite  : Replacing 351 out of 353 node(s) with delegate (TfLiteXNNPackDelegate) node, yielding 5 partitions for subgraph 0.
+10-15 10:27:47.662 12470 12489 I tflite  : Replacing 351 out of 353 node(s) with delegate (TfLiteXNNPackDelegate) node, yielding 5 partitions for subgraph 0.
+10-15 10:27:48.527 12470 12489 I tflite  : Replacing 351 out of 353 node(s) with delegate (TfLiteXNNPackDelegate) node, yielding 5 partitions for subgraph 0.
+10-15 10:27:49.567 12470 12489 I tflite  : Replacing 351 out of 353 node(s) with delegate (TfLiteXNNPackDelegate) node, yielding 5 partitions for subgraph 0.
+10-15 10:27:57.445 12470 12489 I YoloBottleneckBenchmark: [YOLO_STAGE_SAMPLE] scope=detector_no_camera positiveImage=true samples=10 preprocessAvgMs=3.0 resizeAvgMs=0.0 getPixelsAvgMs=1.4197851000000001 rgbWriteAvgMs=2.0339451 inferenceAvgMs=544.5 nativeInvokeAvgMs=544.545578 outputCopyAvgMs=0.0 candidateScanAvgMs=5.0 nmsAvgMs=0.0
+10-15 10:27:57.470 12470 12489 I tflite  : Replacing 351 out of 353 node(s) with delegate (TfLiteXNNPackDelegate) node, yielding 5 partitions for subgraph 0.
+10-15 10:27:59.191 12470 12489 I tflite  : Replacing 351 out of 353 node(s) with delegate (TfLiteXNNPackDelegate) node, yielding 5 partitions for subgraph 0.
+10-15 10:28:02.499 12470 12489 I YoloBottleneckBenchmark: [XNNPACK_VARIANT_BEGIN] phase=0 threads=4 requested=true pid=12470 runtime=2.21.0
+10-15 10:28:02.501 12470 12489 I tflite  : Replacing 351 out of 353 node(s) with delegate (TfLiteXNNPackDelegate) node, yielding 5 partitions for subgraph 0.
+10-15 10:28:09.749 12470 12489 I YoloBottleneckBenchmark: [YOLO_PROCESS_CPU] phase=0 threads=4 xnnpack=true samples=10 cpuMs=5393 wallMs=5450.748789 percentOneCore=98.9405347552149 scope=all_process_threads_camera_free
+10-15 10:28:09.937 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] phase=0 threads=4 xnnpack=true scope=run samples=10 avgMs=545.0660705 p95Ms=545.766719
+10-15 10:28:09.937 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] phase=0 threads=4 xnnpack=true scope=nativeInvoke samples=10 avgMs=544.6582343 p95Ms=545.365469
+10-15 10:28:09.937 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] phase=0 threads=4 xnnpack=true scope=runMinusNative samples=10 avgMs=0.40783620000000004 p95Ms=0.537305
+10-15 10:28:09.942 12470 12489 I YoloBottleneckBenchmark: [XNNPACK_VARIANT_END] phase=0 threads=4 requested=true
+10-15 10:28:09.942 12470 12489 I YoloBottleneckBenchmark: [XNNPACK_VARIANT_BEGIN] phase=1 threads=4 requested=false pid=12470 runtime=2.21.0
+10-15 10:28:13.526 12470 12489 I YoloBottleneckBenchmark: [YOLO_PROCESS_CPU] phase=1 threads=4 xnnpack=false samples=10 cpuMs=8894 wallMs=2674.486718 percentOneCore=332.54979133532566 scope=all_process_threads_camera_free
+10-15 10:28:13.715 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] phase=1 threads=4 xnnpack=false scope=run samples=10 avgMs=267.4360664 p95Ms=272.980351
+10-15 10:28:13.715 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] phase=1 threads=4 xnnpack=false scope=nativeInvoke samples=10 avgMs=267.0319882 p95Ms=272.425664
+10-15 10:28:13.715 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] phase=1 threads=4 xnnpack=false scope=runMinusNative samples=10 avgMs=0.4040782 p95Ms=0.554687
+10-15 10:28:13.723 12470 12489 I YoloBottleneckBenchmark: [XNNPACK_VARIANT_END] phase=1 threads=4 requested=false
+10-15 10:28:13.723 12470 12489 I YoloBottleneckBenchmark: [XNNPACK_VARIANT_BEGIN] phase=2 threads=4 requested=true pid=12470 runtime=2.21.0
+10-15 10:28:13.725 12470 12489 I tflite  : Replacing 351 out of 353 node(s) with delegate (TfLiteXNNPackDelegate) node, yielding 5 partitions for subgraph 0.
+10-15 10:28:20.902 12470 12489 I YoloBottleneckBenchmark: [YOLO_PROCESS_CPU] phase=2 threads=4 xnnpack=true samples=10 cpuMs=5401 wallMs=5448.541211 percentOneCore=99.12745064855122 scope=all_process_threads_camera_free
+10-15 10:28:21.088 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] phase=2 threads=4 xnnpack=true scope=run samples=10 avgMs=544.8456406 p95Ms=545.194571
+10-15 10:28:21.088 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] phase=2 threads=4 xnnpack=true scope=nativeInvoke samples=10 avgMs=544.4328592 p95Ms=544.784688
+10-15 10:28:21.088 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] phase=2 threads=4 xnnpack=true scope=runMinusNative samples=10 avgMs=0.4127814 p95Ms=0.445392
+10-15 10:28:21.096 12470 12489 I YoloBottleneckBenchmark: [XNNPACK_VARIANT_END] phase=2 threads=4 requested=true
+10-15 10:28:21.096 12470 12489 I YoloBottleneckBenchmark: [XNNPACK_VARIANT_BEGIN] phase=0 threads=2 requested=true pid=12470 runtime=2.21.0
+10-15 10:28:21.097 12470 12489 I tflite  : Replacing 351 out of 353 node(s) with delegate (TfLiteXNNPackDelegate) node, yielding 5 partitions for subgraph 0.
+10-15 10:28:28.276 12470 12489 I YoloBottleneckBenchmark: [YOLO_PROCESS_CPU] phase=0 threads=2 xnnpack=true samples=10 cpuMs=5400 wallMs=5449.404101 percentOneCore=99.09340360736077 scope=all_process_threads_camera_free
+10-15 10:28:28.456 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] phase=0 threads=2 xnnpack=true scope=run samples=10 avgMs=544.9314803999999 p95Ms=547.015156
+10-15 10:28:28.456 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] phase=0 threads=2 xnnpack=true scope=nativeInvoke samples=10 avgMs=544.5062889 p95Ms=546.553984
+10-15 10:28:28.456 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] phase=0 threads=2 xnnpack=true scope=runMinusNative samples=10 avgMs=0.4251915 p95Ms=0.583984
+10-15 10:28:28.461 12470 12489 I YoloBottleneckBenchmark: [XNNPACK_VARIANT_END] phase=0 threads=2 requested=true
+10-15 10:28:28.461 12470 12489 I YoloBottleneckBenchmark: [XNNPACK_VARIANT_BEGIN] phase=1 threads=2 requested=false pid=12470 runtime=2.21.0
+10-15 10:28:33.532 12470 12489 I YoloBottleneckBenchmark: [YOLO_PROCESS_CPU] phase=1 threads=2 xnnpack=false samples=10 cpuMs=7009 wallMs=3818.443242 percentOneCore=183.55647984776306 scope=all_process_threads_camera_free
+10-15 10:28:33.712 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] phase=1 threads=2 xnnpack=false scope=run samples=10 avgMs=381.83637880000003 p95Ms=383.25414
+10-15 10:28:33.712 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] phase=1 threads=2 xnnpack=false scope=nativeInvoke samples=10 avgMs=381.4414569 p95Ms=382.80875
+10-15 10:28:33.712 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] phase=1 threads=2 xnnpack=false scope=runMinusNative samples=10 avgMs=0.39492190000000005 p95Ms=0.44539
+10-15 10:28:33.724 12470 12489 I YoloBottleneckBenchmark: [XNNPACK_VARIANT_END] phase=1 threads=2 requested=false
+10-15 10:28:33.724 12470 12489 I YoloBottleneckBenchmark: [XNNPACK_VARIANT_BEGIN] phase=2 threads=2 requested=true pid=12470 runtime=2.21.0
+10-15 10:28:33.725 12470 12489 I tflite  : Replacing 351 out of 353 node(s) with delegate (TfLiteXNNPackDelegate) node, yielding 5 partitions for subgraph 0.
+10-15 10:28:40.900 12470 12489 I YoloBottleneckBenchmark: [YOLO_PROCESS_CPU] phase=2 threads=2 xnnpack=true samples=10 cpuMs=5392 wallMs=5447.008594 percentOneCore=98.99011369175012 scope=all_process_threads_camera_free
+10-15 10:28:41.089 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] phase=2 threads=2 xnnpack=true scope=run samples=10 avgMs=544.6923359 p95Ms=545.049844
+10-15 10:28:41.089 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] phase=2 threads=2 xnnpack=true scope=nativeInvoke samples=10 avgMs=544.2797266 p95Ms=544.64668
+10-15 10:28:41.089 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] phase=2 threads=2 xnnpack=true scope=runMinusNative samples=10 avgMs=0.4126093 p95Ms=0.468633
+10-15 10:28:41.097 12470 12489 I YoloBottleneckBenchmark: [XNNPACK_VARIANT_END] phase=2 threads=2 requested=true
+10-15 10:28:41.097 12470 12489 I YoloBottleneckBenchmark: [XNNPACK_VARIANT_BEGIN] phase=0 threads=1 requested=true pid=12470 runtime=2.21.0
+10-15 10:28:41.098 12470 12489 I tflite  : Replacing 351 out of 353 node(s) with delegate (TfLiteXNNPackDelegate) node, yielding 5 partitions for subgraph 0.
+10-15 10:28:48.282 12470 12489 I YoloBottleneckBenchmark: [YOLO_PROCESS_CPU] phase=0 threads=1 xnnpack=true samples=10 cpuMs=5396 wallMs=5454.336094 percentOneCore=98.93046389157844 scope=all_process_threads_camera_free
+10-15 10:28:48.463 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] phase=0 threads=1 xnnpack=true scope=run samples=10 avgMs=545.4249609 p95Ms=547.130195
+10-15 10:28:48.463 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] phase=0 threads=1 xnnpack=true scope=nativeInvoke samples=10 avgMs=545.01409 p95Ms=546.731914
+10-15 10:28:48.463 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] phase=0 threads=1 xnnpack=true scope=runMinusNative samples=10 avgMs=0.41087090000000004 p95Ms=0.473125
+10-15 10:28:48.467 12470 12489 I YoloBottleneckBenchmark: [XNNPACK_VARIANT_END] phase=0 threads=1 requested=true
+10-15 10:28:48.467 12470 12489 I YoloBottleneckBenchmark: [XNNPACK_VARIANT_BEGIN] phase=1 threads=1 requested=false pid=12470 runtime=2.21.0
+10-15 10:28:56.851 12470 12489 I YoloBottleneckBenchmark: [YOLO_PROCESS_CPU] phase=1 threads=1 xnnpack=false samples=10 cpuMs=6296 wallMs=6373.584297 percentOneCore=98.78272109719302 scope=all_process_threads_camera_free
+10-15 10:28:57.036 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] phase=1 threads=1 xnnpack=false scope=run samples=10 avgMs=637.3491798 p95Ms=640.394493
+10-15 10:28:57.036 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] phase=1 threads=1 xnnpack=false scope=nativeInvoke samples=10 avgMs=636.9532773 p95Ms=639.994571
+10-15 10:28:57.036 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] phase=1 threads=1 xnnpack=false scope=runMinusNative samples=10 avgMs=0.3959025 p95Ms=0.471172
+10-15 10:28:57.044 12470 12489 I YoloBottleneckBenchmark: [XNNPACK_VARIANT_END] phase=1 threads=1 requested=false
+10-15 10:28:57.044 12470 12489 I YoloBottleneckBenchmark: [XNNPACK_VARIANT_BEGIN] phase=2 threads=1 requested=true pid=12470 runtime=2.21.0
+10-15 10:28:57.046 12470 12489 I tflite  : Replacing 351 out of 353 node(s) with delegate (TfLiteXNNPackDelegate) node, yielding 5 partitions for subgraph 0.
+10-15 10:29:04.222 12470 12489 I YoloBottleneckBenchmark: [YOLO_PROCESS_CPU] phase=2 threads=1 xnnpack=true samples=10 cpuMs=5390 wallMs=5448.94875 percentOneCore=98.91816288417101 scope=all_process_threads_camera_free
+10-15 10:29:04.402 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] phase=2 threads=1 xnnpack=true scope=run samples=10 avgMs=544.8859572 p95Ms=547.112383
+10-15 10:29:04.402 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] phase=2 threads=1 xnnpack=true scope=nativeInvoke samples=10 avgMs=544.4532696 p95Ms=546.725625
+10-15 10:29:04.402 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] phase=2 threads=1 xnnpack=true scope=runMinusNative samples=10 avgMs=0.43268759999999995 p95Ms=0.566093
+10-15 10:29:04.411 12470 12489 I YoloBottleneckBenchmark: [XNNPACK_VARIANT_END] phase=2 threads=1 requested=true
+10-15 10:29:09.581 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] writer=legacyDivision samples=30 avgMs=56.246378899999996 p95Ms=56.398008
+10-15 10:29:09.581 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] writer=scalarLookup samples=30 avgMs=64.13527593333333 p95Ms=64.239883
+10-15 10:29:09.581 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] writer=bulkLookup samples=30 avgMs=2.0332565666666667 p95Ms=2.162539
+10-15 10:29:09.595 12470 12489 I tflite  : Replacing 351 out of 353 node(s) with delegate (TfLiteXNNPackDelegate) node, yielding 5 partitions for subgraph 0.
+10-15 10:29:26.027 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] xnnpack=true invocation=originalRun samples=10 avgMs=559.3218242 p95Ms=568.582422
+10-15 10:29:26.027 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] xnnpack=true invocation=reusedContainers samples=10 avgMs=558.3850546 p95Ms=582.798868
+10-15 10:29:34.617 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] xnnpack=false invocation=originalRun samples=10 avgMs=272.24942580000004 p95Ms=285.610899
+10-15 10:29:34.617 12470 12489 I YoloBottleneckBenchmark: [YOLO_MICROBENCHMARK] xnnpack=false invocation=reusedContainers samples=10 avgMs=273.213711 p95Ms=287.030859

@@ -14,6 +14,8 @@ class AndroidSystemMetricSource(context: Context) : SystemMetricSource {
     private val applicationContext = context.applicationContext
     private val power by lazy { runCatching { applicationContext.getSystemService(PowerManager::class.java) }.getOrNull() }
     private val frequencies = CpuFrequencyReader()
+    private val battery by lazy { AndroidBatteryMetricSource(applicationContext) }
+    override fun battery(): BatteryReading = battery.read()
 
     override fun thermalStatus(): Int? =
         if (Build.VERSION.SDK_INT >= 29) power?.currentThermalStatus else null

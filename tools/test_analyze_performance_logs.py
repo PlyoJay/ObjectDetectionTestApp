@@ -51,6 +51,41 @@ CUMULATIVE_SUMMARY | endSeconds=50.000 successfulFrames=3
         with self.assertRaises(ValueError):
             analyze("FRAME 000001 | inference=100ms")
 
+    def test_battery_on_off_on_and_unsupported_values(self):
+        off = analyze(self.log())
+        self.assertEqual("N/A", off["diagnostics"]["battery"]["averageDischargingCurrentMa"])
+        samples = """SYSTEM | elapsedSeconds=1 processCpuUsage=120 thermalStatus=NONE thermalHeadroom=0.2
+THERMAL_STATUS | elapsedSeconds=2 previousThermalStatus=NONE thermalStatus=LIGHT
+BATTERY_SAMPLE | elapsedSeconds=1 batteryLevelPct=80 batteryTemperatureC=35 batteryCurrentMa=-200 estimatedBatteryPowerMw=-800 chargingStatus=Discharging
+BATTERY_SAMPLE | elapsedSeconds=5 batteryLevelPct=80 batteryTemperatureC=36 batteryCurrentMa=N/A estimatedBatteryPowerMw=N/A chargingStatus=Discharging
+BATTERY_SAMPLE | elapsedSeconds=10 batteryLevelPct=80 batteryTemperatureC=37 batteryCurrentMa=100 estimatedBatteryPowerMw=400 chargingStatus=Charging
+BATTERY_SAMPLE | elapsedSeconds=50.001 batteryLevelPct=79 batteryTemperatureC=38 batteryCurrentMa=-300 estimatedBatteryPowerMw=-1200 chargingStatus=Discharging
+BATTERY_SUMMARY | samples=4 lastSampleSeconds=50.001
+"""
+        on = analyze(self.log() + samples)
+        self.assertEqual(on, analyze(self.log() + samples))
+        self.assertEqual(off["inference"], on["inference"])
+        d = on["diagnostics"]
+        self.assertEqual(120, d["processCpuUsage"]["average"])
+        self.assertEqual(1, len(d["thermalStatusEvents"]))
+        self.assertEqual(-1, d["battery"]["levelPct"]["delta"])
+        self.assertEqual(3, d["battery"]["temperatureC"]["delta"])
+        self.assertEqual(-250, d["battery"]["averageDischargingCurrentMa"])
+        self.assertEqual(-1000, d["battery"]["averageEstimatedDischargingPowerMw"])
+        self.assertEqual(1, d["battery"]["byChargingStatus"]["Discharging"]["batteryCurrentMa"]["unavailableSamples"])
+        cropped = analyze(self.log() + samples, exclude_tail_seconds=23)["diagnostics"]["battery"]
+        self.assertEqual(3, cropped["sampleCount"])
+        self.assertEqual(0, cropped["levelPct"]["delta"])
+        self.assertEqual("N/A", cropped["fullSessionSummary"])
+
+    def test_unavailable_battery_endpoints_and_nonfinite_power_stay_na(self):
+        sample = "BATTERY_SAMPLE | elapsedSeconds=1 batteryTemperatureC=35 batteryCurrentMa=NaN estimatedBatteryPowerMw=Infinity chargingStatus=Discharging\n"
+        sample += "BATTERY_SAMPLE | elapsedSeconds=2 batteryTemperatureC=N/A chargingStatus=Discharging\n"
+        result = analyze(self.log() + sample)["diagnostics"]["battery"]
+        self.assertEqual("N/A", result["temperatureC"]["delta"])
+        self.assertEqual("N/A", result["averageDischargingCurrentMa"])
+        self.assertEqual("N/A", result["averageEstimatedDischargingPowerMw"])
+
 
 if __name__ == "__main__":
     unittest.main()

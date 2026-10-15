@@ -93,7 +93,8 @@ data class DebugSettings(
 /** Independent of detector debug/PNG settings; active only during Performance Log recording. */
 data class PerformanceLogSettings(
     val systemDiagnosticsEnabled: Boolean = false,
-    val sampleIntervalMs: Long = 5_000L
+    val sampleIntervalMs: Long = 5_000L,
+    val batteryDiagnosticsEnabled: Boolean = false
 )
 
 data class AppSettings(

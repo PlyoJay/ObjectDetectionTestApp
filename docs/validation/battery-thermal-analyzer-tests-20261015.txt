@@ -1,0 +1,11 @@
+test_battery_on_off_on_and_unsupported_values (test_analyze_performance_logs.PerformanceLogAnalysisTest.test_battery_on_off_on_and_unsupported_values) ... ok
+test_decimal_details_and_diagnostics_groups_do_not_change_aggregate_scope (test_analyze_performance_logs.PerformanceLogAnalysisTest.test_decimal_details_and_diagnostics_groups_do_not_change_aggregate_scope) ... ok
+test_missing_frame_lines_are_reported_as_incomplete (test_analyze_performance_logs.PerformanceLogAnalysisTest.test_missing_frame_lines_are_reported_as_incomplete) ... ok
+test_power_saving_tail_is_excluded_using_monotonic_timestamps (test_analyze_performance_logs.PerformanceLogAnalysisTest.test_power_saving_tail_is_excluded_using_monotonic_timestamps) ... ok
+test_unavailable_battery_endpoints_and_nonfinite_power_stay_na (test_analyze_performance_logs.PerformanceLogAnalysisTest.test_unavailable_battery_endpoints_and_nonfinite_power_stay_na) ... ok
+test_unknown_total_time_and_invalid_windows_are_not_invented (test_analyze_performance_logs.PerformanceLogAnalysisTest.test_unknown_total_time_and_invalid_windows_are_not_invented) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.003s
+
+OK

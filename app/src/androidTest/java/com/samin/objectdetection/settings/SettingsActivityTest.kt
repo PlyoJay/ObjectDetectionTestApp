@@ -27,6 +27,7 @@ import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 import java.io.File
+import android.view.accessibility.AccessibilityNodeInfo
 
 /** Uses only the settings Activity: no camera, recording or inference pipeline is started. */
 class SettingsActivityTest {
@@ -50,7 +51,7 @@ class SettingsActivityTest {
 
     @Test fun everyExistingControlIsReachableInItsCategory() {
         launch()
-        assertEquals(60, CATEGORY_FIELDS.values.sumOf { it.size })
+        assertEquals(61, CATEGORY_FIELDS.values.sumOf { it.size })
         scenario!!.onActivity { activity ->
             fun labels(view: View): List<String> = listOfNotNull(view.tag as? String) +
                 if (view is ViewGroup) (0 until view.childCount).flatMap { labels(view.getChildAt(it)) } else emptyList()
@@ -72,28 +73,30 @@ class SettingsActivityTest {
         launch()
         openCategory("성능 측정 및 로그")
         field("System Performance Diagnostics").perform(scrollTo(), click())
+        field("배터리·발열 진단").perform(scrollTo(), click())
         field("Sample Interval (ms)").perform(scrollTo(), replaceText("7000"), closeSoftKeyboard())
         pressBack()
         openCategory("YOLO 모델 및 추론")
         field("Interpreter Thread Count").perform(scrollTo(), replaceText("5"), closeSoftKeyboard())
         pressBack()
         openCategory("성능 측정 및 로그")
-        scenario!!.recreate()
+        recreate()
         field("System Performance Diagnostics").check(matches(isChecked()))
         field("Sample Interval (ms)").check(matches(withText("7000")))
         onView(withText("적용 및 저장")).perform(click())
         val saved = loadHealthy()
-        assertEquals(PerformanceLogSettings(true, 7000), saved.performanceLog)
+        assertEquals(PerformanceLogSettings(true, 7000, true), saved.performanceLog)
         assertEquals(5, saved.yolo.interpreterThreadCount)
         launch()
         openCategory("성능 측정 및 로그")
         field("System Performance Diagnostics").check(matches(isChecked())).perform(scrollTo(), click())
         field("Sample Interval (ms)").check(matches(not(isEnabled()))).check(matches(withText("7000")))
         onView(withText("적용 및 저장")).perform(click())
-        assertEquals(PerformanceLogSettings(false, 7000), loadHealthy().performanceLog)
+        assertEquals(PerformanceLogSettings(false, 7000, true), loadHealthy().performanceLog)
         launch()
         openCategory("성능 측정 및 로그")
         field("System Performance Diagnostics").check(matches(not(isChecked())))
+        field("배터리·발열 진단").check(matches(isChecked())).check(matches(not(isEnabled())))
         field("Sample Interval (ms)").check(matches(withText("7000")))
     }
 
@@ -104,7 +107,7 @@ class SettingsActivityTest {
             val before = loadHealthy()
             field("Interpreter Thread Count").perform(scrollTo(), replaceText(threads.toString()), closeSoftKeyboard())
             if (before.yolo.useXnnpack != enabled) field("XNNPACK 사용").perform(scrollTo(), click())
-            scenario!!.recreate()
+            recreate()
             field("XNNPACK 사용").check(matches(if (enabled) isChecked() else not(isChecked())))
             field("Interpreter Thread Count").check(matches(withText(threads.toString())))
             onView(withText("적용 및 저장")).perform(click())
@@ -146,7 +149,7 @@ class SettingsActivityTest {
         field("Detect Interval (ms)").perform(scrollTo(), replaceText(""), closeSoftKeyboard())
         pressBack()
         openCategory("디버그 및 고급 설정")
-        scenario!!.recreate()
+        recreate()
         pressBack()
         openCategory("카메라 및 입력")
         field("Detect Interval (ms)").check(matches(withText("")))
@@ -172,7 +175,7 @@ class SettingsActivityTest {
         field("Interpreter Thread Count").perform(scrollTo(), replaceText("8"), closeSoftKeyboard())
         field("Interpreter Thread Count").perform(replaceText("4"), closeSoftKeyboard())
         pressBack()
-        scenario!!.recreate()
+        recreate()
         onView(withText("취소")).perform(click()) // No discard dialog for unchanged settings.
         assertEquals(before, preferences.all)
         launch()
@@ -215,7 +218,7 @@ class SettingsActivityTest {
         store.saveApplied(custom)
         launch() // pending -> attempting, as with the existing store contract
         val before = preferences.all.toMap()
-        scenario!!.recreate()
+        recreate()
         assertEquals(before, preferences.all)
         openCategory("성능 측정 및 로그")
         field("Sample Interval (ms)").check(matches(withText("10000")))
@@ -254,12 +257,12 @@ class SettingsActivityTest {
         assertTrue(offset > 0)
         pressBack()
         openCategory("YOLO 모델 및 추론")
-        scenario!!.recreate() // Filter page is hidden when its scroll position is saved.
+        recreate() // Filter page is hidden when its scroll position is saved.
         pressBack()
         openCategory("탐지 필터 및 경고")
         field("실제 TTS").check(matches(isDisplayed()))
         assertEquals(offset, scrollOffset("실제 TTS"))
-        scenario!!.recreate()
+        recreate()
         field("실제 TTS").check(matches(isDisplayed()))
         assertEquals(offset, scrollOffset("실제 TTS"))
     }
@@ -290,6 +293,28 @@ class SettingsActivityTest {
         scenario?.close()
         scenario = ActivityScenario.launch(SettingsActivity::class.java)
         scenario!!.onActivity { it.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
+        dismissNativeCompatibilityWarning()
+    }
+
+    private fun recreate() {
+        scenario!!.recreate()
+        dismissNativeCompatibilityWarning()
+    }
+
+    /** Confirm only Android's known native-library alignment warning during UI tests.
+     * No permanent suppression, dependency upgrades or runtime compatibility changes. */
+    private fun dismissNativeCompatibilityWarning() {
+        val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
+        repeat(20) {
+            val root = automation.rootInActiveWindow
+            if (root?.packageName?.toString() == "android" &&
+                root.findAccessibilityNodeInfosByText("ELF").isNotEmpty()) {
+                val ok = context.getString(android.R.string.ok)
+                val confirm = root.findAccessibilityNodeInfosByText(ok).firstOrNull { it.text?.toString() == ok }
+                if (confirm?.performAction(AccessibilityNodeInfo.ACTION_CLICK) == true) return
+            }
+            Thread.sleep(100)
+        }
     }
 
     private fun seed(value: AppSettings) {
@@ -335,7 +360,7 @@ class SettingsActivityTest {
                 "Very Near Height Ratio", "Near Height Ratio", "Mid Height Ratio", "Very Near Area Ratio", "Near Area Ratio",
                 "Mid Area Ratio", "실제 진동", "실제 Beep", "실제 TTS"
             ),
-            "성능 측정 및 로그" to listOf("System Performance Diagnostics", "Sample Interval (ms)"),
+            "성능 측정 및 로그" to listOf("System Performance Diagnostics", "배터리·발열 진단", "Sample Interval (ms)"),
             "디버그 및 고급 설정" to listOf(
                 "Enable Detector Diagnostics", "Debug Detection Logging", "Diagnostic Raw Confidence Threshold",
                 "Diagnostic Max Raw Candidates", "Debug Save Inference Input", "Debug Save Interval (ms)",

@@ -24,7 +24,8 @@ class DetectorPreprocessingRegressionTest {
     @Test fun independentLetterboxReferenceMatchesAcrossShapeChangesAndReusesStorage() {
         val detector = VisionStyleYoloDetector(context, confidenceThreshold = 0.2f, nmsThreshold = 0.45f)
         val names = listOf("inputBuffer", "outputBuffer", "pixels", "outputData", "inputFloatView",
-            "outputFloatView", "inputFloatData", "reusableInputBitmap", "reusableInputCanvas")
+            "outputFloatView", "inputFloatData", "reusableInputBitmap", "reusableInputCanvas",
+            "interpreterInputs", "interpreterOutputs")
         val original = names.associateWith { field(detector, it) }
         @Suppress("UNCHECKED_CAST")
         val rows = (original.getValue("outputData") as Array<FloatArray>).toList()

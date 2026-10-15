@@ -159,6 +159,7 @@ object AppSettingsCodec {
         with(value.mlKit) { put("mlKit.enabled", enabled); put("mlKit.detectionIntervalMs", detectionIntervalMs) }
         with(value.performanceLog) {
             put("performanceLog.systemDiagnosticsEnabled", systemDiagnosticsEnabled)
+            put("performanceLog.batteryDiagnosticsEnabled", batteryDiagnosticsEnabled)
             put("performanceLog.sampleIntervalMs", sampleIntervalMs)
         }
         with(value.debug) {
@@ -241,7 +242,8 @@ object AppSettingsCodec {
             mlKit = MlKitSettings(b("mlKit.enabled", d.mlKit.enabled), l("mlKit.detectionIntervalMs", d.mlKit.detectionIntervalMs)),
             performanceLog = PerformanceLogSettings(
                 b("performanceLog.systemDiagnosticsEnabled", d.performanceLog.systemDiagnosticsEnabled),
-                l("performanceLog.sampleIntervalMs", d.performanceLog.sampleIntervalMs)
+                l("performanceLog.sampleIntervalMs", d.performanceLog.sampleIntervalMs),
+                b("performanceLog.batteryDiagnosticsEnabled", d.performanceLog.batteryDiagnosticsEnabled)
             ),
             debug = DebugSettings(
                 b("debug.enableDetectorDiagnostics", d.debug.enableDetectorDiagnostics),

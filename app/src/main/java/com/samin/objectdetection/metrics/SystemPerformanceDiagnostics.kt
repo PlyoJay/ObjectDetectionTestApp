@@ -24,6 +24,7 @@ data class ThermalStatusEvent(val elapsedNs: Long, val unixMs: Long, val previou
 
 /** All implementations are queried only on the diagnostics executor, never on CameraX/UI. */
 interface SystemMetricSource {
+    fun battery(): BatteryReading? = null
     fun thermalStatus(): Int?
     fun thermalHeadroom(): Float?
     fun processCpuTimeMs(): Long?
@@ -93,7 +94,9 @@ class SystemPerformanceDiagnostics(
     private val wallNow: () -> Long,
     private val onSample: (SystemMetricsSample) -> Unit,
     private val onThermal: (ThermalStatusEvent) -> Unit,
-    private val onTick: (Long) -> Unit
+    private val onTick: (Long) -> Unit,
+    private val batteryEnabled: Boolean = false,
+    private val onBattery: (BatterySample) -> Unit = {}
 ) {
     private val executor = Executors.newSingleThreadScheduledExecutor { task ->
         Thread(task, "PerformanceDiagnostics").apply { isDaemon = true }
@@ -103,6 +106,8 @@ class SystemPerformanceDiagnostics(
     private val completion = CompletableFuture<Unit>()
     private var scheduled: ScheduledFuture<*>? = null
     private var listener: AutoCloseable? = null
+    private val batteryReader = source?.takeIf { batteryEnabled }?.let { BatteryMetricsReader(it, elapsedNow) }
+    private var lastSystem: SystemMetricsSample? = null
     private val callbackExecutor = Executor { task ->
         if (!stopping.get()) try { executor.execute { if (!stopping.get()) task.run() } }
         catch (_: RejectedExecutionException) { /* late platform callback */ }
@@ -118,7 +123,8 @@ class SystemPerformanceDiagnostics(
             fun tick() {
                 if (stopping.get()) return
                 // A failed diagnostics callback cannot cancel subsequent collection or escape to inference.
-                runCatching { reader?.sample()?.let(onSample) }
+                runCatching { reader?.sample()?.let { lastSystem = it; onSample(it) } }
+                runCatching { batteryReader?.sample(lastSystem)?.let(onBattery) }
                 runCatching { onTick(elapsedNow()) }
             }
             tick()
@@ -132,6 +138,8 @@ class SystemPerformanceDiagnostics(
         if (stopping.compareAndSet(false, true)) {
             executor.execute {
                 scheduled?.cancel(false)
+                // Final battery endpoint runs here, never on the caller/CameraX thread.
+                if (started.get()) runCatching { batteryReader?.sample(lastSystem, force = true)?.let(onBattery) }
                 runCatching { listener?.close() }
                 listener = null
                 executor.shutdown()

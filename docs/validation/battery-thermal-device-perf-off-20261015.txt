@@ -1,0 +1,76 @@
+========================================
+GOTORO Object Detection Performance Log
+========================================
+
+Start Time: 2026-10-15 10:52:46
+Session ID: battery-media-1
+Start Unix Ms: 1792029166048; Start Elapsed Ns: 867291825136395
+Clock: *AtMs/UnixMs=Unix wall ms; *ElapsedNs=elapsedRealtimeNanos; cameraTimestampNs=camera source
+FPS: fps/Average FPS=successful pipeline completions; analyzerFps=delivered analyzer frames; droppedFrames=explicit app skips
+Unknown camera capture latency=-1; FRAME time is pipeline completion, OVERLAY is a separate draw event
+System Performance Diagnostics: true; Sample Interval: 5000ms
+Battery Thermal Diagnostics: false; Effective: false; battery polling uses system ticks, minimum 5000ms plus final endpoint
+System metrics unavailable=N/A; processCpuUsage=all app process threads, 100%=one CPU core (may exceed 100%); cpuFrequency=device cpufreq policy, not process scope
+Thermal Headroom: forecastSeconds=0, minimum API call interval=10000ms; cached values include sample time/age, 1.0=SEVERE threshold, not a temperature
+INTERVAL_SUMMARY=[start,end) by successful completion time, 30 seconds plus final partial/empty intervals; P95=nearest rank of actual valid frame samples
+INTERVAL_PREVIEW may miss delayed submissions; final INTERVAL_SUMMARY/CUMULATIVE_SUMMARY are authoritative and include frame data even if file lines were dropped
+Interval system fields=last system sample within that interval (not averages); OFF/no samples=N/A
+
+Model: best.tflite
+Model SHA256: unknown
+Detector: battery-api-validation
+App Version: unknown
+Preset: DEFAULT
+Settings Schema Version: 1
+Input Size: 640x640
+Requested Camera Resolution: 1280x720
+Camera Resolution: 1280x720
+resizeMode=LETTERBOX
+YOLO Threads: 4
+Inference Execution: N/A
+XNNPACK Requested: N/A (CPU request only; ON/OFF does not verify native delegation or change backend)
+CPU thread count is the accepted Interpreter option; active worker count/partition coverage are unavailable in Java. Confirm native delegate application with Logcat/profiling.
+Execution settings are fixed for this session. Stop/drain this log before applying settings; the recreated app uses a new session and recorder.
+pipeline=DetectionPipeline.process only; totalProcessing=analyzer receipt through pipeline completion (includes bitmap conversion and ML Kit input preparation; excludes UI draw/warning output)
+Detail timings are overlapping subsets, never summed into aggregates: cameraToBitmap/rotation within bitmap; getPixels/rgbWrite/inputDiagnostics within inputBuffer within preprocess; nativeInvoke within inference; outputDiagnostics within detector/pipeline but outside post. mlKitPrepare includes eligibility check/input resize/dispatch before pipeline; mlKitInFlight is a concurrency hint, not CPU time. Detail milliseconds retain 3 decimals; -1=unavailable, 0=skipped.
+ML Kit Enabled: false
+Geometry Filter Enabled: false
+Adaptive Temporal Enabled: false
+Confidence Threshold: 0.2
+NMS Threshold: 0.45
+
+========================================
+
+========================================
+FINAL SUMMARY
+Scope: legacy metrics collector cumulative snapshot (up to latest 100000 latency samples); exact recorder session statistics follow below
+========================================
+Duration: 14454:51
+Received Frames: 0
+Processed Frames: 0
+Dropped Frames: 0
+Dropped Log Lines: 0
+Average FPS: 0
+Analyzer FPS: 0.0; Successful Inference FPS: 0.0
+Successful Frames: 0; Failed Frames: 0
+Average Preprocess: 0 ms
+P95 Preprocess: 0 ms
+Average Inference: 0 ms
+P95 Inference: 0 ms
+Average Postprocess: 0 ms
+P95 Postprocess: 0 ms
+Average Pipeline: 0 ms
+P95 Pipeline: 0 ms
+Average Frame Age At Overlay: 0 ms
+P95 Frame Age At Overlay: 0 ms
+Overlay Latency Samples: 0 (0 means unavailable)
+YOLO Detections: 0
+Visible Detections: 0
+Warnings: 0
+ML Kit Average: 0 ms
+========================================
+
+--- EXACT SESSION AND 30-SECOND INTERVAL SUMMARIES ---
+CUMULATIVE_SUMMARY | sessionId=battery-media-1 intervalIndex=ALL startSeconds=0.000 endSeconds=0.013 elapsedSeconds=0.013 successfulFrames=0 inferenceAvgMs=N/A inferenceP95Ms=N/A preprocessAvgMs=N/A pipelineAvgMs=N/A pipelineP95Ms=N/A totalProcessingAvgMs=N/A totalProcessingP95Ms=N/A totalProcessingSamples=0 execution=N/A inferenceFps=0.000 inferenceSamples=0 preprocessSamples=0 pipelineSamples=0 thermalStatus=N/A thermalHeadroom=N/A headroomSampleElapsedSeconds=N/A headroomAgeMs=N/A processCpuUsage=N/A processCpuScope=process_all_threads_percent_one_core cpuUsageWindowMs=N/A cpuFrequency=N/A cpuFrequencyScope=device_policy_kHz systemSampleElapsedSeconds=N/A
+INTERVAL_SUMMARY | sessionId=battery-media-1 intervalIndex=0 startSeconds=0.000 endSeconds=0.013 elapsedSeconds=0.013 successfulFrames=0 inferenceAvgMs=N/A inferenceP95Ms=N/A preprocessAvgMs=N/A pipelineAvgMs=N/A pipelineP95Ms=N/A totalProcessingAvgMs=N/A totalProcessingP95Ms=N/A totalProcessingSamples=0 execution=N/A inferenceFps=0.000 inferenceSamples=0 preprocessSamples=0 pipelineSamples=0 thermalStatus=N/A thermalHeadroom=N/A headroomSampleElapsedSeconds=N/A headroomAgeMs=N/A processCpuUsage=N/A processCpuScope=process_all_threads_percent_one_core cpuUsageWindowMs=N/A cpuFrequency=N/A cpuFrequencyScope=device_policy_kHz systemSampleElapsedSeconds=N/A
+--- END INTERVAL SUMMARIES ---

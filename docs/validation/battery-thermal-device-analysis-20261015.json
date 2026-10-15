@@ -1,0 +1,547 @@
+[
+  {
+    "file": "docs\\validation\\battery-thermal-device-perf-on1-20261015.txt",
+    "windowStartSeconds": 0.0,
+    "windowEndSeconds": 0.034,
+    "excludedTailSeconds": 0.0,
+    "successfulFrameSamples": 0,
+    "errorLinesInWindow": 0,
+    "droppedLogLines": 0,
+    "frameLogComplete": true,
+    "fpsFromRecordedFrames": 0.0,
+    "inference": {
+      "samples": 0,
+      "averageMs": null,
+      "p95Ms": null
+    },
+    "pipeline": {
+      "samples": 0,
+      "averageMs": null,
+      "p95Ms": null
+    },
+    "totalProcessing": {
+      "samples": 0,
+      "averageMs": null,
+      "p95Ms": null
+    },
+    "preprocess": {
+      "samples": 0,
+      "averageMs": null,
+      "p95Ms": null
+    },
+    "bitmap": {
+      "samples": 0,
+      "averageMs": null,
+      "p95Ms": null
+    },
+    "details": {
+      "cameraToBitmap": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      },
+      "rotation": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      },
+      "inputBuffer": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      },
+      "getPixels": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      },
+      "rgbWrite": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      },
+      "inputDiagnostics": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      },
+      "outputDiagnostics": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      },
+      "nativeInvoke": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      },
+      "mlKitPrepare": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      }
+    },
+    "preprocessByInputDiagnostics": {
+      "off": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      },
+      "on": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      }
+    },
+    "execution": [],
+    "cpuFallbackCountLifetimeObserved": null,
+    "diagnostics": {
+      "systemSampleCount": 0,
+      "processCpuUsage": {
+        "validSamples": 0,
+        "unavailableSamples": 0,
+        "average": "N/A",
+        "first": "N/A",
+        "last": "N/A",
+        "maximum": "N/A"
+      },
+      "thermalStatusSamples": [],
+      "thermalStatusEvents": [
+        {
+          "sessionId": "battery-media-0",
+          "elapsedSeconds": "0.031",
+          "observedUnixMs": "1792029165991",
+          "observedElapsedNs": "867291767760614",
+          "previousThermalStatus": "N/A",
+          "thermalStatus": "NONE",
+          "source": "poll"
+        }
+      ],
+      "thermalHeadroom": {
+        "validSamples": 0,
+        "unavailableSamples": 0,
+        "average": "N/A",
+        "first": "N/A",
+        "last": "N/A",
+        "maximum": "N/A"
+      },
+      "thermalTrend": [],
+      "battery": {
+        "sampleCount": 2,
+        "levelPct": {
+          "start": 89.0,
+          "end": 89.0,
+          "delta": 0.0
+        },
+        "temperatureC": {
+          "start": 31.3,
+          "end": 31.3,
+          "delta": 0.0,
+          "sampledMaximum": 31.3
+        },
+        "byChargingStatus": {
+          "Charging": {
+            "batteryCurrentMa": {
+              "validSamples": 2,
+              "unavailableSamples": 0,
+              "average": -0.93,
+              "first": -0.93,
+              "last": -0.93,
+              "maximum": -0.93
+            },
+            "estimatedBatteryPowerMw": {
+              "validSamples": 2,
+              "unavailableSamples": 0,
+              "average": -3.898,
+              "first": -3.898,
+              "last": -3.898,
+              "maximum": -3.898
+            }
+          }
+        },
+        "averageDischargingCurrentMa": "N/A",
+        "averageEstimatedDischargingPowerMw": "N/A",
+        "fullSessionSummary": {
+          "sessionId": "battery-media-0",
+          "measurementDurationSeconds": "0.034",
+          "firstSampleSeconds": "0.046",
+          "lastSampleSeconds": "0.055",
+          "sampleSpanSeconds": "0.008",
+          "startBatteryLevelPct": "89.000",
+          "endBatteryLevelPct": "89.000",
+          "batteryLevelDeltaPct": "0.000",
+          "startBatteryTemperatureC": "31.300",
+          "endBatteryTemperatureC": "31.300",
+          "maxBatteryTemperatureC": "31.300",
+          "batteryTemperatureDeltaC": "0.000",
+          "samples": "2",
+          "validSamples": "0",
+          "unavailableSamples": "2",
+          "currentValidSamples": "2",
+          "currentUnavailableSamples": "0",
+          "powerValidSamples": "2",
+          "powerUnavailableSamples": "0",
+          "temperatureValidSamples": "2",
+          "chargingStatusChanged": "false",
+          "pluggedTypeChanged": "false",
+          "thermalStatusChanged": "false",
+          "scope": "device_battery",
+          "power": "estimated_signed",
+          "sampleMean": "true"
+        },
+        "sampleLogComplete": true,
+        "fullSessionStatusSummaries": [
+          {
+            "sessionId": "battery-media-0",
+            "chargingStatus": "Charging",
+            "averageBatteryCurrentMa": "-0.930",
+            "currentValidSamples": "2",
+            "averageEstimatedBatteryPowerMw": "-3.898",
+            "powerValidSamples": "2",
+            "scope": "device_battery"
+          }
+        ],
+        "note": "Device battery, signed current/power; estimates are not app consumption. Means use valid recorded samples grouped by status. Battery temperature is not CPU/GPU temperature. 0% level delta does not mean zero power. Polls can miss transitions; headroom may be cached. See fullSessionSummary for authoritative full-session counts/endpoints if sample lines were dropped."
+      }
+    },
+    "note": "Statistics use recorded successful FRAME samples. If frameLogComplete=false, FPS/P95/averages are incomplete. Error lines count only recorded errors; fallback counters have detector lifetime scope."
+  },
+  {
+    "file": "docs\\validation\\battery-thermal-device-perf-off-20261015.txt",
+    "windowStartSeconds": 0.0,
+    "windowEndSeconds": 0.013,
+    "excludedTailSeconds": 0.0,
+    "successfulFrameSamples": 0,
+    "errorLinesInWindow": 0,
+    "droppedLogLines": 0,
+    "frameLogComplete": true,
+    "fpsFromRecordedFrames": 0.0,
+    "inference": {
+      "samples": 0,
+      "averageMs": null,
+      "p95Ms": null
+    },
+    "pipeline": {
+      "samples": 0,
+      "averageMs": null,
+      "p95Ms": null
+    },
+    "totalProcessing": {
+      "samples": 0,
+      "averageMs": null,
+      "p95Ms": null
+    },
+    "preprocess": {
+      "samples": 0,
+      "averageMs": null,
+      "p95Ms": null
+    },
+    "bitmap": {
+      "samples": 0,
+      "averageMs": null,
+      "p95Ms": null
+    },
+    "details": {
+      "cameraToBitmap": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      },
+      "rotation": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      },
+      "inputBuffer": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      },
+      "getPixels": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      },
+      "rgbWrite": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      },
+      "inputDiagnostics": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      },
+      "outputDiagnostics": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      },
+      "nativeInvoke": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      },
+      "mlKitPrepare": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      }
+    },
+    "preprocessByInputDiagnostics": {
+      "off": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      },
+      "on": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      }
+    },
+    "execution": [],
+    "cpuFallbackCountLifetimeObserved": null,
+    "diagnostics": {
+      "systemSampleCount": 0,
+      "processCpuUsage": {
+        "validSamples": 0,
+        "unavailableSamples": 0,
+        "average": "N/A",
+        "first": "N/A",
+        "last": "N/A",
+        "maximum": "N/A"
+      },
+      "thermalStatusSamples": [],
+      "thermalStatusEvents": [],
+      "thermalHeadroom": {
+        "validSamples": 0,
+        "unavailableSamples": 0,
+        "average": "N/A",
+        "first": "N/A",
+        "last": "N/A",
+        "maximum": "N/A"
+      },
+      "thermalTrend": [],
+      "battery": {
+        "sampleCount": 0,
+        "levelPct": {
+          "start": "N/A",
+          "end": "N/A",
+          "delta": "N/A"
+        },
+        "temperatureC": {
+          "start": "N/A",
+          "end": "N/A",
+          "delta": "N/A",
+          "sampledMaximum": "N/A"
+        },
+        "byChargingStatus": {},
+        "averageDischargingCurrentMa": "N/A",
+        "averageEstimatedDischargingPowerMw": "N/A",
+        "fullSessionSummary": "N/A",
+        "sampleLogComplete": "N/A",
+        "fullSessionStatusSummaries": [],
+        "note": "Device battery, signed current/power; estimates are not app consumption. Means use valid recorded samples grouped by status. Battery temperature is not CPU/GPU temperature. 0% level delta does not mean zero power. Polls can miss transitions; headroom may be cached. See fullSessionSummary for authoritative full-session counts/endpoints if sample lines were dropped."
+      }
+    },
+    "note": "Statistics use recorded successful FRAME samples. If frameLogComplete=false, FPS/P95/averages are incomplete. Error lines count only recorded errors; fallback counters have detector lifetime scope."
+  },
+  {
+    "file": "docs\\validation\\battery-thermal-device-perf-on2-20261015.txt",
+    "windowStartSeconds": 0.0,
+    "windowEndSeconds": 0.011,
+    "excludedTailSeconds": 0.0,
+    "successfulFrameSamples": 0,
+    "errorLinesInWindow": 0,
+    "droppedLogLines": 0,
+    "frameLogComplete": true,
+    "fpsFromRecordedFrames": 0.0,
+    "inference": {
+      "samples": 0,
+      "averageMs": null,
+      "p95Ms": null
+    },
+    "pipeline": {
+      "samples": 0,
+      "averageMs": null,
+      "p95Ms": null
+    },
+    "totalProcessing": {
+      "samples": 0,
+      "averageMs": null,
+      "p95Ms": null
+    },
+    "preprocess": {
+      "samples": 0,
+      "averageMs": null,
+      "p95Ms": null
+    },
+    "bitmap": {
+      "samples": 0,
+      "averageMs": null,
+      "p95Ms": null
+    },
+    "details": {
+      "cameraToBitmap": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      },
+      "rotation": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      },
+      "inputBuffer": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      },
+      "getPixels": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      },
+      "rgbWrite": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      },
+      "inputDiagnostics": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      },
+      "outputDiagnostics": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      },
+      "nativeInvoke": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      },
+      "mlKitPrepare": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      }
+    },
+    "preprocessByInputDiagnostics": {
+      "off": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      },
+      "on": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      }
+    },
+    "execution": [],
+    "cpuFallbackCountLifetimeObserved": null,
+    "diagnostics": {
+      "systemSampleCount": 0,
+      "processCpuUsage": {
+        "validSamples": 0,
+        "unavailableSamples": 0,
+        "average": "N/A",
+        "first": "N/A",
+        "last": "N/A",
+        "maximum": "N/A"
+      },
+      "thermalStatusSamples": [],
+      "thermalStatusEvents": [],
+      "thermalHeadroom": {
+        "validSamples": 0,
+        "unavailableSamples": 0,
+        "average": "N/A",
+        "first": "N/A",
+        "last": "N/A",
+        "maximum": "N/A"
+      },
+      "thermalTrend": [],
+      "battery": {
+        "sampleCount": 1,
+        "levelPct": {
+          "start": 89.0,
+          "end": 89.0,
+          "delta": 0.0
+        },
+        "temperatureC": {
+          "start": 31.3,
+          "end": 31.3,
+          "delta": 0.0,
+          "sampledMaximum": 31.3
+        },
+        "byChargingStatus": {
+          "Charging": {
+            "batteryCurrentMa": {
+              "validSamples": 1,
+              "unavailableSamples": 0,
+              "average": -0.93,
+              "first": -0.93,
+              "last": -0.93,
+              "maximum": -0.93
+            },
+            "estimatedBatteryPowerMw": {
+              "validSamples": 1,
+              "unavailableSamples": 0,
+              "average": -3.898,
+              "first": -3.898,
+              "last": -3.898,
+              "maximum": -3.898
+            }
+          }
+        },
+        "averageDischargingCurrentMa": "N/A",
+        "averageEstimatedDischargingPowerMw": "N/A",
+        "fullSessionSummary": {
+          "sessionId": "battery-media-2",
+          "measurementDurationSeconds": "0.011",
+          "firstSampleSeconds": "0.011",
+          "lastSampleSeconds": "0.011",
+          "sampleSpanSeconds": "0.000",
+          "startBatteryLevelPct": "89.000",
+          "endBatteryLevelPct": "89.000",
+          "batteryLevelDeltaPct": "0.000",
+          "startBatteryTemperatureC": "31.300",
+          "endBatteryTemperatureC": "31.300",
+          "maxBatteryTemperatureC": "31.300",
+          "batteryTemperatureDeltaC": "0.000",
+          "samples": "1",
+          "validSamples": "0",
+          "unavailableSamples": "1",
+          "currentValidSamples": "1",
+          "currentUnavailableSamples": "0",
+          "powerValidSamples": "1",
+          "powerUnavailableSamples": "0",
+          "temperatureValidSamples": "1",
+          "chargingStatusChanged": "false",
+          "pluggedTypeChanged": "false",
+          "thermalStatusChanged": "false",
+          "scope": "device_battery",
+          "power": "estimated_signed",
+          "sampleMean": "true"
+        },
+        "sampleLogComplete": true,
+        "fullSessionStatusSummaries": [
+          {
+            "sessionId": "battery-media-2",
+            "chargingStatus": "Charging",
+            "averageBatteryCurrentMa": "-0.930",
+            "currentValidSamples": "1",
+            "averageEstimatedBatteryPowerMw": "-3.898",
+            "powerValidSamples": "1",
+            "scope": "device_battery"
+          }
+        ],
+        "note": "Device battery, signed current/power; estimates are not app consumption. Means use valid recorded samples grouped by status. Battery temperature is not CPU/GPU temperature. 0% level delta does not mean zero power. Polls can miss transitions; headroom may be cached. See fullSessionSummary for authoritative full-session counts/endpoints if sample lines were dropped."
+      }
+    },
+    "note": "Statistics use recorded successful FRAME samples. If frameLogComplete=false, FPS/P95/averages are incomplete. Error lines count only recorded errors; fallback counters have detector lifetime scope."
+  }
+]

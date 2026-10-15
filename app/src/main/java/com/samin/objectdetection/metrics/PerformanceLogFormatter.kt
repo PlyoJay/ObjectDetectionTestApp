@@ -32,7 +32,8 @@ data class PerformanceLogHeader(
     val startedElapsedNs: Long = 0L,
     val systemDiagnosticsEnabled: Boolean = false,
     val systemSampleIntervalMs: Long = 5_000L,
-    val execution: InferenceExecutionInfo? = null
+    val execution: InferenceExecutionInfo? = null,
+    val batteryDiagnosticsEnabled: Boolean = false
 )
 
 data class PerformanceFrameRecord(
@@ -92,6 +93,12 @@ object PerformanceLogFormatter {
         appendLine("FPS: fps/Average FPS=successful pipeline completions; analyzerFps=delivered analyzer frames; droppedFrames=explicit app skips")
         appendLine("Unknown camera capture latency=-1; FRAME time is pipeline completion, OVERLAY is a separate draw event")
         appendLine("System Performance Diagnostics: ${header.systemDiagnosticsEnabled}; Sample Interval: ${header.systemSampleIntervalMs}ms")
+        appendLine("Battery Thermal Diagnostics: ${header.batteryDiagnosticsEnabled}; Effective: ${header.systemDiagnosticsEnabled && header.batteryDiagnosticsEnabled}; battery polling uses system ticks, minimum 5000ms plus final endpoint")
+        if (header.batteryDiagnosticsEnabled && header.systemDiagnosticsEnabled) {
+            appendLine("Battery scope=device battery, not app consumption; temperature=battery, not CPU/GPU; signed current mA (+charging/-discharging); estimatedBatteryPowerMw=currentMa*voltageMv/1000, signed estimate, never app power even while charging")
+            appendLine("Battery counters: charge=uAh, energy=nWh; unsupported/invalid=N/A; means use valid samples grouped by charging status; delta=last-first; 0% level change does not mean zero consumption")
+            appendLine("Battery endpoints=first/final observed samples (see timestamps); max=sampled maximum; changes=observed transitions, between-poll changes may be missed")
+        }
         appendLine("System metrics unavailable=N/A; processCpuUsage=all app process threads, 100%=one CPU core (may exceed 100%); cpuFrequency=device cpufreq policy, not process scope")
         appendLine("Thermal Headroom: forecastSeconds=0, minimum API call interval=10000ms; cached values include sample time/age, 1.0=SEVERE threshold, not a temperature")
         appendLine("INTERVAL_SUMMARY=[start,end) by successful completion time, 30 seconds plus final partial/empty intervals; P95=nearest rank of actual valid frame samples")
@@ -222,7 +229,7 @@ object PerformanceLogFormatter {
 
     private fun detailMs(ns: Long): String = if (ns < 0) "-1" else String.format(Locale.US, "%.3f", ns / 1e6)
     private fun number(value: Double?): String = value?.takeIf(Double::isFinite)?.let { String.format(Locale.US, "%.3f", it) } ?: "N/A"
-    private fun thermal(value: Int?): String = when (value) {
+    internal fun thermal(value: Int?): String = when (value) {
         0 -> "NONE"; 1 -> "LIGHT"; 2 -> "MODERATE"; 3 -> "SEVERE"; 4 -> "CRITICAL"; 5 -> "EMERGENCY"; 6 -> "SHUTDOWN"; else -> "N/A"
     }
 

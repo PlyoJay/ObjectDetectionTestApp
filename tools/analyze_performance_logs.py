@@ -30,6 +30,67 @@ def detail_stats(records, key):
             "p95Ms": values[math.ceil(len(values) * 0.95) - 1] if values else None}
 
 
+def numeric(record, key):
+    try:
+        value = float(record[key])
+        return value if math.isfinite(value) else None
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+def metric(records, key):
+    values = [v for r in records if (v := numeric(r, key)) is not None]
+    return {"validSamples": len(values), "unavailableSamples": len(records) - len(values),
+            "average": sum(values) / len(values) if values else "N/A",
+            "first": values[0] if values else "N/A", "last": values[-1] if values else "N/A",
+            "maximum": max(values) if values else "N/A"}
+
+
+def diagnostic_analysis(lines, start, end, duration):
+    def select(prefix, include_final_endpoint=False):
+        records = [fields(line) for line in lines if line.startswith(prefix)]
+        return sorted((r for r in records if (t := numeric(r, "elapsedSeconds")) is not None
+                       and start <= t and (t <= end or include_final_endpoint and start == 0 and end == duration)),
+                      key=lambda r: numeric(r, "elapsedSeconds"))
+
+    systems = select("SYSTEM |")
+    batteries = select("BATTERY_SAMPLE |", include_final_endpoint=True)
+    thermal_events = select("THERMAL_STATUS |")
+    def endpoints(key):
+        # Do not silently substitute an earlier reading for an unavailable endpoint.
+        first = numeric(batteries[0], key) if batteries else None
+        last = numeric(batteries[-1], key) if batteries else None
+        return {"start": first if first is not None else "N/A", "end": last if last is not None else "N/A",
+                "delta": last - first if first is not None and last is not None else "N/A"}
+
+    by_status = {}
+    for status in sorted({r.get("chargingStatus", "Unknown") for r in batteries}):
+        group = [r for r in batteries if r.get("chargingStatus", "Unknown") == status]
+        by_status[status] = {"batteryCurrentMa": metric(group, "batteryCurrentMa"),
+                             "estimatedBatteryPowerMw": metric(group, "estimatedBatteryPowerMw")}
+    # Full-session summary remains authoritative when bounded writer dropped sample lines.
+    summary = next((fields(line) for line in lines if line.startswith("BATTERY_SUMMARY |")), None)
+    return {
+        "systemSampleCount": len(systems), "processCpuUsage": metric(systems, "processCpuUsage"),
+        "thermalStatusSamples": [r.get("thermalStatus", "N/A") for r in systems],
+        "thermalStatusEvents": thermal_events,
+        "thermalHeadroom": metric(systems, "thermalHeadroom"),
+        "thermalTrend": [{k: r.get(k, "N/A") for k in
+                          ("elapsedSeconds", "thermalStatus", "thermalHeadroom", "headroomAgeMs")} for r in systems],
+        "battery": {"sampleCount": len(batteries), "levelPct": endpoints("batteryLevelPct"),
+                    "temperatureC": {**endpoints("batteryTemperatureC"),
+                                     "sampledMaximum": metric(batteries, "batteryTemperatureC")["maximum"]},
+                    "byChargingStatus": by_status,
+                    "averageDischargingCurrentMa": by_status.get("Discharging", {}).get("batteryCurrentMa", {}).get("average", "N/A"),
+                    "averageEstimatedDischargingPowerMw": by_status.get("Discharging", {}).get("estimatedBatteryPowerMw", {}).get("average", "N/A"),
+                    "fullSessionSummary": summary if start == 0 and end == duration and summary else "N/A",
+                    "sampleLogComplete": len(batteries) == int(summary["samples"])
+                    if start == 0 and end == duration and summary and "samples" in summary else "N/A",
+                    "fullSessionStatusSummaries": [fields(line) for line in lines if line.startswith("BATTERY_STATUS_SUMMARY |")]
+                    if start == 0 and end == duration else [],
+                    "note": "Device battery, signed current/power; estimates are not app consumption. Means use valid recorded samples grouped by status. Battery temperature is not CPU/GPU temperature. 0% level delta does not mean zero power. Polls can miss transitions; headroom may be cached. See fullSessionSummary for authoritative full-session counts/endpoints if sample lines were dropped."}}
+
+
 def analyze(text, start_seconds=0.0, exclude_tail_seconds=0.0):
     lines = text.splitlines()
     cumulative = next((fields(line) for line in lines if line.startswith("CUMULATIVE_SUMMARY |")), None)
@@ -77,6 +138,7 @@ def analyze(text, start_seconds=0.0, exclude_tail_seconds=0.0):
                          float(r["inputDiagnostics"].removesuffix("ms")) > 0], "preprocess")},
         "execution": [dict(zip(execution_keys, values)) for values in configurations],
         "cpuFallbackCountLifetimeObserved": max((int(r["cpuFallbackCount"]) for r in frames if "cpuFallbackCount" in r), default=None),
+        "diagnostics": diagnostic_analysis(lines, start_seconds, end, duration),
         "note": "Statistics use recorded successful FRAME samples. If frameLogComplete=false, FPS/P95/averages are incomplete. Error lines count only recorded errors; fallback counters have detector lifetime scope."
     }
 

@@ -19,6 +19,7 @@ class PerformanceLogSession(
     private val lock = Any()
     private val stats = PerformanceIntervalCollector(header.startedElapsedNs)
     private val sequence = AtomicLong()
+    private val batterySummary = if (header.systemDiagnosticsEnabled && header.batteryDiagnosticsEnabled) BatterySummary() else null
     private var closing = false
     private var stoppedElapsedNs = header.startedElapsedNs
     private var completion: CompletableFuture<Unit>? = null
@@ -37,6 +38,7 @@ class PerformanceLogSession(
             }
         } },
         onThermal = { event -> synchronized(lock) {
+            batterySummary?.thermal(event)
             if (!closing) writer.append { PerformanceLogFormatter.formatThermalEvent(header, event) }
         } },
         onTick = { now ->
@@ -47,7 +49,13 @@ class PerformanceLogSession(
                     if (!closing) writer.append { PerformanceLogFormatter.formatInterval(header, interval, "INTERVAL_PREVIEW") }
                 }
             }
-        }
+        },
+        batteryEnabled = batterySummary != null,
+        onBattery = { sample -> synchronized(lock) {
+            // Accept the final endpoint while closing, before stop completes and writer drains.
+            batterySummary?.record(sample)
+            writer.append { BatterySummary.formatSample(header, sample) }
+        } }
     )
 
     val droppedLogLines: Long get() = writer.droppedLines.get()
@@ -84,7 +92,8 @@ class PerformanceLogSession(
                     stats.finalSummaries(stoppedElapsedNs).joinToString("\n") {
                         PerformanceLogFormatter.formatInterval(header, it,
                             if (it.index == null) "CUMULATIVE_SUMMARY" else "INTERVAL_SUMMARY")
-                    } + "\n--- END INTERVAL SUMMARIES ---"
+                    } + "\n--- END INTERVAL SUMMARIES ---" +
+                    (batterySummary?.let { "\n" + it.format(header, stoppedElapsedNs) } ?: "")
             }
         }.also { completion = it }
     }
