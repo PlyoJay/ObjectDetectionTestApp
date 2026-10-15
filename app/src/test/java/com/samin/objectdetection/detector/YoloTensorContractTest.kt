@@ -9,6 +9,31 @@ import java.nio.ByteOrder
 class YoloTensorContractTest {
     private fun buffer(size: Int) = ByteBuffer.allocate(size).order(ByteOrder.LITTLE_ENDIAN)
 
+    @Test fun bulkWriterMatchesDivisionByteForByteAtModelSizeAndReusesAllStorage() {
+        val pixels = IntArray(640 * 640) { 0xff000000.toInt() or (it * 7919 and 0xffffff) }
+        val scratch = FloatArray(pixels.size * 3)
+        for (order in listOf(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) for (layout in RgbTensorLayout.entries) {
+            val reference = ByteBuffer.allocate(pixels.size * 12).order(order)
+            val actual = ByteBuffer.allocateDirect(reference.capacity()).order(order)
+            val view = actual.asFloatBuffer()
+            val result = ByteArray(actual.capacity())
+            repeat(3) { frame ->
+                // Change every pixel between frames to expose stale channels/positions.
+                for (i in pixels.indices) pixels[i] = pixels[i] xor (0x010101 * (frame + 1))
+                RgbTensorWriter.fill(reference, pixels, layout, TensorValueCodec(DataType.FLOAT32))
+                view.position(17)
+                RgbTensorWriter.fillFloat32Bulk(view, pixels, layout, scratch)
+                actual.rewind(); actual.get(result); actual.rewind()
+                assertArrayEquals("order=$order layout=$layout frame=$frame", reference.array(), result)
+                assertEquals(0, view.position())
+                assertTrue(view.isDirect)
+            }
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            RgbTensorWriter.fillFloat32Bulk(buffer(12).asFloatBuffer(), intArrayOf(0), RgbTensorLayout.NCHW, FloatArray(2))
+        }
+    }
+
     @Test fun floatFastPathIsByteIdenticalForEveryChannelValueAndBothLayoutsOnReuse() {
         val pixels = IntArray(256) { (0xff shl 24) or (it shl 16) or ((255 - it) shl 8) or ((it * 73 % 256)) }
         for (order in listOf(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {

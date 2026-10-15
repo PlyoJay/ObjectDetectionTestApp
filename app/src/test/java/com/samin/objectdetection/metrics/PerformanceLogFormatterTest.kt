@@ -48,6 +48,7 @@ class PerformanceLogFormatterTest {
         assertTrue(text.contains("Start Elapsed Ns: 123"))
         assertTrue(text.contains("requestedBackend=CPU appliedBackend=CPU cpuThreads=2"))
         assertTrue(text.contains("xnnpackRequested=true"))
+        assertTrue(text.contains("XNNPACK Requested: true (CPU request only"))
         assertTrue(text.contains("delegateVerification=UNAVAILABLE_JAVA_API"))
         assertTrue(text.contains("gpuSupport=UNSUPPORTED_INTERPRETER_LITERT_2_1_1"))
     }
@@ -76,6 +77,10 @@ class PerformanceLogFormatterTest {
                 trace = FrameTrace("test-session", 42, 1000, 0, false, 1000, 100,
                     completedAtMs = 1100, completedElapsedNs = 200),
                 totalProcessingMs = 117,
+                cameraToBitmapNs = 1_125_000, rotationNs = 0,
+                inputBufferMs = 10, getPixelsNs = 300_000, rgbWriteNs = 1_900_000,
+                inputDiagnosticsNs = 0, outputDiagnosticsNs = 0, nativeInferenceNs = 85_100_000,
+                mlKitPrepareNs = 25_000, mlKitInFlight = true,
                 execution = InferenceExecutionInfo(cpuThreads = 4, xnnpackRequested = true,
                     lastInference = "SUCCESS", inferenceErrors = 1)
             )
@@ -88,6 +93,10 @@ class PerformanceLogFormatterTest {
         assertTrue(text.contains("sessionId=test-session frameId=42 status=SUCCESS"))
         assertTrue(text.contains("analyzerFps=12.5 | inferenceFps=8.25"))
         assertTrue(text.contains("totalProcessing=117ms"))
+        assertTrue(text.contains("cameraToBitmap=1.125ms | rotation=0.000ms"))
+        assertTrue(text.contains("inputBuffer=10ms | getPixels=0.300ms | rgbWrite=1.900ms"))
+        assertTrue(text.contains("nativeInvoke=85.100ms"))
+        assertTrue(text.contains("mlKitPrepare=0.025ms | mlKitInFlight=true"))
         assertTrue(text.contains("lastInference=SUCCESS inferenceErrors=1 cpuFallbackCount=0"))
     }
 

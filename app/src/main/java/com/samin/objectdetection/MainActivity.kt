@@ -142,7 +142,7 @@ class MainActivity : ComponentActivity() {
 
     private val settingsLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK && result.data?.getBooleanExtra(SettingsActivity.EXTRA_APPLIED, false) == true) {
-            recreate()
+            restartForSettings()
         }
     }
 
@@ -215,7 +215,8 @@ class MainActivity : ComponentActivity() {
             resizeMode = detectionConfig.yoloResizeMode,
             interpreterThreadCount = detectionConfig.interpreterThreadCount,
             maxCandidates = detectionConfig.maxCandidates,
-            debugRecorder = detectionDebugRecorder
+            debugRecorder = detectionDebugRecorder,
+            useXnnpack = detectionConfig.useXnnpack
         ).apply {
             enableDiagnostics = detectionConfig.enableDetectorDiagnostics
         }
@@ -323,15 +324,24 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun openSettings() {
-        if (isRecording || performanceLogRecorder.isRecording) {
+        if (destroying) return
+        if (isRecording || performanceLogRecorder.isRecording || performanceJob?.isActive == true) {
             Toast.makeText(this, "녹화 또는 성능 로그 세션을 종료한 뒤 설정을 변경하세요.", Toast.LENGTH_LONG).show()
             return
         }
-        settingsLauncher.launch(Intent(this, SettingsActivity::class.java))
+        val identity = detector.modelIdentity()
+        settingsLauncher.launch(Intent(this, SettingsActivity::class.java).apply {
+            identity?.let {
+                putExtra(SettingsActivity.EXTRA_MODEL_DESCRIPTION,
+                    "Model: ${it.assetName}\nInput: ${it.inputShape} (${it.inputType})\n" +
+                        "Output: ${it.outputShape} (${it.outputType})\nSHA256: ${it.sha256}")
+            }
+        })
     }
 
     private fun openQuickSettings() {
-        if (isRecording || performanceLogRecorder.isRecording) {
+        if (destroying) return
+        if (isRecording || performanceLogRecorder.isRecording || performanceJob?.isActive == true) {
             Toast.makeText(this, "진행 중인 측정 세션을 종료한 뒤 설정을 변경하세요.", Toast.LENGTH_LONG).show()
             return
         }
@@ -374,9 +384,31 @@ class MainActivity : ComponentActivity() {
                     mlKit = appSettings.mlKit.copy(enabled = mlKit.isChecked)
                 )
                 settingsStore.saveApplied(updated)
-                recreate()
+                restartForSettings()
             }
             .show()
+    }
+
+    /** Stop old frames and release their Interpreter before a new Activity can create another. */
+    private fun restartForSettings() {
+        if (destroying) return // Also prevents double apply/restart.
+        destroying = true
+        pendingDetectionUiUpdate.set(null)
+        debugTextView.text = "설정 적용 중…"
+        val stopped = if (::cameraController.isInitialized) cameraController.stopAsync()
+            else CompletableFuture.completedFuture(Unit)
+        recordingWork.launch {
+            val drained = runCatching { withContext(Dispatchers.IO) { stopped.get() } }
+                .onFailure { Log.e(TAG, "settings apply: analyzer shutdown failed; interpreter retained", it) }.isSuccess
+            if (!drained) {
+                if (!isDestroyed) debugTextView.text = "분석 종료 실패: 앱을 다시 시작하세요."
+                return@launch
+            }
+            captureWork.coroutineContext[Job]?.children?.toList()?.joinAll()
+            withContext(Dispatchers.IO) { detector.close() }
+            Log.i(TAG, "[SETTINGS_RESTART] analyzerStopped=true oldInterpreterClosed=true")
+            if (!isFinishing && !isDestroyed) recreate()
+        }
     }
 
     private fun checkPermissionAndStart() {
@@ -484,7 +516,10 @@ class MainActivity : ComponentActivity() {
         )
 
         // vision-mlkit-lab 방식: 중앙 정방형 crop으로 모델 입력 왜곡을 줄임
+        val mlKitPrepareStartNs = SystemClock.elapsedRealtimeNanos()
         maybeRunMlKitDetection(bitmap, bitmap.width, bitmap.height)
+        val mlKitPrepareNs = SystemClock.elapsedRealtimeNanos() - mlKitPrepareStartNs
+        val mlKitInFlight = isMlKitProcessing.get()
 
         val pipelineResult = detectionPipeline.process(bitmap, frameReceivedTimeMs, rotationDegrees, frameTiming.frameId)
         val completedNs = SystemClock.elapsedRealtimeNanos()
@@ -605,6 +640,10 @@ class MainActivity : ComponentActivity() {
                 "bitmapConvertMs=${frameTiming.bitmapConversionMs} " +
                 "cropMs=${pipelineResult.timing.cropTimeMs} resizeMs=${detectorDiagnostics?.resizeTimeMs ?: -1} " +
                 "inputBufferMs=${detectorDiagnostics?.inputBufferTimeMs ?: -1} " +
+                "getPixelsNs=${detectorDiagnostics?.getPixelsTimeNs ?: -1} rgbWriteNs=${detectorDiagnostics?.rgbWriteTimeNs ?: -1} " +
+                "inputDiagnosticsNs=${detectorDiagnostics?.inputDiagnosticsTimeNs ?: -1} " +
+                "cameraToBitmapNs=${frameTiming.cameraToBitmapNs} rotationNs=${frameTiming.rotationNs} " +
+                "mlKitPrepareNs=$mlKitPrepareNs mlKitInFlight=$mlKitInFlight " +
                 "inferenceMs=$inferenceTime outputCopyMs=${detectorDiagnostics?.outputCopyTimeMs ?: -1} " +
                 "candidateScanMs=${detectorDiagnostics?.candidateScanTimeMs ?: -1} " +
                 "nmsMs=${detectorDiagnostics?.nmsTimeMs ?: -1} " +
@@ -678,6 +717,16 @@ class MainActivity : ComponentActivity() {
                     fps = currentFps, analyzerFps = rates.analyzerFps,
                     inferenceFps = rates.inferenceFps, trace = trace,
                     execution = detector.executionInfo(),
+                    cameraToBitmapNs = frameTiming.cameraToBitmapNs,
+                    rotationNs = frameTiming.rotationNs,
+                    inputBufferMs = detectorDiagnostics?.inputBufferTimeMs ?: -1L,
+                    getPixelsNs = detectorDiagnostics?.getPixelsTimeNs ?: -1L,
+                    rgbWriteNs = detectorDiagnostics?.rgbWriteTimeNs ?: -1L,
+                    inputDiagnosticsNs = detectorDiagnostics?.inputDiagnosticsTimeNs ?: -1L,
+                    outputDiagnosticsNs = detectorDiagnostics?.outputDiagnosticsTimeNs ?: -1L,
+                    nativeInferenceNs = detectorDiagnostics?.nativeInferenceTimeNs ?: -1L,
+                    mlKitPrepareNs = mlKitPrepareNs,
+                    mlKitInFlight = mlKitInFlight,
                     totalProcessingMs = if (frameTiming.analyzerReceivedElapsedNs > 0L)
                         (completedNs - frameTiming.analyzerReceivedElapsedNs).coerceAtLeast(0L) / 1_000_000L else -1L
                 )
@@ -846,6 +895,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun togglePerformanceLogging() {
+        if (destroying) return
         if (performanceLogRecorder.isRecording) stopPerformanceLogging() else startPerformanceLogging()
     }
 

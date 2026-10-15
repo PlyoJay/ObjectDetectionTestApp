@@ -36,7 +36,13 @@ data class DetectorFrameDiagnostics(
     val rawCoordinateMin: Float? = null,
     val rawCoordinateMax: Float? = null,
     val inferenceStartedAtMs: Long = 0L,
-    val inferenceStartedElapsedNs: Long = 0L
+    val inferenceStartedElapsedNs: Long = 0L,
+    /** Detail values are subsets of existing timings, never additional aggregate latency. */
+    val getPixelsTimeNs: Long = -1L,
+    val rgbWriteTimeNs: Long = -1L,
+    val inputDiagnosticsTimeNs: Long = -1L,
+    val outputDiagnosticsTimeNs: Long = -1L,
+    val nativeInferenceTimeNs: Long = -1L
 )
 
 /** Actual execution order: confidence, valid box, detector size, candidate limit, NMS,

@@ -50,7 +50,7 @@ class SettingsActivityTest {
 
     @Test fun everyExistingControlIsReachableInItsCategory() {
         launch()
-        assertEquals(59, CATEGORY_FIELDS.values.sumOf { it.size })
+        assertEquals(60, CATEGORY_FIELDS.values.sumOf { it.size })
         scenario!!.onActivity { activity ->
             fun labels(view: View): List<String> = listOfNotNull(view.tag as? String) +
                 if (view is ViewGroup) (0 until view.childCount).flatMap { labels(view.getChildAt(it)) } else emptyList()
@@ -95,6 +95,49 @@ class SettingsActivityTest {
         openCategory("성능 측정 및 로그")
         field("System Performance Diagnostics").check(matches(not(isChecked())))
         field("Sample Interval (ms)").check(matches(withText("7000")))
+    }
+
+    @Test fun xnnpackSwitchPersistsOffOnAndThreadSettingsAcrossEditorAndStoreRecreation() {
+        for ((threads, enabled) in listOf(4 to false, 2 to false, 2 to true, 4 to true)) {
+            launch()
+            openCategory("YOLO 모델 및 추론")
+            val before = loadHealthy()
+            field("Interpreter Thread Count").perform(scrollTo(), replaceText(threads.toString()), closeSoftKeyboard())
+            if (before.yolo.useXnnpack != enabled) field("XNNPACK 사용").perform(scrollTo(), click())
+            scenario!!.recreate()
+            field("XNNPACK 사용").check(matches(if (enabled) isChecked() else not(isChecked())))
+            field("Interpreter Thread Count").check(matches(withText(threads.toString())))
+            onView(withText("적용 및 저장")).perform(click())
+            val restored = AppSettingsStore(context).loadApplied()
+            assertEquals(enabled, restored.yolo.useXnnpack)
+            assertEquals(threads, restored.yolo.interpreterThreadCount)
+            assertEquals(enabled, restored.toDetectionConfig().useXnnpack)
+            AppSettingsStore(context).markAppliedHealthy()
+            launch()
+            onView(withText(org.hamcrest.CoreMatchers.containsString("CPU Threads: $threads · XNNPACK: ${if (enabled) "ON" else "OFF"}")))
+                .check(matches(isDisplayed()))
+            openCategory("YOLO 모델 및 추론")
+            field("XNNPACK 사용").check(matches(if (enabled) isChecked() else not(isChecked())))
+            onView(withText("취소")).perform(click())
+        }
+    }
+
+    @Test fun schemaTwoAndCustomPresetsDefaultXnnpackOnWithoutLosingExistingValues() {
+        val old = AppSettings(presetName = "OLD", yolo = YoloSettings(interpreterThreadCount = 2, confidenceThreshold = 0.31f))
+        val encoded = AppSettingsCodec.encode(old).lineSequence().filterNot { it.startsWith("yolo.useXnnpack=") }
+            .joinToString("\n").replace("schemaVersion=$APP_SETTINGS_SCHEMA_VERSION", "schemaVersion=2")
+        preferences.edit().putString("applied_settings", encoded).putString("custom_preset.OLD", encoded)
+            .putStringSet("custom_preset_names", setOf("OLD")).commit()
+        val store = AppSettingsStore(context)
+        assertEquals(old, store.loadApplied())
+        assertTrue(store.loadCustomPreset("OLD")!!.yolo.useXnnpack)
+        assertEquals(APP_SETTINGS_SCHEMA_VERSION, AppSettingsCodec.storedSchemaVersion(preferences.getString("applied_settings", "")!!))
+        val off = old.copy(yolo = old.yolo.copy(useXnnpack = false))
+        store.saveCustomPreset("OFF", off)
+        assertFalse(AppSettingsStore(context).loadCustomPreset("OFF")!!.yolo.useXnnpack)
+        store.saveApplied(off)
+        assertEquals(off, AppSettingsStore(context).loadApplied()) // pending -> attempting
+        assertEquals(old, AppSettingsStore(context).loadApplied()) // unhealthy runtime -> backup
     }
 
     @Test fun incompleteDraftSurvivesRecreationAndCancelDoesNotSave() {
@@ -159,7 +202,7 @@ class SettingsActivityTest {
 
     @Test fun legacyMigrationPreservesCustomPresetAndRecreationDoesNotAdvanceRollback() {
         val legacyDefault = AppSettings(yolo = YoloSettings(resizeMode = YoloResizeMode.STRETCH))
-        val legacy = AppSettingsCodec.encode(legacyDefault).replace("schemaVersion=2", "schemaVersion=1")
+        val legacy = AppSettingsCodec.encode(legacyDefault).replace("schemaVersion=$APP_SETTINGS_SCHEMA_VERSION", "schemaVersion=1")
         val store = AppSettingsStore(context)
         val custom = legacyDefault.copy(presetName = "LEGACY", performanceLog = PerformanceLogSettings(true, 10000))
         store.saveCustomPreset(custom.presetName, custom)
@@ -167,7 +210,7 @@ class SettingsActivityTest {
         launch()
         assertEquals(AppSettings(), AppSettingsCodec.decode(preferences.getString("applied_settings", "")!!))
         assertEquals(custom, store.loadCustomPreset(custom.presetName))
-        assertEquals(2, AppSettingsCodec.storedSchemaVersion(preferences.getString("applied_settings", "")!!))
+        assertEquals(APP_SETTINGS_SCHEMA_VERSION, AppSettingsCodec.storedSchemaVersion(preferences.getString("applied_settings", "")!!))
         scenario!!.close(); scenario = null
         store.saveApplied(custom)
         launch() // pending -> attempting, as with the existing store contract
@@ -281,7 +324,7 @@ class SettingsActivityTest {
     companion object {
         private val CATEGORY_FIELDS = linkedMapOf(
             "카메라 및 입력" to listOf("Detect Interval (ms)", "Center Square ROI (OFF = Full Frame)", "Resize Mode", "요청 Camera Resolution"),
-            "YOLO 모델 및 추론" to listOf("Confidence Threshold", "NMS Threshold", "Interpreter Thread Count", "Max Candidates"),
+            "YOLO 모델 및 추론" to listOf("Confidence Threshold", "NMS Threshold", "Interpreter Thread Count", "XNNPACK 사용", "Max Candidates"),
             "탐지 필터 및 경고" to listOf(
                 "Size Filter Mode", "Geometry Filter", "Min Box Area Ratio", "Min Box Width Ratio", "Min Box Height Ratio",
                 "Bollard Min Area Ratio", "Bollard Max Width/Height", "Adaptive Temporal", "Temporal Immediate Confidence",

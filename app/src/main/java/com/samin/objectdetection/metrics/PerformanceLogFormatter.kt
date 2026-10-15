@@ -59,7 +59,17 @@ data class PerformanceFrameRecord(
     val elapsedSeconds: Double? = null,
     val execution: InferenceExecutionInfo? = null,
     // Analyzer receipt through successful pipeline completion, including camera conversion/ML input.
-    val totalProcessingMs: Long = -1L
+    val totalProcessingMs: Long = -1L,
+    val cameraToBitmapNs: Long = -1L,
+    val rotationNs: Long = -1L,
+    val inputBufferMs: Long = -1L,
+    val getPixelsNs: Long = -1L,
+    val rgbWriteNs: Long = -1L,
+    val inputDiagnosticsNs: Long = -1L,
+    val outputDiagnosticsNs: Long = -1L,
+    val nativeInferenceNs: Long = -1L,
+    val mlKitPrepareNs: Long = -1L,
+    val mlKitInFlight: Boolean = false
 )
 
 object PerformanceLogFormatter {
@@ -100,8 +110,11 @@ object PerformanceLogFormatter {
         appendLine("resizeMode=${header.resizeMode}")
         appendLine("YOLO Threads: ${header.yoloThreads}")
         appendLine("Inference Execution: ${header.execution?.logFields() ?: "N/A"}")
+        appendLine("XNNPACK Requested: ${header.execution?.xnnpackRequested ?: "N/A"} (CPU request only; ON/OFF does not verify native delegation or change backend)")
         appendLine("CPU thread count is the accepted Interpreter option; active worker count/partition coverage are unavailable in Java. Confirm native delegate application with Logcat/profiling.")
+        appendLine("Execution settings are fixed for this session. Stop/drain this log before applying settings; the recreated app uses a new session and recorder.")
         appendLine("pipeline=DetectionPipeline.process only; totalProcessing=analyzer receipt through pipeline completion (includes bitmap conversion and ML Kit input preparation; excludes UI draw/warning output)")
+        appendLine("Detail timings are overlapping subsets, never summed into aggregates: cameraToBitmap/rotation within bitmap; getPixels/rgbWrite/inputDiagnostics within inputBuffer within preprocess; nativeInvoke within inference; outputDiagnostics within detector/pipeline but outside post. mlKitPrepare includes eligibility check/input resize/dispatch before pipeline; mlKitInFlight is a concurrency hint, not CPU time. Detail milliseconds retain 3 decimals; -1=unavailable, 0=skipped.")
         appendLine("ML Kit Enabled: ${header.mlKitEnabled}")
         appendLine("Geometry Filter Enabled: ${header.geometryFilterEnabled}")
         appendLine("Adaptive Temporal Enabled: ${header.adaptiveTemporalEnabled}")
@@ -130,6 +143,11 @@ object PerformanceLogFormatter {
             " | analyzerFps=${frame.analyzerFps} | inferenceFps=${frame.inferenceFps}" +
             " | elapsedSeconds=${number(frame.elapsedSeconds)}" +
             " | totalProcessing=${frame.totalProcessingMs}ms" +
+            " | cameraToBitmap=${detailMs(frame.cameraToBitmapNs)}ms | rotation=${detailMs(frame.rotationNs)}ms" +
+            " | inputBuffer=${frame.inputBufferMs}ms | getPixels=${detailMs(frame.getPixelsNs)}ms" +
+            " | rgbWrite=${detailMs(frame.rgbWriteNs)}ms | inputDiagnostics=${detailMs(frame.inputDiagnosticsNs)}ms" +
+            " | outputDiagnostics=${detailMs(frame.outputDiagnosticsNs)}ms | nativeInvoke=${detailMs(frame.nativeInferenceNs)}ms" +
+            " | mlKitPrepare=${detailMs(frame.mlKitPrepareNs)}ms | mlKitInFlight=${frame.mlKitInFlight}" +
             " | ${frame.execution?.logFields() ?: "execution=N/A"}" +
             (frame.trace?.let { " | ${formatTrace(it)}" } ?: "")
 
@@ -202,6 +220,7 @@ object PerformanceLogFormatter {
             "cpuUsageWindowMs=${number(sample?.cpuUsageWindowMs)} cpuFrequency=${sample?.cpuFrequency ?: "N/A"} cpuFrequencyScope=device_policy_kHz " +
             "systemSampleElapsedSeconds=${number(sample?.let { (it.elapsedNs - header.startedElapsedNs) / 1e9 })}"
 
+    private fun detailMs(ns: Long): String = if (ns < 0) "-1" else String.format(Locale.US, "%.3f", ns / 1e6)
     private fun number(value: Double?): String = value?.takeIf(Double::isFinite)?.let { String.format(Locale.US, "%.3f", it) } ?: "N/A"
     private fun thermal(value: Int?): String = when (value) {
         0 -> "NONE"; 1 -> "LIGHT"; 2 -> "MODERATE"; 3 -> "SEVERE"; 4 -> "CRITICAL"; 5 -> "EMERGENCY"; 6 -> "SHUTDOWN"; else -> "N/A"

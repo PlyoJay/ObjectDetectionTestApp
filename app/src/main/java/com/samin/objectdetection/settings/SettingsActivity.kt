@@ -65,7 +65,7 @@ class SettingsActivity : ComponentActivity() {
 
     private enum class Category(val title: String, val description: String, val icon: Int) {
         CAMERA("카메라 및 입력", "해상도, ROI, 탐지 간격과 Resize / Letterbox", android.R.drawable.ic_menu_camera),
-        YOLO("YOLO 모델 및 추론", "모델 정보, 스레드 수, Confidence와 NMS", android.R.drawable.ic_menu_manage),
+        YOLO("YOLO 모델 및 추론", "모델 정보, 스레드 수, XNNPACK, Confidence와 NMS", android.R.drawable.ic_menu_manage),
         FILTERS("탐지 필터 및 경고", "Size / Geometry / Temporal, 추적, ML Kit와 경고 출력", android.R.drawable.ic_dialog_alert),
         PERFORMANCE("성능 측정 및 로그", "시스템 진단, 샘플 간격과 로그 내보내기", android.R.drawable.ic_menu_recent_history),
         DEBUG("디버그 및 고급 설정", "상세 로그, 입력 PNG, 텐서 진단과 Overlay 표시", android.R.drawable.ic_menu_info_details)
@@ -267,6 +267,11 @@ class SettingsActivity : ComponentActivity() {
     }
 
     private fun buildReadOnlySection(parent: LinearLayout) {
+        // MainActivity already owns a live Interpreter. Reuse its immutable metadata.
+        intent.getStringExtra(EXTRA_MODEL_DESCRIPTION)?.let { description ->
+            note(parent, description)
+            return
+        }
         section(parent, "읽기 전용")
         note(parent, "Model: ${ModelConfig.MODEL_ASSET_NAME}\nInput: 확인 중…\nSHA256: 계산 중…").also { label ->
             lifecycleScope.launch {
@@ -303,7 +308,8 @@ class SettingsActivity : ComponentActivity() {
         form.confidence = floatSlider(parent, "Confidence Threshold", 0f, 1f)
         form.nms = floatSlider(parent, "NMS Threshold", 0f, 1f)
         form.threads = number(parent, "Interpreter Thread Count", "1..16")
-        note(parent, "추론 실행 방식: CPU (XNNPACK 요청). 같은 조건에서 기존 스레드 설정 2 / 4를 비교하세요. 현재 LiteRT 2.1.1 Interpreter는 GPU Delegate를 지원하지 않습니다. 실제 실행·오류 상태는 성능 로그에 기록됩니다.")
+        form.xnnpack = toggle(parent, "XNNPACK 사용")
+        note(parent, "CPU 추론 최적화 기능입니다. 기기에 따라 OFF가 더 빠를 수 있으며, 변경 시 YOLO 모델이 다시 초기화됩니다. ON/OFF는 요청 설정이며 실제 위임 여부는 성능 로그와 네이티브 로그로 확인하세요.")
         form.maxCandidates = number(parent, "Max Candidates", "1..10000")
     }
 
@@ -413,6 +419,7 @@ class SettingsActivity : ComponentActivity() {
         with(value.yolo) {
             form.confidence.setText(confidenceThreshold.toString()); form.nms.setText(nmsThreshold.toString())
             form.threads.setText(interpreterThreadCount.toString()); form.maxCandidates.setText(maxCandidates.toString())
+            form.xnnpack.isChecked = useXnnpack
             select(form.sizeMode, value.filters.sizeFilterMode.name)
         }
         with(value.filters) {
@@ -466,7 +473,7 @@ class SettingsActivity : ComponentActivity() {
         return AppSettings(
             presetName = presetName,
             camera = CameraSettings(form.detectInterval.l(), form.centerCrop.isChecked, resolution[0].toInt(), resolution[1].toInt()),
-            yolo = YoloSettings(YoloResizeMode.valueOf(form.resizeMode.selectedItem.toString()), form.confidence.f(), form.nms.f(), form.threads.i(), form.maxCandidates.i()),
+            yolo = YoloSettings(YoloResizeMode.valueOf(form.resizeMode.selectedItem.toString()), form.confidence.f(), form.nms.f(), form.threads.i(), form.maxCandidates.i(), form.xnnpack.isChecked),
             filters = FilterSettings(form.geometry.isChecked, SizeFilterMode.valueOf(form.sizeMode.selectedItem.toString()),
                 form.minArea.f(), form.minWidth.f(), form.minHeight.f(), form.bollardMinArea.f(), form.bollardMaxAspect.f(),
                 form.temporal.isChecked, form.temporalImmediate.f(), form.temporalConfirmation.f(), form.temporalIou.f()),
@@ -582,7 +589,8 @@ class SettingsActivity : ComponentActivity() {
                 "ROI ${if (camera.useCenterSquareCrop) "Center Square" else "Full Frame"} · ${yolo.resizeMode}"
         }
         summaries[Category.YOLO.name]?.text = with(applied.yolo) {
-            "현재 적용: $interpreterThreadCount threads · Confidence $confidenceThreshold · NMS $nmsThreshold"
+            "현재 적용: CPU Threads: $interpreterThreadCount · XNNPACK: ${useXnnpack.onOff()} (요청)\n" +
+                "Confidence $confidenceThreshold · NMS $nmsThreshold"
         }
         summaries[Category.FILTERS.name]?.text = with(applied) {
             "현재 적용: Size ${filters.sizeFilterMode} · Geometry ${filters.geometryFilterEnabled.onOff()}\n" +
@@ -700,6 +708,7 @@ class SettingsActivity : ComponentActivity() {
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 
     private inner class Form(val container: ViewGroup) {
+        lateinit var xnnpack: Switch
         lateinit var systemDiagnostics: Switch; lateinit var systemSampleInterval: EditText
         lateinit var detectInterval: EditText; lateinit var centerCrop: Switch; lateinit var resizeMode: Spinner; lateinit var cameraResolution: Spinner
         lateinit var confidence: EditText; lateinit var nms: EditText; lateinit var threads: EditText; lateinit var maxCandidates: EditText; lateinit var sizeMode: Spinner
@@ -721,6 +730,7 @@ class SettingsActivity : ComponentActivity() {
 
     companion object {
         const val EXTRA_APPLIED = "settings_applied"
+        const val EXTRA_MODEL_DESCRIPTION = "model_description"
         private const val HOME = "home"
         private const val DIRTY_TAG_KEY = 0x1f0b00aa
     }

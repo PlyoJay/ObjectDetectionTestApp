@@ -10,8 +10,39 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import com.samin.objectdetection.detector.InferenceExecutionInfo
 
 class PerformanceLogSessionTest {
+    @Test fun recreatedOnOffSessionsKeepExecutionAndStatisticsSeparateAfterDrain() {
+        val outputs = listOf(StringWriter(), StringWriter())
+        for ((index, enabled) in listOf(true, false).withIndex()) {
+            var now = 1_000_000_000L
+            val execution = InferenceExecutionInfo(cpuThreads = 4, xnnpackRequested = enabled, lastInference = "SUCCESS")
+            val header = SystemPerformanceDiagnosticsTest.header().copy(sessionId = "xnnpack-$enabled", execution = execution)
+            val session = PerformanceLogSession(header, BufferedWriter(outputs[index]), null, { now }, { 0 })
+            session.start()
+            now = 2_000_000_000L
+            session.recordFrame(PerformanceIntervalCollectorTest.frame(if (enabled) 546 else 266)
+                .copy(execution = execution, trace = trace(1, now).copy(sessionId = header.sessionId)))
+            session.close(snapshot()).get(5, TimeUnit.SECONDS)
+            // The closed old recorder cannot append a later frame from another configuration.
+            session.recordFrame(PerformanceIntervalCollectorTest.frame(999).copy(execution = execution.copy(xnnpackRequested = !enabled)))
+        }
+        val on = outputs[0].toString(); val off = outputs[1].toString()
+        assertTrue(on.contains("sessionId=xnnpack-true")); assertTrue(off.contains("sessionId=xnnpack-false"))
+        assertTrue(on.contains("inferenceAvgMs=546.000 inferenceP95Ms=546"))
+        assertTrue(off.contains("inferenceAvgMs=266.000 inferenceP95Ms=266"))
+        assertTrue(on.contains("cpuThreads=4 xnnpackRequested=true"))
+        assertTrue(off.contains("requestedBackend=CPU appliedBackend=CPU cpuThreads=4 xnnpackRequested=false"))
+        assertTrue(off.contains("delegateVerification=UNAVAILABLE_JAVA_API"))
+        for (text in listOf(on, off)) {
+            assertTrue(text.contains("preprocessAvgMs=")); assertTrue(text.contains("pipelineAvgMs="))
+            assertTrue(text.contains("totalProcessingAvgMs=")); assertTrue(text.contains("inferenceFps="))
+            assertFalse(text.contains("inference=999ms"))
+        }
+        assertFalse(on.contains("xnnpackRequested=false")); assertFalse(off.contains("xnnpackRequested=true"))
+    }
+
     @Test fun offPreservesFrameOverlayLinksAndFlushesFinalPartialAndExactCumulative() {
         val output = StringWriter(); var now = 1_000_000_000L
         val source = object : SystemPerformanceDiagnosticsTest.FakeSource() {

@@ -31,7 +31,9 @@ data class CameraFrameTiming(
     val captureTimestampReliable: Boolean = false,
     val bitmapConversionDurationMs: Long = bitmapConversionEndMs - bitmapConversionStartMs,
     val frameWidth: Int = 0,
-    val frameHeight: Int = 0
+    val frameHeight: Int = 0,
+    val cameraToBitmapNs: Long = -1L,
+    val rotationNs: Long = -1L
 ) {
     val cameraToAnalyzerMs: Long get() = if (captureTimestampReliable) (analyzerReceivedMs - frameTimestampMs).coerceAtLeast(0L) else -1L
     val bitmapConversionMs: Long get() =
@@ -131,11 +133,17 @@ class CameraController(
                 }
                 val bitmapConversionStartMs = System.currentTimeMillis()
                 val conversionStartNs = SystemClock.elapsedRealtimeNanos()
-                val bitmap = imageProxy.toBitmapSafe(enableDiagnostics)
+                var cameraToBitmapNs = -1L
+                var rotationNs = -1L
+                val bitmap = imageProxy.toBitmapSafe(enableDiagnostics) { conversion, rotation ->
+                    cameraToBitmapNs = conversion
+                    rotationNs = rotation
+                }
                 val bitmapConversionEndMs = System.currentTimeMillis()
                 timing = timing.copy(bitmapConversionStartMs = bitmapConversionStartMs,
                     bitmapConversionEndMs = bitmapConversionEndMs,
-                    bitmapConversionDurationMs = (SystemClock.elapsedRealtimeNanos() - conversionStartNs) / 1_000_000L)
+                    bitmapConversionDurationMs = (SystemClock.elapsedRealtimeNanos() - conversionStartNs) / 1_000_000L,
+                    cameraToBitmapNs = cameraToBitmapNs, rotationNs = rotationNs)
                 if (bitmap == null) {
                     recordSkipped(SkipReason.BITMAP_CONVERSION)
                     listener.onFrameError(IllegalStateException("Camera bitmap conversion failed; see ImageProxyExt cause"), timing)

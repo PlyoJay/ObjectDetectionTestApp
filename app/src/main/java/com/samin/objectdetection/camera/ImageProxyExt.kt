@@ -3,11 +3,14 @@ package com.samin.objectdetection.camera
 import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.util.Log
+import android.os.SystemClock
+import androidx.core.os.trace
 import androidx.camera.core.ImageProxy
 
 class BitmapConversionException(cause: Throwable) : RuntimeException("Camera bitmap conversion failed", cause)
 
-fun ImageProxy.toBitmapSafe(enableDiagnostics: Boolean = false): Bitmap? {
+fun ImageProxy.toBitmapSafe(enableDiagnostics: Boolean = false,
+    onTiming: ((cameraToBitmapNs: Long, rotationNs: Long) -> Unit)? = null): Bitmap? {
     return try {
         if (enableDiagnostics) {
             Log.d(
@@ -20,11 +23,14 @@ fun ImageProxy.toBitmapSafe(enableDiagnostics: Boolean = false): Bitmap? {
         }
         // CameraX 1.3.4 handles RGBA row stride and also YUV_420_888 explicitly.
         // The previous raw plane copy assumed RGBA and a fully padded last row.
-        val bitmap = toBitmap()
+        val conversionStartNs = SystemClock.elapsedRealtimeNanos()
+        val bitmap = trace("CameraX.toBitmap") { toBitmap() }
+        val cameraToBitmapNs = SystemClock.elapsedRealtimeNanos() - conversionStartNs
 
         val rotationDegrees = imageInfo.rotationDegrees
+        val rotationStartNs = SystemClock.elapsedRealtimeNanos()
         val result = if (rotationDegrees != 0) {
-            bitmap.rotate(rotationDegrees.toFloat()).also { rotated ->
+            trace("CameraX.rotate") { bitmap.rotate(rotationDegrees.toFloat()) }.also { rotated ->
                 if (rotated !== bitmap && !bitmap.isRecycled) {
                     bitmap.recycle()
                 }
@@ -32,6 +38,8 @@ fun ImageProxy.toBitmapSafe(enableDiagnostics: Boolean = false): Bitmap? {
         } else {
             bitmap
         }
+        onTiming?.invoke(cameraToBitmapNs, if (rotationDegrees != 0)
+            SystemClock.elapsedRealtimeNanos() - rotationStartNs else 0L)
         if (enableDiagnostics) Log.d("ImageProxyExt", "[CAMERA_BITMAP] rotated=${result.width}x${result.height} config=${result.config}")
         result
 

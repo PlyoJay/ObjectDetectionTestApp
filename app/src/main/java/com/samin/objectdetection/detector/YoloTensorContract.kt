@@ -70,6 +70,27 @@ internal object RgbTensorWriter {
     // Use division, exactly as the original writer did (multiplying by 1/255 changes rounding).
     private val normalizedChannels = FloatArray(256) { it / 255.0f }
 
+    /** Heap writes followed by one bulk transfer avoid a direct-buffer put for every channel.
+     * Scratch belongs to the detector and is reused; no per-frame tensor allocation. */
+    fun fillFloat32Bulk(view: FloatBuffer, pixels: IntArray, layout: RgbTensorLayout, scratch: FloatArray) {
+        require(view.capacity() == pixels.size * 3 && scratch.size == view.capacity())
+        var index = 0
+        if (layout == RgbTensorLayout.NCHW) {
+            for (pixel in pixels) scratch[index++] = normalizedChannels[(pixel shr 16) and 255]
+            for (pixel in pixels) scratch[index++] = normalizedChannels[(pixel shr 8) and 255]
+            for (pixel in pixels) scratch[index++] = normalizedChannels[pixel and 255]
+        } else {
+            for (pixel in pixels) {
+                scratch[index++] = normalizedChannels[(pixel shr 16) and 255]
+                scratch[index++] = normalizedChannels[(pixel shr 8) and 255]
+                scratch[index++] = normalizedChannels[pixel and 255]
+            }
+        }
+        view.clear()
+        view.put(scratch)
+        view.rewind()
+    }
+
     /** Reuse a view of the input ByteBuffer; no additional full input tensor allocation. */
     fun fillFloat32(view: FloatBuffer, pixels: IntArray, layout: RgbTensorLayout) {
         view.clear()

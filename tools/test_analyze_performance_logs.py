@@ -29,6 +29,19 @@ CUMULATIVE_SUMMARY | endSeconds=50.000 successfulFrames=3
         self.assertFalse(analyze(self.log(dropped=1))["frameLogComplete"])
         self.assertFalse(analyze(self.log().replace("successfulFrames=3", "successfulFrames=4"))["frameLogComplete"])
 
+    def test_decimal_details_and_diagnostics_groups_do_not_change_aggregate_scope(self):
+        text = self.log().replace("inference=100ms", "inference=100ms preprocess=70ms rgbWrite=2.125ms inputDiagnostics=0.000ms")
+        text = text.replace("inference=200ms", "inference=200ms preprocess=80ms rgbWrite=2.375ms inputDiagnostics=10.000ms")
+        text = text.replace("inference=900ms", "inference=900ms preprocess=-1ms rgbWrite=-1ms inputDiagnostics=-1ms")
+        result = analyze(text)
+        self.assertEqual(75, result["preprocess"]["averageMs"])
+        self.assertEqual(2.25, result["details"]["rgbWrite"]["averageMs"])
+        self.assertEqual(2, result["details"]["rgbWrite"]["samples"])
+        self.assertEqual(70, result["preprocessByInputDiagnostics"]["off"]["averageMs"])
+        self.assertEqual(80, result["preprocessByInputDiagnostics"]["on"]["averageMs"])
+        self.assertEqual(0, result["details"]["nativeInvoke"]["samples"])
+        self.assertEqual(analyze(self.log())["totalProcessing"], result["totalProcessing"])
+
     def test_unknown_total_time_and_invalid_windows_are_not_invented(self):
         result = analyze(self.log().replace("totalProcessing=150ms", "totalProcessing=-1ms"), exclude_tail_seconds=23)
         self.assertEqual(1, result["totalProcessing"]["samples"])

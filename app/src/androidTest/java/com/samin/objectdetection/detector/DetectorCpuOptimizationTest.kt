@@ -25,11 +25,11 @@ class DetectorCpuOptimizationTest {
                 eraseColor(Color.rgb(128, 64, 32))
             }
         try {
-            for (threads in listOf(2, 4)) {
+            for (threads in listOf(2, 4)) for (xnnpack in listOf(true, false)) {
                 val detector = VisionStyleYoloDetector(context, confidenceThreshold = 0.2f, nmsThreshold = 0.45f,
-                    sizeFilterMode = SizeFilterMode.DISABLED, interpreterThreadCount = threads)
+                    sizeFilterMode = SizeFilterMode.DISABLED, interpreterThreadCount = threads, useXnnpack = xnnpack)
                 try {
-                    val directory = File(context.filesDir, "golden/cpu_optimization_$threads")
+                    val directory = File(context.filesDir, "golden/cpu_optimization_$threads${if (xnnpack) "" else "_xnnpack_off"}")
                     val actual = detector.runSelfTest(bitmap, input ?: "portrait_color_control", directory)
                     val modelInput = requireNotNull(BitmapFactory.decodeFile(File(directory, "input.png").path))
                     try {
@@ -78,6 +78,7 @@ class DetectorCpuOptimizationTest {
                         }
                     } finally { modelInput.recycle() }
                     assertEquals(threads, detector.executionInfo().cpuThreads)
+                    assertEquals(xnnpack, detector.executionInfo().xnnpackRequested)
                     assertEquals("CPU", detector.executionInfo().appliedBackend)
                     assertEquals("SUCCESS", detector.executionInfo().lastInference)
                     assertEquals(0L, detector.executionInfo().inferenceErrors)

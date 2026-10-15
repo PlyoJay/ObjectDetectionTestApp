@@ -72,7 +72,7 @@ class AppSettingsTest {
     @Test
     fun legacyDefaultMigratesOnceAndCustomizationsSurvive() {
         val legacyDefault = AppSettings(yolo = YoloSettings(resizeMode = YoloResizeMode.STRETCH))
-        fun legacy(settings: AppSettings) = AppSettingsCodec.encode(settings).replace("schemaVersion=2", "schemaVersion=1")
+        fun legacy(settings: AppSettings) = AppSettingsCodec.encode(settings).replace("schemaVersion=$APP_SETTINGS_SCHEMA_VERSION", "schemaVersion=1")
         assertEquals(AppSettings(), AppSettingsCodec.decode(legacy(legacyDefault)))
         val custom = legacyDefault.copy(yolo = legacyDefault.yolo.copy(confidenceThreshold = 0.31f))
         assertEquals(custom, AppSettingsCodec.decode(legacy(custom)))
@@ -106,5 +106,26 @@ class AppSettingsTest {
         assertFalse(config.enableMlKitDetection)
         assertTrue(config.enableDetectorDiagnostics)
         assertTrue(config.debugSaveInferenceInput)
+    }
+
+    @Test fun xnnpackDefaultsAndMigrationPreserveOldSettingsAndThreadIndependence() {
+        for (version in listOf(1, 2, 3)) {
+            val old = "schemaVersion=$version\npresetName=OLD\nyolo.interpreterThreadCount=2\nyolo.confidenceThreshold=0.3"
+            val settings = AppSettingsCodec.decode(old)
+            assertTrue(settings.yolo.useXnnpack)
+            assertEquals(2, settings.yolo.interpreterThreadCount)
+            assertEquals(0.3f, settings.yolo.confidenceThreshold)
+            assertEquals(APP_SETTINGS_SCHEMA_VERSION, settings.schemaVersion)
+        }
+        assertTrue(AppSettingsCodec.decode("schemaVersion=2\nyolo.useXnnpack=invalid").yolo.useXnnpack)
+        for (threads in listOf(2, 4)) for (enabled in listOf(true, false, true)) {
+            val settings = AppSettings(yolo = YoloSettings(interpreterThreadCount = threads, useXnnpack = enabled))
+            val restored = AppSettingsCodec.decode(AppSettingsCodec.encode(settings))
+            assertEquals(settings, restored)
+            assertEquals(enabled, restored.toDetectionConfig().useXnnpack)
+            assertEquals(threads, restored.toDetectionConfig().interpreterThreadCount)
+            assertEquals(AppSettings().toDetectionConfig().copy(interpreterThreadCount = threads, useXnnpack = enabled),
+                restored.toDetectionConfig())
+        }
     }
 }

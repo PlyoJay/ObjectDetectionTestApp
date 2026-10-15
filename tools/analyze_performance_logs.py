@@ -22,6 +22,14 @@ def stats(records, key):
             "p95Ms": values[math.ceil(len(values) * 0.95) - 1] if values else None}
 
 
+def detail_stats(records, key):
+    """Overlapping detail fields are reported separately, never added to total latency."""
+    values = sorted(float(r[key].removesuffix("ms")) for r in records
+                    if key in r and float(r[key].removesuffix("ms")) >= 0)
+    return {"samples": len(values), "averageMs": sum(values) / len(values) if values else None,
+            "p95Ms": values[math.ceil(len(values) * 0.95) - 1] if values else None}
+
+
 def analyze(text, start_seconds=0.0, exclude_tail_seconds=0.0):
     lines = text.splitlines()
     cumulative = next((fields(line) for line in lines if line.startswith("CUMULATIVE_SUMMARY |")), None)
@@ -59,6 +67,14 @@ def analyze(text, start_seconds=0.0, exclude_tail_seconds=0.0):
         "fpsFromRecordedFrames": len(frames) / (end - start_seconds),
         "inference": stats(frames, "inference"), "pipeline": stats(frames, "pipeline"),
         "totalProcessing": stats(frames, "totalProcessing"),
+        "preprocess": stats(frames, "preprocess"), "bitmap": stats(frames, "bitmap"),
+        "details": {key: detail_stats(frames, key) for key in
+                    ("cameraToBitmap", "rotation", "inputBuffer", "getPixels", "rgbWrite",
+                     "inputDiagnostics", "outputDiagnostics", "nativeInvoke", "mlKitPrepare")},
+        "preprocessByInputDiagnostics": {
+            "off": stats([r for r in frames if r.get("inputDiagnostics") == "0.000ms"], "preprocess"),
+            "on": stats([r for r in frames if "inputDiagnostics" in r and
+                         float(r["inputDiagnostics"].removesuffix("ms")) > 0], "preprocess")},
         "execution": [dict(zip(execution_keys, values)) for values in configurations],
         "cpuFallbackCountLifetimeObserved": max((int(r["cpuFallbackCount"]) for r in frames if "cpuFallbackCount" in r), default=None),
         "note": "Statistics use recorded successful FRAME samples. If frameLogComplete=false, FPS/P95/averages are incomplete. Error lines count only recorded errors; fallback counters have detector lifetime scope."

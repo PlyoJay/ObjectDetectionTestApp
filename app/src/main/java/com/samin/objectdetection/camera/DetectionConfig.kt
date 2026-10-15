@@ -74,7 +74,9 @@ data class DetectionConfig(
     val warningMidHeightRatio: Float = 0.12f,
     val warningVeryNearAreaRatio: Float = 0.15f,
     val warningNearAreaRatio: Float = 0.07f,
-    val warningMidAreaRatio: Float = 0.02f
+    val warningMidAreaRatio: Float = 0.02f,
+    // CPU Interpreter request; Java does not expose actual delegate coverage.
+    val useXnnpack: Boolean = true
 ) {
     companion object {
         const val DEFAULT_CONFIDENCE_THRESHOLD = 0.20f

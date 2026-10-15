@@ -8,6 +8,7 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.os.SystemClock
 import android.util.Log
+import androidx.core.os.trace
 import com.samin.objectdetection.BuildConfig
 import com.samin.objectdetection.camera.SizeFilterMode
 import com.samin.objectdetection.camera.YoloResizeMode
@@ -31,7 +32,9 @@ class VisionStyleYoloDetector(
     private val resizeMode: YoloResizeMode = YoloResizeMode.LETTERBOX,
     interpreterThreadCount: Int = 4,
     private val maxCandidates: Int = 100,
-    private val debugRecorder: DetectionDebugRecorder? = null
+    private val debugRecorder: DetectionDebugRecorder? = null,
+    // Diagnostic A/B only. Production callers retain XNNPACK ON.
+    useXnnpack: Boolean = true
 ) : ObjectDetector {
 
     private val interpreter: Interpreter
@@ -58,12 +61,15 @@ class VisionStyleYoloDetector(
     private var pixels: IntArray
     private var outputData: Array<FloatArray>
     private val inputFloatView: FloatBuffer?
+    private val inputFloatData: FloatArray?
     private val outputFloatView: FloatBuffer?
     private lateinit var reusableInputBitmap: Bitmap
     private lateinit var reusableInputCanvas: Canvas
     private val inputDestination = RectF()
     private var cachedTransform: YoloResizeTransform? = null
     private val resizePaint = Paint(Paint.FILTER_BITMAP_FLAG)
+    private var getPixelsTimeNs = 0L
+    private var rgbWriteTimeNs = 0L
 
     private val labels: List<String> = runCatching {
         context.assets.open(ModelConfig.LABEL_ASSET_NAME).bufferedReader().useLines { lines ->
@@ -89,7 +95,7 @@ class VisionStyleYoloDetector(
         val options = Interpreter.Options().apply {
             setNumThreads(interpreterThreadCount.coerceAtLeast(1))
             // The bundled 2.1.1 API already defaults to true; make the request explicit.
-            setUseXNNPACK(true)
+            setUseXNNPACK(useXnnpack)
         }
         interpreter = Interpreter(modelBuffer, options)
         execution = InferenceExecutionInfo(
@@ -148,6 +154,7 @@ class VisionStyleYoloDetector(
             outputBuffer = ByteBuffer.allocateDirect(outputTensor.numBytes())
                 .order(ByteOrder.nativeOrder())
             inputFloatView = if (inputCodec.type == DataType.FLOAT32) inputBuffer.asFloatBuffer() else null
+            inputFloatData = inputFloatView?.let { FloatArray(it.capacity()) }
             outputFloatView = if (outputCodec.type == DataType.FLOAT32) outputBuffer.asFloatBuffer() else null
             pixels = IntArray(inputWidth * inputHeight)
             outputData = Array(outputDim) { FloatArray(boxCount) }
@@ -198,7 +205,7 @@ class VisionStyleYoloDetector(
             } ?: YoloResizeTransform.calculate(
                 resizeMode, bitmap.width, bitmap.height, inputWidth, inputHeight
             ).also { cachedTransform = it }
-            val modelInput = if (bitmap.width != inputWidth || bitmap.height != inputHeight) {
+            val modelInput = trace("YOLO.resize") { if (bitmap.width != inputWidth || bitmap.height != inputHeight) {
                 if (resizeMode == YoloResizeMode.LETTERBOX) {
                     reusableInputCanvas.drawColor(LETTERBOX_PADDING_COLOR)
                     inputDestination.set(
@@ -213,7 +220,7 @@ class VisionStyleYoloDetector(
                 reusableInputBitmap
             } else {
                 bitmap
-            }
+            } }
             val resizeTimeMs = elapsedMs(resizeStartNs)
 
             if (enableDiagnostics) {
@@ -244,6 +251,7 @@ class VisionStyleYoloDetector(
                         "coordinateScale=${loadedModelIdentity.coordinateScale} modelSha256=${loadedModelIdentity.sha256}")
             }
             fillInputBuffer(modelInput)
+            val inputDiagnosticsStartNs = SystemClock.elapsedRealtimeNanos()
             if (diagnoseTensorThisFrame) {
                 val stats = TensorStatistics.measure(inputBuffer, inputCodec, inputRgbShape)
                 diagnostic("[INPUT_TENSOR] ${tensorDescription("InputTensor", interpreter.getInputTensor(0))} " +
@@ -262,6 +270,8 @@ class VisionStyleYoloDetector(
                     File(dir, "input.png").outputStream().use { check(modelInput.compress(Bitmap.CompressFormat.PNG, 100, it)) }
                 }
             }
+            val inputDiagnosticsTimeNs = if (diagnoseTensorThisFrame)
+                SystemClock.elapsedRealtimeNanos() - inputDiagnosticsStartNs else 0L
             val inputBufferTimeMs = elapsedMs(inputBufferStartNs)
 
             outputBuffer.rewind()
@@ -270,25 +280,29 @@ class VisionStyleYoloDetector(
             val inferenceStartNs = SystemClock.elapsedRealtimeNanos()
             runStartedNs = inferenceStartNs
             try {
-                interpreter.run(inputBuffer, outputBuffer)
+                trace("YOLO.Interpreter.run") { interpreter.run(inputBuffer, outputBuffer) }
             } catch (error: Exception) {
                 execution = execution.copy(lastInference = "ERROR", inferenceErrors = execution.inferenceErrors + 1)
                 Log.e(TAG, "[INFERENCE_EXECUTION] ${execution.logFields()}", error)
                 throw error
             }
             val inferenceTimeMs = elapsedMs(inferenceStartNs)
+            val nativeInferenceTimeNs = interpreter.lastNativeInferenceDurationNanoseconds ?: -1L
             if (execution.lastInference != "SUCCESS") {
                 execution = execution.copy(lastInference = "SUCCESS")
                 Log.i(TAG, "[INFERENCE_EXECUTION] ${execution.logFields()}")
             }
             stage = "POSTPROCESS"
             outputBuffer.rewind()
+            val outputDiagnosticsStartNs = SystemClock.elapsedRealtimeNanos()
             if (diagnoseTensorThisFrame) {
                 val stats = TensorStatistics.measure(outputBuffer, outputCodec)
                 diagnostic("[OUTPUT_TENSOR] ${tensorDescription("OutputTensor[0]", interpreter.getOutputTensor(0))} ${stats.description(BuildConfig.DEBUG)}")
                 goldenReport?.put("output", tensorJson(interpreter.getOutputTensor(0), stats))
                 goldenDirectory?.let { writeBuffer(File(it, "output_0.bin"), outputBuffer) }
             }
+            val outputDiagnosticsTimeNs = if (diagnoseTensorThisFrame)
+                SystemClock.elapsedRealtimeNanos() - outputDiagnosticsStartNs else 0L
 
             parseOutput(
                 buffer = outputBuffer,
@@ -298,7 +312,10 @@ class VisionStyleYoloDetector(
                 inferenceTimeMs = inferenceTimeMs,
                 detectorStartNs = detectorStartNs,
                 inferenceStartedAtMs = runStartedAtMs,
-                inferenceStartedElapsedNs = inferenceStartNs
+                inferenceStartedElapsedNs = inferenceStartNs,
+                inputDiagnosticsTimeNs = inputDiagnosticsTimeNs,
+                outputDiagnosticsTimeNs = outputDiagnosticsTimeNs,
+                nativeInferenceTimeNs = nativeInferenceTimeNs
             ).also { results ->
                 debugFrame?.let { debugRecorder?.saveInput(it, modelInput, results) }
                 if (enableDiagnostics && results.isNotEmpty()) {
@@ -315,13 +332,19 @@ class VisionStyleYoloDetector(
     }
 
     private fun fillInputBuffer(bitmap: Bitmap) {
-        bitmap.getPixels(pixels, 0, inputWidth, 0, 0, inputWidth, inputHeight)
-        if (inputFloatView != null) {
-            RgbTensorWriter.fillFloat32(inputFloatView, pixels, inputRgbShape.layout)
-            inputBuffer.rewind()
-        } else {
-            RgbTensorWriter.fill(inputBuffer, pixels, inputRgbShape.layout, inputCodec)
+        val pixelsStartNs = SystemClock.elapsedRealtimeNanos()
+        trace("YOLO.getPixels") { bitmap.getPixels(pixels, 0, inputWidth, 0, 0, inputWidth, inputHeight) }
+        getPixelsTimeNs = SystemClock.elapsedRealtimeNanos() - pixelsStartNs
+        val rgbStartNs = SystemClock.elapsedRealtimeNanos()
+        trace("YOLO.rgbWrite") {
+            if (inputFloatView != null) {
+                RgbTensorWriter.fillFloat32Bulk(inputFloatView, pixels, inputRgbShape.layout, checkNotNull(inputFloatData))
+                inputBuffer.rewind()
+            } else {
+                RgbTensorWriter.fill(inputBuffer, pixels, inputRgbShape.layout, inputCodec)
+            }
         }
+        rgbWriteTimeNs = SystemClock.elapsedRealtimeNanos() - rgbStartNs
     }
 
     private fun parseOutput(
@@ -332,7 +355,10 @@ class VisionStyleYoloDetector(
         inferenceTimeMs: Long,
         detectorStartNs: Long,
         inferenceStartedAtMs: Long,
-        inferenceStartedElapsedNs: Long
+        inferenceStartedElapsedNs: Long,
+        inputDiagnosticsTimeNs: Long,
+        outputDiagnosticsTimeNs: Long,
+        nativeInferenceTimeNs: Long
     ): List<DetectionResult> {
         val sourceWidth = transform.sourceWidth
         val sourceHeight = transform.sourceHeight
@@ -528,7 +554,12 @@ class VisionStyleYoloDetector(
             rawCoordinateMin = rawCoordinateMin.takeIf { it.isFinite() },
             rawCoordinateMax = rawCoordinateMax.takeIf { it.isFinite() },
             inferenceStartedAtMs = inferenceStartedAtMs,
-            inferenceStartedElapsedNs = inferenceStartedElapsedNs
+            inferenceStartedElapsedNs = inferenceStartedElapsedNs,
+            getPixelsTimeNs = getPixelsTimeNs,
+            rgbWriteTimeNs = rgbWriteTimeNs,
+            inputDiagnosticsTimeNs = inputDiagnosticsTimeNs,
+            outputDiagnosticsTimeNs = outputDiagnosticsTimeNs,
+            nativeInferenceTimeNs = nativeInferenceTimeNs
         )
         if (enableDiagnostics) {
             Log.d(

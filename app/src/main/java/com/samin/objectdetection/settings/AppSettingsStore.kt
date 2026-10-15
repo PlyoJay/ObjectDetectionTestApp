@@ -122,6 +122,7 @@ object AppSettingsCodec {
             put("yolo.resizeMode", resizeMode.name); put("yolo.confidenceThreshold", confidenceThreshold)
             put("yolo.nmsThreshold", nmsThreshold); put("yolo.interpreterThreadCount", interpreterThreadCount)
             put("yolo.maxCandidates", maxCandidates)
+            put("yolo.useXnnpack", useXnnpack)
         }
         with(value.filters) {
             put("filters.geometryFilterEnabled", geometryFilterEnabled); put("filters.sizeFilterMode", sizeFilterMode.name)
@@ -203,7 +204,7 @@ object AppSettingsCodec {
             ),
             yolo = YoloSettings(resize("yolo.resizeMode", d.yolo.resizeMode), f("yolo.confidenceThreshold", d.yolo.confidenceThreshold),
                 f("yolo.nmsThreshold", d.yolo.nmsThreshold), i("yolo.interpreterThreadCount", d.yolo.interpreterThreadCount),
-                i("yolo.maxCandidates", d.yolo.maxCandidates)),
+                i("yolo.maxCandidates", d.yolo.maxCandidates), b("yolo.useXnnpack", d.yolo.useXnnpack)),
             filters = FilterSettings(
                 b("filters.geometryFilterEnabled", d.filters.geometryFilterEnabled), sizeMode("filters.sizeFilterMode", d.filters.sizeFilterMode),
                 f("filters.minBoxAreaRatio", d.filters.minBoxAreaRatio), f("filters.minBoxWidthRatio", d.filters.minBoxWidthRatio),
