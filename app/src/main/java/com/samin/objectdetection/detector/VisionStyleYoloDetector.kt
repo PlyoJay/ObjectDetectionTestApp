@@ -40,8 +40,8 @@ class VisionStyleYoloDetector(
     private val interpreter: Interpreter
     private var closed = false
     @Volatile private var execution: InferenceExecutionInfo
-    private var inputWidth = 640
-    private var inputHeight = 640
+    private val inputWidth: Int
+    private val inputHeight: Int
     private var outputDim = 0
     private var boxCount = 0
     private var isTransposed = true
@@ -114,30 +114,18 @@ class VisionStyleYoloDetector(
             }
             val inputTensor = interpreter.getInputTensor(0)
             val outputTensor = interpreter.getOutputTensor(0)
-            val inputShape = inputTensor.shape()
-            inputRgbShape = RgbTensorShape.from(inputShape)
+            val contract = ModelAssets.validate(interpreter, modelName, labels.size)
+            inputRgbShape = contract.input
             inputWidth = inputRgbShape.width
             inputHeight = inputRgbShape.height
-            inputCodec = codec(inputTensor)
-            outputCodec = codec(outputTensor)
-            require(inputWidth == MODEL_INPUT_SIZE && inputHeight == MODEL_INPUT_SIZE) {
-                "Model input mismatch: expected ${MODEL_INPUT_SIZE}x$MODEL_INPUT_SIZE, " +
-                    "actual ${inputWidth}x$inputHeight (shape=${inputShape.contentToString()})"
-            }
+            inputCodec = contract.inputCodec
+            outputCodec = contract.outputCodec
 
             val outputShape = interpreter.getOutputTensor(0).shape()
             val inputType = interpreter.getInputTensor(0).dataType().toString()
             val outputType = interpreter.getOutputTensor(0).dataType().toString()
             outputShapeText = outputShape.contentToString()
-            val parsedShape = try {
-                YoloOutputShape.from(outputShape, labels.size)
-            } catch (error: IllegalArgumentException) {
-                throw IllegalArgumentException(
-                    "Model/label mismatch: model=$modelName labels=${labels.size} " +
-                        "expectedChannels=${YOLO_BOX_VALUE_COUNT + labels.size} actualOutput=$outputShapeText. ${error.message}",
-                    error
-                )
-            }
+            val parsedShape = contract.output
             isTransposed = parsedShape.channelsFirst
             boxCount = parsedShape.candidates
             outputDim = parsedShape.channels
@@ -221,7 +209,8 @@ class VisionStyleYoloDetector(
                     )
                     reusableInputCanvas.drawBitmap(bitmap, null, inputDestination, resizePaint)
                 } else {
-                    reusableInputCanvas.drawBitmap(bitmap, null, INPUT_RECT, resizePaint)
+                    inputDestination.set(0f, 0f, inputWidth.toFloat(), inputHeight.toFloat())
+                    reusableInputCanvas.drawBitmap(bitmap, null, inputDestination, resizePaint)
                 }
                 reusableInputBitmap
             } else {
@@ -630,7 +619,7 @@ class VisionStyleYoloDetector(
             detection.right in 0f..1f &&
             detection.top in 0f..1f &&
             detection.bottom in 0f..1f
-        val looksPixel640 = detection.left >= 0f &&
+        val looksInputPixels = detection.left >= 0f &&
             detection.right <= inputWidth.toFloat() &&
             detection.top >= 0f &&
             detection.bottom <= inputHeight.toFloat()
@@ -644,7 +633,7 @@ class VisionStyleYoloDetector(
             "finalBox left=${detection.left} top=${detection.top} right=${detection.right} bottom=${detection.bottom} " +
                 "bboxWidthRatio=$widthRatio bboxHeightRatio=$heightRatio bboxAreaRatio=$areaRatio " +
                 "centerXRatio=$centerXRatio centerYRatio=$centerYRatio nmsPassed=true " +
-                "looksNormalized=$looksNormalized looksPixel640=$looksPixel640 outOfInput=$outOfInput " +
+                "looksNormalized=$looksNormalized looksInputPixels=$looksInputPixels outOfInput=$outOfInput " +
                 "label=${detection.label} conf=${detection.confidence}"
         )
     }
@@ -694,10 +683,6 @@ class VisionStyleYoloDetector(
         selfTestLog?.appendLine(line)
     }
 
-    private fun codec(tensor: Tensor): TensorValueCodec = tensor.quantizationParams().let {
-        TensorValueCodec(tensor.dataType(), it.scale, it.zeroPoint)
-    }
-
     private fun tensorDescription(name: String, tensor: Tensor): String =
         "$name shape=${tensor.shape().contentToString()} dtype=${tensor.dataType()} " +
             "scale=${tensor.quantizationParams().scale} zeroPoint=${tensor.quantizationParams().zeroPoint} bytes=${tensor.numBytes()}"
@@ -738,7 +723,6 @@ class VisionStyleYoloDetector(
         (SystemClock.elapsedRealtimeNanos() - startNs) / 1_000_000L
 
     companion object {
-        private const val MODEL_INPUT_SIZE = 640
         private const val YOLO_BOX_VALUE_COUNT = 4
         private const val RAW_TOP_CONFIDENCE_COUNT = 5
         private const val NORMAL_MIN_AREA_RATIO = 0.0005f
@@ -750,7 +734,6 @@ class VisionStyleYoloDetector(
         private const val SIZE_FILTER_TAG = "DetectionSizeFilter"
         private const val BOLLARD_DIAGNOSTICS_TAG = "BollardDiagnostics"
         private val LETTERBOX_PADDING_COLOR = Color.rgb(114, 114, 114)
-        private val INPUT_RECT = RectF(0f, 0f, MODEL_INPUT_SIZE.toFloat(), MODEL_INPUT_SIZE.toFloat())
         private val DIAGNOSTIC_THRESHOLDS = floatArrayOf(0.01f, 0.05f, 0.1f, 0.2f)
     }
 }

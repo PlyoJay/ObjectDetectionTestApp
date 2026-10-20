@@ -1,0 +1,140 @@
+[
+  {
+    "model": "best.tflite",
+    "bytes": 37962632,
+    "sha256": "32a44bc7432ef2d7ca5de802dd8e714a26568aea16566bad3fd7fcd2b85bcee2",
+    "inspectionRuntime": {
+      "package": "ai-edge-litert",
+      "version": "2.2.0",
+      "scope": "host inspection, not Android benchmark"
+    },
+    "inputs": [
+      {
+        "name": "serving_default_args_0",
+        "shape": [
+          1,
+          3,
+          640,
+          640
+        ],
+        "shapeSignature": [
+          1,
+          3,
+          640,
+          640
+        ],
+        "bytes": 4915200,
+        "dtype": "float32",
+        "scale": 0.0,
+        "zeroPoint": 0,
+        "scales": [],
+        "zeroPoints": []
+      }
+    ],
+    "outputs": [
+      {
+        "name": "serving_default_output_0_output",
+        "shape": [
+          1,
+          13,
+          8400
+        ],
+        "shapeSignature": [
+          1,
+          13,
+          8400
+        ],
+        "bytes": 436800,
+        "dtype": "float32",
+        "scale": 0.0,
+        "zeroPoint": 0,
+        "scales": [],
+        "zeroPoints": []
+      }
+    ],
+    "embeddedLabels": {
+      "0": "bollard",
+      "1": "person",
+      "2": "bicycle",
+      "3": "car",
+      "4": "motorcycle",
+      "5": "bus",
+      "6": "truck",
+      "7": "stop sign",
+      "8": "bench"
+    },
+    "end2end": false,
+    "coordinateNormalizationMultiplier": [
+      0.0015625000232830644
+    ]
+  },
+  {
+    "model": "best_512.tflite",
+    "bytes": 37926343,
+    "sha256": "f312b541c86426c53c02ef1674ee539c6f87fcf97102061fade628317b3c10b9",
+    "inspectionRuntime": {
+      "package": "ai-edge-litert",
+      "version": "2.2.0",
+      "scope": "host inspection, not Android benchmark"
+    },
+    "inputs": [
+      {
+        "name": "serving_default_args_0",
+        "shape": [
+          1,
+          3,
+          512,
+          512
+        ],
+        "shapeSignature": [
+          1,
+          3,
+          512,
+          512
+        ],
+        "bytes": 3145728,
+        "dtype": "float32",
+        "scale": 0.0,
+        "zeroPoint": 0,
+        "scales": [],
+        "zeroPoints": []
+      }
+    ],
+    "outputs": [
+      {
+        "name": "serving_default_output_0_output",
+        "shape": [
+          1,
+          13,
+          5376
+        ],
+        "shapeSignature": [
+          1,
+          13,
+          5376
+        ],
+        "bytes": 279552,
+        "dtype": "float32",
+        "scale": 0.0,
+        "zeroPoint": 0,
+        "scales": [],
+        "zeroPoints": []
+      }
+    ],
+    "embeddedLabels": {
+      "0": "bollard",
+      "1": "person",
+      "2": "bicycle",
+      "3": "car",
+      "4": "motorcycle",
+      "5": "bus",
+      "6": "truck",
+      "7": "stop sign",
+      "8": "bench"
+    },
+    "end2end": false,
+    "coordinateNormalizationMultiplier": [
+      0.001953125
+    ]
+  }
+]

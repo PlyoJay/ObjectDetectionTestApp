@@ -19,6 +19,7 @@ data class DetectionConfig(
     // CameraX drops queued frames for us. A fixed 500 ms throttle made the overlay update at most 2 FPS.
     // Keep this at zero for latency-first operation; raise it only for an explicit A/B test.
     val detectIntervalMs: Long = 0L,
+    // Legacy square-size metadata. Inference always reads tensors; runtime replaces this hint.
     val inputSize: Int = 640,
     // Preserve aspect ratio by default; STRETCH remains available for explicit A/B runs.
     val yoloResizeMode: YoloResizeMode = YoloResizeMode.LETTERBOX,
@@ -77,7 +78,8 @@ data class DetectionConfig(
     val warningNearAreaRatio: Float = 0.07f,
     val warningMidAreaRatio: Float = 0.02f,
     // CPU Interpreter request; Java does not expose actual delegate coverage.
-    val useXnnpack: Boolean = true
+    val useXnnpack: Boolean = true,
+    val inputHeight: Int = inputSize
 ) {
     companion object {
         const val DEFAULT_CONFIDENCE_THRESHOLD = 0.20f

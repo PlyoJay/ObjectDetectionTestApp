@@ -31,16 +31,16 @@ class RecognitionRoiTest {
 
     @Test fun letterboxAndMlKitMapToSameUprightFullFrameForAllQuarterTurns() {
         // CameraX applies rotation first. 90/270 swap dimensions; edge ratios stay on upright axes.
-        for (rotation in listOf(0, 90, 180, 270)) {
+        for (modelSize in listOf(640, 512)) for (rotation in listOf(0, 90, 180, 270)) {
             val width = if (rotation % 180 == 0) 1281 else 721
             val height = if (rotation % 180 == 0) 721 else 1281
             val roi = FrameRoi.calculate(width, height, RecognitionRoi(true, .13f, .07f, .11f, .03f), false)
-            val transform = YoloResizeTransform.calculate(YoloResizeMode.LETTERBOX, roi.width, roi.height, 640, 640)
-            assertEquals(640, transform.scaledWidth + transform.padLeft + transform.padRight)
-            assertEquals(640, transform.scaledHeight + transform.padTop + transform.padBottom)
+            val transform = YoloResizeTransform.calculate(YoloResizeMode.LETTERBOX, roi.width, roi.height, modelSize, modelSize)
+            assertEquals(modelSize, transform.scaledWidth + transform.padLeft + transform.padRight)
+            assertEquals(modelSize, transform.scaledHeight + transform.padTop + transform.padBottom)
             for (fraction in listOf(0f, .23f, .77f, 1f)) {
-                val normalizedX = (roi.width * fraction * transform.scaleX + transform.padLeft) / 640
-                val normalizedY = (roi.height * fraction * transform.scaleY + transform.padTop) / 640
+                val normalizedX = (roi.width * fraction * transform.scaleX + transform.padLeft) / modelSize
+                val normalizedY = (roi.height * fraction * transform.scaleY + transform.padTop) / modelSize
                 val yoloX = roi.sourceX(transform.sourceX(normalizedX))
                 val yoloY = roi.sourceY(transform.sourceY(normalizedY))
                 assertEquals(roi.left + roi.width * fraction, yoloX, .001f)

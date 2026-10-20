@@ -37,12 +37,15 @@ import com.samin.objectdetection.camera.SizeFilterMode
 import com.samin.objectdetection.camera.YoloResizeMode
 import com.samin.objectdetection.camera.RecognitionRoi
 import com.samin.objectdetection.detector.ModelAssets
-import com.samin.objectdetection.detector.ModelConfig
+import com.samin.objectdetection.detector.YoloModel
+import com.samin.objectdetection.detector.ModelIdentity
 import com.samin.objectdetection.ui.OverlayDebugMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.tensorflow.lite.Interpreter
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.util.Locale
 
 class SettingsActivity : ComponentActivity() {
@@ -63,6 +66,13 @@ class SettingsActivity : ComponentActivity() {
     private val restoredScrollOffsets = linkedMapOf<String, Int>()
     private var currentScreen = HOME
     private var selectedPresetName = SettingsPresets.DEFAULT
+    private lateinit var modelInfo: TextView
+    private lateinit var applyButton: Button
+    private var modelInfoJob: Job? = null
+    private val modelInspectionMutex = Mutex()
+    private val modelDescriptions = mutableMapOf<YoloModel, String>()
+    private var describedModel: YoloModel? = null
+    private var applying = false
 
     private enum class Category(val title: String, val description: String, val icon: Int) {
         CAMERA("카메라 및 입력", "해상도, ROI, 탐지 간격과 Resize / Letterbox", android.R.drawable.ic_menu_camera),
@@ -136,7 +146,8 @@ class SettingsActivity : ComponentActivity() {
             setPadding(dp(8), dp(8), dp(8), dp(8))
             setBackgroundColor(Color.WHITE)
         }
-        actions.addView(Button(this).apply { text = "적용 및 저장"; setOnClickListener { applyAndFinish() } }, match())
+        applyButton = Button(this).apply { text = "적용 및 저장"; setOnClickListener { applyAndFinish() } }
+        actions.addView(applyButton, match())
         val secondary = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         secondary.addView(Button(this).apply { text = "초기화"; setOnClickListener { bind(SettingsPresets.byName(SettingsPresets.DEFAULT)!!) } }, weighted())
         secondary.addView(Button(this).apply { text = "취소"; setOnClickListener { leave() } }, weighted())
@@ -268,32 +279,38 @@ class SettingsActivity : ComponentActivity() {
     }
 
     private fun buildReadOnlySection(parent: LinearLayout) {
-        // MainActivity already owns a live Interpreter. Reuse its immutable metadata.
-        intent.getStringExtra(EXTRA_MODEL_DESCRIPTION)?.let { description ->
-            note(parent, description)
-            return
-        }
         section(parent, "읽기 전용")
-        note(parent, "Model: ${ModelConfig.MODEL_ASSET_NAME}\nInput: 확인 중…\nSHA256: 계산 중…").also { label ->
-            lifecycleScope.launch {
-                val description = withContext(Dispatchers.IO) {
-                    runCatching {
-                        Interpreter(ModelAssets.load(this@SettingsActivity)).use { interpreter ->
-                            val input = interpreter.getInputTensor(0)
-                            val output = interpreter.getOutputTensor(0)
-                            "Model: ${ModelConfig.MODEL_ASSET_NAME}\n" +
-                                "Input: ${input.shape().contentToString()} (${input.dataType()})\n" +
-                                "Output: ${output.shape().contentToString()} (${output.dataType()})\n" +
-                                "SHA256: ${ModelAssets.sha256(this@SettingsActivity)}"
-                        }
-                    }.getOrElse { error ->
-                        "Model: ${ModelConfig.MODEL_ASSET_NAME}\n모델 정보 읽기 실패: ${error.message}"
-                    }
+        modelInfo = note(parent, "선택 모델 정보 확인 중…")
+        intent.getStringExtra(EXTRA_MODEL_DESCRIPTION)?.let {
+            modelDescriptions[applied.yolo.model] = it
+        }
+    }
+
+    private fun selectedModel(): YoloModel = YoloModel.entries[form.model.selectedItemPosition.coerceAtLeast(0)]
+
+    private fun updateModelInfo() {
+        if (!::modelInfo.isInitialized) return
+        val model = selectedModel()
+        if (describedModel == model) return
+        describedModel = model
+        modelInfoJob?.cancel()
+        modelDescriptions[model]?.let { modelInfo.text = it; return }
+        modelInfo.text = "Model: ${model.assetName}\nInput / Output / SHA256: 확인 중…"
+        modelInfoJob = lifecycleScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                modelInspectionMutex.withLock {
+                    runCatching { ModelAssets.inspect(this@SettingsActivity, model).description() }
                 }
-                label.text = description
+            }
+            if (selectedModel() == model) {
+                modelInfo.text = result.getOrElse { "Model: ${model.assetName}\n모델 로딩 실패: ${it.message}" }
+                result.getOrNull()?.let { modelDescriptions[model] = it }
             }
         }
     }
+
+    private fun ModelIdentity.description() = "Model: $assetName\n입력 크기: ${inputWidth}×$inputHeight\n" +
+        "Input: $inputShape ($inputType)\nOutput: $outputShape ($outputType)\nSHA256: $sha256"
 
     private fun buildCameraSection(parent: LinearLayout) {
         section(parent, "카메라 / 전처리")
@@ -303,7 +320,7 @@ class SettingsActivity : ComponentActivity() {
         form.centerCrop = toggle(parent, "Center Square ROI (OFF = Full Frame)")
         form.resizeMode = choice(parent, "Resize Mode", YoloResizeMode.entries.map { it.name })
         section(parent, "인식 영역 크롭")
-        note(parent, "화면 회전 후 영상 기준입니다. 크롭 ON은 중앙 ROI를 해제하고 YOLO 640×640 Letterbox를 사용합니다. YOLO와 ML Kit에 같은 영역을 한 번씩 적용합니다.")
+        note(parent, "화면 회전 후 영상 기준입니다. 크롭 ON은 중앙 ROI를 해제하고 선택한 YOLO 모델의 Letterbox를 사용합니다. 크롭 비율은 모델 해상도와 독립적이며 YOLO와 ML Kit에 같은 영역을 한 번씩 적용합니다.")
         form.roiEnabled = toggle(parent, "인식 영역 크롭 사용")
         form.roiTop = number(parent, "상단 크롭 (%)", "0..<100", true)
         form.roiBottom = number(parent, "하단 크롭 (%)", "0..<100", true)
@@ -326,6 +343,7 @@ class SettingsActivity : ComponentActivity() {
 
     private fun buildYoloSection(parent: LinearLayout) {
         section(parent, "YOLO")
+        form.model = choice(parent, "모델 선택", YoloModel.entries.map { it.displayName })
         form.confidence = floatSlider(parent, "Confidence Threshold", 0f, 1f)
         form.nms = floatSlider(parent, "NMS Threshold", 0f, 1f)
         form.threads = number(parent, "Interpreter Thread Count", "1..16")
@@ -448,6 +466,7 @@ class SettingsActivity : ComponentActivity() {
             select(form.resizeMode, value.yolo.resizeMode.name); select(form.cameraResolution, "${requestedWidth}x${requestedHeight}")
         }
         with(value.yolo) {
+            select(form.model, model.displayName)
             form.confidence.setText(confidenceThreshold.toString()); form.nms.setText(nmsThreshold.toString())
             form.threads.setText(interpreterThreadCount.toString()); form.maxCandidates.setText(maxCandidates.toString())
             form.xnnpack.isChecked = useXnnpack
@@ -508,7 +527,7 @@ class SettingsActivity : ComponentActivity() {
             camera = CameraSettings(form.detectInterval.l(), form.centerCrop.isChecked, resolution[0].toInt(), resolution[1].toInt(), form.cameraPreview.isChecked,
                 RecognitionRoi(form.roiEnabled.isChecked, form.roiTop.f() / 100f, form.roiBottom.f() / 100f,
                     form.roiLeft.f() / 100f, form.roiRight.f() / 100f, form.roiShow.isChecked)),
-            yolo = YoloSettings(YoloResizeMode.valueOf(form.resizeMode.selectedItem.toString()), form.confidence.f(), form.nms.f(), form.threads.i(), form.maxCandidates.i(), form.xnnpack.isChecked),
+            yolo = YoloSettings(YoloResizeMode.valueOf(form.resizeMode.selectedItem.toString()), form.confidence.f(), form.nms.f(), form.threads.i(), form.maxCandidates.i(), form.xnnpack.isChecked, selectedModel()),
             filters = FilterSettings(form.geometry.isChecked, SizeFilterMode.valueOf(form.sizeMode.selectedItem.toString()),
                 form.minArea.f(), form.minWidth.f(), form.minHeight.f(), form.bollardMinArea.f(), form.bollardMaxAspect.f(),
                 form.temporal.isChecked, form.temporalImmediate.f(), form.temporalConfirmation.f(), form.temporalIou.f()),
@@ -526,12 +545,32 @@ class SettingsActivity : ComponentActivity() {
     }
 
     private fun applyAndFinish() {
+        if (applying) return
         val value = parseOrShow() ?: return
         val finalName = value.presetName.takeIf { selectedPresetMatches(value) } ?: SettingsPresets.CUSTOM
         val finalValue = if (value == applied) applied else value.copy(presetName = finalName)
-        if (finalValue != applied) store.saveApplied(finalValue)
-        setResult(RESULT_OK, Intent().putExtra(EXTRA_APPLIED, true))
-        finish()
+        applying = true
+        applyButton.isEnabled = false
+        lifecycleScope.launch {
+            // Validate the asset and requested native options before changing durable settings.
+            val result = withContext(Dispatchers.IO) {
+                modelInspectionMutex.withLock {
+                    runCatching { ModelAssets.inspect(this@SettingsActivity, value.yolo.model,
+                        value.yolo.interpreterThreadCount, value.yolo.useXnnpack) }
+                }
+            }
+            applying = false
+            applyButton.isEnabled = true
+            result.onSuccess {
+                if (finalValue != applied) store.saveApplied(finalValue)
+                setResult(RESULT_OK, Intent().putExtra(EXTRA_APPLIED, true))
+                finish()
+            }.onFailure { error ->
+                AlertDialog.Builder(this@SettingsActivity).setTitle("모델 로딩 실패")
+                    .setMessage("${value.yolo.model.assetName}\n${error.message}\n기존 적용 설정을 유지합니다.")
+                    .setPositiveButton("확인", null).show()
+            }
+        }
     }
 
     private fun selectedPresetMatches(value: AppSettings): Boolean {
@@ -599,6 +638,7 @@ class SettingsActivity : ComponentActivity() {
 
     private fun updateDependentState() {
         if (!::form.isInitialized) return
+        updateModelInfo()
         val sizeEnabled = form.sizeMode.selectedItem?.toString() != SizeFilterMode.DISABLED.name
         listOf(form.minArea, form.minWidth, form.minHeight).forEach { it.isEnabled = sizeEnabled }
         val temporalEnabled = form.temporal.isChecked
@@ -633,7 +673,7 @@ class SettingsActivity : ComponentActivity() {
                 "ROI ${if (camera.recognitionRoi.enabled) "Edge Crop" else if (camera.useCenterSquareCrop) "Center Square" else "Full Frame"} · ${yolo.resizeMode} · Preview ${camera.previewEnabled.onOff()}"
         }
         summaries[Category.YOLO.name]?.text = with(applied.yolo) {
-            "현재 적용: CPU Threads: $interpreterThreadCount · XNNPACK: ${useXnnpack.onOff()} (요청)\n" +
+            "현재 적용: ${model.displayName}\nCPU Threads: $interpreterThreadCount · XNNPACK: ${useXnnpack.onOff()} (요청)\n" +
                 "Confidence $confidenceThreshold · NMS $nmsThreshold"
         }
         summaries[Category.FILTERS.name]?.text = with(applied) {
@@ -752,6 +792,7 @@ class SettingsActivity : ComponentActivity() {
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 
     private inner class Form(val container: ViewGroup) {
+        lateinit var model: Spinner
         lateinit var cameraPreview: Switch
         lateinit var xnnpack: Switch
         lateinit var systemDiagnostics: Switch; lateinit var systemSampleInterval: EditText

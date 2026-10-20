@@ -5,6 +5,7 @@ import com.samin.objectdetection.camera.SizeFilterMode
 import com.samin.objectdetection.camera.YoloResizeMode
 import com.samin.objectdetection.camera.RecognitionRoi
 import com.samin.objectdetection.ui.OverlayDebugMode
+import com.samin.objectdetection.detector.YoloModel
 import java.io.StringReader
 import java.io.StringWriter
 import java.util.Properties
@@ -56,6 +57,15 @@ class AppSettingsStore(context: Context) {
     }
 
     fun resetApplied() = saveApplied(AppSettings())
+
+    /** Restore the complete previous configuration if the newly selected runtime failed to load. */
+    fun restorePreviousApplied(): AppSettings? {
+        if (!preferences.contains(KEY_APPLY_STATE)) return null
+        val backup = preferences.getString(KEY_BACKUP, null) ?: AppSettingsCodec.encode(AppSettings())
+        preferences.edit().putString(KEY_APPLIED, backup)
+            .remove(KEY_APPLY_STATE).remove(KEY_BACKUP).commit()
+        return loadApplied()
+    }
 
     fun customPresetNames(): List<String> =
         preferences.getStringSet(KEY_CUSTOM_NAMES, emptySet()).orEmpty().sorted()
@@ -125,6 +135,7 @@ object AppSettingsCodec {
             put("camera.requestedWidth", requestedWidth); put("camera.requestedHeight", requestedHeight)
         }
         with(value.yolo) {
+            put("yolo.model", model.name)
             put("yolo.resizeMode", resizeMode.name); put("yolo.confidenceThreshold", confidenceThreshold)
             put("yolo.nmsThreshold", nmsThreshold); put("yolo.interpreterThreadCount", interpreterThreadCount)
             put("yolo.maxCandidates", maxCandidates)
@@ -215,7 +226,8 @@ object AppSettingsCodec {
             ),
             yolo = YoloSettings(resize("yolo.resizeMode", d.yolo.resizeMode), f("yolo.confidenceThreshold", d.yolo.confidenceThreshold),
                 f("yolo.nmsThreshold", d.yolo.nmsThreshold), i("yolo.interpreterThreadCount", d.yolo.interpreterThreadCount),
-                i("yolo.maxCandidates", d.yolo.maxCandidates), b("yolo.useXnnpack", d.yolo.useXnnpack)),
+                i("yolo.maxCandidates", d.yolo.maxCandidates), b("yolo.useXnnpack", d.yolo.useXnnpack),
+                YoloModel.entries.firstOrNull { it.name == s("yolo.model", d.yolo.model.name) } ?: d.yolo.model),
             filters = FilterSettings(
                 b("filters.geometryFilterEnabled", d.filters.geometryFilterEnabled), sizeMode("filters.sizeFilterMode", d.filters.sizeFilterMode),
                 f("filters.minBoxAreaRatio", d.filters.minBoxAreaRatio), f("filters.minBoxWidthRatio", d.filters.minBoxWidthRatio),

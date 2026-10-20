@@ -5,9 +5,10 @@ import com.samin.objectdetection.camera.SizeFilterMode
 import com.samin.objectdetection.camera.YoloResizeMode
 import com.samin.objectdetection.camera.RecognitionRoi
 import com.samin.objectdetection.metrics.PerformanceTestWindow
+import com.samin.objectdetection.detector.YoloModel
 import com.samin.objectdetection.ui.OverlayDebugMode
 
-const val APP_SETTINGS_SCHEMA_VERSION = 5
+const val APP_SETTINGS_SCHEMA_VERSION = 6
 
 data class CameraSettings(
     val detectIntervalMs: Long = 0L,
@@ -24,7 +25,8 @@ data class YoloSettings(
     val nmsThreshold: Float = DetectionConfig.DEFAULT_NMS_THRESHOLD,
     val interpreterThreadCount: Int = 4,
     val maxCandidates: Int = 100,
-    val useXnnpack: Boolean = true
+    val useXnnpack: Boolean = true,
+    val model: YoloModel = YoloModel.YOLO_640
 )
 
 data class FilterSettings(
@@ -121,7 +123,7 @@ data class AppSettings(
         addAll(camera.recognitionRoi.validationErrors())
         if (performanceLog.durationMinutes !in PerformanceTestWindow.ALLOWED_MINUTES) add("성능 측정 시간은 3분, 5분, 10분 중 선택하세요.")
         if (camera.recognitionRoi.enabled && camera.useCenterSquareCrop) add("영역 크롭과 중앙 정방형 ROI는 동시에 사용할 수 없습니다.")
-        if (camera.recognitionRoi.enabled && yolo.resizeMode != YoloResizeMode.LETTERBOX) add("영역 크롭은 640×640 Letterbox를 사용해야 합니다.")
+        if (camera.recognitionRoi.enabled && yolo.resizeMode != YoloResizeMode.LETTERBOX) add("영역 크롭은 선택 모델의 Letterbox를 사용해야 합니다.")
         if (performanceLog.sampleIntervalMs !in 1_000L..60_000L) add("System Sample Interval은 1000~60000ms여야 합니다.")
         if (schemaVersion <= 0) add("설정 버전이 올바르지 않습니다.")
         if (camera.detectIntervalMs !in 0L..60_000L) add("Detect Interval은 0~60000ms여야 합니다.")
@@ -164,6 +166,7 @@ data class AppSettings(
 
     fun toDetectionConfig(): DetectionConfig = DetectionConfig(
         detectIntervalMs = camera.detectIntervalMs,
+        inputSize = yolo.model.inputSize,
         yoloResizeMode = yolo.resizeMode,
         useCenterSquareCrop = camera.useCenterSquareCrop,
         recognitionRoi = camera.recognitionRoi,

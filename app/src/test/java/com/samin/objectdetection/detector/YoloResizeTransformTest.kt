@@ -5,6 +5,26 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class YoloResizeTransformTest {
+    @Test fun boxEdgesRoundTripAtBothResolutionsIncludingOddPaddingAndStretch() {
+        for ((modelWidth, modelHeight) in listOf(640 to 640, 512 to 512, 512 to 320)) {
+            for ((width, height) in listOf(1280 to 720, 720 to 1280, 511 to 733)) {
+                for (mode in YoloResizeMode.entries) {
+                    val transform = YoloResizeTransform.calculate(mode, width, height, modelWidth, modelHeight)
+                    assertEquals(modelWidth, transform.scaledWidth + transform.padLeft + transform.padRight)
+                    assertEquals(modelHeight, transform.scaledHeight + transform.padTop + transform.padBottom)
+                    for (fraction in listOf(0f, .17f, .63f, 1f)) {
+                        val x = width * fraction
+                        val y = height * fraction
+                        assertEquals(x, transform.sourceX((x * transform.scaleX + transform.padLeft) / modelWidth), .001f)
+                        assertEquals(y, transform.sourceY((y * transform.scaleY + transform.padTop) / modelHeight), .001f)
+                    }
+                    assertEquals(0f, transform.sourceY(0f), 0f)
+                    assertEquals(height.toFloat(), transform.sourceY(1f), 0f)
+                }
+            }
+        }
+    }
+
     @Test fun landscapeLetterboxGeometry() {
         val t = YoloResizeTransform.calculate(YoloResizeMode.LETTERBOX, 1280, 720, 640, 640)
         assertEquals(640, t.scaledWidth)

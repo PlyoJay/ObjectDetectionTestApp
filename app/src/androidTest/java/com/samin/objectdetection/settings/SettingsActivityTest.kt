@@ -31,6 +31,44 @@ import android.view.accessibility.AccessibilityNodeInfo
 
 /** Preserves applied settings/presets; the preview integration test also starts real inference. */
 class SettingsActivityTest {
+    @Test fun modelChoiceSurvivesDraftRecreationApplyReopenAndCustomPreset() {
+        launch()
+        openCategory("YOLO 모델 및 추론")
+        val model = com.samin.objectdetection.detector.YoloModel.YOLO_512
+        field("모델 선택").perform(scrollTo(), click())
+        onData(`is`(model.displayName)).perform(click())
+        recreate()
+        field("모델 선택").check(matches(withSpinnerText(model.displayName)))
+        onView(withText("적용 및 저장")).perform(click())
+        awaitEditorFinished()
+        val saved = loadHealthy()
+        assertEquals(model, saved.yolo.model)
+        val store = AppSettingsStore(context)
+        store.saveCustomPreset("MODEL 512", saved)
+        assertEquals(model, AppSettingsStore(context).loadCustomPreset("MODEL 512")!!.yolo.model)
+        launch()
+        openCategory("YOLO 모델 및 추론")
+        field("모델 선택").check(matches(withSpinnerText(model.displayName)))
+    }
+
+    @Test fun schemaFivePresetsAndFailedModelApplyRestoreEntirePreviousConfiguration() {
+        val previous = AppSettings(presetName = "OLD MODEL", yolo = YoloSettings(confidenceThreshold = .31f))
+        val old = AppSettingsCodec.encode(previous).lineSequence().filterNot { it.startsWith("yolo.model=") }
+            .joinToString("\n").replace("schemaVersion=$APP_SETTINGS_SCHEMA_VERSION", "schemaVersion=5")
+        preferences.edit().putString("applied_settings", old).putString("custom_preset.OLD MODEL", old)
+            .putStringSet("custom_preset_names", setOf("OLD MODEL")).commit()
+        val store = AppSettingsStore(context)
+        assertEquals(previous, store.loadApplied())
+        assertEquals(previous, store.loadCustomPreset("OLD MODEL"))
+        val next = previous.copy(yolo = previous.yolo.copy(model = com.samin.objectdetection.detector.YoloModel.YOLO_512))
+        store.saveApplied(next)
+        assertEquals(next, store.loadApplied())
+        assertEquals(previous, store.restorePreviousApplied())
+        assertEquals(previous, store.loadApplied())
+        assertEquals(previous, store.loadCustomPreset("OLD MODEL"))
+        assertNull(store.restorePreviousApplied())
+    }
+
     @Test fun roiPresetValidationAndDurationStayInTheirCategoriesAndPersist() {
         seed(AppSettings(camera = CameraSettings(useCenterSquareCrop = true), yolo = YoloSettings(resizeMode = YoloResizeMode.STRETCH)))
         launch()
@@ -295,7 +333,7 @@ class SettingsActivityTest {
 
     @Test fun everyExistingControlIsReachableInItsCategory() {
         launch()
-        assertEquals(62, CATEGORY_FIELDS.values.sumOf { it.size })
+        assertEquals(70, CATEGORY_FIELDS.values.sumOf { it.size })
         scenario!!.onActivity { activity ->
             fun labels(view: View): List<String> = listOfNotNull(view.tag as? String) +
                 if (view is ViewGroup) (0 until view.childCount).flatMap { labels(view.getChildAt(it)) } else emptyList()
@@ -348,13 +386,14 @@ class SettingsActivityTest {
         for ((threads, enabled) in listOf(4 to false, 2 to false, 2 to true, 4 to true)) {
             launch()
             openCategory("YOLO 모델 및 추론")
-            val before = loadHealthy()
+            val before = loadHealthy(awaitFinish = false)
             field("Interpreter Thread Count").perform(scrollTo(), replaceText(threads.toString()), closeSoftKeyboard())
             if (before.yolo.useXnnpack != enabled) field("XNNPACK 사용").perform(scrollTo(), click())
             recreate()
             field("XNNPACK 사용").check(matches(if (enabled) isChecked() else not(isChecked())))
             field("Interpreter Thread Count").check(matches(withText(threads.toString())))
             onView(withText("적용 및 저장")).perform(click())
+            awaitEditorFinished()
             val restored = AppSettingsStore(context).loadApplied()
             assertEquals(enabled, restored.yolo.useXnnpack)
             assertEquals(threads, restored.yolo.interpreterThreadCount)
@@ -538,11 +577,13 @@ class SettingsActivityTest {
         scenario = ActivityScenario.launch(SettingsActivity::class.java)
         scenario!!.onActivity { it.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
         dismissNativeCompatibilityWarning()
+        awaitVisiblePageLayout()
     }
 
     private fun recreate() {
         scenario!!.recreate()
         dismissNativeCompatibilityWarning()
+        awaitVisiblePageLayout()
     }
 
     /** Confirm only Android's known native-library alignment warning during UI tests.
@@ -565,12 +606,26 @@ class SettingsActivityTest {
         preferences.edit().putString("applied_settings", AppSettingsCodec.encode(value)).commit()
     }
 
-    private fun loadHealthy(): AppSettings = AppSettingsStore(context).let { store ->
+    private fun awaitEditorFinished() {
+        val deadline = android.os.SystemClock.elapsedRealtime() + 15_000
+        while (scenario?.state != androidx.lifecycle.Lifecycle.State.DESTROYED && android.os.SystemClock.elapsedRealtime() < deadline) {
+            android.os.SystemClock.sleep(25)
+        }
+        assertEquals(androidx.lifecycle.Lifecycle.State.DESTROYED, scenario?.state)
+    }
+
+    private fun loadHealthy(awaitFinish: Boolean = true): AppSettings = AppSettingsStore(context).let { store ->
+        // Asset/options validation runs on IO before the Activity saves and finishes.
+        if (scenario != null && awaitFinish) awaitEditorFinished()
         store.loadApplied().also { store.markAppliedHealthy() }
     }
 
     private fun openCategory(title: String) {
         onView(withText(title)).perform(scrollTo(), click())
+        awaitVisiblePageLayout()
+    }
+
+    private fun awaitVisiblePageLayout() {
         // Showing a previously GONE category requests its first layout. Espresso can become
         // idle before that traversal; scrollTo must wait for the newly visible page's size.
         val deadline = android.os.SystemClock.elapsedRealtime() + 3000
@@ -578,8 +633,12 @@ class SettingsActivityTest {
             var ready = false
             scenario?.onActivity { activity ->
                 fun laidOutPage(view: View): Boolean {
-                    if (view is ScrollView && view.visibility == View.VISIBLE)
-                        return view.width > 0 && view.height > 0 && !view.isLayoutRequested
+                    if (view is ScrollView && view.isShown) {
+                        fun childrenReady(child: View): Boolean =
+                            (!child.isShown || (child.width > 0 && child.height > 0 && !child.isLayoutRequested)) &&
+                                (child !is ViewGroup || (0 until child.childCount).all { childrenReady(child.getChildAt(it)) })
+                        return childrenReady(view)
+                    }
                     return view is ViewGroup && (0 until view.childCount).any { laidOutPage(view.getChildAt(it)) }
                 }
                 ready = laidOutPage(activity.window.decorView)
@@ -587,7 +646,7 @@ class SettingsActivityTest {
             if (ready) return
             android.os.SystemClock.sleep(16)
         }
-        fail("Category was not laid out: $title")
+        fail("Visible settings page was not laid out")
     }
     private fun field(label: String) = onView(withTagValue(`is`(label as Any)))
 
@@ -611,8 +670,9 @@ class SettingsActivityTest {
 
     companion object {
         private val CATEGORY_FIELDS = linkedMapOf(
-            "카메라 및 입력" to listOf("카메라 화면 표시 (Preview)", "Detect Interval (ms)", "Center Square ROI (OFF = Full Frame)", "Resize Mode", "요청 Camera Resolution"),
-            "YOLO 모델 및 추론" to listOf("Confidence Threshold", "NMS Threshold", "Interpreter Thread Count", "XNNPACK 사용", "Max Candidates"),
+            "카메라 및 입력" to listOf("카메라 화면 표시 (Preview)", "Detect Interval (ms)", "Center Square ROI (OFF = Full Frame)", "Resize Mode", "요청 Camera Resolution",
+                "인식 영역 크롭 사용", "상단 크롭 (%)", "하단 크롭 (%)", "왼쪽 크롭 (%)", "오른쪽 크롭 (%)", "Preview 인식 영역 표시"),
+            "YOLO 모델 및 추론" to listOf("모델 선택", "Confidence Threshold", "NMS Threshold", "Interpreter Thread Count", "XNNPACK 사용", "Max Candidates"),
             "탐지 필터 및 경고" to listOf(
                 "Size Filter Mode", "Geometry Filter", "Min Box Area Ratio", "Min Box Width Ratio", "Min Box Height Ratio",
                 "Bollard Min Area Ratio", "Bollard Max Width/Height", "Adaptive Temporal", "Temporal Immediate Confidence",
@@ -623,7 +683,7 @@ class SettingsActivityTest {
                 "Very Near Height Ratio", "Near Height Ratio", "Mid Height Ratio", "Very Near Area Ratio", "Near Area Ratio",
                 "Mid Area Ratio", "실제 진동", "실제 Beep", "실제 TTS"
             ),
-            "성능 측정 및 로그" to listOf("System Performance Diagnostics", "배터리·발열 진단", "Sample Interval (ms)"),
+            "성능 측정 및 로그" to listOf("System Performance Diagnostics", "배터리·발열 진단", "Sample Interval (ms)", "테스트 시간 (분)"),
             "디버그 및 고급 설정" to listOf(
                 "Enable Detector Diagnostics", "Debug Detection Logging", "Diagnostic Raw Confidence Threshold",
                 "Diagnostic Max Raw Candidates", "Debug Save Inference Input", "Debug Save Interval (ms)",

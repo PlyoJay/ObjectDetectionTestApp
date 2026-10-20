@@ -88,11 +88,11 @@ Interpreter thread 수, YOLO 전처리 및 threshold 변경은 detector를 다�
 ## 읽기 전용
 
 - 모델 asset 이름과 SHA256
-- 실제 모델 input tensor shape(640×640)
+- 실제 모델 input tensor shape(선택 모델의 640×640 또는 512×512)
 - 실제 카메라 분석 해상도
 - 앱 버전
 
-모델 input 크기와 tensor layout은 패키지의 TFLite 모델 및 parser 구현과 결합되어 있어 변경 설정으로 노출하지 않는다. 실제 분석 해상도는 기기의 CameraX 협상 결과이므로 요청 해상도와 구분해 성능 로그에 기록한다.
+YOLO 모델 및 추론에서 640/512 모델을 선택할 수 있으며 실제 input 크기와 tensor layout은 선택 파일에서 읽는다. 텐서 차원 자체는 편집하지 않는다. 실제 분석 해상도는 기기의 CameraX 협상 결과이므로 요청 해상도와 구분해 성능 로그에 기록한다. [모델 선택 구현·검증 결과](yolo-model-selection-20261020.md)를 참조한다.
 해상도 드롭다운은 후면 카메라의 Camera2 YUV 출력 크기만 표시하며, CameraX use-case 조합 결과가 요청값과 다를 수 있다.
 
 ## 내부 상수로 유지

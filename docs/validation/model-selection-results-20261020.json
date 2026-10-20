@@ -1,0 +1,845 @@
+{
+  "date": "2026-10-20",
+  "device": "Samsung SM-S921N (Android 16)",
+  "androidRuntime": "com.google.ai.edge.litert:litert:2.1.1",
+  "unitTests": {
+    "tests": 146,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "pythonLogAnalyzerTests": 12,
+  "deviceTests": {
+    "passed": 36,
+    "failed": 0,
+    "skipped": 0,
+    "collection": "19 detector/camera/ROI/overlay cases from direct run + 17 settings cases from final UI rerun",
+    "cases": [
+      {
+        "class": "com.samin.objectdetection.detector.ModelSelectionDetectorTest",
+        "test": "mislabeledInputResolutionIsRejectedWithActualShape",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.detector.ModelSelectionDetectorTest",
+        "test": "missingAssetHasActionableError",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.detector.ModelSelectionDetectorTest",
+        "test": "syntheticBoxesExerciseActualParserNmsAndRoiRestorationForBothModelsAndModes",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.detector.ModelSelectionDetectorTest",
+        "test": "bothModelsRunAndReuseTensorSizedStorageWithExactLetterboxAndStretchPixels",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.detector.DetectorGoldenTest",
+        "test": "failedInputIsReportedAndNextFrameCanRecover",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.detector.DetectorGoldenTest",
+        "test": "knownPositiveImageRunsWithoutCameraX",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.detector.DetectorGoldenTest",
+        "test": "portraitLetterboxUsesActualDimensionsAndRgb114Padding",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.detector.DetectorGoldenTest",
+        "test": "actualBestModelReceivesRgbInItsTensorLayoutAndFiniteNineClassOutput",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.detector.DetectorPreprocessingRegressionTest",
+        "test": "repeatedPositiveImageKeepsRawOutputAndDetectionsAndReportsStageTimings",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.detector.DetectorPreprocessingRegressionTest",
+        "test": "xnnpackOnOffPositiveImageMatchesWithinToleranceWithoutChangingDefault",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.detector.DetectorPreprocessingRegressionTest",
+        "test": "independentLetterboxReferenceMatchesAcrossShapeChangesAndReusesStorage",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.camera.RecognitionRoiInstrumentedTest",
+        "test": "realBitmapRotationThenSinglePipelineCropRestoresBoxesOnEveryQuarterTurn",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.camera.RecognitionRoiInstrumentedTest",
+        "test": "regionGuideUsesFullFrameFitCenterEvenWhenBboxesAreDisabled",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.ui.BoundingBoxOverlayTest",
+        "test": "delayedMainThreadCannotDrawExpiredFrameEvenBeforeTimerRuns",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.ui.BoundingBoxOverlayTest",
+        "test": "togglesAndTimeoutChangesNeverReviveOldPayload",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.ui.BoundingBoxOverlayTest",
+        "test": "freshDrawsAndContinuouslyArrivingStaleResultsDoNotDraw",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.ui.BoundingBoxOverlayTest",
+        "test": "attachedTimerExpiresWithoutFurtherResultsAndRecreationClearsOldView",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.ui.BoundingBoxOverlayTest",
+        "test": "detectorDimensionsAndExpirationAreIndependent",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.settings.XnnpackRuntimeSettingsTest",
+        "test": "cameraDrainAndInterpreterClosePrecedeOnOffOnRecreationAndNewLogSessions",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.settings.SettingsActivityTest",
+        "test": "schemaThreeAppliedAndCustomSettingsMigratePreviewOnAndKeepOtherValues",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.settings.SettingsActivityTest",
+        "test": "modelChoiceSurvivesDraftRecreationApplyReopenAndCustomPreset",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.settings.SettingsActivityTest",
+        "test": "schemaFivePresetsAndFailedModelApplyRestoreEntirePreviousConfiguration",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.settings.SettingsActivityTest",
+        "test": "categoryScrollIsRetainedAcrossNavigationAndRecreation",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.settings.SettingsActivityTest",
+        "test": "builtInAndNamedPresetsStillApplyWithoutChangingOtherValues",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.settings.SettingsActivityTest",
+        "test": "previewSwitchSurvivesRecreationApplyReopenAndCustomPresetWithoutChangingOverlay",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.settings.SettingsActivityTest",
+        "test": "previewVisibilitySuppressesDebugAndBoxesWhileKeepingRecordingAndLogControls",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.settings.SettingsActivityTest",
+        "test": "customPresetSaveRenameDeleteAndResetKeepTheirExistingMeaning",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.settings.SettingsActivityTest",
+        "test": "everyExistingControlIsReachableInItsCategory",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.settings.SettingsActivityTest",
+        "test": "schemaTwoAndCustomPresetsDefaultXnnpackOnWithoutLosingExistingValues",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.settings.SettingsActivityTest",
+        "test": "incompleteDraftSurvivesRecreationAndCancelDoesNotSave",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.settings.SettingsActivityTest",
+        "test": "roiPresetValidationAndDurationStayInTheirCategoriesAndPersist",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.settings.SettingsActivityTest",
+        "test": "diagnosticsAndIntervalSurviveNavigationRecreationApplyAndReopen",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.settings.SettingsActivityTest",
+        "test": "legacyMigrationPreservesCustomPresetAndRecreationDoesNotAdvanceRollback",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.settings.SettingsActivityTest",
+        "test": "previewModesKeepRealInferenceDiagnosticsAndPerformanceLogSettingsLock",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.settings.SettingsActivityTest",
+        "test": "xnnpackSwitchPersistsOffOnAndThreadSettingsAcrossEditorAndStoreRecreation",
+        "statusCode": 0
+      },
+      {
+        "class": "com.samin.objectdetection.settings.SettingsActivityTest",
+        "test": "browsingFocusingAndRevertingAnEditDoNotWriteSettings",
+        "statusCode": 0
+      }
+    ]
+  },
+  "initialAttempts": [
+    "Gradle connected run: 22 cases, 3 failures, 1 skipped. Screen off, camera permission absent, stale UI field count and a newly added test wait were corrected.",
+    "First direct run: all 19 non-settings cases passed; UI cases were rerun with animations disabled and complete descendant-layout waits. Existing ROI/timer fields were added to the stale expected field list."
+  ],
+  "restoredDeviceState": {
+    "cameraPermission": false,
+    "fineLocationPermission": false,
+    "coarseLocationPermission": false,
+    "notificationPermission": false,
+    "windowAnimationScale": "1.0",
+    "transitionAnimationScale": "1.0",
+    "animatorDurationScale": "1.0"
+  },
+  "limits": [
+    "No sustained thermal or battery comparison; USB charging during smoke tests.",
+    "3-minute auto-stop test was not rerun.",
+    "No real screen-recording session was started.",
+    "Missing-asset and tensor rejection plus settings rollback were tested separately; no APK with a deliberately missing/corrupt selected model was installed.",
+    "Short model logs use different ROI/preview conditions and are format/integration evidence, not an A/B benchmark."
+  ],
+  "logAnalysis": [
+    {
+      "file": "build\\model-selection-512-log.txt",
+      "measurement": {
+        "session": {
+          "configuredDurationMs": "300000",
+          "actualDurationMs": "809",
+          "stopReason": "MANUAL",
+          "stoppedElapsedNs": "1318294793348419"
+        },
+        "roiSettings": {
+          "camera.roi.bottom": "0.0",
+          "camera.roi.enabled": "true",
+          "camera.roi.left": "0.05",
+          "camera.roi.right": "0.05",
+          "camera.roi.showRegion": "true",
+          "camera.roi.top": "0.1",
+          "camera.useCenterSquareCrop": "false",
+          "yolo.resizeMode": "LETTERBOX"
+        },
+        "observedFrameRois": [
+          {
+            "frame": "1080x1440",
+            "rotation": "90",
+            "roi": "[54,144,1026,1440]"
+          }
+        ]
+      },
+      "windowStartSeconds": 0.0,
+      "windowEndSeconds": 0.809,
+      "excludedTailSeconds": 0.0,
+      "successfulFrameSamples": 3,
+      "errorLinesInWindow": 0,
+      "droppedLogLines": 0,
+      "frameLogComplete": true,
+      "fpsFromRecordedFrames": 3.7082818294190356,
+      "inference": {
+        "samples": 3,
+        "averageMs": 238.33333333333334,
+        "p95Ms": 239
+      },
+      "pipeline": {
+        "samples": 3,
+        "averageMs": 249.0,
+        "p95Ms": 250
+      },
+      "totalProcessing": {
+        "samples": 3,
+        "averageMs": 263.6666666666667,
+        "p95Ms": 264
+      },
+      "preprocess": {
+        "samples": 3,
+        "averageMs": 1.0,
+        "p95Ms": 1
+      },
+      "bitmap": {
+        "samples": 3,
+        "averageMs": 14.0,
+        "p95Ms": 15
+      },
+      "details": {
+        "cameraToBitmap": {
+          "samples": 3,
+          "averageMs": 2.812333333333333,
+          "p95Ms": 3.182
+        },
+        "rotation": {
+          "samples": 3,
+          "averageMs": 90.0,
+          "p95Ms": 90.0
+        },
+        "inputBuffer": {
+          "samples": 3,
+          "averageMs": 1.0,
+          "p95Ms": 1.0
+        },
+        "getPixels": {
+          "samples": 3,
+          "averageMs": 0.42166666666666663,
+          "p95Ms": 0.438
+        },
+        "rgbWrite": {
+          "samples": 3,
+          "averageMs": 1.5363333333333333,
+          "p95Ms": 1.569
+        },
+        "inputDiagnostics": {
+          "samples": 3,
+          "averageMs": 0.0,
+          "p95Ms": 0.0
+        },
+        "outputDiagnostics": {
+          "samples": 3,
+          "averageMs": 0.0,
+          "p95Ms": 0.0
+        },
+        "nativeInvoke": {
+          "samples": 3,
+          "averageMs": 238.27066666666667,
+          "p95Ms": 239.074
+        },
+        "mlKitPrepare": {
+          "samples": 3,
+          "averageMs": 0.009666666666666665,
+          "p95Ms": 0.01
+        }
+      },
+      "preprocessByInputDiagnostics": {
+        "off": {
+          "samples": 3,
+          "averageMs": 1.0,
+          "p95Ms": 1
+        },
+        "on": {
+          "samples": 0,
+          "averageMs": null,
+          "p95Ms": null
+        }
+      },
+      "execution": [
+        {
+          "requestedBackend": "CPU",
+          "appliedBackend": "CPU",
+          "cpuThreads": "4",
+          "xnnpackRequested": "true",
+          "initialization": "INTERPRETER_CREATED",
+          "delegateVerification": "UNAVAILABLE_JAVA_API",
+          "gpuSupport": "UNSUPPORTED_INTERPRETER_LITERT_2_1_1",
+          "runtimeVersion": "2.21.0"
+        }
+      ],
+      "cpuFallbackCountLifetimeObserved": 0,
+      "diagnostics": {
+        "systemSampleCount": 1,
+        "processCpuUsage": {
+          "validSamples": 0,
+          "unavailableSamples": 1,
+          "average": "N/A",
+          "first": "N/A",
+          "last": "N/A",
+          "maximum": "N/A"
+        },
+        "thermalStatusSamples": [
+          "NONE"
+        ],
+        "thermalStatusEvents": [
+          {
+            "sessionId": "24f0b44d-be74-4a24-88b9-c6f15d260764",
+            "elapsedSeconds": "0.012",
+            "observedUnixMs": "1792480162655",
+            "observedElapsedNs": "1318293996144825",
+            "previousThermalStatus": "N/A",
+            "thermalStatus": "NONE",
+            "source": "poll"
+          }
+        ],
+        "thermalHeadroom": {
+          "validSamples": 1,
+          "unavailableSamples": 0,
+          "average": 0.667,
+          "first": 0.667,
+          "last": 0.667,
+          "maximum": 0.667
+        },
+        "thermalTrend": [
+          {
+            "elapsedSeconds": "0.012",
+            "thermalStatus": "NONE",
+            "thermalHeadroom": "0.667",
+            "headroomAgeMs": "0.000"
+          }
+        ],
+        "battery": {
+          "sampleCount": 2,
+          "levelPct": {
+            "start": 60.0,
+            "end": 60.0,
+            "delta": 0.0
+          },
+          "temperatureC": {
+            "start": 31.4,
+            "end": 31.4,
+            "delta": 0.0,
+            "sampledMaximum": 31.4
+          },
+          "byChargingStatus": {
+            "Charging": {
+              "batteryCurrentMa": {
+                "validSamples": 0,
+                "unavailableSamples": 2,
+                "average": "N/A",
+                "first": "N/A",
+                "last": "N/A",
+                "maximum": "N/A"
+              },
+              "estimatedBatteryPowerMw": {
+                "validSamples": 0,
+                "unavailableSamples": 2,
+                "average": "N/A",
+                "first": "N/A",
+                "last": "N/A",
+                "maximum": "N/A"
+              }
+            }
+          },
+          "consistency": {
+            "pairedIntervals": 0,
+            "coveredDischargingSeconds": 0.0,
+            "chargeCounterDropMah": "N/A",
+            "integratedCurrentDischargeMah": "N/A",
+            "currentToCounterRatio": "N/A",
+            "powerReliability": "NOT_VALIDATED",
+            "note": "Trapezoidal sampled current vs charge counter on the same contiguous unplugged discharging intervals (gaps <=120s). A factor >10 mismatch after >=60s and >=1mAh counter drop is a diagnostic heuristic, not calibration. Do not multiply current by 1000 automatically. Counter/firmware errors, sampling and unit violations require device verification; power remains a device estimate."
+          },
+          "counterDischarge": {
+            "coveredSeconds": 0.0,
+            "chargeDropMah": "N/A",
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "intervals": [
+              {
+                "startSeconds": 0.028,
+                "endSeconds": 0.81,
+                "averageDischargeCurrentMa": "N/A",
+                "estimatedDischargePowerMw": "N/A",
+                "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+              }
+            ],
+            "note": "Device battery counter estimate, not calibrated or app-attributed. Only eligible adjacent intervals; unchanged intervals contribute elapsed time but do not assert zero power. Power uses charge-weighted endpoint voltages; short intervals reflect counter quantization."
+          },
+          "rawCurrentNow": {
+            "validSamples": 2,
+            "unavailableSamples": 0,
+            "average": -3210.0,
+            "first": -3210.0,
+            "last": -3210.0,
+            "maximum": -3210.0
+          },
+          "apiCurrentNowMa": {
+            "validSamples": 2,
+            "unavailableSamples": 0,
+            "average": -3.21,
+            "first": -3.21,
+            "last": -3.21,
+            "maximum": -3.21
+          },
+          "averageDischargingCurrentMa": "N/A",
+          "averageEstimatedDischargingPowerMw": "N/A",
+          "fullSessionSummary": {
+            "sessionId": "24f0b44d-be74-4a24-88b9-c6f15d260764",
+            "measurementDurationSeconds": "0.809",
+            "firstSampleSeconds": "0.028",
+            "lastSampleSeconds": "0.810",
+            "sampleSpanSeconds": "0.781",
+            "startBatteryLevelPct": "60.000",
+            "endBatteryLevelPct": "60.000",
+            "batteryLevelDeltaPct": "0.000",
+            "startBatteryTemperatureC": "31.400",
+            "endBatteryTemperatureC": "31.400",
+            "maxBatteryTemperatureC": "31.400",
+            "batteryTemperatureDeltaC": "0.000",
+            "samples": "2",
+            "validSamples": "0",
+            "unavailableSamples": "2",
+            "currentValidSamples": "2",
+            "currentUnavailableSamples": "0",
+            "powerValidSamples": "2",
+            "powerUnavailableSamples": "0",
+            "temperatureValidSamples": "2",
+            "chargingStatusChanged": "false",
+            "pluggedTypeChanged": "false",
+            "thermalStatusChanged": "false",
+            "scope": "device_battery",
+            "power": "estimated_signed",
+            "sampleMean": "true",
+            "batteryCurrentReliability": "NOT_VALIDATED",
+            "counterEligibleIntervals": "0",
+            "counterCoveredSeconds": "0.000",
+            "counterTotalDischargeMah": "N/A",
+            "counterAverageDischargeCurrentMa": "N/A",
+            "counterEstimatedDischargePowerMw": "N/A",
+            "pairedCurrentSeconds": "0.000",
+            "pairedCounterDischargeMah": "N/A",
+            "integratedApiCurrentDischargeMah": "N/A",
+            "currentToCounterRatio": "N/A",
+            "counterReliability": "UNVERIFIED_FUEL_GAUGE_ESTIMATE",
+            "observedBatteryWarnings": "CURRENT_AVERAGE_WINDOW_UNKNOWN,COUNTER_ESTIMATE_NOT_CALIBRATED,NO_PREVIOUS_SAMPLE,NOT_VALIDATED,NOT_UNPLUGGED_DISCHARGING",
+            "batteryWarnings": "CURRENT_NOT_VALIDATED"
+          },
+          "sampleLogComplete": true,
+          "fullSessionStatusSummaries": [
+            {
+              "sessionId": "24f0b44d-be74-4a24-88b9-c6f15d260764",
+              "chargingStatus": "Charging",
+              "averageBatteryCurrentMa": "N/A",
+              "currentValidSamples": "2",
+              "averageEstimatedBatteryPowerMw": "N/A",
+              "powerValidSamples": "2",
+              "averageApiBatteryCurrentMa": "-3.210",
+              "averageApiEstimatedBatteryPowerMw": "-11.405",
+              "scope": "device_battery"
+            }
+          ],
+          "note": "Device battery, signed current/power; estimates are not app consumption. byChargingStatus and fullSessionStatusSummaries preserve recorded numbers even if legacy logs reported unreliable power; top-level current/power are suppressed on detected mismatch. API arithmetic is not independent device validation. Means use recorded samples grouped by status. Battery temperature is not CPU/GPU temperature. 0% level delta does not mean zero power. Polls can miss transitions; headroom may be cached. See fullSessionSummary for authoritative counts/endpoints if sample lines were dropped."
+        }
+      },
+      "note": "Statistics use recorded successful FRAME samples. If frameLogComplete=false, FPS/P95/averages are incomplete. Error lines count only recorded errors; fallback counters have detector lifetime scope."
+    },
+    {
+      "file": "build\\model-selection-640-log.txt",
+      "measurement": {
+        "session": {
+          "configuredDurationMs": "300000",
+          "actualDurationMs": "1150",
+          "stopReason": "MANUAL",
+          "stoppedElapsedNs": "1318312827014552"
+        },
+        "roiSettings": {
+          "camera.roi.bottom": "0.0",
+          "camera.roi.enabled": "false",
+          "camera.roi.left": "0.0",
+          "camera.roi.right": "0.0",
+          "camera.roi.showRegion": "true",
+          "camera.roi.top": "0.0",
+          "camera.useCenterSquareCrop": "false",
+          "yolo.resizeMode": "LETTERBOX"
+        },
+        "observedFrameRois": [
+          {
+            "frame": "1080x1440",
+            "rotation": "90",
+            "roi": "[0,0,1080,1440]"
+          }
+        ]
+      },
+      "windowStartSeconds": 0.0,
+      "windowEndSeconds": 1.15,
+      "excludedTailSeconds": 0.0,
+      "successfulFrameSamples": 3,
+      "errorLinesInWindow": 0,
+      "droppedLogLines": 0,
+      "frameLogComplete": true,
+      "fpsFromRecordedFrames": 2.608695652173913,
+      "inference": {
+        "samples": 3,
+        "averageMs": 349.3333333333333,
+        "p95Ms": 350
+      },
+      "pipeline": {
+        "samples": 3,
+        "averageMs": 358.6666666666667,
+        "p95Ms": 359
+      },
+      "totalProcessing": {
+        "samples": 3,
+        "averageMs": 374.0,
+        "p95Ms": 376
+      },
+      "preprocess": {
+        "samples": 3,
+        "averageMs": 3.0,
+        "p95Ms": 3
+      },
+      "bitmap": {
+        "samples": 3,
+        "averageMs": 14.666666666666666,
+        "p95Ms": 17
+      },
+      "details": {
+        "cameraToBitmap": {
+          "samples": 3,
+          "averageMs": 3.296,
+          "p95Ms": 3.63
+        },
+        "rotation": {
+          "samples": 3,
+          "averageMs": 90.0,
+          "p95Ms": 90.0
+        },
+        "inputBuffer": {
+          "samples": 3,
+          "averageMs": 2.0,
+          "p95Ms": 2.0
+        },
+        "getPixels": {
+          "samples": 3,
+          "averageMs": 0.6083333333333333,
+          "p95Ms": 0.633
+        },
+        "rgbWrite": {
+          "samples": 3,
+          "averageMs": 2.239666666666667,
+          "p95Ms": 2.277
+        },
+        "inputDiagnostics": {
+          "samples": 3,
+          "averageMs": 0.0,
+          "p95Ms": 0.0
+        },
+        "outputDiagnostics": {
+          "samples": 3,
+          "averageMs": 0.0,
+          "p95Ms": 0.0
+        },
+        "nativeInvoke": {
+          "samples": 3,
+          "averageMs": 349.41799999999995,
+          "p95Ms": 349.92
+        },
+        "mlKitPrepare": {
+          "samples": 3,
+          "averageMs": 0.010666666666666666,
+          "p95Ms": 0.012
+        }
+      },
+      "preprocessByInputDiagnostics": {
+        "off": {
+          "samples": 3,
+          "averageMs": 3.0,
+          "p95Ms": 3
+        },
+        "on": {
+          "samples": 0,
+          "averageMs": null,
+          "p95Ms": null
+        }
+      },
+      "execution": [
+        {
+          "requestedBackend": "CPU",
+          "appliedBackend": "CPU",
+          "cpuThreads": "4",
+          "xnnpackRequested": "true",
+          "initialization": "INTERPRETER_CREATED",
+          "delegateVerification": "UNAVAILABLE_JAVA_API",
+          "gpuSupport": "UNSUPPORTED_INTERPRETER_LITERT_2_1_1",
+          "runtimeVersion": "2.21.0"
+        }
+      ],
+      "cpuFallbackCountLifetimeObserved": 0,
+      "diagnostics": {
+        "systemSampleCount": 2,
+        "processCpuUsage": {
+          "validSamples": 1,
+          "unavailableSamples": 1,
+          "average": 120.476,
+          "first": 120.476,
+          "last": 120.476,
+          "maximum": 120.476
+        },
+        "thermalStatusSamples": [
+          "NONE",
+          "NONE"
+        ],
+        "thermalStatusEvents": [
+          {
+            "sessionId": "59723766-8621-4858-800e-37b258951925",
+            "elapsedSeconds": "0.005",
+            "observedUnixMs": "1792480180341",
+            "observedElapsedNs": "1318311682049473",
+            "previousThermalStatus": "N/A",
+            "thermalStatus": "NONE",
+            "source": "poll"
+          }
+        ],
+        "thermalHeadroom": {
+          "validSamples": 0,
+          "unavailableSamples": 2,
+          "average": "N/A",
+          "first": "N/A",
+          "last": "N/A",
+          "maximum": "N/A"
+        },
+        "thermalTrend": [
+          {
+            "elapsedSeconds": "0.005",
+            "thermalStatus": "NONE",
+            "thermalHeadroom": "N/A",
+            "headroomAgeMs": "N/A"
+          },
+          {
+            "elapsedSeconds": "1.022",
+            "thermalStatus": "NONE",
+            "thermalHeadroom": "N/A",
+            "headroomAgeMs": "N/A"
+          }
+        ],
+        "battery": {
+          "sampleCount": 2,
+          "levelPct": {
+            "start": 60.0,
+            "end": 60.0,
+            "delta": 0.0
+          },
+          "temperatureC": {
+            "start": 32.7,
+            "end": 32.7,
+            "delta": 0.0,
+            "sampledMaximum": 32.7
+          },
+          "byChargingStatus": {
+            "Charging": {
+              "batteryCurrentMa": {
+                "validSamples": 0,
+                "unavailableSamples": 2,
+                "average": "N/A",
+                "first": "N/A",
+                "last": "N/A",
+                "maximum": "N/A"
+              },
+              "estimatedBatteryPowerMw": {
+                "validSamples": 0,
+                "unavailableSamples": 2,
+                "average": "N/A",
+                "first": "N/A",
+                "last": "N/A",
+                "maximum": "N/A"
+              }
+            }
+          },
+          "consistency": {
+            "pairedIntervals": 0,
+            "coveredDischargingSeconds": 0.0,
+            "chargeCounterDropMah": "N/A",
+            "integratedCurrentDischargeMah": "N/A",
+            "currentToCounterRatio": "N/A",
+            "powerReliability": "NOT_VALIDATED",
+            "note": "Trapezoidal sampled current vs charge counter on the same contiguous unplugged discharging intervals (gaps <=120s). A factor >10 mismatch after >=60s and >=1mAh counter drop is a diagnostic heuristic, not calibration. Do not multiply current by 1000 automatically. Counter/firmware errors, sampling and unit violations require device verification; power remains a device estimate."
+          },
+          "counterDischarge": {
+            "coveredSeconds": 0.0,
+            "chargeDropMah": "N/A",
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "intervals": [
+              {
+                "startSeconds": 0.013,
+                "endSeconds": 1.151,
+                "averageDischargeCurrentMa": "N/A",
+                "estimatedDischargePowerMw": "N/A",
+                "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+              }
+            ],
+            "note": "Device battery counter estimate, not calibrated or app-attributed. Only eligible adjacent intervals; unchanged intervals contribute elapsed time but do not assert zero power. Power uses charge-weighted endpoint voltages; short intervals reflect counter quantization."
+          },
+          "rawCurrentNow": {
+            "validSamples": 2,
+            "unavailableSamples": 0,
+            "average": -1277.0,
+            "first": -1146.0,
+            "last": -1408.0,
+            "maximum": -1146.0
+          },
+          "apiCurrentNowMa": {
+            "validSamples": 2,
+            "unavailableSamples": 0,
+            "average": -1.277,
+            "first": -1.146,
+            "last": -1.408,
+            "maximum": -1.146
+          },
+          "averageDischargingCurrentMa": "N/A",
+          "averageEstimatedDischargingPowerMw": "N/A",
+          "fullSessionSummary": {
+            "sessionId": "59723766-8621-4858-800e-37b258951925",
+            "measurementDurationSeconds": "1.150",
+            "firstSampleSeconds": "0.013",
+            "lastSampleSeconds": "1.151",
+            "sampleSpanSeconds": "1.139",
+            "startBatteryLevelPct": "60.000",
+            "endBatteryLevelPct": "60.000",
+            "batteryLevelDeltaPct": "0.000",
+            "startBatteryTemperatureC": "32.700",
+            "endBatteryTemperatureC": "32.700",
+            "maxBatteryTemperatureC": "32.700",
+            "batteryTemperatureDeltaC": "0.000",
+            "samples": "2",
+            "validSamples": "0",
+            "unavailableSamples": "2",
+            "currentValidSamples": "2",
+            "currentUnavailableSamples": "0",
+            "powerValidSamples": "2",
+            "powerUnavailableSamples": "0",
+            "temperatureValidSamples": "2",
+            "chargingStatusChanged": "false",
+            "pluggedTypeChanged": "false",
+            "thermalStatusChanged": "false",
+            "scope": "device_battery",
+            "power": "estimated_signed",
+            "sampleMean": "true",
+            "batteryCurrentReliability": "NOT_VALIDATED",
+            "counterEligibleIntervals": "0",
+            "counterCoveredSeconds": "0.000",
+            "counterTotalDischargeMah": "N/A",
+            "counterAverageDischargeCurrentMa": "N/A",
+            "counterEstimatedDischargePowerMw": "N/A",
+            "pairedCurrentSeconds": "0.000",
+            "pairedCounterDischargeMah": "N/A",
+            "integratedApiCurrentDischargeMah": "N/A",
+            "currentToCounterRatio": "N/A",
+            "counterReliability": "UNVERIFIED_FUEL_GAUGE_ESTIMATE",
+            "observedBatteryWarnings": "CURRENT_AVERAGE_WINDOW_UNKNOWN,COUNTER_ESTIMATE_NOT_CALIBRATED,NO_PREVIOUS_SAMPLE,NOT_VALIDATED,NOT_UNPLUGGED_DISCHARGING",
+            "batteryWarnings": "CURRENT_NOT_VALIDATED"
+          },
+          "sampleLogComplete": true,
+          "fullSessionStatusSummaries": [
+            {
+              "sessionId": "59723766-8621-4858-800e-37b258951925",
+              "chargingStatus": "Charging",
+              "averageBatteryCurrentMa": "N/A",
+              "currentValidSamples": "2",
+              "averageEstimatedBatteryPowerMw": "N/A",
+              "powerValidSamples": "2",
+              "averageApiBatteryCurrentMa": "-1.277",
+              "averageApiEstimatedBatteryPowerMw": "-4.956",
+              "scope": "device_battery"
+            }
+          ],
+          "note": "Device battery, signed current/power; estimates are not app consumption. byChargingStatus and fullSessionStatusSummaries preserve recorded numbers even if legacy logs reported unreliable power; top-level current/power are suppressed on detected mismatch. API arithmetic is not independent device validation. Means use recorded samples grouped by status. Battery temperature is not CPU/GPU temperature. 0% level delta does not mean zero power. Polls can miss transitions; headroom may be cached. See fullSessionSummary for authoritative counts/endpoints if sample lines were dropped."
+        }
+      },
+      "note": "Statistics use recorded successful FRAME samples. If frameLogComplete=false, FPS/P95/averages are incomplete. Error lines count only recorded errors; fallback counters have detector lifetime scope."
+    }
+  ]
+}

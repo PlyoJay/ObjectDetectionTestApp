@@ -14,6 +14,7 @@ import androidx.test.runner.lifecycle.Stage
 import com.samin.objectdetection.MainActivity
 import com.samin.objectdetection.camera.CameraController
 import com.samin.objectdetection.detector.VisionStyleYoloDetector
+import com.samin.objectdetection.detector.YoloModel
 import com.samin.objectdetection.metrics.PerformanceLogRecorder
 import org.junit.Assert.*
 import org.junit.Assume.assumeTrue
@@ -62,17 +63,24 @@ class XnnpackRuntimeSettingsTest {
             scenario = ActivityScenario.launch(MainActivity::class.java)
             await("initial camera inference") { resumedMain()?.let { (field(it, "detector") as VisionStyleYoloDetector).executionInfo().lastInference == "SUCCESS" } == true }
             val sessionIds = mutableSetOf<String>()
-            for ((threads, enabled) in listOf(4 to true, 4 to false, 2 to false, 2 to true, 4 to true)) {
+            for ((model, threads, enabled) in listOf(Triple(YoloModel.YOLO_640, 4, true),
+                Triple(YoloModel.YOLO_512, 4, true), Triple(YoloModel.YOLO_640, 4, true),
+                Triple(YoloModel.YOLO_640, 4, false), Triple(YoloModel.YOLO_640, 2, false),
+                Triple(YoloModel.YOLO_640, 2, true), Triple(YoloModel.YOLO_640, 4, true))) {
                 var activity = requireNotNull(resumedMain())
                 val before = field(activity, "appSettings") as AppSettings
-                if (before.yolo.interpreterThreadCount != threads || before.yolo.useXnnpack != enabled) {
+                if (before.yolo.interpreterThreadCount != threads || before.yolo.useXnnpack != enabled || before.yolo.model != model) {
                     val oldActivity = activity
                     val oldDetector = field(activity, "detector") as VisionStyleYoloDetector
                     val oldCamera = field(activity, "cameraController") as CameraController
                     // UI persistence/drafts are covered in SettingsActivityTest. Here invoke the
                     // same saved-settings restart callback directly while camera inference runs.
                     AppSettingsStore(context).saveApplied(before.copy(yolo = before.yolo.copy(
-                        interpreterThreadCount = threads, useXnnpack = enabled)))
+                        interpreterThreadCount = threads, useXnnpack = enabled, model = model),
+                        camera = before.camera.copy(previewEnabled = model != YoloModel.YOLO_512,
+                            recognitionRoi = if (model == YoloModel.YOLO_512) com.samin.objectdetection.camera.RecognitionRoi.PRESET
+                                else com.samin.objectdetection.camera.RecognitionRoi()),
+                        performanceLog = PerformanceLogSettings(systemDiagnosticsEnabled = true, batteryDiagnosticsEnabled = true, sampleIntervalMs = 1000)))
                     call(activity, "restartForSettings")
                     await("new Activity with old Interpreter closed") { resumedMain()?.let { it !== oldActivity } == true }
                     activity = requireNotNull(resumedMain())
@@ -92,6 +100,9 @@ class XnnpackRuntimeSettingsTest {
                 assertEquals("CPU", detector.executionInfo().requestedBackend)
                 assertEquals("CPU", detector.executionInfo().appliedBackend)
                 assertEquals(0L, detector.executionInfo().inferenceErrors)
+                assertEquals(model.assetName, detector.modelIdentity().assetName)
+                assertEquals(model.inputSize, detector.modelIdentity().inputWidth)
+                assertEquals(model.inputSize, (field(activity, "detectionConfig") as com.samin.objectdetection.camera.DetectionConfig).inputSize)
                 val sessionId = field(activity, "sessionId") as String
                 assertTrue("New settings require a new app session", sessionIds.add(sessionId))
                 call(activity, "togglePerformanceLogging")
@@ -107,10 +118,23 @@ class XnnpackRuntimeSettingsTest {
                 call(activity, "togglePerformanceLogging")
                 await("log drain") { !recorder.isRecording && !(field(activity, "performanceJob") as kotlinx.coroutines.Job).isActive }
                 val text = context.contentResolver.openInputStream(uri)!!.bufferedReader().use { it.readText() }
+                java.io.File(context.cacheDir, "model-selection-logs").apply { mkdirs() }.let {
+                    java.io.File(it, "${model.name}_${threads}_$enabled.txt").writeText(text)
+                }
                 val frames = text.lineSequence().filter { it.startsWith("FRAME ") }.toList()
                 assertTrue(frames.isNotEmpty())
                 frames.forEach { assertTrue(it.contains("cpuThreads=$threads xnnpackRequested=$enabled")) }
                 assertTrue(text.contains("sessionId=$sessionId"))
+                assertTrue(text.contains("Model: ${model.assetName}"))
+                assertTrue(text.contains("Model SHA256: ${detector.modelIdentity().sha256}"))
+                assertTrue(text.contains("Input Size: ${model.inputSize}x${model.inputSize}"))
+                assertTrue(text.contains("Input Tensor: ${detector.modelIdentity().inputShape}"))
+                assertTrue(text.contains("Output Tensor: ${detector.modelIdentity().outputShape}"))
+                if (model == YoloModel.YOLO_512) {
+                    assertTrue(text.contains("cameraPreviewEnabled=false"))
+                    assertTrue(text.contains("EDGE_CROP"))
+                    assertTrue(text.contains("SYSTEM"))
+                }
                 assertTrue(text.contains("delegateVerification=UNAVAILABLE_JAVA_API"))
                 assertTrue(text.contains("CUMULATIVE_SUMMARY"))
                 for (key in listOf("inferenceAvgMs=", "inferenceP95Ms=", "preprocessAvgMs=", "pipelineAvgMs=", "totalProcessingAvgMs=", "inferenceFps=", "getPixels=", "rgbWrite=")) assertTrue(key, text.contains(key))

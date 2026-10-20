@@ -7,6 +7,18 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 class YoloTensorContractTest {
+    @Test fun inputAndOutputContractsUseEachTensorDimensionsAndCandidateAxis() {
+        for ((size, count) in listOf(640 to 8400, 512 to 5376, 320 to 2100)) {
+            assertEquals(RgbTensorShape(RgbTensorLayout.NCHW, size, size), RgbTensorShape.from(intArrayOf(1, 3, size, size)))
+            assertEquals(RgbTensorShape(RgbTensorLayout.NHWC, size, size), RgbTensorShape.from(intArrayOf(1, size, size, 3)))
+            assertEquals(YoloOutputShape(true, 13, count), YoloOutputShape.from(intArrayOf(1, 13, count), 9))
+            assertEquals(YoloOutputShape(false, 13, count), YoloOutputShape.from(intArrayOf(1, count, 13), 9))
+        }
+        assertThrows(IllegalArgumentException::class.java) { RgbTensorShape.from(intArrayOf(1, -1, 512, 3)) }
+        assertThrows(IllegalArgumentException::class.java) { RgbTensorShape.from(intArrayOf(2, 3, 512, 512)) }
+        assertThrows(IllegalArgumentException::class.java) { YoloOutputShape.from(intArrayOf(1, 13, 0), 9) }
+    }
+
     private fun buffer(size: Int) = ByteBuffer.allocate(size).order(ByteOrder.LITTLE_ENDIAN)
 
     @Test fun bulkWriterMatchesDivisionByteForByteAtModelSizeAndReusesAllStorage() {

@@ -1,0 +1,177 @@
+========================================
+GOTORO Object Detection Performance Log
+========================================
+
+Start Time: 2026-10-20 16:09:22
+Session ID: 24f0b44d-be74-4a24-88b9-c6f15d260764
+Start Unix Ms: 1792480162643; Start Elapsed Ns: 1318293984069200
+Clock: *AtMs/UnixMs=Unix wall ms; *ElapsedNs=elapsedRealtimeNanos; cameraTimestampNs=camera source
+FPS: fps/Average FPS=successful pipeline completions; analyzerFps=delivered analyzer frames; droppedFrames=explicit app skips
+Unknown camera capture latency=-1; FRAME time is pipeline completion, OVERLAY is a separate draw event
+System Performance Diagnostics: true; Sample Interval: 1000ms
+Battery Thermal Diagnostics: true; Effective: true; battery polling uses system ticks, minimum 5000ms plus final endpoint
+Battery scope=device battery, not app consumption; temperature=battery, not CPU/GPU; signed current mA (+charging/-discharging); estimatedBatteryPowerMw=currentMa*voltageMv/1000, signed estimate, never app power even while charging
+Battery counters: charge=uAh, energy=nWh; unsupported/invalid=N/A; means use valid samples grouped by charging status; delta=last-first; 0% level change does not mean zero consumption
+Battery endpoints=first/final observed samples (see timestamps); max=sampled maximum; changes=observed transitions, between-poll changes may be missed
+Battery RAW=exact getIntProperty result (including sentinels); API_DECLARED_uA is a contract, not device unit verification; *ApiMa=RAW/1000; apiEstimatedBatteryPowerMw=*ApiMa*voltageMv/1000 is unvalidated arithmetic
+batteryCurrentMa/estimatedBatteryPowerMw=N/A until >=60s and >=1mAh paired unplugged discharge show current/counter ratio within [0.1,10]; mismatch/sign conflict latches for the session, no automatic rescaling; consistency is a heuristic, not calibration
+batteryCurrentAverageMa=N/A: hardware averaging window is unknown; batteryCurrentAverageApiMa preserves API conversion. averageBatteryCurrentMa is the sample mean of CURRENT_NOW, not CURRENT_AVERAGE
+Counter interval discharge is positive: (previousUah-currentUah)/1000*3600/seconds; power uses mean endpoint voltage. Unchanged/reset/missing counters, power transitions or gaps >120s=N/A plus warning; short intervals are quantized estimates
+Battery currentValidSamples/powerValidSamples count API arithmetic availability, not verified accuracy; counter totals cover eligible adjacent pairs only; final status means are N/A unless every sample in that status is covered by paired consistency checks
+System metrics unavailable=N/A; processCpuUsage=all app process threads, 100%=one CPU core (may exceed 100%); cpuFrequency=device cpufreq policy, not process scope
+Thermal Headroom: forecastSeconds=0, minimum API call interval=10000ms; cached values include sample time/age, 1.0=SEVERE threshold, not a temperature
+INTERVAL_SUMMARY=[start,end) by successful completion time, 30 seconds plus final partial/empty intervals; P95=nearest rank of actual valid frame samples
+INTERVAL_PREVIEW may miss delayed submissions; final INTERVAL_SUMMARY/CUMULATIVE_SUMMARY are authoritative and include frame data even if file lines were dropped
+Interval system fields=last system sample within that interval (not averages); OFF/no samples=N/A
+
+Model: best_512.tflite
+Model SHA256: f312b541c86426c53c02ef1674ee539c6f87fcf97102061fade628317b3c10b9
+Detector: VisionStyleYoloDetector
+App Version: 1.0
+Preset: DEFAULT
+Settings Schema Version: 6
+Input Size: 512x512
+Input Tensor: [1, 3, 512, 512] (FLOAT32)
+Output Tensor: [1, 13, 5376] (FLOAT32)
+Requested Camera Resolution: 1280x720
+Camera Resolution: 1080x1440
+cameraPreviewEnabled=false
+configuredDurationMs=300000; timerClock=elapsedRealtimeNanos; completionWindow=[start,deadline)
+Recognition ROI: mode=EDGE_CROP enabled=true top=0.1 bottom=0.0 left=0.05 right=0.05 showRegion=true; coordinateSpace=rotated_full_frame_pixels; proxyCropApplied=false; MLKit=shared_ROI
+Overlay Draw: NOT_DISPLAYED_PREVIEW_OFF; missing draw events/age (-1) are not inference or frame errors
+resizeMode=LETTERBOX
+YOLO Threads: 4
+Inference Execution: requestedBackend=CPU appliedBackend=CPU cpuThreads=4 xnnpackRequested=true initialization=INTERPRETER_CREATED delegateVerification=UNAVAILABLE_JAVA_API lastInference=SUCCESS inferenceErrors=0 cpuFallbackCount=0 gpuSupport=UNSUPPORTED_INTERPRETER_LITERT_2_1_1 runtimeVersion=2.21.0
+XNNPACK Requested: true (CPU request only; ON/OFF does not verify native delegation or change backend)
+CPU thread count is the accepted Interpreter option; active worker count/partition coverage are unavailable in Java. Confirm native delegate application with Logcat/profiling.
+Execution settings are fixed for this session. Stop/drain this log before applying settings; the recreated app uses a new session and recorder.
+pipeline=DetectionPipeline.process only; totalProcessing=analyzer receipt through pipeline completion (includes bitmap conversion and ML Kit input preparation; excludes UI draw/warning output)
+Detail timings are overlapping subsets, never summed into aggregates: cameraToBitmap/rotation within bitmap; getPixels/rgbWrite/inputDiagnostics within inputBuffer within preprocess; nativeInvoke within inference; outputDiagnostics within detector/pipeline but outside post. mlKitPrepare includes eligibility check/input resize/dispatch before pipeline; mlKitInFlight is a concurrency hint, not CPU time. Detail milliseconds retain 3 decimals; -1=unavailable, 0=skipped.
+ML Kit Enabled: true
+Geometry Filter Enabled: true
+Adaptive Temporal Enabled: false
+Confidence Threshold: 0.2
+NMS Threshold: 0.45
+
+--- Applied AppSettings Snapshot ---
+
+camera.detectIntervalMs=0
+camera.previewEnabled=false
+camera.requestedHeight=720
+camera.requestedWidth=1280
+camera.roi.bottom=0.0
+camera.roi.enabled=true
+camera.roi.left=0.05
+camera.roi.right=0.05
+camera.roi.showRegion=true
+camera.roi.top=0.1
+camera.useCenterSquareCrop=false
+debug.debugDetectionLogging=false
+debug.debugSaveInferenceInput=false
+debug.debugSaveIntervalMs=2000
+debug.debugSaveOnDetection=false
+debug.diagnosticMaxRawCandidates=200
+debug.diagnosticRawConfidenceThreshold=0.01
+debug.enableDetectorDiagnostics=false
+debug.legacyDebugImageEnabled=false
+filters.adaptiveTemporalEnabled=false
+filters.bollardMaxWidthToHeightRatio=4.0
+filters.bollardMinAreaRatio=1.0E-5
+filters.geometryFilterEnabled=true
+filters.minBoxAreaRatio=0.015
+filters.minBoxHeightRatio=0.025
+filters.minBoxWidthRatio=0.025
+filters.sizeFilterMode=DISABLED
+filters.temporalConfirmationConfidence=0.5
+filters.temporalImmediateConfidence=0.75
+filters.temporalMatchIouThreshold=0.3
+mlKit.detectionIntervalMs=1500
+mlKit.enabled=true
+motion.maxHistorySize=5
+motion.maxMatchDistanceRatio=0.18
+motion.minAbsoluteAreaChange=0.005
+motion.minAbsoluteHeightChange=0.03
+motion.minHistorySize=3
+motion.minRelativeAreaChangeRatio=0.15
+motion.minRelativeHeightChangeRatio=0.1
+motion.minSampleIntervalMs=500
+motion.staleTrackTimeoutMs=2000
+overlay.debugMode=SIMPLE
+overlay.enabled=true
+overlay.showConfidence=false
+overlay.showFps=false
+overlay.showMlKitBoxes=true
+overlay.showYoloBoxes=true
+overlay.staleTimeoutMs=1500
+performanceLog.batteryDiagnosticsEnabled=true
+performanceLog.durationMinutes=5
+performanceLog.sampleIntervalMs=1000
+performanceLog.systemDiagnosticsEnabled=true
+presetName=DEFAULT
+schemaVersion=6
+warning.cooldownMs=5000
+warning.enableActualBeep=false
+warning.enableActualTts=false
+warning.enableActualVibration=false
+warning.ignoreTopRatio=0.25
+warning.maxGuideObjectCount=2
+warning.midAreaRatio=0.02
+warning.midHeightRatio=0.12
+warning.nearAreaRatio=0.07
+warning.nearHeightRatio=0.22
+warning.veryNearAreaRatio=0.15
+warning.veryNearHeightRatio=0.35
+yolo.confidenceThreshold=0.2
+yolo.interpreterThreadCount=4
+yolo.maxCandidates=100
+yolo.model=YOLO_512
+yolo.nmsThreshold=0.45
+yolo.resizeMode=LETTERBOX
+yolo.useXnnpack=true
+--- End AppSettings Snapshot ---
+
+========================================
+THERMAL_STATUS | sessionId=24f0b44d-be74-4a24-88b9-c6f15d260764 elapsedSeconds=0.012 observedUnixMs=1792480162655 observedElapsedNs=1318293996144825 previousThermalStatus=N/A thermalStatus=NONE source=poll
+SYSTEM | sessionId=24f0b44d-be74-4a24-88b9-c6f15d260764 elapsedSeconds=0.012 sampleUnixMs=1792480162655 sampleElapsedNs=1318293995613575 thermalStatus=NONE thermalHeadroom=0.667 headroomSampleElapsedSeconds=0.012 headroomAgeMs=0.000 processCpuUsage=N/A processCpuScope=process_all_threads_percent_one_core cpuUsageWindowMs=N/A cpuFrequency=policy0:currentKHz=1728000,source=scaling_cur_freq,scalingMaxKHz=1728000,cpuinfoMaxKHz=1959000,relatedCpus=0 1 2 3,governor=energy_aware;policy4:currentKHz=864000,source=scaling_cur_freq,scalingMaxKHz=2304000,cpuinfoMaxKHz=2592000,relatedCpus=4 5 6,governor=energy_aware;policy7:currentKHz=2400000,source=scaling_cur_freq,scalingMaxKHz=2400000,cpuinfoMaxKHz=2900000,relatedCpus=7 8,governor=energy_aware;policy9:currentKHz=2400000,source=scaling_cur_freq,scalingMaxKHz=2400000,cpuinfoMaxKHz=3207000,relatedCpus=9,governor=energy_aware cpuFrequencyScope=device_policy_kHz systemSampleElapsedSeconds=0.012 collectionDurationMs=16.466
+BATTERY_SAMPLE | sessionId=24f0b44d-be74-4a24-88b9-c6f15d260764 elapsedSeconds=0.028 batteryLevelPct=60.000 batteryTemperatureC=31.400 batteryVoltageMv=3553 batteryCurrentNowRaw=-3210 batteryCurrentAverageRaw=-1248 currentRawUnit=API_DECLARED_uA batteryCurrentNowApiMa=-3.210 batteryCurrentAverageApiMa=-1.248 batteryCurrentMa=N/A batteryCurrentAverageMa=N/A batteryChargeCounterUah=2355160 batteryEnergyCounterNwh=N/A chargingStatus=Charging pluggedType=USB estimatedBatteryPowerMw=N/A apiEstimatedBatteryPowerMw=-11.405 batteryCurrentReliability=NOT_VALIDATED counterIntervalSeconds=N/A counterChargeDropMah=N/A counterAverageDischargeCurrentMa=N/A counterEstimatedDischargePowerMw=N/A counterReliability=UNVERIFIED_FUEL_GAUGE_ESTIMATE batteryWarnings=CURRENT_AVERAGE_WINDOW_UNKNOWN,COUNTER_ESTIMATE_NOT_CALIBRATED,NO_PREVIOUS_SAMPLE,NOT_VALIDATED thermalStatus=NONE thermalHeadroom=0.667 headroomAgeMs=16.732 batteryCollectionDurationMs=16.896 scope=device_battery power=estimated_signed temperature=battery_not_cpu_gpu
+FRAME 000001 | time=16:09:22.865 | bitmap=13ms | preprocess=1ms | crop=4ms | resize=0ms | inference=239ms | outputParsing=3ms | nms=0ms | post=3ms | pipeline=250ms | frameAgeInference=110ms | frameAgeOverlay=-1ms | detect=0 | visible=0 | warning=0 | fps=0 | analyzerFps=0.8027009383920737 | inferenceFps=0.0 | elapsedSeconds=0.222 | totalProcessing=263ms | cameraToBitmap=2.251ms | rotation=10.871ms | inputBuffer=1ms | getPixels=0.413ms | rgbWrite=1.542ms | inputDiagnostics=0.000ms | outputDiagnostics=0.000ms | nativeInvoke=239.074ms | mlKitPrepare=0.009ms | mlKitInFlight=false | frame=1080x1440 rotation=90 roi=[54,144,1026,1440] | requestedBackend=CPU appliedBackend=CPU cpuThreads=4 xnnpackRequested=true initialization=INTERPRETER_CREATED delegateVerification=UNAVAILABLE_JAVA_API lastInference=SUCCESS inferenceErrors=0 cpuFallbackCount=0 gpuSupport=UNSUPPORTED_INTERPRETER_LITERT_2_1_1 runtimeVersion=2.21.0 | sessionId=24f0b44d-be74-4a24-88b9-c6f15d260764 frameId=2 status=SUCCESS captureUnixMs=1792480162512 cameraTimestampNs=1318293852019755 captureTimestampReliable=true analyzerUnixMs=1792480162601 analyzerElapsedNs=1318293941998770 inferenceStartUnixMs=1792480162621 inferenceStartElapsedNs=1318293962345919 completedUnixMs=1792480162865 completedElapsedNs=1318294205752950 analyzerToInferenceMs=20 errorStage=null error=null
+FRAME 000002 | time=16:09:23.144 | bitmap=15ms | preprocess=1ms | crop=4ms | resize=0ms | inference=238ms | outputParsing=3ms | nms=0ms | post=3ms | pipeline=248ms | frameAgeInference=140ms | frameAgeOverlay=-1ms | detect=0 | visible=0 | warning=0 | fps=0 | analyzerFps=0.8027009383920737 | inferenceFps=0.0 | elapsedSeconds=0.501 | totalProcessing=264ms | cameraToBitmap=3.004ms | rotation=12.523ms | inputBuffer=1ms | getPixels=0.414ms | rgbWrite=1.569ms | inputDiagnostics=0.000ms | outputDiagnostics=0.000ms | nativeInvoke=237.833ms | mlKitPrepare=0.010ms | mlKitInFlight=false | frame=1080x1440 rotation=90 roi=[54,144,1026,1440] | requestedBackend=CPU appliedBackend=CPU cpuThreads=4 xnnpackRequested=true initialization=INTERPRETER_CREATED delegateVerification=UNAVAILABLE_JAVA_API lastInference=SUCCESS inferenceErrors=0 cpuFallbackCount=0 gpuSupport=UNSUPPORTED_INTERPRETER_LITERT_2_1_1 runtimeVersion=2.21.0 | sessionId=24f0b44d-be74-4a24-88b9-c6f15d260764 frameId=3 status=SUCCESS captureUnixMs=1792480162762 cameraTimestampNs=1318294102426903 captureTimestampReliable=true analyzerUnixMs=1792480162879 analyzerElapsedNs=1318294220100723 inferenceStartUnixMs=1792480162902 inferenceStartElapsedNs=1318294242772091 completedUnixMs=1792480163144 completedElapsedNs=1318294484946700 analyzerToInferenceMs=22 errorStage=null error=null
+FRAME 000003 | time=16:09:23.424 | bitmap=14ms | preprocess=1ms | crop=4ms | resize=0ms | inference=238ms | outputParsing=3ms | nms=0ms | post=3ms | pipeline=249ms | frameAgeInference=169ms | frameAgeOverlay=-1ms | detect=0 | visible=0 | warning=0 | fps=0 | analyzerFps=0.8027009383920737 | inferenceFps=0.0 | elapsedSeconds=0.781 | totalProcessing=264ms | cameraToBitmap=3.182ms | rotation=11.705ms | inputBuffer=1ms | getPixels=0.438ms | rgbWrite=1.498ms | inputDiagnostics=0.000ms | outputDiagnostics=0.000ms | nativeInvoke=237.905ms | mlKitPrepare=0.010ms | mlKitInFlight=false | frame=1080x1440 rotation=90 roi=[54,144,1026,1440] | requestedBackend=CPU appliedBackend=CPU cpuThreads=4 xnnpackRequested=true initialization=INTERPRETER_CREATED delegateVerification=UNAVAILABLE_JAVA_API lastInference=SUCCESS inferenceErrors=0 cpuFallbackCount=0 gpuSupport=UNSUPPORTED_INTERPRETER_LITERT_2_1_1 runtimeVersion=2.21.0 | sessionId=24f0b44d-be74-4a24-88b9-c6f15d260764 frameId=4 status=SUCCESS captureUnixMs=1792480163013 cameraTimestampNs=1318294352837138 captureTimestampReliable=true analyzerUnixMs=1792480163160 analyzerElapsedNs=1318294500550645 inferenceStartUnixMs=1792480163182 inferenceStartElapsedNs=1318294522654591 completedUnixMs=1792480163424 completedElapsedNs=1318294764909864 analyzerToInferenceMs=22 errorStage=null error=null
+BATTERY_SAMPLE | sessionId=24f0b44d-be74-4a24-88b9-c6f15d260764 elapsedSeconds=0.810 batteryLevelPct=60.000 batteryTemperatureC=31.400 batteryVoltageMv=3553 batteryCurrentNowRaw=-3210 batteryCurrentAverageRaw=-1396 currentRawUnit=API_DECLARED_uA batteryCurrentNowApiMa=-3.210 batteryCurrentAverageApiMa=-1.396 batteryCurrentMa=N/A batteryCurrentAverageMa=N/A batteryChargeCounterUah=2355160 batteryEnergyCounterNwh=N/A chargingStatus=Charging pluggedType=USB estimatedBatteryPowerMw=N/A apiEstimatedBatteryPowerMw=-11.405 batteryCurrentReliability=NOT_VALIDATED counterIntervalSeconds=0.781 counterChargeDropMah=N/A counterAverageDischargeCurrentMa=N/A counterEstimatedDischargePowerMw=N/A counterReliability=UNVERIFIED_FUEL_GAUGE_ESTIMATE batteryWarnings=CURRENT_AVERAGE_WINDOW_UNKNOWN,COUNTER_ESTIMATE_NOT_CALIBRATED,NOT_UNPLUGGED_DISCHARGING,NOT_VALIDATED thermalStatus=NONE thermalHeadroom=0.667 headroomAgeMs=798.098 batteryCollectionDurationMs=12.964 scope=device_battery power=estimated_signed temperature=battery_not_cpu_gpu
+
+========================================
+FINAL SUMMARY
+Scope: legacy metrics collector cumulative snapshot (up to latest 100000 latency samples); exact recorder session statistics follow below
+========================================
+Duration: 00:00
+Received Frames: 3
+Processed Frames: 2
+Dropped Frames: 0
+Dropped Log Lines: 0
+Average FPS: 4
+Analyzer FPS: 3.7267080745341614; Successful Inference FPS: 3.7267080745341614
+Successful Frames: 3; Failed Frames: 0
+Average Preprocess: 1 ms
+P95 Preprocess: 1 ms
+Average Inference: 238 ms
+P95 Inference: 239 ms
+Average Postprocess: 3 ms
+P95 Postprocess: 3 ms
+Average Pipeline: 249 ms
+P95 Pipeline: 250 ms
+Average Frame Age At Overlay: 0 ms
+P95 Frame Age At Overlay: 0 ms
+Overlay Latency Samples: 0 (0 means unavailable)
+YOLO Detections: 0
+Visible Detections: 0
+Warnings: 0
+ML Kit Average: 0 ms
+========================================
+
+TEST_SESSION | configuredDurationMs=300000 actualDurationMs=809 stopReason=MANUAL stoppedElapsedNs=1318294793348419
+--- EXACT SESSION AND 30-SECOND INTERVAL SUMMARIES ---
+CUMULATIVE_SUMMARY | sessionId=24f0b44d-be74-4a24-88b9-c6f15d260764 intervalIndex=ALL startSeconds=0.000 endSeconds=0.809 elapsedSeconds=0.809 successfulFrames=3 inferenceAvgMs=238.333 inferenceP95Ms=239 preprocessAvgMs=1.000 pipelineAvgMs=249.000 pipelineP95Ms=250 totalProcessingAvgMs=263.667 totalProcessingP95Ms=264 totalProcessingSamples=3 requestedBackend=CPU appliedBackend=CPU cpuThreads=4 xnnpackRequested=true initialization=INTERPRETER_CREATED delegateVerification=UNAVAILABLE_JAVA_API lastInference=SUCCESS inferenceErrors=0 cpuFallbackCount=0 gpuSupport=UNSUPPORTED_INTERPRETER_LITERT_2_1_1 runtimeVersion=2.21.0 inferenceFps=3.707 inferenceSamples=3 preprocessSamples=3 pipelineSamples=3 thermalStatus=NONE thermalHeadroom=0.667 headroomSampleElapsedSeconds=0.012 headroomAgeMs=0.000 processCpuUsage=N/A processCpuScope=process_all_threads_percent_one_core cpuUsageWindowMs=N/A cpuFrequency=policy0:currentKHz=1728000,source=scaling_cur_freq,scalingMaxKHz=1728000,cpuinfoMaxKHz=1959000,relatedCpus=0 1 2 3,governor=energy_aware;policy4:currentKHz=864000,source=scaling_cur_freq,scalingMaxKHz=2304000,cpuinfoMaxKHz=2592000,relatedCpus=4 5 6,governor=energy_aware;policy7:currentKHz=2400000,source=scaling_cur_freq,scalingMaxKHz=2400000,cpuinfoMaxKHz=2900000,relatedCpus=7 8,governor=energy_aware;policy9:currentKHz=2400000,source=scaling_cur_freq,scalingMaxKHz=2400000,cpuinfoMaxKHz=3207000,relatedCpus=9,governor=energy_aware cpuFrequencyScope=device_policy_kHz systemSampleElapsedSeconds=0.012
+INTERVAL_SUMMARY | sessionId=24f0b44d-be74-4a24-88b9-c6f15d260764 intervalIndex=0 startSeconds=0.000 endSeconds=0.809 elapsedSeconds=0.809 successfulFrames=3 inferenceAvgMs=238.333 inferenceP95Ms=239 preprocessAvgMs=1.000 pipelineAvgMs=249.000 pipelineP95Ms=250 totalProcessingAvgMs=263.667 totalProcessingP95Ms=264 totalProcessingSamples=3 requestedBackend=CPU appliedBackend=CPU cpuThreads=4 xnnpackRequested=true initialization=INTERPRETER_CREATED delegateVerification=UNAVAILABLE_JAVA_API lastInference=SUCCESS inferenceErrors=0 cpuFallbackCount=0 gpuSupport=UNSUPPORTED_INTERPRETER_LITERT_2_1_1 runtimeVersion=2.21.0 inferenceFps=3.707 inferenceSamples=3 preprocessSamples=3 pipelineSamples=3 thermalStatus=NONE thermalHeadroom=0.667 headroomSampleElapsedSeconds=0.012 headroomAgeMs=0.000 processCpuUsage=N/A processCpuScope=process_all_threads_percent_one_core cpuUsageWindowMs=N/A cpuFrequency=policy0:currentKHz=1728000,source=scaling_cur_freq,scalingMaxKHz=1728000,cpuinfoMaxKHz=1959000,relatedCpus=0 1 2 3,governor=energy_aware;policy4:currentKHz=864000,source=scaling_cur_freq,scalingMaxKHz=2304000,cpuinfoMaxKHz=2592000,relatedCpus=4 5 6,governor=energy_aware;policy7:currentKHz=2400000,source=scaling_cur_freq,scalingMaxKHz=2400000,cpuinfoMaxKHz=2900000,relatedCpus=7 8,governor=energy_aware;policy9:currentKHz=2400000,source=scaling_cur_freq,scalingMaxKHz=2400000,cpuinfoMaxKHz=3207000,relatedCpus=9,governor=energy_aware cpuFrequencyScope=device_policy_kHz systemSampleElapsedSeconds=0.012
+--- END INTERVAL SUMMARIES ---
+BATTERY_SUMMARY | sessionId=24f0b44d-be74-4a24-88b9-c6f15d260764 measurementDurationSeconds=0.809 firstSampleSeconds=0.028 lastSampleSeconds=0.810 sampleSpanSeconds=0.781 startBatteryLevelPct=60.000 endBatteryLevelPct=60.000 batteryLevelDeltaPct=0.000 startBatteryTemperatureC=31.400 endBatteryTemperatureC=31.400 maxBatteryTemperatureC=31.400 batteryTemperatureDeltaC=0.000 samples=2 validSamples=0 unavailableSamples=2 currentValidSamples=2 currentUnavailableSamples=0 powerValidSamples=2 powerUnavailableSamples=0 temperatureValidSamples=2 chargingStatusChanged=false pluggedTypeChanged=false thermalStatusChanged=false scope=device_battery power=estimated_signed sampleMean=true batteryCurrentReliability=NOT_VALIDATED counterEligibleIntervals=0 counterCoveredSeconds=0.000 counterTotalDischargeMah=N/A counterAverageDischargeCurrentMa=N/A counterEstimatedDischargePowerMw=N/A pairedCurrentSeconds=0.000 pairedCounterDischargeMah=N/A integratedApiCurrentDischargeMah=N/A currentToCounterRatio=N/A counterReliability=UNVERIFIED_FUEL_GAUGE_ESTIMATE observedBatteryWarnings=CURRENT_AVERAGE_WINDOW_UNKNOWN,COUNTER_ESTIMATE_NOT_CALIBRATED,NO_PREVIOUS_SAMPLE,NOT_VALIDATED,NOT_UNPLUGGED_DISCHARGING batteryWarnings=CURRENT_NOT_VALIDATED
+BATTERY_STATUS_SUMMARY | sessionId=24f0b44d-be74-4a24-88b9-c6f15d260764 chargingStatus=Charging averageBatteryCurrentMa=N/A currentValidSamples=2 averageEstimatedBatteryPowerMw=N/A powerValidSamples=2 averageApiBatteryCurrentMa=-3.210 averageApiEstimatedBatteryPowerMw=-11.405 scope=device_battery

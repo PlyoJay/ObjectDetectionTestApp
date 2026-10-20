@@ -57,7 +57,6 @@ import com.samin.objectdetection.ui.OverlayDebugMode
 import com.samin.objectdetection.settings.AppSettings
 import com.samin.objectdetection.settings.AppSettingsStore
 import com.samin.objectdetection.settings.SettingsActivity
-import com.samin.objectdetection.detector.ModelConfig
 import com.samin.objectdetection.settings.SettingsPresets
 import com.samin.objectdetection.settings.AppSettingsCodec
 import com.samin.objectdetection.warning.CrowdDecision
@@ -208,30 +207,16 @@ class MainActivity : ComponentActivity() {
 
         settingsStore = AppSettingsStore(this)
         appSettings = settingsStore.loadApplied()
-        detectionConfig = appSettings.toDetectionConfig()
-        warningCooldownManager = WarningCooldownManager(appSettings.warning.cooldownMs)
-
-        detectionDebugRecorder = com.samin.objectdetection.detector.DetectionDebugRecorder(this, detectionConfig, sessionId)
-        val yoloDetector = VisionStyleYoloDetector(
-            context = this,
-            modelName = ModelConfig.MODEL_ASSET_NAME,
-            confidenceThreshold = detectionConfig.confidenceThreshold,
-            nmsThreshold = detectionConfig.nmsThreshold,
-            sizeFilterMode = detectionConfig.sizeFilterMode,
-            resizeMode = detectionConfig.yoloResizeMode,
-            interpreterThreadCount = detectionConfig.interpreterThreadCount,
-            maxCandidates = detectionConfig.maxCandidates,
-            debugRecorder = detectionDebugRecorder,
-            useXnnpack = detectionConfig.useXnnpack
-        ).apply {
-            enableDiagnostics = detectionConfig.enableDetectorDiagnostics
-        }
+        val yoloDetector = createYoloDetectorWithRecovery() ?: return
         detector = yoloDetector
+        val modelIdentity = yoloDetector.modelIdentity()
+        detectionConfig = detectionConfig.copy(inputSize = modelIdentity.inputWidth, inputHeight = modelIdentity.inputHeight)
+        warningCooldownManager = WarningCooldownManager(appSettings.warning.cooldownMs)
         mlKitDetector = MlKitObjectDetector()
         evaluationDataRecorder = EvaluationDataRecorder(
             context = this,
             detectionConfig = detectionConfig,
-            modelName = ModelConfig.MODEL_ASSET_NAME,
+            modelName = appSettings.yolo.model.assetName,
             detectorType = DETECTOR_TYPE,
             modelIdentity = detector.modelIdentity(),
             appSettings = appSettings,
@@ -289,12 +274,45 @@ class MainActivity : ComponentActivity() {
         checkPermissionAndStart()
     }
 
+    private fun createYoloDetectorWithRecovery(): VisionStyleYoloDetector? {
+        fun create(): VisionStyleYoloDetector {
+            detectionConfig = appSettings.toDetectionConfig()
+            if (::detectionDebugRecorder.isInitialized) detectionDebugRecorder.close()
+            detectionDebugRecorder = com.samin.objectdetection.detector.DetectionDebugRecorder(this, detectionConfig, sessionId)
+            return VisionStyleYoloDetector(
+                context = this, modelName = appSettings.yolo.model.assetName,
+                confidenceThreshold = detectionConfig.confidenceThreshold, nmsThreshold = detectionConfig.nmsThreshold,
+                sizeFilterMode = detectionConfig.sizeFilterMode, resizeMode = detectionConfig.yoloResizeMode,
+                interpreterThreadCount = detectionConfig.interpreterThreadCount, maxCandidates = detectionConfig.maxCandidates,
+                debugRecorder = detectionDebugRecorder, useXnnpack = detectionConfig.useXnnpack
+            ).apply { enableDiagnostics = detectionConfig.enableDetectorDiagnostics }
+        }
+        return try { create() } catch (error: Exception) {
+            val failedModel = appSettings.yolo.model.assetName
+            Log.e(TAG, "Model initialization failed: $failedModel", error)
+            val previous = settingsStore.restorePreviousApplied()
+            if (previous != null) {
+                appSettings = previous
+                try {
+                    val recovered = create()
+                    Toast.makeText(this, "$failedModel 로딩 실패: ${error.message}\n이전 설정(${previous.yolo.model.assetName})을 복구했습니다.", Toast.LENGTH_LONG).show()
+                    return recovered
+                } catch (recoveryError: Exception) { error.addSuppressed(recoveryError) }
+            }
+            AlertDialog.Builder(this).setTitle("모델 로딩 실패")
+                .setMessage("$failedModel\n${error.message}\n" +
+                    (if (previous == null) "복구할 이전 설정이 없습니다." else "이전 설정의 모델도 로딩하지 못했습니다: ${error.suppressed.lastOrNull()?.message}"))
+                .setCancelable(false).setPositiveButton("닫기") { _, _ -> finish() }.show()
+            null
+        }
+    }
+
     private fun setupUi() {
         screen = MainScreenView(
             activity = this,
             debugMode = detectionConfig.overlayDebugMode,
             presetName = appSettings.presetName,
-            modelDescription = detector.modelIdentity()?.let { "Model: ${it.assetName}\nSHA256: ${it.sha256Prefix}" } ?: "Model: ${ModelConfig.MODEL_ASSET_NAME}",
+            modelDescription = detector.modelIdentity()?.let { "Model: ${it.assetName}\nSHA256: ${it.sha256Prefix}" } ?: "Model: ${appSettings.yolo.model.assetName}",
             overlayInitiallyEnabled = appSettings.overlay.enabled,
             outputTestMode = !appSettings.warning.enableActualVibration ||
                 !appSettings.warning.enableActualBeep || !appSettings.warning.enableActualTts,
@@ -351,7 +369,7 @@ class MainActivity : ComponentActivity() {
         settingsLauncher.launch(Intent(this, SettingsActivity::class.java).apply {
             identity?.let {
                 putExtra(SettingsActivity.EXTRA_MODEL_DESCRIPTION,
-                    "Model: ${it.assetName}\nInput: ${it.inputShape} (${it.inputType})\n" +
+                    "Model: ${it.assetName}\n입력 크기: ${it.inputWidth}×${it.inputHeight}\nInput: ${it.inputShape} (${it.inputType})\n" +
                         "Output: ${it.outputShape} (${it.outputType})\nSHA256: ${it.sha256}")
             }
         })
@@ -934,12 +952,13 @@ class MainActivity : ComponentActivity() {
     private fun startPerformanceLogging() {
         val startedAtMs = System.currentTimeMillis()
         val startedElapsedNs = SystemClock.elapsedRealtimeNanos()
+        val model = checkNotNull(detector.modelIdentity()) { "Loaded YOLO tensor metadata is required for performance logging" }
         val header = PerformanceLogHeader(
             startedAtMs = startedAtMs,
-            modelName = detector.modelIdentity()?.assetName ?: ModelConfig.MODEL_ASSET_NAME,
+            modelName = model.assetName,
             detectorName = DETECTOR_TYPE,
-            inputWidth = detectionConfig.inputSize,
-            inputHeight = detectionConfig.inputSize,
+            inputWidth = model.inputWidth,
+            inputHeight = model.inputHeight,
             cameraWidth = actualAnalysisWidth.takeIf { it > 0 } ?: appSettings.camera.requestedWidth,
             cameraHeight = actualAnalysisHeight.takeIf { it > 0 } ?: appSettings.camera.requestedHeight,
             resizeMode = detectionConfig.yoloResizeMode,
@@ -951,7 +970,7 @@ class MainActivity : ComponentActivity() {
             nmsThreshold = detectionConfig.nmsThreshold,
             presetName = appSettings.presetName,
             settingsSchemaVersion = appSettings.schemaVersion,
-            modelSha256 = detector.modelIdentity()?.sha256 ?: "unknown",
+            modelSha256 = model.sha256,
             requestedCameraWidth = appSettings.camera.requestedWidth,
             requestedCameraHeight = appSettings.camera.requestedHeight,
             appVersion = runCatching { packageManager.getPackageInfo(packageName, 0).versionName }.getOrNull() ?: "unknown",
@@ -963,7 +982,9 @@ class MainActivity : ComponentActivity() {
             cameraPreviewEnabled = appSettings.camera.previewEnabled,
             durationMinutes = appSettings.performanceLog.durationMinutes,
             roiDescription = detectionConfig.recognitionRoi.description(detectionConfig.useCenterSquareCrop),
-            execution = detector.executionInfo()
+            execution = detector.executionInfo(),
+            inputTensorShape = model.inputShape, inputTensorType = model.inputType,
+            outputTensorShape = model.outputShape, outputTensorType = model.outputType
         )
         performanceLogButton.isEnabled = false
         screen.setMeasurementLocked(true)

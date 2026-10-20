@@ -36,7 +36,11 @@ data class PerformanceLogHeader(
     val batteryDiagnosticsEnabled: Boolean = false,
     val cameraPreviewEnabled: Boolean = true,
     val durationMinutes: Int = 5,
-    val roiDescription: String = "FULL_FRAME"
+    val roiDescription: String = "FULL_FRAME",
+    val inputTensorShape: String = "unknown",
+    val inputTensorType: String = "unknown",
+    val outputTensorShape: String = "unknown",
+    val outputTensorType: String = "unknown"
 )
 
 data class PerformanceFrameRecord(
@@ -121,6 +125,8 @@ object PerformanceLogFormatter {
         appendLine("Preset: ${header.presetName}")
         appendLine("Settings Schema Version: ${header.settingsSchemaVersion}")
         appendLine("Input Size: ${header.inputWidth}x${header.inputHeight}")
+        appendLine("Input Tensor: ${header.inputTensorShape} (${header.inputTensorType})")
+        appendLine("Output Tensor: ${header.outputTensorShape} (${header.outputTensorType})")
         appendLine("Requested Camera Resolution: ${header.requestedCameraWidth}x${header.requestedCameraHeight}")
         appendLine("Camera Resolution: ${header.cameraWidth}x${header.cameraHeight}")
         appendLine("cameraPreviewEnabled=${header.cameraPreviewEnabled}")

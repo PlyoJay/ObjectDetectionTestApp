@@ -13,8 +13,8 @@ class PerformanceLogFormatterTest {
                 startedAtMs = 0L,
                 modelName = "model.tflite",
                 detectorName = "Detector",
-                inputWidth = 640,
-                inputHeight = 640,
+                inputWidth = 512,
+                inputHeight = 512,
                 cameraWidth = 1280,
                 cameraHeight = 720,
                 resizeMode = YoloResizeMode.LETTERBOX,
@@ -32,11 +32,16 @@ class PerformanceLogFormatterTest {
                 appVersion = "1.2.3",
                 settingsSnapshot = "camera.detectIntervalMs=0\nyolo.maxCandidates=100",
                 sessionId = "test-session", startedElapsedNs = 123L,
-                execution = InferenceExecutionInfo(cpuThreads = 2, xnnpackRequested = true)
+                execution = InferenceExecutionInfo(cpuThreads = 2, xnnpackRequested = true),
+                inputTensorShape = "[1, 3, 512, 512]", inputTensorType = "FLOAT32",
+                outputTensorShape = "[1, 13, 5376]", outputTensorType = "FLOAT32"
             )
         )
 
         assertTrue(text.contains("Model: model.tflite"))
+        assertTrue(text.contains("Input Size: 512x512"))
+        assertTrue(text.contains("Input Tensor: [1, 3, 512, 512] (FLOAT32)"))
+        assertTrue(text.contains("Output Tensor: [1, 13, 5376] (FLOAT32)"))
         assertTrue(text.contains("Camera Resolution: 1280x720"))
         assertTrue(text.contains("cameraPreviewEnabled=true"))
         assertTrue(text.contains("Overlay Draw: AVAILABLE_WHEN_DRAWN"))

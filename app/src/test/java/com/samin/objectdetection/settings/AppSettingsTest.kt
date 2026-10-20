@@ -9,6 +9,33 @@ import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class AppSettingsTest {
+    @Test fun modelSelectionRoundTripsWithoutChangingPresetsThresholdsOrRoi() {
+        val original = SettingsPresets.fieldTest(YoloResizeMode.LETTERBOX).copy(
+            presetName = "MY MODEL TEST", camera = CameraSettings(recognitionRoi = com.samin.objectdetection.camera.RecognitionRoi.PRESET))
+        for (model in listOf(com.samin.objectdetection.detector.YoloModel.YOLO_640,
+            com.samin.objectdetection.detector.YoloModel.YOLO_512, com.samin.objectdetection.detector.YoloModel.YOLO_640)) {
+            val selected = original.copy(yolo = original.yolo.copy(model = model))
+            val restored = AppSettingsCodec.decode(AppSettingsCodec.encode(selected))
+            assertEquals(selected, restored)
+            assertTrue(restored.validationErrors().isEmpty())
+            assertEquals(model.inputSize, restored.toDetectionConfig().inputSize)
+            assertEquals(model.inputSize, restored.toDetectionConfig().inputHeight)
+            assertEquals(original, restored.copy(yolo = restored.yolo.copy(model = original.yolo.model)))
+        }
+    }
+
+    @Test fun oldAppliedAndCustomPresetSchemasDefaultTo640AndPreserveEveryOtherField() {
+        val original = AppSettings(presetName = "OLD CUSTOM", yolo = YoloSettings(confidenceThreshold = .37f, nmsThreshold = .51f),
+            camera = CameraSettings(recognitionRoi = com.samin.objectdetection.camera.RecognitionRoi.PRESET))
+        for (version in 2..5) {
+            val old = AppSettingsCodec.encode(original).lineSequence().filterNot { it.startsWith("yolo.model=") }
+                .joinToString("\n").replace("schemaVersion=$APP_SETTINGS_SCHEMA_VERSION", "schemaVersion=$version")
+            assertEquals(original, AppSettingsCodec.decode(old))
+        }
+        assertEquals(com.samin.objectdetection.detector.YoloModel.YOLO_640,
+            AppSettingsCodec.decode("schemaVersion=6\nyolo.model=UNKNOWN").yolo.model)
+    }
+
     @Test fun timerAndRoiPersistWithSafeMigrationAndIndependentSettings() {
         val old = AppSettingsCodec.decode("schemaVersion=4\nyolo.interpreterThreadCount=2\ncamera.previewEnabled=false")
         assertEquals(5, old.performanceLog.durationMinutes)

@@ -465,6 +465,8 @@ class EvaluationDataRecorder(
         return JSONObject()
             .put("detectIntervalMs", detectIntervalMs)
             .put("inputSize", inputSize)
+            .put("inputWidth", inputSize)
+            .put("inputHeight", inputHeight)
             .put("requestedWidth", appSettings.camera.requestedWidth)
             .put("requestedHeight", appSettings.camera.requestedHeight)
             .put("useCenterSquareCrop", useCenterSquareCrop)

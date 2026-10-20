@@ -9,7 +9,9 @@ data class ModelIdentity(
     val outputShape: String,
     val outputType: String,
     val classCount: Int,
-    val coordinateScale: String = "normalized_xywh"
+    val coordinateScale: String = "normalized_xywh",
+    val inputWidth: Int = 0,
+    val inputHeight: Int = 0
 ) {
     val sha256Prefix: String get() = sha256.take(12)
 }
