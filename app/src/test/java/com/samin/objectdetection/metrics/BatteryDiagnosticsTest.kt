@@ -66,8 +66,10 @@ class BatteryDiagnosticsTest {
         assertTrue(text.contains("maxBatteryTemperatureC=38.000"))
         assertTrue(text.contains("chargingStatusChanged=true pluggedTypeChanged=true thermalStatusChanged=true"))
         assertTrue(text.contains("currentValidSamples=2 currentUnavailableSamples=1"))
-        assertTrue(text.contains("chargingStatus=Discharging averageBatteryCurrentMa=-200.000"))
-        assertTrue(text.contains("chargingStatus=Charging averageBatteryCurrentMa=300.000"))
+        assertTrue(text.contains("chargingStatus=Discharging averageBatteryCurrentMa=N/A"))
+        assertTrue(text.contains("chargingStatus=Charging averageBatteryCurrentMa=N/A"))
+        assertTrue(text.contains("averageApiBatteryCurrentMa=-200.000"))
+        assertTrue(text.contains("averageApiBatteryCurrentMa=300.000"))
         summary.record(BatterySample(11_000_000_000, BatteryReading(), null))
         assertTrue(summary.format(SystemPerformanceDiagnosticsTest.header(), 11_000_000_000).contains("endBatteryTemperatureC=N/A"))
     }
@@ -101,6 +103,8 @@ class BatteryDiagnosticsTest {
         val text = summary.format(SystemPerformanceDiagnosticsTest.header(), 500_000_000_000_000)
         assertTrue(text.contains("samples=100000 validSamples=0 unavailableSamples=100000"))
         assertTrue(text.contains("averageBatteryCurrentMa=N/A")); assertTrue(text.contains("averageEstimatedBatteryPowerMw=N/A"))
+        assertTrue(text.contains("counterAverageDischargeCurrentMa=N/A"))
+        assertTrue(text.contains("integratedApiCurrentDischargeMah=N/A"))
     }
 
     private fun reading() = BatteryReading(80.0, 35.0, 4000, -200.0, -190.0, 3000000, 12000000000, "Discharging", "None")

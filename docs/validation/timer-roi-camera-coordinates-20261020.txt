@@ -1,0 +1,4 @@
+10-20 11:24:41.807 11502 11502 I CameraController: [CAMERA_USE_CASES] cameraPreviewEnabled=false imageAnalysis=true requested=1280x720 actual=1440x1080
+10-20 11:30:09.032 18483 18483 I CameraController: [CAMERA_USE_CASES] cameraPreviewEnabled=false imageAnalysis=true requested=1280x720 actual=1440x1080 analysisCrop=Rect(0, 0 - 1440, 1080) previewResolution=null previewCrop=null
+10-20 11:30:20.297 18483 18483 I CameraController: [CAMERA_USE_CASES] cameraPreviewEnabled=true imageAnalysis=true requested=1280x720 actual=1440x1080 analysisCrop=Rect(0, 0 - 1440, 1080) previewResolution=1440x1080 previewCrop=Rect(0, 0 - 1440, 1080)
+10-20 11:30:42.403 18483 18483 I CameraController: [CAMERA_USE_CASES] cameraPreviewEnabled=false imageAnalysis=true requested=1280x720 actual=1440x1080 analysisCrop=Rect(0, 0 - 1440, 1080) previewResolution=null previewCrop=null

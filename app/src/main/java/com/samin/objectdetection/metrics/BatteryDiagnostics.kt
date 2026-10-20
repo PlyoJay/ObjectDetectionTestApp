@@ -12,8 +12,11 @@ data class BatteryReading(
     val chargeCounterUah: Int? = null,
     val energyCounterNwh: Long? = null,
     val chargingStatus: String = "Unknown",
-    val pluggedType: String = "Unknown"
+    val pluggedType: String = "Unknown",
+    val currentNowRaw: Int? = null,
+    val currentAverageRaw: Int? = null
 ) {
+    // API-unit arithmetic only; reliability is assessed separately before publishing power.
     val estimatedPowerMw: Double? get() = currentMa?.let { current -> voltageMv?.let { current * it / 1000.0 } }
 }
 
@@ -57,6 +60,8 @@ class BatterySummary {
     private var thermalChanged = false
     private var lastThermal: Int? = null
     private val groups = linkedMapOf<String, Means>()
+    private val discharge = BatteryDischargeTracker()
+    private var assessment = BatteryAssessment()
 
     fun thermal(event: ThermalStatusEvent) {
         event.status?.let { status ->
@@ -65,7 +70,8 @@ class BatterySummary {
         }
     }
 
-    fun record(sample: BatterySample) {
+    fun record(sample: BatterySample): BatteryAssessment {
+        assessment = discharge.record(sample)
         val r = sample.reading
         if (first == null) first = sample
         last?.reading?.let {
@@ -80,6 +86,7 @@ class BatterySummary {
             r.currentAverageMa != null && r.chargeCounterUah != null && r.energyCounterNwh != null &&
             r.chargingStatus != "Unknown" && r.pluggedType != "Unknown") complete++
         groups.getOrPut(r.chargingStatus) { Means() }.add(r)
+        return assessment
     }
 
     fun format(header: PerformanceLogHeader, stoppedNs: Long): String = buildString {
@@ -90,8 +97,9 @@ class BatterySummary {
         append("startBatteryLevelPct=${n(start?.levelPct)} endBatteryLevelPct=${n(end?.levelPct)} batteryLevelDeltaPct=${n(delta(start?.levelPct, end?.levelPct))} ")
         append("startBatteryTemperatureC=${n(start?.temperatureC)} endBatteryTemperatureC=${n(end?.temperatureC)} maxBatteryTemperatureC=${n(maxTemperature)} batteryTemperatureDeltaC=${n(delta(start?.temperatureC, end?.temperatureC))} ")
         append("samples=$count validSamples=$complete unavailableSamples=${count - complete} currentValidSamples=$currentValid currentUnavailableSamples=${count - currentValid} powerValidSamples=$powerValid powerUnavailableSamples=${count - powerValid} temperatureValidSamples=$temperatureValid ")
-        append("chargingStatusChanged=$chargingChanged pluggedTypeChanged=$pluggedChanged thermalStatusChanged=$thermalChanged scope=device_battery power=estimated_signed sampleMean=true")
-        groups.forEach { (status, mean) -> append("\nBATTERY_STATUS_SUMMARY | sessionId=${header.sessionId} chargingStatus=$status ${mean.format()}") }
+        append("chargingStatusChanged=$chargingChanged pluggedTypeChanged=$pluggedChanged thermalStatusChanged=$thermalChanged scope=device_battery power=estimated_signed sampleMean=true ")
+        append(discharge.formatTotals())
+        groups.forEach { (status, mean) -> append("\nBATTERY_STATUS_SUMMARY | sessionId=${header.sessionId} chargingStatus=$status ${mean.format(status == "Discharging" && assessment.currentUsable)}") }
     }
 
     private class Means {
@@ -100,18 +108,26 @@ class BatterySummary {
             r.currentMa?.let { current += it; currents++ }
             r.estimatedPowerMw?.let { power += it; powers++ }
         }
-        fun format() = "averageBatteryCurrentMa=${n(if (currents > 0) current / currents else null)} currentValidSamples=$currents " +
-            "averageEstimatedBatteryPowerMw=${n(if (powers > 0) power / powers else null)} powerValidSamples=$powers scope=device_battery"
+        fun format(usable: Boolean): String {
+            val i = if (currents > 0) current / currents else null
+            val p = if (powers > 0) power / powers else null
+            return "averageBatteryCurrentMa=${n(i.takeIf { usable })} currentValidSamples=$currents " +
+                "averageEstimatedBatteryPowerMw=${n(p.takeIf { usable })} powerValidSamples=$powers " +
+                "averageApiBatteryCurrentMa=${n(i)} averageApiEstimatedBatteryPowerMw=${n(p)} scope=device_battery"
+        }
     }
 
     companion object {
         private fun delta(start: Double?, end: Double?): Double? = start?.let { s -> end?.minus(s) }
         fun n(value: Double?): String = value?.takeIf { it.isFinite() }?.let { String.format(Locale.US, "%.3f", it) } ?: "N/A"
-        fun formatSample(header: PerformanceLogHeader, sample: BatterySample): String = with(sample.reading) {
+        fun formatSample(header: PerformanceLogHeader, sample: BatterySample, assessment: BatteryAssessment = BatteryAssessment()): String = with(sample.reading) {
             "BATTERY_SAMPLE | sessionId=${header.sessionId} elapsedSeconds=${n((sample.elapsedNs - header.startedElapsedNs) / 1e9)} " +
                 "batteryLevelPct=${n(levelPct)} batteryTemperatureC=${n(temperatureC)} batteryVoltageMv=${voltageMv ?: "N/A"} " +
-                "batteryCurrentMa=${n(currentMa)} batteryCurrentAverageMa=${n(currentAverageMa)} batteryChargeCounterUah=${chargeCounterUah ?: "N/A"} batteryEnergyCounterNwh=${energyCounterNwh ?: "N/A"} " +
-                "chargingStatus=$chargingStatus pluggedType=$pluggedType estimatedBatteryPowerMw=${n(estimatedPowerMw)} " +
+                "batteryCurrentNowRaw=${currentNowRaw ?: "N/A"} batteryCurrentAverageRaw=${currentAverageRaw ?: "N/A"} currentRawUnit=API_DECLARED_uA " +
+                "batteryCurrentNowApiMa=${n(currentMa)} batteryCurrentAverageApiMa=${n(currentAverageMa)} " +
+                "batteryCurrentMa=${n(currentMa.takeIf { assessment.currentUsable })} batteryCurrentAverageMa=N/A batteryChargeCounterUah=${chargeCounterUah ?: "N/A"} batteryEnergyCounterNwh=${energyCounterNwh ?: "N/A"} " +
+                "chargingStatus=$chargingStatus pluggedType=$pluggedType estimatedBatteryPowerMw=${n(estimatedPowerMw.takeIf { assessment.currentUsable })} apiEstimatedBatteryPowerMw=${n(estimatedPowerMw)} " +
+                "${assessment.format()} " +
                 "thermalStatus=${PerformanceLogFormatter.thermal(sample.system?.thermalStatus)} thermalHeadroom=${n(sample.system?.thermalHeadroom?.toDouble())} " +
                 "headroomAgeMs=${n(sample.system?.headroomSampleElapsedNs?.let { (sample.elapsedNs - it) / 1e6 })} " +
                 "batteryCollectionDurationMs=${n(sample.collectionDurationMs)} " +

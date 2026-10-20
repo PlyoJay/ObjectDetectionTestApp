@@ -48,6 +48,7 @@ class CameraController(
     private val enableDiagnostics: Boolean,
     private val targetWidth: Int = TARGET_WIDTH,
     private val targetHeight: Int = TARGET_HEIGHT,
+    private val cameraPreviewEnabled: Boolean = true,
     private val listener: Listener
 ) : AutoCloseable {
 
@@ -95,10 +96,6 @@ class CameraController(
                 )
             )
             .build()
-        val preview = Preview.Builder()
-            .setResolutionSelector(resolutionSelector)
-            .build()
-            .also { it.setSurfaceProvider(previewView.surfaceProvider) }
         val analysis = ImageAnalysis.Builder()
             .setResolutionSelector(resolutionSelector)
             .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
@@ -169,12 +166,23 @@ class CameraController(
         }
 
         cameraProvider.unbindAll()
-        val camera = cameraProvider.bindToLifecycle(
-            lifecycleOwner,
-            CameraSelector.DEFAULT_BACK_CAMERA,
-            preview,
-            analysis
-        )
+        // Keep the same analyzer/format/backpressure/resolution policy in both modes.
+        // OFF creates no Preview or surface request; ImageAnalysis owns the camera stream.
+        val preview = if (cameraPreviewEnabled) {
+            Preview.Builder()
+                .setResolutionSelector(resolutionSelector)
+                .build()
+                .also { it.setSurfaceProvider(previewView.surfaceProvider) }
+        } else null
+        val camera = if (preview != null) {
+            cameraProvider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, analysis)
+        } else {
+            cameraProvider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, analysis)
+        }
+        Log.i(TAG, "[CAMERA_USE_CASES] cameraPreviewEnabled=$cameraPreviewEnabled imageAnalysis=true " +
+            "requested=${targetWidth}x$targetHeight actual=${analysis.resolutionInfo?.resolution} " +
+            "analysisCrop=${analysis.resolutionInfo?.cropRect} previewResolution=${preview?.resolutionInfo?.resolution} " +
+            "previewCrop=${preview?.resolutionInfo?.cropRect}")
         realtimeTimestamps = runCatching {
             Camera2CameraInfo.from(camera.cameraInfo).getCameraCharacteristic(CameraCharacteristics.SENSOR_INFO_TIMESTAMP_SOURCE) ==
                 CameraCharacteristics.SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME

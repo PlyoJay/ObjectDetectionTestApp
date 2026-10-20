@@ -1,0 +1,258 @@
+{
+  "date": "2026-10-19",
+  "timezone": "Asia/Seoul",
+  "baseCommit": "f3cf61d",
+  "command": ".\\gradlew.bat :app:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug --console=plain",
+  "build": "SUCCESSFUL",
+  "unitTests": {
+    "total": 124,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "suites": [
+      {
+        "name": "com.samin.objectdetection.camera.AnalyzerShutdownTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0
+      },
+      {
+        "name": "com.samin.objectdetection.detector.DetectionDebugFrameTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0
+      },
+      {
+        "name": "com.samin.objectdetection.detector.YoloResizeTransformTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0
+      },
+      {
+        "name": "com.samin.objectdetection.detector.YoloTensorContractTest",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0
+      },
+      {
+        "name": "com.samin.objectdetection.evaluation.EvaluationJsonTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0
+      },
+      {
+        "name": "com.samin.objectdetection.evaluation.FrameTraceJsonTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0
+      },
+      {
+        "name": "com.samin.objectdetection.evaluation.RecordingStateTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0
+      },
+      {
+        "name": "com.samin.objectdetection.ExampleUnitTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0
+      },
+      {
+        "name": "com.samin.objectdetection.logging.OrderedLogWriterTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0
+      },
+      {
+        "name": "com.samin.objectdetection.metrics.BatteryDiagnosticsTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0
+      },
+      {
+        "name": "com.samin.objectdetection.metrics.DetectionMetricsCollectorPerformanceTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0
+      },
+      {
+        "name": "com.samin.objectdetection.metrics.FrameRateMeterTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0
+      },
+      {
+        "name": "com.samin.objectdetection.metrics.PerformanceIntervalCollectorTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0
+      },
+      {
+        "name": "com.samin.objectdetection.metrics.PerformanceLogFormatterTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0
+      },
+      {
+        "name": "com.samin.objectdetection.metrics.PerformanceLogSessionTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0
+      },
+      {
+        "name": "com.samin.objectdetection.metrics.SystemPerformanceDiagnosticsTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0
+      },
+      {
+        "name": "com.samin.objectdetection.policy.AdaptiveTemporalValidatorTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0
+      },
+      {
+        "name": "com.samin.objectdetection.policy.BollardDetectionPolicyTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0
+      },
+      {
+        "name": "com.samin.objectdetection.policy.BollardGeometryValidatorTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0
+      },
+      {
+        "name": "com.samin.objectdetection.policy.NineClassModelPolicyTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0
+      },
+      {
+        "name": "com.samin.objectdetection.policy.SmallBoxFilterPolicyTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0
+      },
+      {
+        "name": "com.samin.objectdetection.settings.AppSettingsTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0
+      },
+      {
+        "name": "com.samin.objectdetection.ui.LatestUiUpdateDispatcherTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0
+      },
+      {
+        "name": "com.samin.objectdetection.ui.OverlayFrameStateTest",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0
+      },
+      {
+        "name": "com.samin.objectdetection.warning.WarningCandidateSelectorCrowdTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0
+      },
+      {
+        "name": "com.samin.objectdetection.warning.WarningCooldownManagerTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0
+      },
+      {
+        "name": "com.samin.objectdetection.warning.WarningPolicyCrowdDecisionTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0
+      },
+      {
+        "name": "com.samin.objectdetection.warning.WarningPolicyVehicleScenarioTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0
+      }
+    ]
+  },
+  "lint": {
+    "errors": 0,
+    "warnings": 176,
+    "categories": [
+      {
+        "id": "AndroidGradlePluginVersion",
+        "count": 1
+      },
+      {
+        "id": "ApplySharedPref",
+        "count": 4
+      },
+      {
+        "id": "DiscouragedApi",
+        "count": 2
+      },
+      {
+        "id": "GradleDependency",
+        "count": 11
+      },
+      {
+        "id": "LockedOrientationActivity",
+        "count": 2
+      },
+      {
+        "id": "NewerVersionAvailable",
+        "count": 3
+      },
+      {
+        "id": "ObsoleteSdkInt",
+        "count": 12
+      },
+      {
+        "id": "OldTargetApi",
+        "count": 1
+      },
+      {
+        "id": "RedundantLabel",
+        "count": 1
+      },
+      {
+        "id": "SetTextI18n",
+        "count": 53
+      },
+      {
+        "id": "UnusedResources",
+        "count": 7
+      },
+      {
+        "id": "UseKtx",
+        "count": 27
+      },
+      {
+        "id": "UseSwitchCompatOrMaterialCode",
+        "count": 42
+      },
+      {
+        "id": "UseTomlInstead",
+        "count": 10
+      }
+    ]
+  },
+  "artifacts": [
+    "app/build/outputs/apk/debug/app-debug.apk",
+    "app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk"
+  ],
+  "newInstrumentation": {
+    "class": "com.samin.objectdetection.ui.BoundingBoxOverlayTest",
+    "tests": 5,
+    "compiled": true,
+    "executed": false,
+    "reason": "adb devices: no connected devices"
+  },
+  "walkingRetest": "NOT_PERFORMED",
+  "diffCheck": "PASS"
+}

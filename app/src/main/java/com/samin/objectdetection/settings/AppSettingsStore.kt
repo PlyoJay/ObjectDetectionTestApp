@@ -3,6 +3,7 @@ package com.samin.objectdetection.settings
 import android.content.Context
 import com.samin.objectdetection.camera.SizeFilterMode
 import com.samin.objectdetection.camera.YoloResizeMode
+import com.samin.objectdetection.camera.RecognitionRoi
 import com.samin.objectdetection.ui.OverlayDebugMode
 import java.io.StringReader
 import java.io.StringWriter
@@ -115,6 +116,11 @@ object AppSettingsCodec {
         put("schemaVersion", APP_SETTINGS_SCHEMA_VERSION)
         put("presetName", value.presetName)
         with(value.camera) {
+            put("camera.previewEnabled", previewEnabled)
+            with(recognitionRoi) {
+                put("camera.roi.enabled", enabled); put("camera.roi.top", top); put("camera.roi.bottom", bottom)
+                put("camera.roi.left", left); put("camera.roi.right", right); put("camera.roi.showRegion", showRegion)
+            }
             put("camera.detectIntervalMs", detectIntervalMs); put("camera.useCenterSquareCrop", useCenterSquareCrop)
             put("camera.requestedWidth", requestedWidth); put("camera.requestedHeight", requestedHeight)
         }
@@ -158,6 +164,7 @@ object AppSettingsCodec {
         }
         with(value.mlKit) { put("mlKit.enabled", enabled); put("mlKit.detectionIntervalMs", detectionIntervalMs) }
         with(value.performanceLog) {
+            put("performanceLog.durationMinutes", durationMinutes)
             put("performanceLog.systemDiagnosticsEnabled", systemDiagnosticsEnabled)
             put("performanceLog.batteryDiagnosticsEnabled", batteryDiagnosticsEnabled)
             put("performanceLog.sampleIntervalMs", sampleIntervalMs)
@@ -201,7 +208,10 @@ object AppSettingsCodec {
             presetName = s("presetName", d.presetName),
             camera = CameraSettings(
                 l("camera.detectIntervalMs", d.camera.detectIntervalMs), b("camera.useCenterSquareCrop", d.camera.useCenterSquareCrop),
-                i("camera.requestedWidth", d.camera.requestedWidth), i("camera.requestedHeight", d.camera.requestedHeight)
+                i("camera.requestedWidth", d.camera.requestedWidth), i("camera.requestedHeight", d.camera.requestedHeight),
+                b("camera.previewEnabled", d.camera.previewEnabled),
+                RecognitionRoi(b("camera.roi.enabled", false), f("camera.roi.top", 0f), f("camera.roi.bottom", 0f),
+                    f("camera.roi.left", 0f), f("camera.roi.right", 0f), b("camera.roi.showRegion", true))
             ),
             yolo = YoloSettings(resize("yolo.resizeMode", d.yolo.resizeMode), f("yolo.confidenceThreshold", d.yolo.confidenceThreshold),
                 f("yolo.nmsThreshold", d.yolo.nmsThreshold), i("yolo.interpreterThreadCount", d.yolo.interpreterThreadCount),
@@ -243,7 +253,8 @@ object AppSettingsCodec {
             performanceLog = PerformanceLogSettings(
                 b("performanceLog.systemDiagnosticsEnabled", d.performanceLog.systemDiagnosticsEnabled),
                 l("performanceLog.sampleIntervalMs", d.performanceLog.sampleIntervalMs),
-                b("performanceLog.batteryDiagnosticsEnabled", d.performanceLog.batteryDiagnosticsEnabled)
+                b("performanceLog.batteryDiagnosticsEnabled", d.performanceLog.batteryDiagnosticsEnabled),
+                i("performanceLog.durationMinutes", d.performanceLog.durationMinutes)
             ),
             debug = DebugSettings(
                 b("debug.enableDetectorDiagnostics", d.debug.enableDetectorDiagnostics),

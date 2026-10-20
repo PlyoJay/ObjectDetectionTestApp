@@ -24,6 +24,7 @@ data class DetectionConfig(
     val yoloResizeMode: YoloResizeMode = YoloResizeMode.LETTERBOX,
     // Keep the full camera frame by default. Enable only for comparison with the legacy center-square ROI.
     val useCenterSquareCrop: Boolean = false,
+    val recognitionRoi: RecognitionRoi = RecognitionRoi(),
     // Base YOLO candidate threshold. Object-specific warning thresholds are applied later by ObjectTuningPolicyRegistry.
     val confidenceThreshold: Float = DEFAULT_CONFIDENCE_THRESHOLD,
     val nmsThreshold: Float = DEFAULT_NMS_THRESHOLD,

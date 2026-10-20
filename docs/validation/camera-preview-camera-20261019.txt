@@ -1,0 +1,15 @@
+10-19 15:38:37.633 17782 17782 I CameraController: [CAMERA_USE_CASES] cameraPreviewEnabled=false imageAnalysis=true requested=1280x720 actual=1440x1080
+10-19 15:38:38.631 17782 17799 I CameraPreviewRuntimeTest: preview=false actualRotatedAnalysis=(1080, 1440)
+10-19 15:38:38.649 17782 17782 I CameraController: [CAMERA_USE_CASES] cameraPreviewEnabled=true imageAnalysis=true requested=1280x720 actual=1440x1080
+10-19 15:38:40.345 17782 17799 I CameraPreviewRuntimeTest: preview=true actualRotatedAnalysis=(1080, 1440)
+10-19 15:38:40.368 17782 17782 I CameraController: [CAMERA_USE_CASES] cameraPreviewEnabled=false imageAnalysis=true requested=1280x720 actual=1440x1080
+10-19 15:38:41.437 17782 17799 I CameraPreviewRuntimeTest: preview=false actualRotatedAnalysis=(1080, 1440)
+10-19 15:40:50.806 22688 22688 I CameraController: [CAMERA_USE_CASES] cameraPreviewEnabled=false imageAnalysis=true requested=1280x720 actual=1440x1080
+10-19 15:41:40.285 22688 22688 I CameraController: [CAMERA_USE_CASES] cameraPreviewEnabled=false imageAnalysis=true requested=1280x720 actual=1440x1080
+10-19 15:41:41.046 22688 22706 I CameraPreviewRuntimeTest: preview=false actualRotatedAnalysis=(1080, 1440)
+10-19 15:41:41.074 22688 22688 I CameraController: [CAMERA_USE_CASES] cameraPreviewEnabled=true imageAnalysis=true requested=1280x720 actual=1440x1080
+10-19 15:41:42.739 22688 22706 I CameraPreviewRuntimeTest: preview=true actualRotatedAnalysis=(1080, 1440)
+10-19 15:41:42.761 22688 22688 I CameraController: [CAMERA_USE_CASES] cameraPreviewEnabled=false imageAnalysis=true requested=1280x720 actual=1440x1080
+10-19 15:41:43.886 22688 22706 I CameraPreviewRuntimeTest: preview=false actualRotatedAnalysis=(1080, 1440)
+10-19 15:42:44.393 27942 27942 I CameraController: [CAMERA_USE_CASES] cameraPreviewEnabled=false imageAnalysis=true requested=1280x720 actual=1440x1080
+10-19 15:42:54.027 27942 27942 I CameraController: [CAMERA_USE_CASES] cameraPreviewEnabled=true imageAnalysis=true requested=1280x720 actual=1440x1080

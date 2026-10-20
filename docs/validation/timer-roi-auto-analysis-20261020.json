@@ -1,0 +1,4364 @@
+[
+  {
+    "file": "docs\\validation\\timer-roi-auto-on-1thread-20261020.txt",
+    "measurement": {
+      "session": {
+        "configuredDurationMs": "180000",
+        "actualDurationMs": "180016",
+        "stopReason": "AUTO_DURATION",
+        "stoppedElapsedNs": "1301211407680259"
+      },
+      "roiSettings": {
+        "camera.roi.bottom": "0.0",
+        "camera.roi.enabled": "true",
+        "camera.roi.left": "0.05",
+        "camera.roi.right": "0.05",
+        "camera.roi.showRegion": "true",
+        "camera.roi.top": "0.1",
+        "camera.useCenterSquareCrop": "false",
+        "yolo.resizeMode": "LETTERBOX"
+      },
+      "observedFrameRois": [
+        {
+          "frame": "1080x1440",
+          "rotation": "90",
+          "roi": "[54,144,1026,1440]"
+        }
+      ]
+    },
+    "windowStartSeconds": 0.0,
+    "windowEndSeconds": 180.016,
+    "excludedTailSeconds": 0.0,
+    "successfulFrameSamples": 374,
+    "errorLinesInWindow": 0,
+    "droppedLogLines": 0,
+    "frameLogComplete": true,
+    "fpsFromRecordedFrames": 2.0775931028353036,
+    "inference": {
+      "samples": 374,
+      "averageMs": 436.8368983957219,
+      "p95Ms": 543
+    },
+    "pipeline": {
+      "samples": 374,
+      "averageMs": 452.5053475935829,
+      "p95Ms": 562
+    },
+    "totalProcessing": {
+      "samples": 374,
+      "averageMs": 470.0561497326203,
+      "p95Ms": 589
+    },
+    "preprocess": {
+      "samples": 374,
+      "averageMs": 3.9732620320855614,
+      "p95Ms": 5
+    },
+    "bitmap": {
+      "samples": 374,
+      "averageMs": 14.756684491978609,
+      "p95Ms": 21
+    },
+    "details": {
+      "cameraToBitmap": {
+        "samples": 374,
+        "averageMs": 2.6251016042780746,
+        "p95Ms": 4.742
+      },
+      "rotation": {
+        "samples": 374,
+        "averageMs": 90.0,
+        "p95Ms": 90.0
+      },
+      "inputBuffer": {
+        "samples": 374,
+        "averageMs": 2.983957219251337,
+        "p95Ms": 4.0
+      },
+      "getPixels": {
+        "samples": 374,
+        "averageMs": 0.7520935828877018,
+        "p95Ms": 0.981
+      },
+      "rgbWrite": {
+        "samples": 374,
+        "averageMs": 2.717684491978611,
+        "p95Ms": 3.448
+      },
+      "inputDiagnostics": {
+        "samples": 374,
+        "averageMs": 0.0,
+        "p95Ms": 0.0
+      },
+      "outputDiagnostics": {
+        "samples": 374,
+        "averageMs": 0.0,
+        "p95Ms": 0.0
+      },
+      "nativeInvoke": {
+        "samples": 374,
+        "averageMs": 436.9267860962566,
+        "p95Ms": 542.528
+      },
+      "mlKitPrepare": {
+        "samples": 374,
+        "averageMs": 1.8455989304812839,
+        "p95Ms": 7.628
+      }
+    },
+    "preprocessByInputDiagnostics": {
+      "off": {
+        "samples": 374,
+        "averageMs": 3.9732620320855614,
+        "p95Ms": 5
+      },
+      "on": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      }
+    },
+    "execution": [
+      {
+        "requestedBackend": "CPU",
+        "appliedBackend": "CPU",
+        "cpuThreads": "1",
+        "xnnpackRequested": "true",
+        "initialization": "INTERPRETER_CREATED",
+        "delegateVerification": "UNAVAILABLE_JAVA_API",
+        "gpuSupport": "UNSUPPORTED_INTERPRETER_LITERT_2_1_1",
+        "runtimeVersion": "2.21.0"
+      }
+    ],
+    "cpuFallbackCountLifetimeObserved": 0,
+    "diagnostics": {
+      "systemSampleCount": 0,
+      "processCpuUsage": {
+        "validSamples": 0,
+        "unavailableSamples": 0,
+        "average": "N/A",
+        "first": "N/A",
+        "last": "N/A",
+        "maximum": "N/A"
+      },
+      "thermalStatusSamples": [],
+      "thermalStatusEvents": [],
+      "thermalHeadroom": {
+        "validSamples": 0,
+        "unavailableSamples": 0,
+        "average": "N/A",
+        "first": "N/A",
+        "last": "N/A",
+        "maximum": "N/A"
+      },
+      "thermalTrend": [],
+      "battery": {
+        "sampleCount": 0,
+        "levelPct": {
+          "start": "N/A",
+          "end": "N/A",
+          "delta": "N/A"
+        },
+        "temperatureC": {
+          "start": "N/A",
+          "end": "N/A",
+          "delta": "N/A",
+          "sampledMaximum": "N/A"
+        },
+        "byChargingStatus": {},
+        "consistency": {
+          "pairedIntervals": 0,
+          "coveredDischargingSeconds": 0.0,
+          "chargeCounterDropMah": "N/A",
+          "integratedCurrentDischargeMah": "N/A",
+          "currentToCounterRatio": "N/A",
+          "powerReliability": "NOT_VALIDATED",
+          "note": "Trapezoidal sampled current vs charge counter on the same contiguous unplugged discharging intervals (gaps <=120s). A factor >10 mismatch after >=60s and >=1mAh counter drop is a diagnostic heuristic, not calibration. Do not multiply current by 1000 automatically. Counter/firmware errors, sampling and unit violations require device verification; power remains a device estimate."
+        },
+        "counterDischarge": {
+          "coveredSeconds": 0.0,
+          "chargeDropMah": "N/A",
+          "averageDischargeCurrentMa": "N/A",
+          "estimatedDischargePowerMw": "N/A",
+          "intervals": [],
+          "note": "Device battery counter estimate, not calibrated or app-attributed. Only eligible adjacent intervals; unchanged intervals contribute elapsed time but do not assert zero power. Power uses charge-weighted endpoint voltages; short intervals reflect counter quantization."
+        },
+        "rawCurrentNow": {
+          "validSamples": 0,
+          "unavailableSamples": 0,
+          "average": "N/A",
+          "first": "N/A",
+          "last": "N/A",
+          "maximum": "N/A"
+        },
+        "apiCurrentNowMa": {
+          "validSamples": 0,
+          "unavailableSamples": 0,
+          "average": "N/A",
+          "first": "N/A",
+          "last": "N/A",
+          "maximum": "N/A"
+        },
+        "averageDischargingCurrentMa": "N/A",
+        "averageEstimatedDischargingPowerMw": "N/A",
+        "fullSessionSummary": "N/A",
+        "sampleLogComplete": "N/A",
+        "fullSessionStatusSummaries": [],
+        "note": "Device battery, signed current/power; estimates are not app consumption. byChargingStatus and fullSessionStatusSummaries preserve recorded numbers even if legacy logs reported unreliable power; top-level current/power are suppressed on detected mismatch. API arithmetic is not independent device validation. Means use recorded samples grouped by status. Battery temperature is not CPU/GPU temperature. 0% level delta does not mean zero power. Polls can miss transitions; headroom may be cached. See fullSessionSummary for authoritative counts/endpoints if sample lines were dropped."
+      }
+    },
+    "note": "Statistics use recorded successful FRAME samples. If frameLogComplete=false, FPS/P95/averages are incomplete. Error lines count only recorded errors; fallback counters have detector lifetime scope.",
+    "longRun": {
+      "intervalSeconds": 30.0,
+      "windows": [
+        {
+          "startSeconds": 0.0,
+          "endSeconds": 30.0,
+          "frames": 77,
+          "fps": 2.566666666666667,
+          "inference": {
+            "samples": 77,
+            "averageMs": 352.2597402597403,
+            "p95Ms": 376
+          },
+          "nativeInvoke": {
+            "samples": 77,
+            "averageMs": 352.3162337662338,
+            "p95Ms": 376.599
+          },
+          "processCpuUsage": {
+            "validSamples": 0,
+            "unavailableSamples": 0,
+            "average": "N/A",
+            "first": "N/A",
+            "last": "N/A",
+            "maximum": "N/A"
+          },
+          "thermalHeadroom": {
+            "validSamples": 0,
+            "unavailableSamples": 0,
+            "average": "N/A",
+            "first": "N/A",
+            "last": "N/A",
+            "maximum": "N/A"
+          },
+          "cpuPolicies": {}
+        },
+        {
+          "startSeconds": 30.0,
+          "endSeconds": 60.0,
+          "frames": 76,
+          "fps": 2.533333333333333,
+          "inference": {
+            "samples": 76,
+            "averageMs": 356.67105263157896,
+            "p95Ms": 373
+          },
+          "nativeInvoke": {
+            "samples": 76,
+            "averageMs": 356.8062499999999,
+            "p95Ms": 373.117
+          },
+          "processCpuUsage": {
+            "validSamples": 0,
+            "unavailableSamples": 0,
+            "average": "N/A",
+            "first": "N/A",
+            "last": "N/A",
+            "maximum": "N/A"
+          },
+          "thermalHeadroom": {
+            "validSamples": 0,
+            "unavailableSamples": 0,
+            "average": "N/A",
+            "first": "N/A",
+            "last": "N/A",
+            "maximum": "N/A"
+          },
+          "cpuPolicies": {}
+        },
+        {
+          "startSeconds": 60.0,
+          "endSeconds": 90.0,
+          "frames": 66,
+          "fps": 2.2,
+          "inference": {
+            "samples": 66,
+            "averageMs": 417.25757575757575,
+            "p95Ms": 461
+          },
+          "nativeInvoke": {
+            "samples": 66,
+            "averageMs": 417.41442424242433,
+            "p95Ms": 461.055
+          },
+          "processCpuUsage": {
+            "validSamples": 0,
+            "unavailableSamples": 0,
+            "average": "N/A",
+            "first": "N/A",
+            "last": "N/A",
+            "maximum": "N/A"
+          },
+          "thermalHeadroom": {
+            "validSamples": 0,
+            "unavailableSamples": 0,
+            "average": "N/A",
+            "first": "N/A",
+            "last": "N/A",
+            "maximum": "N/A"
+          },
+          "cpuPolicies": {}
+        },
+        {
+          "startSeconds": 90.0,
+          "endSeconds": 120.0,
+          "frames": 54,
+          "fps": 1.8,
+          "inference": {
+            "samples": 54,
+            "averageMs": 500.6666666666667,
+            "p95Ms": 543
+          },
+          "nativeInvoke": {
+            "samples": 54,
+            "averageMs": 500.72755555555557,
+            "p95Ms": 542.971
+          },
+          "processCpuUsage": {
+            "validSamples": 0,
+            "unavailableSamples": 0,
+            "average": "N/A",
+            "first": "N/A",
+            "last": "N/A",
+            "maximum": "N/A"
+          },
+          "thermalHeadroom": {
+            "validSamples": 0,
+            "unavailableSamples": 0,
+            "average": "N/A",
+            "first": "N/A",
+            "last": "N/A",
+            "maximum": "N/A"
+          },
+          "cpuPolicies": {}
+        },
+        {
+          "startSeconds": 120.0,
+          "endSeconds": 150.0,
+          "frames": 50,
+          "fps": 1.6666666666666667,
+          "inference": {
+            "samples": 50,
+            "averageMs": 540.56,
+            "p95Ms": 545
+          },
+          "nativeInvoke": {
+            "samples": 50,
+            "averageMs": 540.6005,
+            "p95Ms": 544.904
+          },
+          "processCpuUsage": {
+            "validSamples": 0,
+            "unavailableSamples": 0,
+            "average": "N/A",
+            "first": "N/A",
+            "last": "N/A",
+            "maximum": "N/A"
+          },
+          "thermalHeadroom": {
+            "validSamples": 0,
+            "unavailableSamples": 0,
+            "average": "N/A",
+            "first": "N/A",
+            "last": "N/A",
+            "maximum": "N/A"
+          },
+          "cpuPolicies": {}
+        },
+        {
+          "startSeconds": 150.0,
+          "endSeconds": 180.0,
+          "frames": 51,
+          "fps": 1.7,
+          "inference": {
+            "samples": 51,
+            "averageMs": 540.0588235294117,
+            "p95Ms": 544
+          },
+          "nativeInvoke": {
+            "samples": 51,
+            "averageMs": 540.1240784313724,
+            "p95Ms": 543.799
+          },
+          "processCpuUsage": {
+            "validSamples": 0,
+            "unavailableSamples": 0,
+            "average": "N/A",
+            "first": "N/A",
+            "last": "N/A",
+            "maximum": "N/A"
+          },
+          "thermalHeadroom": {
+            "validSamples": 0,
+            "unavailableSamples": 0,
+            "average": "N/A",
+            "first": "N/A",
+            "last": "N/A",
+            "maximum": "N/A"
+          },
+          "cpuPolicies": {}
+        },
+        {
+          "startSeconds": 180.0,
+          "endSeconds": 180.016,
+          "frames": 0,
+          "fps": 0.0,
+          "inference": {
+            "samples": 0,
+            "averageMs": null,
+            "p95Ms": null
+          },
+          "nativeInvoke": {
+            "samples": 0,
+            "averageMs": null,
+            "p95Ms": null
+          },
+          "processCpuUsage": {
+            "validSamples": 0,
+            "unavailableSamples": 0,
+            "average": "N/A",
+            "first": "N/A",
+            "last": "N/A",
+            "maximum": "N/A"
+          },
+          "thermalHeadroom": {
+            "validSamples": 0,
+            "unavailableSamples": 0,
+            "average": "N/A",
+            "first": "N/A",
+            "last": "N/A",
+            "maximum": "N/A"
+          },
+          "cpuPolicies": {}
+        }
+      ],
+      "policyInferenceCorrelations": {},
+      "inferenceByMlKitInFlightAtDispatch": {
+        "true": {
+          "samples": 106,
+          "averageMs": 449.6320754716981,
+          "p95Ms": 544
+        },
+        "false": {
+          "samples": 268,
+          "averageMs": 431.7761194029851,
+          "p95Ms": 540
+        }
+      },
+      "note": "Correlations use equal-weight interval means of device cpufreq snapshots, not app core frequencies or causal evidence. Includes the final partial interval; time/thermal/ML Kit can confound correlations. mlKitInFlight is a dispatch-time hint, not verified overlap or CPU attribution. No missing policy current is filled with its maximum."
+    }
+  },
+  {
+    "file": "docs\\validation\\timer-roi-auto-off-4threads-20261020.txt",
+    "measurement": {
+      "session": {
+        "configuredDurationMs": "180000",
+        "actualDurationMs": "180037",
+        "stopReason": "AUTO_DURATION",
+        "stoppedElapsedNs": "1301932589061469"
+      },
+      "roiSettings": {
+        "camera.roi.bottom": "0.0",
+        "camera.roi.enabled": "true",
+        "camera.roi.left": "0.05",
+        "camera.roi.right": "0.05",
+        "camera.roi.showRegion": "true",
+        "camera.roi.top": "0.1",
+        "camera.useCenterSquareCrop": "false",
+        "yolo.resizeMode": "LETTERBOX"
+      },
+      "observedFrameRois": [
+        {
+          "frame": "1080x1440",
+          "rotation": "90",
+          "roi": "[54,144,1026,1440]"
+        }
+      ]
+    },
+    "windowStartSeconds": 0.0,
+    "windowEndSeconds": 180.037,
+    "excludedTailSeconds": 0.0,
+    "successfulFrameSamples": 237,
+    "errorLinesInWindow": 0,
+    "droppedLogLines": 0,
+    "frameLogComplete": true,
+    "fpsFromRecordedFrames": 1.3163960741403156,
+    "inference": {
+      "samples": 237,
+      "averageMs": 685.9240506329114,
+      "p95Ms": 1079
+    },
+    "pipeline": {
+      "samples": 237,
+      "averageMs": 710.6371308016878,
+      "p95Ms": 1109
+    },
+    "totalProcessing": {
+      "samples": 237,
+      "averageMs": 743.6497890295359,
+      "p95Ms": 1149
+    },
+    "preprocess": {
+      "samples": 237,
+      "averageMs": 7.60337552742616,
+      "p95Ms": 10
+    },
+    "bitmap": {
+      "samples": 237,
+      "averageMs": 27.270042194092827,
+      "p95Ms": 38
+    },
+    "details": {
+      "cameraToBitmap": {
+        "samples": 237,
+        "averageMs": 5.1479873417721524,
+        "p95Ms": 6.914
+      },
+      "rotation": {
+        "samples": 237,
+        "averageMs": 90.0,
+        "p95Ms": 90.0
+      },
+      "inputBuffer": {
+        "samples": 237,
+        "averageMs": 5.320675105485232,
+        "p95Ms": 7.0
+      },
+      "getPixels": {
+        "samples": 237,
+        "averageMs": 1.5951054852320676,
+        "p95Ms": 2.686
+      },
+      "rgbWrite": {
+        "samples": 237,
+        "averageMs": 4.206919831223629,
+        "p95Ms": 4.596
+      },
+      "inputDiagnostics": {
+        "samples": 237,
+        "averageMs": 0.0,
+        "p95Ms": 0.0
+      },
+      "outputDiagnostics": {
+        "samples": 237,
+        "averageMs": 0.0,
+        "p95Ms": 0.0
+      },
+      "nativeInvoke": {
+        "samples": 237,
+        "averageMs": 685.204265822785,
+        "p95Ms": 1078.421
+      },
+      "mlKitPrepare": {
+        "samples": 237,
+        "averageMs": 4.2413586497890305,
+        "p95Ms": 13.935
+      }
+    },
+    "preprocessByInputDiagnostics": {
+      "off": {
+        "samples": 237,
+        "averageMs": 7.60337552742616,
+        "p95Ms": 10
+      },
+      "on": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      }
+    },
+    "execution": [
+      {
+        "requestedBackend": "CPU",
+        "appliedBackend": "CPU",
+        "cpuThreads": "4",
+        "xnnpackRequested": "true",
+        "initialization": "INTERPRETER_CREATED",
+        "delegateVerification": "UNAVAILABLE_JAVA_API",
+        "gpuSupport": "UNSUPPORTED_INTERPRETER_LITERT_2_1_1",
+        "runtimeVersion": "2.21.0"
+      }
+    ],
+    "cpuFallbackCountLifetimeObserved": 0,
+    "diagnostics": {
+      "systemSampleCount": 177,
+      "processCpuUsage": {
+        "validSamples": 176,
+        "unavailableSamples": 1,
+        "average": 123.17225568181811,
+        "first": 115.543,
+        "last": 116.894,
+        "maximum": 139.331
+      },
+      "thermalStatusSamples": [
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE"
+      ],
+      "thermalStatusEvents": [
+        {
+          "sessionId": "eb633040-6bd4-4bb4-808b-b3983d86b617",
+          "elapsedSeconds": "0.015",
+          "observedUnixMs": "1792463621225",
+          "observedElapsedNs": "1301752566372055",
+          "previousThermalStatus": "N/A",
+          "thermalStatus": "NONE",
+          "source": "poll"
+        }
+      ],
+      "thermalHeadroom": {
+        "validSamples": 177,
+        "unavailableSamples": 0,
+        "average": 0.7958135593220327,
+        "first": 0.783,
+        "last": 0.797,
+        "maximum": 0.803
+      },
+      "thermalTrend": [
+        {
+          "elapsedSeconds": "0.014",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.783",
+          "headroomAgeMs": "0.000"
+        },
+        {
+          "elapsedSeconds": "1.029",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.783",
+          "headroomAgeMs": "1014.357"
+        },
+        {
+          "elapsedSeconds": "2.032",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.783",
+          "headroomAgeMs": "2017.379"
+        },
+        {
+          "elapsedSeconds": "3.037",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.783",
+          "headroomAgeMs": "3022.241"
+        },
+        {
+          "elapsedSeconds": "4.048",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.783",
+          "headroomAgeMs": "4033.873"
+        },
+        {
+          "elapsedSeconds": "5.056",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.783",
+          "headroomAgeMs": "5041.631"
+        },
+        {
+          "elapsedSeconds": "6.078",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.783",
+          "headroomAgeMs": "6063.610"
+        },
+        {
+          "elapsedSeconds": "7.094",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.783",
+          "headroomAgeMs": "7079.857"
+        },
+        {
+          "elapsedSeconds": "8.106",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.783",
+          "headroomAgeMs": "8092.132"
+        },
+        {
+          "elapsedSeconds": "9.124",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.783",
+          "headroomAgeMs": "9109.548"
+        },
+        {
+          "elapsedSeconds": "10.145",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.803",
+          "headroomAgeMs": "0.000"
+        },
+        {
+          "elapsedSeconds": "11.167",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.803",
+          "headroomAgeMs": "1022.014"
+        },
+        {
+          "elapsedSeconds": "12.181",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.803",
+          "headroomAgeMs": "2036.356"
+        },
+        {
+          "elapsedSeconds": "13.205",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.803",
+          "headroomAgeMs": "3059.650"
+        },
+        {
+          "elapsedSeconds": "14.217",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.803",
+          "headroomAgeMs": "4071.875"
+        },
+        {
+          "elapsedSeconds": "15.229",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.803",
+          "headroomAgeMs": "5083.710"
+        },
+        {
+          "elapsedSeconds": "16.250",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.803",
+          "headroomAgeMs": "6105.301"
+        },
+        {
+          "elapsedSeconds": "17.262",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.803",
+          "headroomAgeMs": "7117.586"
+        },
+        {
+          "elapsedSeconds": "18.287",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.803",
+          "headroomAgeMs": "8142.148"
+        },
+        {
+          "elapsedSeconds": "19.318",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.803",
+          "headroomAgeMs": "9173.161"
+        },
+        {
+          "elapsedSeconds": "20.330",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.800",
+          "headroomAgeMs": "0.000"
+        },
+        {
+          "elapsedSeconds": "21.354",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.800",
+          "headroomAgeMs": "1023.598"
+        },
+        {
+          "elapsedSeconds": "22.370",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.800",
+          "headroomAgeMs": "2039.663"
+        },
+        {
+          "elapsedSeconds": "23.398",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.800",
+          "headroomAgeMs": "3067.675"
+        },
+        {
+          "elapsedSeconds": "24.412",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.800",
+          "headroomAgeMs": "4082.255"
+        },
+        {
+          "elapsedSeconds": "25.425",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.800",
+          "headroomAgeMs": "5094.764"
+        },
+        {
+          "elapsedSeconds": "26.444",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.800",
+          "headroomAgeMs": "6113.649"
+        },
+        {
+          "elapsedSeconds": "27.460",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.800",
+          "headroomAgeMs": "7130.450"
+        },
+        {
+          "elapsedSeconds": "28.478",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.800",
+          "headroomAgeMs": "8147.620"
+        },
+        {
+          "elapsedSeconds": "29.494",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.800",
+          "headroomAgeMs": "9164.430"
+        },
+        {
+          "elapsedSeconds": "30.518",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "0.000"
+        },
+        {
+          "elapsedSeconds": "31.543",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "1024.725"
+        },
+        {
+          "elapsedSeconds": "32.571",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "2052.968"
+        },
+        {
+          "elapsedSeconds": "33.601",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "3083.029"
+        },
+        {
+          "elapsedSeconds": "34.621",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "4103.252"
+        },
+        {
+          "elapsedSeconds": "35.635",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "5116.550"
+        },
+        {
+          "elapsedSeconds": "36.654",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "6136.301"
+        },
+        {
+          "elapsedSeconds": "37.668",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "7150.093"
+        },
+        {
+          "elapsedSeconds": "38.689",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "8170.446"
+        },
+        {
+          "elapsedSeconds": "39.695",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "9176.874"
+        },
+        {
+          "elapsedSeconds": "40.704",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "0.000"
+        },
+        {
+          "elapsedSeconds": "41.725",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "1021.368"
+        },
+        {
+          "elapsedSeconds": "42.740",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "2035.756"
+        },
+        {
+          "elapsedSeconds": "43.754",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "3049.537"
+        },
+        {
+          "elapsedSeconds": "44.778",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "4074.106"
+        },
+        {
+          "elapsedSeconds": "45.800",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "5096.104"
+        },
+        {
+          "elapsedSeconds": "46.823",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "6118.775"
+        },
+        {
+          "elapsedSeconds": "47.838",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "7133.745"
+        },
+        {
+          "elapsedSeconds": "48.850",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "8145.792"
+        },
+        {
+          "elapsedSeconds": "49.861",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "9156.521"
+        },
+        {
+          "elapsedSeconds": "50.872",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "0.000"
+        },
+        {
+          "elapsedSeconds": "51.917",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "1045.071"
+        },
+        {
+          "elapsedSeconds": "52.944",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "2072.078"
+        },
+        {
+          "elapsedSeconds": "53.957",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "3085.105"
+        },
+        {
+          "elapsedSeconds": "54.974",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "4101.332"
+        },
+        {
+          "elapsedSeconds": "56.004",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "5131.808"
+        },
+        {
+          "elapsedSeconds": "57.042",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "6169.648"
+        },
+        {
+          "elapsedSeconds": "58.077",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "7204.631"
+        },
+        {
+          "elapsedSeconds": "59.106",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "8234.143"
+        },
+        {
+          "elapsedSeconds": "60.120",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "9247.932"
+        },
+        {
+          "elapsedSeconds": "61.132",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "0.000"
+        },
+        {
+          "elapsedSeconds": "62.156",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "1024.179"
+        },
+        {
+          "elapsedSeconds": "63.170",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "2038.182"
+        },
+        {
+          "elapsedSeconds": "64.187",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "3055.637"
+        },
+        {
+          "elapsedSeconds": "65.206",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "4073.962"
+        },
+        {
+          "elapsedSeconds": "66.231",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "5098.924"
+        },
+        {
+          "elapsedSeconds": "67.286",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "6153.803"
+        },
+        {
+          "elapsedSeconds": "68.307",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "7175.025"
+        },
+        {
+          "elapsedSeconds": "69.333",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "8201.679"
+        },
+        {
+          "elapsedSeconds": "70.359",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "9227.249"
+        },
+        {
+          "elapsedSeconds": "71.376",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "0.000"
+        },
+        {
+          "elapsedSeconds": "72.417",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "1040.683"
+        },
+        {
+          "elapsedSeconds": "73.438",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "2061.182"
+        },
+        {
+          "elapsedSeconds": "74.466",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "3089.696"
+        },
+        {
+          "elapsedSeconds": "75.480",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "4103.183"
+        },
+        {
+          "elapsedSeconds": "76.487",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "5110.614"
+        },
+        {
+          "elapsedSeconds": "77.515",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "6138.612"
+        },
+        {
+          "elapsedSeconds": "78.528",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "7151.251"
+        },
+        {
+          "elapsedSeconds": "79.540",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "8163.848"
+        },
+        {
+          "elapsedSeconds": "80.560",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "9183.331"
+        },
+        {
+          "elapsedSeconds": "81.567",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "0.000"
+        },
+        {
+          "elapsedSeconds": "82.589",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "1022.152"
+        },
+        {
+          "elapsedSeconds": "83.602",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "2035.677"
+        },
+        {
+          "elapsedSeconds": "84.622",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "3055.408"
+        },
+        {
+          "elapsedSeconds": "85.635",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "4068.218"
+        },
+        {
+          "elapsedSeconds": "86.648",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "5081.210"
+        },
+        {
+          "elapsedSeconds": "87.673",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "6106.817"
+        },
+        {
+          "elapsedSeconds": "88.691",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "7124.278"
+        },
+        {
+          "elapsedSeconds": "89.716",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "8149.620"
+        },
+        {
+          "elapsedSeconds": "90.745",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "9177.866"
+        },
+        {
+          "elapsedSeconds": "91.774",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "0.000"
+        },
+        {
+          "elapsedSeconds": "92.811",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "1037.427"
+        },
+        {
+          "elapsedSeconds": "93.826",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "2052.237"
+        },
+        {
+          "elapsedSeconds": "94.840",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "3066.733"
+        },
+        {
+          "elapsedSeconds": "95.852",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "4078.671"
+        },
+        {
+          "elapsedSeconds": "96.871",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "5097.263"
+        },
+        {
+          "elapsedSeconds": "97.897",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "6123.056"
+        },
+        {
+          "elapsedSeconds": "98.916",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "7142.371"
+        },
+        {
+          "elapsedSeconds": "99.926",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "8152.104"
+        },
+        {
+          "elapsedSeconds": "100.938",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.793",
+          "headroomAgeMs": "9164.148"
+        },
+        {
+          "elapsedSeconds": "101.950",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "0.000"
+        },
+        {
+          "elapsedSeconds": "102.974",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "1023.290"
+        },
+        {
+          "elapsedSeconds": "103.992",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "2041.362"
+        },
+        {
+          "elapsedSeconds": "105.007",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "3056.629"
+        },
+        {
+          "elapsedSeconds": "106.020",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "4069.741"
+        },
+        {
+          "elapsedSeconds": "107.038",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "5087.360"
+        },
+        {
+          "elapsedSeconds": "108.057",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "6106.424"
+        },
+        {
+          "elapsedSeconds": "109.078",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "7127.573"
+        },
+        {
+          "elapsedSeconds": "110.094",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "8143.814"
+        },
+        {
+          "elapsedSeconds": "111.114",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "9163.383"
+        },
+        {
+          "elapsedSeconds": "112.127",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "0.000"
+        },
+        {
+          "elapsedSeconds": "113.158",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "1031.456"
+        },
+        {
+          "elapsedSeconds": "114.170",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "2043.353"
+        },
+        {
+          "elapsedSeconds": "115.193",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "3066.337"
+        },
+        {
+          "elapsedSeconds": "116.216",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "4089.471"
+        },
+        {
+          "elapsedSeconds": "117.238",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "5111.230"
+        },
+        {
+          "elapsedSeconds": "118.262",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "6135.423"
+        },
+        {
+          "elapsedSeconds": "119.274",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "7147.798"
+        },
+        {
+          "elapsedSeconds": "120.299",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "8172.442"
+        },
+        {
+          "elapsedSeconds": "121.317",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "9189.851"
+        },
+        {
+          "elapsedSeconds": "122.340",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "0.000"
+        },
+        {
+          "elapsedSeconds": "123.361",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "1020.885"
+        },
+        {
+          "elapsedSeconds": "124.372",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "2031.549"
+        },
+        {
+          "elapsedSeconds": "125.384",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "3043.561"
+        },
+        {
+          "elapsedSeconds": "126.405",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "4065.163"
+        },
+        {
+          "elapsedSeconds": "127.417",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "5077.121"
+        },
+        {
+          "elapsedSeconds": "128.441",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "6101.379"
+        },
+        {
+          "elapsedSeconds": "129.461",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "7120.655"
+        },
+        {
+          "elapsedSeconds": "130.485",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "8145.285"
+        },
+        {
+          "elapsedSeconds": "131.497",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "9156.957"
+        },
+        {
+          "elapsedSeconds": "132.522",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "0.000"
+        },
+        {
+          "elapsedSeconds": "133.564",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "1042.081"
+        },
+        {
+          "elapsedSeconds": "134.587",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "2065.365"
+        },
+        {
+          "elapsedSeconds": "135.615",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "3092.824"
+        },
+        {
+          "elapsedSeconds": "136.640",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "4117.927"
+        },
+        {
+          "elapsedSeconds": "137.658",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "5136.525"
+        },
+        {
+          "elapsedSeconds": "138.692",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "6169.926"
+        },
+        {
+          "elapsedSeconds": "139.715",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "7193.776"
+        },
+        {
+          "elapsedSeconds": "140.739",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "8216.890"
+        },
+        {
+          "elapsedSeconds": "141.751",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "9228.976"
+        },
+        {
+          "elapsedSeconds": "142.775",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "0.000"
+        },
+        {
+          "elapsedSeconds": "143.801",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "1025.721"
+        },
+        {
+          "elapsedSeconds": "144.819",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "2043.988"
+        },
+        {
+          "elapsedSeconds": "145.832",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "3056.223"
+        },
+        {
+          "elapsedSeconds": "146.844",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "4069.025"
+        },
+        {
+          "elapsedSeconds": "147.857",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "5081.451"
+        },
+        {
+          "elapsedSeconds": "148.878",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "6102.488"
+        },
+        {
+          "elapsedSeconds": "149.891",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "7115.816"
+        },
+        {
+          "elapsedSeconds": "150.905",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "8129.767"
+        },
+        {
+          "elapsedSeconds": "151.920",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "9144.865"
+        },
+        {
+          "elapsedSeconds": "152.944",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "0.000"
+        },
+        {
+          "elapsedSeconds": "153.971",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "1026.788"
+        },
+        {
+          "elapsedSeconds": "154.983",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "2038.192"
+        },
+        {
+          "elapsedSeconds": "155.994",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "3050.045"
+        },
+        {
+          "elapsedSeconds": "157.007",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "4062.724"
+        },
+        {
+          "elapsedSeconds": "158.019",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "5074.989"
+        },
+        {
+          "elapsedSeconds": "159.041",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "6096.072"
+        },
+        {
+          "elapsedSeconds": "160.053",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "7108.192"
+        },
+        {
+          "elapsedSeconds": "161.072",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "8127.823"
+        },
+        {
+          "elapsedSeconds": "162.104",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "9159.854"
+        },
+        {
+          "elapsedSeconds": "163.131",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "0.000"
+        },
+        {
+          "elapsedSeconds": "164.150",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "1019.058"
+        },
+        {
+          "elapsedSeconds": "165.161",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "2030.064"
+        },
+        {
+          "elapsedSeconds": "166.173",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "3042.063"
+        },
+        {
+          "elapsedSeconds": "167.195",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "4063.990"
+        },
+        {
+          "elapsedSeconds": "168.212",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "5081.747"
+        },
+        {
+          "elapsedSeconds": "169.241",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "6110.122"
+        },
+        {
+          "elapsedSeconds": "170.253",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "7122.538"
+        },
+        {
+          "elapsedSeconds": "171.262",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "8131.453"
+        },
+        {
+          "elapsedSeconds": "172.280",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "9149.197"
+        },
+        {
+          "elapsedSeconds": "173.289",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "0.000"
+        },
+        {
+          "elapsedSeconds": "174.319",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "1029.617"
+        },
+        {
+          "elapsedSeconds": "175.346",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "2056.747"
+        },
+        {
+          "elapsedSeconds": "176.366",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "3076.981"
+        },
+        {
+          "elapsedSeconds": "177.396",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "4107.359"
+        },
+        {
+          "elapsedSeconds": "178.418",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "5129.011"
+        },
+        {
+          "elapsedSeconds": "179.454",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.797",
+          "headroomAgeMs": "6165.009"
+        }
+      ],
+      "battery": {
+        "sampleCount": 37,
+        "levelPct": {
+          "start": 46.0,
+          "end": 45.0,
+          "delta": -1.0
+        },
+        "temperatureC": {
+          "start": 36.1,
+          "end": 35.7,
+          "delta": -0.3999999999999986,
+          "sampledMaximum": 36.1
+        },
+        "byChargingStatus": {
+          "Charging": {
+            "batteryCurrentMa": {
+              "validSamples": 0,
+              "unavailableSamples": 37,
+              "average": "N/A",
+              "first": "N/A",
+              "last": "N/A",
+              "maximum": "N/A"
+            },
+            "estimatedBatteryPowerMw": {
+              "validSamples": 0,
+              "unavailableSamples": 37,
+              "average": "N/A",
+              "first": "N/A",
+              "last": "N/A",
+              "maximum": "N/A"
+            }
+          }
+        },
+        "consistency": {
+          "pairedIntervals": 0,
+          "coveredDischargingSeconds": 0.0,
+          "chargeCounterDropMah": "N/A",
+          "integratedCurrentDischargeMah": "N/A",
+          "currentToCounterRatio": "N/A",
+          "powerReliability": "NOT_VALIDATED",
+          "note": "Trapezoidal sampled current vs charge counter on the same contiguous unplugged discharging intervals (gaps <=120s). A factor >10 mismatch after >=60s and >=1mAh counter drop is a diagnostic heuristic, not calibration. Do not multiply current by 1000 automatically. Counter/firmware errors, sampling and unit violations require device verification; power remains a device estimate."
+        },
+        "counterDischarge": {
+          "coveredSeconds": 0.0,
+          "chargeDropMah": "N/A",
+          "averageDischargeCurrentMa": "N/A",
+          "estimatedDischargePowerMw": "N/A",
+          "intervals": [
+            {
+              "startSeconds": 0.023,
+              "endSeconds": 5.069,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 5.069,
+              "endSeconds": 10.16,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 10.16,
+              "endSeconds": 15.239,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 15.239,
+              "endSeconds": 20.343,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 20.343,
+              "endSeconds": 25.436,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 25.436,
+              "endSeconds": 30.533,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 30.533,
+              "endSeconds": 35.646,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 35.646,
+              "endSeconds": 40.717,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 40.717,
+              "endSeconds": 45.815,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 45.815,
+              "endSeconds": 50.907,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 50.907,
+              "endSeconds": 56.035,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 56.035,
+              "endSeconds": 61.145,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 61.145,
+              "endSeconds": 66.262,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 66.262,
+              "endSeconds": 71.407,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 71.407,
+              "endSeconds": 76.502,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 76.502,
+              "endSeconds": 81.579,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 81.579,
+              "endSeconds": 86.664,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 86.664,
+              "endSeconds": 91.797,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 91.797,
+              "endSeconds": 96.884,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 96.884,
+              "endSeconds": 101.963,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 101.963,
+              "endSeconds": 107.05,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 107.05,
+              "endSeconds": 112.15,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 112.15,
+              "endSeconds": 117.252,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 117.252,
+              "endSeconds": 122.353,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 122.353,
+              "endSeconds": 127.429,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 127.429,
+              "endSeconds": 132.55,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 132.55,
+              "endSeconds": 137.684,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 137.684,
+              "endSeconds": 142.788,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 142.788,
+              "endSeconds": 147.869,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 147.869,
+              "endSeconds": 152.963,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 152.963,
+              "endSeconds": 158.028,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 158.028,
+              "endSeconds": 163.142,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 163.142,
+              "endSeconds": 168.23,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 168.23,
+              "endSeconds": 173.312,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 173.312,
+              "endSeconds": 178.444,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 178.444,
+              "endSeconds": 180.038,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            }
+          ],
+          "note": "Device battery counter estimate, not calibrated or app-attributed. Only eligible adjacent intervals; unchanged intervals contribute elapsed time but do not assert zero power. Power uses charge-weighted endpoint voltages; short intervals reflect counter quantization."
+        },
+        "rawCurrentNow": {
+          "validSamples": 37,
+          "unavailableSamples": 0,
+          "average": -567.3783783783783,
+          "first": -4146.0,
+          "last": -251.0,
+          "maximum": -198.0
+        },
+        "apiCurrentNowMa": {
+          "validSamples": 37,
+          "unavailableSamples": 0,
+          "average": -0.5673783783783783,
+          "first": -4.146,
+          "last": -0.251,
+          "maximum": -0.198
+        },
+        "averageDischargingCurrentMa": "N/A",
+        "averageEstimatedDischargingPowerMw": "N/A",
+        "fullSessionSummary": {
+          "sessionId": "eb633040-6bd4-4bb4-808b-b3983d86b617",
+          "measurementDurationSeconds": "180.037",
+          "firstSampleSeconds": "0.023",
+          "lastSampleSeconds": "180.038",
+          "sampleSpanSeconds": "180.014",
+          "startBatteryLevelPct": "46.000",
+          "endBatteryLevelPct": "45.000",
+          "batteryLevelDeltaPct": "-1.000",
+          "startBatteryTemperatureC": "36.100",
+          "endBatteryTemperatureC": "35.700",
+          "maxBatteryTemperatureC": "36.100",
+          "batteryTemperatureDeltaC": "-0.400",
+          "samples": "37",
+          "validSamples": "0",
+          "unavailableSamples": "37",
+          "currentValidSamples": "37",
+          "currentUnavailableSamples": "0",
+          "powerValidSamples": "37",
+          "powerUnavailableSamples": "0",
+          "temperatureValidSamples": "37",
+          "chargingStatusChanged": "false",
+          "pluggedTypeChanged": "false",
+          "thermalStatusChanged": "false",
+          "scope": "device_battery",
+          "power": "estimated_signed",
+          "sampleMean": "true",
+          "batteryCurrentReliability": "NOT_VALIDATED",
+          "counterEligibleIntervals": "0",
+          "counterCoveredSeconds": "0.000",
+          "counterTotalDischargeMah": "N/A",
+          "counterAverageDischargeCurrentMa": "N/A",
+          "counterEstimatedDischargePowerMw": "N/A",
+          "pairedCurrentSeconds": "0.000",
+          "pairedCounterDischargeMah": "N/A",
+          "integratedApiCurrentDischargeMah": "N/A",
+          "currentToCounterRatio": "N/A",
+          "counterReliability": "UNVERIFIED_FUEL_GAUGE_ESTIMATE",
+          "observedBatteryWarnings": "CURRENT_AVERAGE_WINDOW_UNKNOWN,COUNTER_ESTIMATE_NOT_CALIBRATED,NO_PREVIOUS_SAMPLE,NOT_VALIDATED,NOT_UNPLUGGED_DISCHARGING",
+          "batteryWarnings": "CURRENT_NOT_VALIDATED"
+        },
+        "sampleLogComplete": true,
+        "fullSessionStatusSummaries": [
+          {
+            "sessionId": "eb633040-6bd4-4bb4-808b-b3983d86b617",
+            "chargingStatus": "Charging",
+            "averageBatteryCurrentMa": "N/A",
+            "currentValidSamples": "37",
+            "averageEstimatedBatteryPowerMw": "N/A",
+            "powerValidSamples": "37",
+            "averageApiBatteryCurrentMa": "-0.567",
+            "averageApiEstimatedBatteryPowerMw": "-2.127",
+            "scope": "device_battery"
+          }
+        ],
+        "note": "Device battery, signed current/power; estimates are not app consumption. byChargingStatus and fullSessionStatusSummaries preserve recorded numbers even if legacy logs reported unreliable power; top-level current/power are suppressed on detected mismatch. API arithmetic is not independent device validation. Means use recorded samples grouped by status. Battery temperature is not CPU/GPU temperature. 0% level delta does not mean zero power. Polls can miss transitions; headroom may be cached. See fullSessionSummary for authoritative counts/endpoints if sample lines were dropped."
+      }
+    },
+    "note": "Statistics use recorded successful FRAME samples. If frameLogComplete=false, FPS/P95/averages are incomplete. Error lines count only recorded errors; fallback counters have detector lifetime scope.",
+    "longRun": {
+      "intervalSeconds": 30.0,
+      "windows": [
+        {
+          "startSeconds": 0.0,
+          "endSeconds": 30.0,
+          "frames": 44,
+          "fps": 1.4666666666666666,
+          "inference": {
+            "samples": 44,
+            "averageMs": 608.4772727272727,
+            "p95Ms": 1084
+          },
+          "nativeInvoke": {
+            "samples": 44,
+            "averageMs": 607.9995454545456,
+            "p95Ms": 1083.483
+          },
+          "processCpuUsage": {
+            "validSamples": 29,
+            "unavailableSamples": 1,
+            "average": 122.36582758620689,
+            "first": 115.543,
+            "last": 116.526,
+            "maximum": 133.054
+          },
+          "thermalHeadroom": {
+            "validSamples": 30,
+            "unavailableSamples": 0,
+            "average": 0.7953333333333339,
+            "first": 0.783,
+            "last": 0.8,
+            "maximum": 0.803
+          },
+          "cpuPolicies": {
+            "policy0": {
+              "currentKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 867900.0,
+                "first": 1959000.0,
+                "last": 864000.0,
+                "maximum": 1959000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 1591100.0,
+                "first": 1959000.0,
+                "last": 1536000.0,
+                "maximum": 1959000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 1959000.0,
+                "first": 1959000.0,
+                "last": 1959000.0,
+                "maximum": 1959000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            },
+            "policy4": {
+              "currentKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 1100800.0,
+                "first": 2592000.0,
+                "last": 1536000.0,
+                "maximum": 2592000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 1680000.0,
+                "first": 2592000.0,
+                "last": 1536000.0,
+                "maximum": 2592000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 2592000.0,
+                "first": 2592000.0,
+                "last": 2592000.0,
+                "maximum": 2592000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            },
+            "policy7": {
+              "currentKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 819200.0,
+                "first": 2400000.0,
+                "last": 672000.0,
+                "maximum": 2400000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 1710800.0,
+                "first": 2900000.0,
+                "last": 1536000.0,
+                "maximum": 2900000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 2900000.0,
+                "first": 2900000.0,
+                "last": 2900000.0,
+                "maximum": 2900000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            },
+            "policy9": {
+              "currentKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 1552000.0,
+                "first": 2976000.0,
+                "last": 672000.0,
+                "maximum": 3072000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 1782400.0,
+                "first": 2976000.0,
+                "last": 1632000.0,
+                "maximum": 2976000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 3207000.0,
+                "first": 3207000.0,
+                "last": 3207000.0,
+                "maximum": 3207000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            }
+          }
+        },
+        {
+          "startSeconds": 30.0,
+          "endSeconds": 60.0,
+          "frames": 40,
+          "fps": 1.3333333333333333,
+          "inference": {
+            "samples": 40,
+            "averageMs": 687.775,
+            "p95Ms": 1084
+          },
+          "nativeInvoke": {
+            "samples": 40,
+            "averageMs": 686.97465,
+            "p95Ms": 1083.111
+          },
+          "processCpuUsage": {
+            "validSamples": 29,
+            "unavailableSamples": 0,
+            "average": 124.52572413793104,
+            "first": 139.331,
+            "last": 127.0,
+            "maximum": 139.331
+          },
+          "thermalHeadroom": {
+            "validSamples": 29,
+            "unavailableSamples": 0,
+            "average": 0.7943793103448271,
+            "first": 0.797,
+            "last": 0.793,
+            "maximum": 0.797
+          },
+          "cpuPolicies": {
+            "policy0": {
+              "currentKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 788413.7931034482,
+                "first": 864000.0,
+                "last": 1536000.0,
+                "maximum": 1632000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 1565793.103448276,
+                "first": 1536000.0,
+                "last": 1536000.0,
+                "maximum": 1632000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 1959000.0,
+                "first": 1959000.0,
+                "last": 1959000.0,
+                "maximum": 1959000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            },
+            "policy4": {
+              "currentKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 1069241.3793103448,
+                "first": 672000.0,
+                "last": 672000.0,
+                "maximum": 1632000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 1575724.1379310344,
+                "first": 1536000.0,
+                "last": 1632000.0,
+                "maximum": 1632000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 2592000.0,
+                "first": 2592000.0,
+                "last": 2592000.0,
+                "maximum": 2592000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            },
+            "policy7": {
+              "currentKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 672000.0,
+                "first": 672000.0,
+                "last": 672000.0,
+                "maximum": 672000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 1575724.1379310344,
+                "first": 1536000.0,
+                "last": 1632000.0,
+                "maximum": 1632000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 2900000.0,
+                "first": 2900000.0,
+                "last": 2900000.0,
+                "maximum": 2900000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            },
+            "policy9": {
+              "currentKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 1314206.896551724,
+                "first": 1632000.0,
+                "last": 1632000.0,
+                "maximum": 1728000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 1661793.103448276,
+                "first": 1632000.0,
+                "last": 1632000.0,
+                "maximum": 1728000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 3207000.0,
+                "first": 3207000.0,
+                "last": 3207000.0,
+                "maximum": 3207000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            }
+          }
+        },
+        {
+          "startSeconds": 60.0,
+          "endSeconds": 90.0,
+          "frames": 40,
+          "fps": 1.3333333333333333,
+          "inference": {
+            "samples": 40,
+            "averageMs": 681.5,
+            "p95Ms": 1079
+          },
+          "nativeInvoke": {
+            "samples": 40,
+            "averageMs": 680.7501749999999,
+            "p95Ms": 1078.421
+          },
+          "processCpuUsage": {
+            "validSamples": 30,
+            "unavailableSamples": 0,
+            "average": 122.71823333333333,
+            "first": 112.359,
+            "last": 128.09,
+            "maximum": 134.041
+          },
+          "thermalHeadroom": {
+            "validSamples": 30,
+            "unavailableSamples": 0,
+            "average": 0.7955333333333336,
+            "first": 0.793,
+            "last": 0.797,
+            "maximum": 0.797
+          },
+          "cpuPolicies": {
+            "policy0": {
+              "currentKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 794133.3333333334,
+                "first": 1536000.0,
+                "last": 576000.0,
+                "maximum": 1536000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 1545600.0,
+                "first": 1536000.0,
+                "last": 1632000.0,
+                "maximum": 1632000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 1959000.0,
+                "first": 1959000.0,
+                "last": 1959000.0,
+                "maximum": 1959000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            },
+            "policy4": {
+              "currentKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 1052800.0,
+                "first": 1440000.0,
+                "last": 672000.0,
+                "maximum": 1632000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 1568000.0,
+                "first": 1632000.0,
+                "last": 1632000.0,
+                "maximum": 1632000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 2592000.0,
+                "first": 2592000.0,
+                "last": 2592000.0,
+                "maximum": 2592000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            },
+            "policy7": {
+              "currentKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 704000.0,
+                "first": 1632000.0,
+                "last": 672000.0,
+                "maximum": 1632000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 1568000.0,
+                "first": 1632000.0,
+                "last": 1632000.0,
+                "maximum": 1632000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 2900000.0,
+                "first": 2900000.0,
+                "last": 2900000.0,
+                "maximum": 2900000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            },
+            "policy9": {
+              "currentKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 1286400.0,
+                "first": 1632000.0,
+                "last": 1728000.0,
+                "maximum": 1728000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 1641600.0,
+                "first": 1632000.0,
+                "last": 1728000.0,
+                "maximum": 1728000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 3207000.0,
+                "first": 3207000.0,
+                "last": 3207000.0,
+                "maximum": 3207000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            }
+          }
+        },
+        {
+          "startSeconds": 90.0,
+          "endSeconds": 120.0,
+          "frames": 37,
+          "fps": 1.2333333333333334,
+          "inference": {
+            "samples": 37,
+            "averageMs": 720.6216216216217,
+            "p95Ms": 1026
+          },
+          "nativeInvoke": {
+            "samples": 37,
+            "averageMs": 719.8402702702701,
+            "p95Ms": 1025.469
+          },
+          "processCpuUsage": {
+            "validSamples": 29,
+            "unavailableSamples": 0,
+            "average": 122.8425862068966,
+            "first": 117.424,
+            "last": 129.048,
+            "maximum": 133.243
+          },
+          "thermalHeadroom": {
+            "validSamples": 29,
+            "unavailableSamples": 0,
+            "average": 0.7956206896551727,
+            "first": 0.797,
+            "last": 0.797,
+            "maximum": 0.797
+          },
+          "cpuPolicies": {
+            "policy0": {
+              "currentKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 884413.7931034482,
+                "first": 768000.0,
+                "last": 672000.0,
+                "maximum": 1536000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 1588965.5172413792,
+                "first": 1632000.0,
+                "last": 1536000.0,
+                "maximum": 1632000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 1959000.0,
+                "first": 1959000.0,
+                "last": 1959000.0,
+                "maximum": 1959000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            },
+            "policy4": {
+              "currentKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 1211586.2068965517,
+                "first": 1632000.0,
+                "last": 672000.0,
+                "maximum": 1632000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 1632000.0,
+                "first": 1632000.0,
+                "last": 1632000.0,
+                "maximum": 1632000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 2592000.0,
+                "first": 2592000.0,
+                "last": 2592000.0,
+                "maximum": 2592000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            },
+            "policy7": {
+              "currentKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 708413.7931034482,
+                "first": 672000.0,
+                "last": 672000.0,
+                "maximum": 1632000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 1632000.0,
+                "first": 1632000.0,
+                "last": 1632000.0,
+                "maximum": 1632000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 2900000.0,
+                "first": 2900000.0,
+                "last": 2900000.0,
+                "maximum": 2900000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            },
+            "policy9": {
+              "currentKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 1228137.9310344828,
+                "first": 672000.0,
+                "last": 1632000.0,
+                "maximum": 1728000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 1684965.5172413792,
+                "first": 1728000.0,
+                "last": 1632000.0,
+                "maximum": 1728000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 3207000.0,
+                "first": 3207000.0,
+                "last": 3207000.0,
+                "maximum": 3207000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            }
+          }
+        },
+        {
+          "startSeconds": 120.0,
+          "endSeconds": 150.0,
+          "frames": 37,
+          "fps": 1.2333333333333334,
+          "inference": {
+            "samples": 37,
+            "averageMs": 733.2972972972973,
+            "p95Ms": 1025
+          },
+          "nativeInvoke": {
+            "samples": 37,
+            "averageMs": 732.5045675675678,
+            "p95Ms": 1023.8
+          },
+          "processCpuUsage": {
+            "validSamples": 30,
+            "unavailableSamples": 0,
+            "average": 123.2612,
+            "first": 117.719,
+            "last": 117.638,
+            "maximum": 134.972
+          },
+          "thermalHeadroom": {
+            "validSamples": 30,
+            "unavailableSamples": 0,
+            "average": 0.7970000000000004,
+            "first": 0.797,
+            "last": 0.797,
+            "maximum": 0.797
+          },
+          "cpuPolicies": {
+            "policy0": {
+              "currentKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 714133.3333333334,
+                "first": 960000.0,
+                "last": 576000.0,
+                "maximum": 1440000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 1609600.0,
+                "first": 1536000.0,
+                "last": 1632000.0,
+                "maximum": 1632000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 1959000.0,
+                "first": 1959000.0,
+                "last": 1959000.0,
+                "maximum": 1959000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            },
+            "policy4": {
+              "currentKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 1216000.0,
+                "first": 1632000.0,
+                "last": 1632000.0,
+                "maximum": 1632000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 1632000.0,
+                "first": 1632000.0,
+                "last": 1632000.0,
+                "maximum": 1632000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 2592000.0,
+                "first": 2592000.0,
+                "last": 2592000.0,
+                "maximum": 2592000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            },
+            "policy7": {
+              "currentKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 691200.0,
+                "first": 672000.0,
+                "last": 672000.0,
+                "maximum": 1248000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 1632000.0,
+                "first": 1632000.0,
+                "last": 1632000.0,
+                "maximum": 1632000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 2900000.0,
+                "first": 2900000.0,
+                "last": 2900000.0,
+                "maximum": 2900000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            },
+            "policy9": {
+              "currentKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 1190400.0,
+                "first": 672000.0,
+                "last": 1728000.0,
+                "maximum": 1728000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 1705600.0,
+                "first": 1632000.0,
+                "last": 1728000.0,
+                "maximum": 1728000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 30,
+                "unavailableSamples": 0,
+                "average": 3207000.0,
+                "first": 3207000.0,
+                "last": 3207000.0,
+                "maximum": 3207000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            }
+          }
+        },
+        {
+          "startSeconds": 150.0,
+          "endSeconds": 180.0,
+          "frames": 39,
+          "fps": 1.3,
+          "inference": {
+            "samples": 39,
+            "averageMs": 698.0769230769231,
+            "p95Ms": 1027
+          },
+          "nativeInvoke": {
+            "samples": 39,
+            "averageMs": 697.3251025641025,
+            "p95Ms": 1025.994
+          },
+          "processCpuUsage": {
+            "validSamples": 29,
+            "unavailableSamples": 0,
+            "average": 123.33255172413794,
+            "first": 129.265,
+            "last": 116.894,
+            "maximum": 131.257
+          },
+          "thermalHeadroom": {
+            "validSamples": 29,
+            "unavailableSamples": 0,
+            "average": 0.7970000000000004,
+            "first": 0.797,
+            "last": 0.797,
+            "maximum": 0.797
+          },
+          "cpuPolicies": {
+            "policy0": {
+              "currentKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 791172.4137931034,
+                "first": 864000.0,
+                "last": 1344000.0,
+                "maximum": 1632000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 1588965.5172413792,
+                "first": 1632000.0,
+                "last": 1536000.0,
+                "maximum": 1632000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 1959000.0,
+                "first": 1959000.0,
+                "last": 1959000.0,
+                "maximum": 1959000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            },
+            "policy4": {
+              "currentKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 1095724.1379310344,
+                "first": 672000.0,
+                "last": 672000.0,
+                "maximum": 1632000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 1632000.0,
+                "first": 1632000.0,
+                "last": 1632000.0,
+                "maximum": 1632000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 2592000.0,
+                "first": 2592000.0,
+                "last": 2592000.0,
+                "maximum": 2592000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            },
+            "policy7": {
+              "currentKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 672000.0,
+                "first": 672000.0,
+                "last": 672000.0,
+                "maximum": 672000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 1632000.0,
+                "first": 1632000.0,
+                "last": 1632000.0,
+                "maximum": 1632000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 2900000.0,
+                "first": 2900000.0,
+                "last": 2900000.0,
+                "maximum": 2900000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            },
+            "policy9": {
+              "currentKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 1297655.1724137932,
+                "first": 1728000.0,
+                "last": 1632000.0,
+                "maximum": 1728000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 1684965.5172413792,
+                "first": 1728000.0,
+                "last": 1632000.0,
+                "maximum": 1728000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 29,
+                "unavailableSamples": 0,
+                "average": 3207000.0,
+                "first": 3207000.0,
+                "last": 3207000.0,
+                "maximum": 3207000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            }
+          }
+        },
+        {
+          "startSeconds": 180.0,
+          "endSeconds": 180.037,
+          "frames": 0,
+          "fps": 0.0,
+          "inference": {
+            "samples": 0,
+            "averageMs": null,
+            "p95Ms": null
+          },
+          "nativeInvoke": {
+            "samples": 0,
+            "averageMs": null,
+            "p95Ms": null
+          },
+          "processCpuUsage": {
+            "validSamples": 0,
+            "unavailableSamples": 0,
+            "average": "N/A",
+            "first": "N/A",
+            "last": "N/A",
+            "maximum": "N/A"
+          },
+          "thermalHeadroom": {
+            "validSamples": 0,
+            "unavailableSamples": 0,
+            "average": "N/A",
+            "first": "N/A",
+            "last": "N/A",
+            "maximum": "N/A"
+          },
+          "cpuPolicies": {}
+        }
+      ],
+      "policyInferenceCorrelations": {
+        "policy0.currentKHz": {
+          "pairedWindows": 6,
+          "pearsonR": -0.48765546067196025
+        },
+        "policy0.scalingMaxKHz": {
+          "pairedWindows": 6,
+          "pearsonR": 0.21630637152338125
+        },
+        "policy4.currentKHz": {
+          "pairedWindows": 6,
+          "pearsonR": 0.5790470330640181
+        },
+        "policy4.scalingMaxKHz": {
+          "pairedWindows": 6,
+          "pearsonR": -0.36886472211960475
+        },
+        "policy7.currentKHz": {
+          "pairedWindows": 6,
+          "pearsonR": -0.822392891590193
+        },
+        "policy7.scalingMaxKHz": {
+          "pairedWindows": 6,
+          "pearsonR": -0.5182468884127688
+        },
+        "policy9.currentKHz": {
+          "pairedWindows": 6,
+          "pearsonR": -0.9844763362786676
+        },
+        "policy9.scalingMaxKHz": {
+          "pairedWindows": 6,
+          "pearsonR": -0.6127078046058414
+        }
+      },
+      "inferenceByMlKitInFlightAtDispatch": {
+        "true": {
+          "samples": 94,
+          "averageMs": 588.6808510638298,
+          "p95Ms": 797
+        },
+        "false": {
+          "samples": 143,
+          "averageMs": 749.8461538461538,
+          "p95Ms": 1084
+        }
+      },
+      "note": "Correlations use equal-weight interval means of device cpufreq snapshots, not app core frequencies or causal evidence. Includes the final partial interval; time/thermal/ML Kit can confound correlations. mlKitInFlight is a dispatch-time hint, not verified overlap or CPU attribution. No missing policy current is filled with its maximum."
+    }
+  },
+  {
+    "file": "docs\\validation\\timer-roi-manual-on-20261020.txt",
+    "measurement": {
+      "session": {
+        "configuredDurationMs": "300000",
+        "actualDurationMs": "7286",
+        "stopReason": "MANUAL",
+        "stoppedElapsedNs": "1301730200919204"
+      },
+      "roiSettings": {
+        "camera.roi.bottom": "0.0",
+        "camera.roi.enabled": "false",
+        "camera.roi.left": "0.0",
+        "camera.roi.right": "0.0",
+        "camera.roi.showRegion": "true",
+        "camera.roi.top": "0.0",
+        "camera.useCenterSquareCrop": "false",
+        "yolo.resizeMode": "LETTERBOX"
+      },
+      "observedFrameRois": [
+        {
+          "frame": "1080x1440",
+          "rotation": "90",
+          "roi": "[0,0,1080,1440]"
+        }
+      ]
+    },
+    "windowStartSeconds": 0.0,
+    "windowEndSeconds": 7.287,
+    "excludedTailSeconds": 0.0,
+    "successfulFrameSamples": 11,
+    "errorLinesInWindow": 0,
+    "droppedLogLines": 0,
+    "frameLogComplete": true,
+    "fpsFromRecordedFrames": 1.5095375325922877,
+    "inference": {
+      "samples": 11,
+      "averageMs": 460.45454545454544,
+      "p95Ms": 536
+    },
+    "pipeline": {
+      "samples": 11,
+      "averageMs": 472.72727272727275,
+      "p95Ms": 550
+    },
+    "totalProcessing": {
+      "samples": 11,
+      "averageMs": 492.1818181818182,
+      "p95Ms": 574
+    },
+    "preprocess": {
+      "samples": 11,
+      "averageMs": 4.7272727272727275,
+      "p95Ms": 9
+    },
+    "bitmap": {
+      "samples": 11,
+      "averageMs": 16.09090909090909,
+      "p95Ms": 26
+    },
+    "details": {
+      "cameraToBitmap": {
+        "samples": 11,
+        "averageMs": 2.8659090909090907,
+        "p95Ms": 5.229
+      },
+      "rotation": {
+        "samples": 11,
+        "averageMs": 90.0,
+        "p95Ms": 90.0
+      },
+      "inputBuffer": {
+        "samples": 11,
+        "averageMs": 3.5454545454545454,
+        "p95Ms": 7.0
+      },
+      "getPixels": {
+        "samples": 11,
+        "averageMs": 0.8905454545454545,
+        "p95Ms": 2.118
+      },
+      "rgbWrite": {
+        "samples": 11,
+        "averageMs": 3.0416363636363637,
+        "p95Ms": 5.667
+      },
+      "inputDiagnostics": {
+        "samples": 11,
+        "averageMs": 0.0,
+        "p95Ms": 0.0
+      },
+      "outputDiagnostics": {
+        "samples": 11,
+        "averageMs": 0.0,
+        "p95Ms": 0.0
+      },
+      "nativeInvoke": {
+        "samples": 11,
+        "averageMs": 460.406,
+        "p95Ms": 536.157
+      },
+      "mlKitPrepare": {
+        "samples": 11,
+        "averageMs": 2.7428181818181816,
+        "p95Ms": 7.993
+      }
+    },
+    "preprocessByInputDiagnostics": {
+      "off": {
+        "samples": 11,
+        "averageMs": 4.7272727272727275,
+        "p95Ms": 9
+      },
+      "on": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      }
+    },
+    "execution": [
+      {
+        "requestedBackend": "CPU",
+        "appliedBackend": "CPU",
+        "cpuThreads": "4",
+        "xnnpackRequested": "true",
+        "initialization": "INTERPRETER_CREATED",
+        "delegateVerification": "UNAVAILABLE_JAVA_API",
+        "gpuSupport": "UNSUPPORTED_INTERPRETER_LITERT_2_1_1",
+        "runtimeVersion": "2.21.0"
+      }
+    ],
+    "cpuFallbackCountLifetimeObserved": 0,
+    "diagnostics": {
+      "systemSampleCount": 8,
+      "processCpuUsage": {
+        "validSamples": 7,
+        "unavailableSamples": 1,
+        "average": 97.46542857142857,
+        "first": 6.441,
+        "last": 120.201,
+        "maximum": 120.201
+      },
+      "thermalStatusSamples": [
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE"
+      ],
+      "thermalStatusEvents": [
+        {
+          "sessionId": "ca3abded-56fc-4bfd-a7de-b8a541736dc7",
+          "elapsedSeconds": "0.003",
+          "observedUnixMs": "1792463591576",
+          "observedElapsedNs": "1301722916914087",
+          "previousThermalStatus": "N/A",
+          "thermalStatus": "NONE",
+          "source": "poll"
+        }
+      ],
+      "thermalHeadroom": {
+        "validSamples": 0,
+        "unavailableSamples": 8,
+        "average": "N/A",
+        "first": "N/A",
+        "last": "N/A",
+        "maximum": "N/A"
+      },
+      "thermalTrend": [
+        {
+          "elapsedSeconds": "0.002",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "N/A",
+          "headroomAgeMs": "N/A"
+        },
+        {
+          "elapsedSeconds": "1.011",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "N/A",
+          "headroomAgeMs": "N/A"
+        },
+        {
+          "elapsedSeconds": "2.018",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "N/A",
+          "headroomAgeMs": "N/A"
+        },
+        {
+          "elapsedSeconds": "3.022",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "N/A",
+          "headroomAgeMs": "N/A"
+        },
+        {
+          "elapsedSeconds": "4.026",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "N/A",
+          "headroomAgeMs": "N/A"
+        },
+        {
+          "elapsedSeconds": "5.031",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "N/A",
+          "headroomAgeMs": "N/A"
+        },
+        {
+          "elapsedSeconds": "6.046",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "N/A",
+          "headroomAgeMs": "N/A"
+        },
+        {
+          "elapsedSeconds": "7.050",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "N/A",
+          "headroomAgeMs": "N/A"
+        }
+      ],
+      "battery": {
+        "sampleCount": 3,
+        "levelPct": {
+          "start": 46.0,
+          "end": 46.0,
+          "delta": 0.0
+        },
+        "temperatureC": {
+          "start": 33.2,
+          "end": 33.2,
+          "delta": 0.0,
+          "sampledMaximum": 33.2
+        },
+        "byChargingStatus": {
+          "Charging": {
+            "batteryCurrentMa": {
+              "validSamples": 0,
+              "unavailableSamples": 3,
+              "average": "N/A",
+              "first": "N/A",
+              "last": "N/A",
+              "maximum": "N/A"
+            },
+            "estimatedBatteryPowerMw": {
+              "validSamples": 0,
+              "unavailableSamples": 3,
+              "average": "N/A",
+              "first": "N/A",
+              "last": "N/A",
+              "maximum": "N/A"
+            }
+          }
+        },
+        "consistency": {
+          "pairedIntervals": 0,
+          "coveredDischargingSeconds": 0.0,
+          "chargeCounterDropMah": "N/A",
+          "integratedCurrentDischargeMah": "N/A",
+          "currentToCounterRatio": "N/A",
+          "powerReliability": "NOT_VALIDATED",
+          "note": "Trapezoidal sampled current vs charge counter on the same contiguous unplugged discharging intervals (gaps <=120s). A factor >10 mismatch after >=60s and >=1mAh counter drop is a diagnostic heuristic, not calibration. Do not multiply current by 1000 automatically. Counter/firmware errors, sampling and unit violations require device verification; power remains a device estimate."
+        },
+        "counterDischarge": {
+          "coveredSeconds": 0.0,
+          "chargeDropMah": "N/A",
+          "averageDischargeCurrentMa": "N/A",
+          "estimatedDischargePowerMw": "N/A",
+          "intervals": [
+            {
+              "startSeconds": 0.007,
+              "endSeconds": 5.038,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 5.038,
+              "endSeconds": 7.287,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            }
+          ],
+          "note": "Device battery counter estimate, not calibrated or app-attributed. Only eligible adjacent intervals; unchanged intervals contribute elapsed time but do not assert zero power. Power uses charge-weighted endpoint voltages; short intervals reflect counter quantization."
+        },
+        "rawCurrentNow": {
+          "validSamples": 3,
+          "unavailableSamples": 0,
+          "average": -2028.0,
+          "first": -3303.0,
+          "last": -1146.0,
+          "maximum": -1146.0
+        },
+        "apiCurrentNowMa": {
+          "validSamples": 3,
+          "unavailableSamples": 0,
+          "average": -2.028,
+          "first": -3.303,
+          "last": -1.146,
+          "maximum": -1.146
+        },
+        "averageDischargingCurrentMa": "N/A",
+        "averageEstimatedDischargingPowerMw": "N/A",
+        "fullSessionSummary": {
+          "sessionId": "ca3abded-56fc-4bfd-a7de-b8a541736dc7",
+          "measurementDurationSeconds": "7.287",
+          "firstSampleSeconds": "0.007",
+          "lastSampleSeconds": "7.287",
+          "sampleSpanSeconds": "7.279",
+          "startBatteryLevelPct": "46.000",
+          "endBatteryLevelPct": "46.000",
+          "batteryLevelDeltaPct": "0.000",
+          "startBatteryTemperatureC": "33.200",
+          "endBatteryTemperatureC": "33.200",
+          "maxBatteryTemperatureC": "33.200",
+          "batteryTemperatureDeltaC": "0.000",
+          "samples": "3",
+          "validSamples": "0",
+          "unavailableSamples": "3",
+          "currentValidSamples": "3",
+          "currentUnavailableSamples": "0",
+          "powerValidSamples": "3",
+          "powerUnavailableSamples": "0",
+          "temperatureValidSamples": "3",
+          "chargingStatusChanged": "false",
+          "pluggedTypeChanged": "false",
+          "thermalStatusChanged": "false",
+          "scope": "device_battery",
+          "power": "estimated_signed",
+          "sampleMean": "true",
+          "batteryCurrentReliability": "NOT_VALIDATED",
+          "counterEligibleIntervals": "0",
+          "counterCoveredSeconds": "0.000",
+          "counterTotalDischargeMah": "N/A",
+          "counterAverageDischargeCurrentMa": "N/A",
+          "counterEstimatedDischargePowerMw": "N/A",
+          "pairedCurrentSeconds": "0.000",
+          "pairedCounterDischargeMah": "N/A",
+          "integratedApiCurrentDischargeMah": "N/A",
+          "currentToCounterRatio": "N/A",
+          "counterReliability": "UNVERIFIED_FUEL_GAUGE_ESTIMATE",
+          "observedBatteryWarnings": "CURRENT_AVERAGE_WINDOW_UNKNOWN,COUNTER_ESTIMATE_NOT_CALIBRATED,NO_PREVIOUS_SAMPLE,NOT_VALIDATED,NOT_UNPLUGGED_DISCHARGING",
+          "batteryWarnings": "CURRENT_NOT_VALIDATED"
+        },
+        "sampleLogComplete": true,
+        "fullSessionStatusSummaries": [
+          {
+            "sessionId": "ca3abded-56fc-4bfd-a7de-b8a541736dc7",
+            "chargingStatus": "Charging",
+            "averageBatteryCurrentMa": "N/A",
+            "currentValidSamples": "3",
+            "averageEstimatedBatteryPowerMw": "N/A",
+            "powerValidSamples": "3",
+            "averageApiBatteryCurrentMa": "-2.028",
+            "averageApiEstimatedBatteryPowerMw": "-7.151",
+            "scope": "device_battery"
+          }
+        ],
+        "note": "Device battery, signed current/power; estimates are not app consumption. byChargingStatus and fullSessionStatusSummaries preserve recorded numbers even if legacy logs reported unreliable power; top-level current/power are suppressed on detected mismatch. API arithmetic is not independent device validation. Means use recorded samples grouped by status. Battery temperature is not CPU/GPU temperature. 0% level delta does not mean zero power. Polls can miss transitions; headroom may be cached. See fullSessionSummary for authoritative counts/endpoints if sample lines were dropped."
+      }
+    },
+    "note": "Statistics use recorded successful FRAME samples. If frameLogComplete=false, FPS/P95/averages are incomplete. Error lines count only recorded errors; fallback counters have detector lifetime scope.",
+    "longRun": {
+      "intervalSeconds": 30.0,
+      "windows": [
+        {
+          "startSeconds": 0.0,
+          "endSeconds": 7.287,
+          "frames": 11,
+          "fps": 1.5095375325922877,
+          "inference": {
+            "samples": 11,
+            "averageMs": 460.45454545454544,
+            "p95Ms": 536
+          },
+          "nativeInvoke": {
+            "samples": 11,
+            "averageMs": 460.406,
+            "p95Ms": 536.157
+          },
+          "processCpuUsage": {
+            "validSamples": 7,
+            "unavailableSamples": 1,
+            "average": 97.46542857142857,
+            "first": 6.441,
+            "last": 120.201,
+            "maximum": 120.201
+          },
+          "thermalHeadroom": {
+            "validSamples": 0,
+            "unavailableSamples": 8,
+            "average": "N/A",
+            "first": "N/A",
+            "last": "N/A",
+            "maximum": "N/A"
+          },
+          "cpuPolicies": {
+            "policy0": {
+              "currentKHz": {
+                "validSamples": 8,
+                "unavailableSamples": 0,
+                "average": 1634625.0,
+                "first": 1959000.0,
+                "last": 1536000.0,
+                "maximum": 1959000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 8,
+                "unavailableSamples": 0,
+                "average": 1783500.0,
+                "first": 1959000.0,
+                "last": 1536000.0,
+                "maximum": 1959000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 8,
+                "unavailableSamples": 0,
+                "average": 1959000.0,
+                "first": 1959000.0,
+                "last": 1959000.0,
+                "maximum": 1959000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            },
+            "policy4": {
+              "currentKHz": {
+                "validSamples": 8,
+                "unavailableSamples": 0,
+                "average": 1752000.0,
+                "first": 2112000.0,
+                "last": 1536000.0,
+                "maximum": 2592000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 8,
+                "unavailableSamples": 0,
+                "average": 2100000.0,
+                "first": 2592000.0,
+                "last": 1536000.0,
+                "maximum": 2592000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 8,
+                "unavailableSamples": 0,
+                "average": 2592000.0,
+                "first": 2592000.0,
+                "last": 2592000.0,
+                "maximum": 2592000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            },
+            "policy7": {
+              "currentKHz": {
+                "validSamples": 8,
+                "unavailableSamples": 0,
+                "average": 2141000.0,
+                "first": 2496000.0,
+                "last": 1536000.0,
+                "maximum": 2900000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 8,
+                "unavailableSamples": 0,
+                "average": 2254000.0,
+                "first": 2900000.0,
+                "last": 1536000.0,
+                "maximum": 2900000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 8,
+                "unavailableSamples": 0,
+                "average": 2900000.0,
+                "first": 2900000.0,
+                "last": 2900000.0,
+                "maximum": 2900000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            },
+            "policy9": {
+              "currentKHz": {
+                "validSamples": 8,
+                "unavailableSamples": 0,
+                "average": 2152875.0,
+                "first": 2880000.0,
+                "last": 1632000.0,
+                "maximum": 3207000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 8,
+                "unavailableSamples": 0,
+                "average": 2301750.0,
+                "first": 2880000.0,
+                "last": 1632000.0,
+                "maximum": 3207000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 8,
+                "unavailableSamples": 0,
+                "average": 3207000.0,
+                "first": 3207000.0,
+                "last": 3207000.0,
+                "maximum": 3207000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            }
+          }
+        }
+      ],
+      "policyInferenceCorrelations": {
+        "policy0.currentKHz": {
+          "pairedWindows": 1,
+          "pearsonR": "N/A"
+        },
+        "policy0.scalingMaxKHz": {
+          "pairedWindows": 1,
+          "pearsonR": "N/A"
+        },
+        "policy4.currentKHz": {
+          "pairedWindows": 1,
+          "pearsonR": "N/A"
+        },
+        "policy4.scalingMaxKHz": {
+          "pairedWindows": 1,
+          "pearsonR": "N/A"
+        },
+        "policy7.currentKHz": {
+          "pairedWindows": 1,
+          "pearsonR": "N/A"
+        },
+        "policy7.scalingMaxKHz": {
+          "pairedWindows": 1,
+          "pearsonR": "N/A"
+        },
+        "policy9.currentKHz": {
+          "pairedWindows": 1,
+          "pearsonR": "N/A"
+        },
+        "policy9.scalingMaxKHz": {
+          "pairedWindows": 1,
+          "pearsonR": "N/A"
+        }
+      },
+      "inferenceByMlKitInFlightAtDispatch": {
+        "true": {
+          "samples": 4,
+          "averageMs": 456.25,
+          "p95Ms": 536
+        },
+        "false": {
+          "samples": 7,
+          "averageMs": 462.85714285714283,
+          "p95Ms": 522
+        }
+      },
+      "note": "Correlations use equal-weight interval means of device cpufreq snapshots, not app core frequencies or causal evidence. Includes the final partial interval; time/thermal/ML Kit can confound correlations. mlKitInFlight is a dispatch-time hint, not verified overlap or CPU attribution. No missing policy current is filled with its maximum."
+    }
+  },
+  {
+    "file": "docs\\validation\\timer-roi-manual-off-20261020.txt",
+    "measurement": {
+      "session": {
+        "configuredDurationMs": "300000",
+        "actualDurationMs": "7988",
+        "stopReason": "MANUAL",
+        "stoppedElapsedNs": "1301720925332954"
+      },
+      "roiSettings": {
+        "camera.roi.bottom": "0.0",
+        "camera.roi.enabled": "false",
+        "camera.roi.left": "0.0",
+        "camera.roi.right": "0.0",
+        "camera.roi.showRegion": "true",
+        "camera.roi.top": "0.0",
+        "camera.useCenterSquareCrop": "false",
+        "yolo.resizeMode": "LETTERBOX"
+      },
+      "observedFrameRois": [
+        {
+          "frame": "1080x1440",
+          "rotation": "90",
+          "roi": "[0,0,1080,1440]"
+        }
+      ]
+    },
+    "windowStartSeconds": 0.0,
+    "windowEndSeconds": 7.988,
+    "excludedTailSeconds": 0.0,
+    "successfulFrameSamples": 13,
+    "errorLinesInWindow": 0,
+    "droppedLogLines": 0,
+    "frameLogComplete": true,
+    "fpsFromRecordedFrames": 1.6274411617426139,
+    "inference": {
+      "samples": 13,
+      "averageMs": 461.3076923076923,
+      "p95Ms": 607
+    },
+    "pipeline": {
+      "samples": 13,
+      "averageMs": 482.0,
+      "p95Ms": 740
+    },
+    "totalProcessing": {
+      "samples": 13,
+      "averageMs": 500.46153846153845,
+      "p95Ms": 781
+    },
+    "preprocess": {
+      "samples": 13,
+      "averageMs": 10.307692307692308,
+      "p95Ms": 87
+    },
+    "bitmap": {
+      "samples": 13,
+      "averageMs": 15.153846153846153,
+      "p95Ms": 29
+    },
+    "details": {
+      "cameraToBitmap": {
+        "samples": 13,
+        "averageMs": 2.472769230769231,
+        "p95Ms": 5.248
+      },
+      "rotation": {
+        "samples": 13,
+        "averageMs": 90.0,
+        "p95Ms": 90.0
+      },
+      "inputBuffer": {
+        "samples": 13,
+        "averageMs": 9.153846153846153,
+        "p95Ms": 85.0
+      },
+      "getPixels": {
+        "samples": 13,
+        "averageMs": 1.2466923076923078,
+        "p95Ms": 7.009
+      },
+      "rgbWrite": {
+        "samples": 13,
+        "averageMs": 8.380384615384616,
+        "p95Ms": 78.224
+      },
+      "inputDiagnostics": {
+        "samples": 13,
+        "averageMs": 0.0,
+        "p95Ms": 0.0
+      },
+      "outputDiagnostics": {
+        "samples": 13,
+        "averageMs": 0.0,
+        "p95Ms": 0.0
+      },
+      "nativeInvoke": {
+        "samples": 13,
+        "averageMs": 461.11807692307696,
+        "p95Ms": 604.702
+      },
+      "mlKitPrepare": {
+        "samples": 13,
+        "averageMs": 2.5930769230769224,
+        "p95Ms": 11.102
+      }
+    },
+    "preprocessByInputDiagnostics": {
+      "off": {
+        "samples": 13,
+        "averageMs": 10.307692307692308,
+        "p95Ms": 87
+      },
+      "on": {
+        "samples": 0,
+        "averageMs": null,
+        "p95Ms": null
+      }
+    },
+    "execution": [
+      {
+        "requestedBackend": "CPU",
+        "appliedBackend": "CPU",
+        "cpuThreads": "4",
+        "xnnpackRequested": "true",
+        "initialization": "INTERPRETER_CREATED",
+        "delegateVerification": "UNAVAILABLE_JAVA_API",
+        "gpuSupport": "UNSUPPORTED_INTERPRETER_LITERT_2_1_1",
+        "runtimeVersion": "2.21.0"
+      }
+    ],
+    "cpuFallbackCountLifetimeObserved": 0,
+    "diagnostics": {
+      "systemSampleCount": 8,
+      "processCpuUsage": {
+        "validSamples": 7,
+        "unavailableSamples": 1,
+        "average": 101.37771428571429,
+        "first": 54.489,
+        "last": 115.494,
+        "maximum": 115.494
+      },
+      "thermalStatusSamples": [
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE",
+        "NONE"
+      ],
+      "thermalStatusEvents": [
+        {
+          "sessionId": "83faa72b-9b91-43fb-a45c-1bd8befddb8e",
+          "elapsedSeconds": "0.035",
+          "observedUnixMs": "1792463581631",
+          "observedElapsedNs": "1301712971739087",
+          "previousThermalStatus": "N/A",
+          "thermalStatus": "NONE",
+          "source": "poll"
+        }
+      ],
+      "thermalHeadroom": {
+        "validSamples": 8,
+        "unavailableSamples": 0,
+        "average": 0.697,
+        "first": 0.697,
+        "last": 0.697,
+        "maximum": 0.697
+      },
+      "thermalTrend": [
+        {
+          "elapsedSeconds": "0.015",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.697",
+          "headroomAgeMs": "0.000"
+        },
+        {
+          "elapsedSeconds": "1.065",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.697",
+          "headroomAgeMs": "1049.189"
+        },
+        {
+          "elapsedSeconds": "2.068",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.697",
+          "headroomAgeMs": "2052.818"
+        },
+        {
+          "elapsedSeconds": "3.072",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.697",
+          "headroomAgeMs": "3056.102"
+        },
+        {
+          "elapsedSeconds": "4.075",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.697",
+          "headroomAgeMs": "4060.002"
+        },
+        {
+          "elapsedSeconds": "5.079",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.697",
+          "headroomAgeMs": "5063.954"
+        },
+        {
+          "elapsedSeconds": "6.103",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.697",
+          "headroomAgeMs": "6087.352"
+        },
+        {
+          "elapsedSeconds": "7.111",
+          "thermalStatus": "NONE",
+          "thermalHeadroom": "0.697",
+          "headroomAgeMs": "7095.803"
+        }
+      ],
+      "battery": {
+        "sampleCount": 3,
+        "levelPct": {
+          "start": 46.0,
+          "end": 46.0,
+          "delta": 0.0
+        },
+        "temperatureC": {
+          "start": 33.2,
+          "end": 33.2,
+          "delta": 0.0,
+          "sampledMaximum": 33.2
+        },
+        "byChargingStatus": {
+          "Charging": {
+            "batteryCurrentMa": {
+              "validSamples": 0,
+              "unavailableSamples": 3,
+              "average": "N/A",
+              "first": "N/A",
+              "last": "N/A",
+              "maximum": "N/A"
+            },
+            "estimatedBatteryPowerMw": {
+              "validSamples": 0,
+              "unavailableSamples": 3,
+              "average": "N/A",
+              "first": "N/A",
+              "last": "N/A",
+              "maximum": "N/A"
+            }
+          }
+        },
+        "consistency": {
+          "pairedIntervals": 0,
+          "coveredDischargingSeconds": 0.0,
+          "chargeCounterDropMah": "N/A",
+          "integratedCurrentDischargeMah": "N/A",
+          "currentToCounterRatio": "N/A",
+          "powerReliability": "NOT_VALIDATED",
+          "note": "Trapezoidal sampled current vs charge counter on the same contiguous unplugged discharging intervals (gaps <=120s). A factor >10 mismatch after >=60s and >=1mAh counter drop is a diagnostic heuristic, not calibration. Do not multiply current by 1000 automatically. Counter/firmware errors, sampling and unit violations require device verification; power remains a device estimate."
+        },
+        "counterDischarge": {
+          "coveredSeconds": 0.0,
+          "chargeDropMah": "N/A",
+          "averageDischargeCurrentMa": "N/A",
+          "estimatedDischargePowerMw": "N/A",
+          "intervals": [
+            {
+              "startSeconds": 0.055,
+              "endSeconds": 5.094,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            },
+            {
+              "startSeconds": 5.094,
+              "endSeconds": 7.989,
+              "averageDischargeCurrentMa": "N/A",
+              "estimatedDischargePowerMw": "N/A",
+              "warning": "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+            }
+          ],
+          "note": "Device battery counter estimate, not calibrated or app-attributed. Only eligible adjacent intervals; unchanged intervals contribute elapsed time but do not assert zero power. Power uses charge-weighted endpoint voltages; short intervals reflect counter quantization."
+        },
+        "rawCurrentNow": {
+          "validSamples": 3,
+          "unavailableSamples": 0,
+          "average": -2933.3333333333335,
+          "first": -3451.0,
+          "last": -1628.0,
+          "maximum": -1628.0
+        },
+        "apiCurrentNowMa": {
+          "validSamples": 3,
+          "unavailableSamples": 0,
+          "average": -2.9333333333333336,
+          "first": -3.451,
+          "last": -1.628,
+          "maximum": -1.628
+        },
+        "averageDischargingCurrentMa": "N/A",
+        "averageEstimatedDischargingPowerMw": "N/A",
+        "fullSessionSummary": {
+          "sessionId": "83faa72b-9b91-43fb-a45c-1bd8befddb8e",
+          "measurementDurationSeconds": "7.988",
+          "firstSampleSeconds": "0.055",
+          "lastSampleSeconds": "7.989",
+          "sampleSpanSeconds": "7.934",
+          "startBatteryLevelPct": "46.000",
+          "endBatteryLevelPct": "46.000",
+          "batteryLevelDeltaPct": "0.000",
+          "startBatteryTemperatureC": "33.200",
+          "endBatteryTemperatureC": "33.200",
+          "maxBatteryTemperatureC": "33.200",
+          "batteryTemperatureDeltaC": "0.000",
+          "samples": "3",
+          "validSamples": "0",
+          "unavailableSamples": "3",
+          "currentValidSamples": "3",
+          "currentUnavailableSamples": "0",
+          "powerValidSamples": "3",
+          "powerUnavailableSamples": "0",
+          "temperatureValidSamples": "3",
+          "chargingStatusChanged": "false",
+          "pluggedTypeChanged": "false",
+          "thermalStatusChanged": "false",
+          "scope": "device_battery",
+          "power": "estimated_signed",
+          "sampleMean": "true",
+          "batteryCurrentReliability": "NOT_VALIDATED",
+          "counterEligibleIntervals": "0",
+          "counterCoveredSeconds": "0.000",
+          "counterTotalDischargeMah": "N/A",
+          "counterAverageDischargeCurrentMa": "N/A",
+          "counterEstimatedDischargePowerMw": "N/A",
+          "pairedCurrentSeconds": "0.000",
+          "pairedCounterDischargeMah": "N/A",
+          "integratedApiCurrentDischargeMah": "N/A",
+          "currentToCounterRatio": "N/A",
+          "counterReliability": "UNVERIFIED_FUEL_GAUGE_ESTIMATE",
+          "observedBatteryWarnings": "CURRENT_AVERAGE_WINDOW_UNKNOWN,COUNTER_ESTIMATE_NOT_CALIBRATED,NO_PREVIOUS_SAMPLE,NOT_VALIDATED,NOT_UNPLUGGED_DISCHARGING",
+          "batteryWarnings": "CURRENT_NOT_VALIDATED"
+        },
+        "sampleLogComplete": true,
+        "fullSessionStatusSummaries": [
+          {
+            "sessionId": "83faa72b-9b91-43fb-a45c-1bd8befddb8e",
+            "chargingStatus": "Charging",
+            "averageBatteryCurrentMa": "N/A",
+            "currentValidSamples": "3",
+            "averageEstimatedBatteryPowerMw": "N/A",
+            "powerValidSamples": "3",
+            "averageApiBatteryCurrentMa": "-2.933",
+            "averageApiEstimatedBatteryPowerMw": "-10.343",
+            "scope": "device_battery"
+          }
+        ],
+        "note": "Device battery, signed current/power; estimates are not app consumption. byChargingStatus and fullSessionStatusSummaries preserve recorded numbers even if legacy logs reported unreliable power; top-level current/power are suppressed on detected mismatch. API arithmetic is not independent device validation. Means use recorded samples grouped by status. Battery temperature is not CPU/GPU temperature. 0% level delta does not mean zero power. Polls can miss transitions; headroom may be cached. See fullSessionSummary for authoritative counts/endpoints if sample lines were dropped."
+      }
+    },
+    "note": "Statistics use recorded successful FRAME samples. If frameLogComplete=false, FPS/P95/averages are incomplete. Error lines count only recorded errors; fallback counters have detector lifetime scope.",
+    "longRun": {
+      "intervalSeconds": 30.0,
+      "windows": [
+        {
+          "startSeconds": 0.0,
+          "endSeconds": 7.988,
+          "frames": 13,
+          "fps": 1.6274411617426139,
+          "inference": {
+            "samples": 13,
+            "averageMs": 461.3076923076923,
+            "p95Ms": 607
+          },
+          "nativeInvoke": {
+            "samples": 13,
+            "averageMs": 461.11807692307696,
+            "p95Ms": 604.702
+          },
+          "processCpuUsage": {
+            "validSamples": 7,
+            "unavailableSamples": 1,
+            "average": 101.37771428571429,
+            "first": 54.489,
+            "last": 115.494,
+            "maximum": 115.494
+          },
+          "thermalHeadroom": {
+            "validSamples": 8,
+            "unavailableSamples": 0,
+            "average": 0.697,
+            "first": 0.697,
+            "last": 0.697,
+            "maximum": 0.697
+          },
+          "cpuPolicies": {
+            "policy0": {
+              "currentKHz": {
+                "validSamples": 8,
+                "unavailableSamples": 0,
+                "average": 1906125.0,
+                "first": 1959000.0,
+                "last": 1536000.0,
+                "maximum": 1959000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 8,
+                "unavailableSamples": 0,
+                "average": 1906125.0,
+                "first": 1959000.0,
+                "last": 1536000.0,
+                "maximum": 1959000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 8,
+                "unavailableSamples": 0,
+                "average": 1959000.0,
+                "first": 1959000.0,
+                "last": 1959000.0,
+                "maximum": 1959000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            },
+            "policy4": {
+              "currentKHz": {
+                "validSamples": 8,
+                "unavailableSamples": 0,
+                "average": 2376000.0,
+                "first": 2592000.0,
+                "last": 1632000.0,
+                "maximum": 2592000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 8,
+                "unavailableSamples": 0,
+                "average": 2472000.0,
+                "first": 2592000.0,
+                "last": 1632000.0,
+                "maximum": 2592000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 8,
+                "unavailableSamples": 0,
+                "average": 2592000.0,
+                "first": 2592000.0,
+                "last": 2592000.0,
+                "maximum": 2592000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            },
+            "policy7": {
+              "currentKHz": {
+                "validSamples": 8,
+                "unavailableSamples": 0,
+                "average": 2727000.0,
+                "first": 2900000.0,
+                "last": 1632000.0,
+                "maximum": 2900000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 8,
+                "unavailableSamples": 0,
+                "average": 2727000.0,
+                "first": 2900000.0,
+                "last": 1632000.0,
+                "maximum": 2900000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 8,
+                "unavailableSamples": 0,
+                "average": 2900000.0,
+                "first": 2900000.0,
+                "last": 2900000.0,
+                "maximum": 2900000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            },
+            "policy9": {
+              "currentKHz": {
+                "validSamples": 8,
+                "unavailableSamples": 0,
+                "average": 2464875.0,
+                "first": 3207000.0,
+                "last": 1632000.0,
+                "maximum": 3207000.0
+              },
+              "scalingMaxKHz": {
+                "validSamples": 8,
+                "unavailableSamples": 0,
+                "average": 2196000.0,
+                "first": 3072000.0,
+                "last": 1632000.0,
+                "maximum": 3072000.0
+              },
+              "cpuinfoMaxKHz": {
+                "validSamples": 8,
+                "unavailableSamples": 0,
+                "average": 3207000.0,
+                "first": 3207000.0,
+                "last": 3207000.0,
+                "maximum": 3207000.0
+              },
+              "governors": [
+                "energy_aware"
+              ]
+            }
+          }
+        }
+      ],
+      "policyInferenceCorrelations": {
+        "policy0.currentKHz": {
+          "pairedWindows": 1,
+          "pearsonR": "N/A"
+        },
+        "policy0.scalingMaxKHz": {
+          "pairedWindows": 1,
+          "pearsonR": "N/A"
+        },
+        "policy4.currentKHz": {
+          "pairedWindows": 1,
+          "pearsonR": "N/A"
+        },
+        "policy4.scalingMaxKHz": {
+          "pairedWindows": 1,
+          "pearsonR": "N/A"
+        },
+        "policy7.currentKHz": {
+          "pairedWindows": 1,
+          "pearsonR": "N/A"
+        },
+        "policy7.scalingMaxKHz": {
+          "pairedWindows": 1,
+          "pearsonR": "N/A"
+        },
+        "policy9.currentKHz": {
+          "pairedWindows": 1,
+          "pearsonR": "N/A"
+        },
+        "policy9.scalingMaxKHz": {
+          "pairedWindows": 1,
+          "pearsonR": "N/A"
+        }
+      },
+      "inferenceByMlKitInFlightAtDispatch": {
+        "true": {
+          "samples": 4,
+          "averageMs": 501.0,
+          "p95Ms": 607
+        },
+        "false": {
+          "samples": 9,
+          "averageMs": 443.6666666666667,
+          "p95Ms": 561
+        }
+      },
+      "note": "Correlations use equal-weight interval means of device cpufreq snapshots, not app core frequencies or causal evidence. Includes the final partial interval; time/thermal/ML Kit can confound correlations. mlKitInFlight is a dispatch-time hint, not verified overlap or CPU attribution. No missing policy current is filled with its maximum."
+    }
+  }
+]

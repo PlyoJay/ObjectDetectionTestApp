@@ -1,0 +1,9 @@
+
+com.samin.objectdetection.camera.RecognitionRoiInstrumentedTest:..
+com.samin.objectdetection.settings.SettingsActivityTest:..
+
+Time: 23.904
+
+OK (4 tests)
+
+

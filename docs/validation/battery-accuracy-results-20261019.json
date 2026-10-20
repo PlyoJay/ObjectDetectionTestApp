@@ -1,0 +1,44 @@
+{
+  "date": "2026-10-19",
+  "jvm": {
+    "tests": 133,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "newBatteryTests": [
+    "largeMismatchSuppressesPublishedPowerAndLatchesWithoutRescaling",
+    "unchangedCounterDoesNotClaimZeroPowerAndMissingVoltageOnlySuppressesPower",
+    "rawAndApiArithmeticAreDistinctFromUnvalidatedCurrentAndPower",
+    "counterDropOverThreeMinutesUsesTimeAndEndpointVoltageWithoutCurrentDependency",
+    "positiveDischargingCurrentIsFlaggedAndZeroCurrentIsNotASentinel",
+    "invalidIntervalsAreUnavailableAndNeverBridgeCounterOrPowerTransitions",
+    "consistentCurrentRequiresEnoughTimeAndChargeAndKeepsAverageWindowUnknown"
+  ],
+  "python": {
+    "tests": 11,
+    "failures": 0
+  },
+  "device": {
+    "model": "SM-S921N",
+    "android": "16",
+    "build": "BP4A.251205.006.S921NKSSHDZH3",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "testcases": [
+      "mediaStoreOnOffOnPreservesLegacySummariesAndFinalBatteryEndpoint",
+      "realBatterySamplesAndRepeatedStopCleanUpWithoutDuplicateHeadroomQueries",
+      "fixedImageYoloResultsStayIdenticalWithBatteryOnOffOn"
+    ],
+    "measurementContext": "USB connected; runtime/logging regression only, not a controlled discharge power validation"
+  },
+  "lint": {
+    "Error": 0,
+    "Fatal": 0,
+    "Warning": 179,
+    "Information": 0
+  },
+  "build": "SUCCESS",
+  "finalBuildLog": "battery-accuracy-final-build-20261019.txt"
+}

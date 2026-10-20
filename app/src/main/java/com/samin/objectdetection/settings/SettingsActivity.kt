@@ -35,6 +35,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.doOnLayout
 import com.samin.objectdetection.camera.SizeFilterMode
 import com.samin.objectdetection.camera.YoloResizeMode
+import com.samin.objectdetection.camera.RecognitionRoi
 import com.samin.objectdetection.detector.ModelAssets
 import com.samin.objectdetection.detector.ModelConfig
 import com.samin.objectdetection.ui.OverlayDebugMode
@@ -296,9 +297,29 @@ class SettingsActivity : ComponentActivity() {
 
     private fun buildCameraSection(parent: LinearLayout) {
         section(parent, "카메라 / 전처리")
+        form.cameraPreview = toggle(parent, "카메라 화면 표시 (Preview)")
+        note(parent, "OFF에서도 카메라 분석·객체 인식·경고·로그는 계속 실행됩니다. 디스플레이 전원 OFF가 아닙니다. 화면 녹화에는 카메라 영상과 BBox가 표시되지 않습니다.")
         form.detectInterval = number(parent, "Detect Interval (ms)", "0..60000")
         form.centerCrop = toggle(parent, "Center Square ROI (OFF = Full Frame)")
         form.resizeMode = choice(parent, "Resize Mode", YoloResizeMode.entries.map { it.name })
+        section(parent, "인식 영역 크롭")
+        note(parent, "화면 회전 후 영상 기준입니다. 크롭 ON은 중앙 ROI를 해제하고 YOLO 640×640 Letterbox를 사용합니다. YOLO와 ML Kit에 같은 영역을 한 번씩 적용합니다.")
+        form.roiEnabled = toggle(parent, "인식 영역 크롭 사용")
+        form.roiTop = number(parent, "상단 크롭 (%)", "0..<100", true)
+        form.roiBottom = number(parent, "하단 크롭 (%)", "0..<100", true)
+        form.roiLeft = number(parent, "왼쪽 크롭 (%)", "0..<100", true)
+        form.roiRight = number(parent, "오른쪽 크롭 (%)", "0..<100", true)
+        form.roiShow = toggle(parent, "Preview 인식 영역 표시")
+        parent.addView(Button(this).apply {
+            text = "크롭 프리셋: 상단 10% / 좌우 5% / 하단 0%"
+            setOnClickListener {
+                form.roiTop.setText("10"); form.roiBottom.setText("0")
+                form.roiLeft.setText("5"); form.roiRight.setText("5")
+                form.roiEnabled.isChecked = true
+                updateDependentState(); markDirty()
+            }
+        }, match())
+        section(parent, "입력 해상도")
         form.cameraResolution = choice(parent, "요청 Camera Resolution", supportedAnalysisResolutions())
         note(parent, "기기가 요청 해상도를 지원하지 않으면 CameraX가 가장 가까운 해상도를 선택합니다. 실제 분석 해상도는 성능 로그에 별도로 기록됩니다.")
     }
@@ -368,6 +389,7 @@ class SettingsActivity : ComponentActivity() {
         form.confidenceLabel = toggle(parent, "Confidence 표시")
         form.fps = toggle(parent, "FPS 표시")
         form.overlayStale = number(parent, "Overlay Stale Timeout (ms)", "100..60000")
+        note(parent, "촬영 후 박스를 표시할 수 있는 최대 시간입니다. 촬영 시각을 비교할 수 없으면 분석 수신 시각을 사용합니다. 경고·TTS·진동의 유효시간에는 영향을 주지 않습니다.")
     }
 
     private fun buildMlKitSection(parent: LinearLayout) {
@@ -378,6 +400,8 @@ class SettingsActivity : ComponentActivity() {
 
     private fun buildPerformanceLogSection(parent: LinearLayout) {
         section(parent, "Performance Log")
+        form.testDuration = choice(parent, "테스트 시간 (분)", listOf("3", "5", "10"))
+        note(parent, "기본 5분. 로그 시작과 동시에 측정하며 남은 시간을 표시합니다. 시간이 끝나면 자동 저장하고, 종료 버튼으로 수동 저장할 수 있습니다. 측정·저장 중에는 설정 변경이 잠깁니다.")
         note(parent, "성능 로그 시작/종료 버튼은 기존대로 사용합니다. 시스템 진단은 로그 기록 중에만 수집하며 상세 Debug·PNG 저장을 켜지 않습니다.")
         form.systemDiagnostics = toggle(parent, "System Performance Diagnostics")
         form.batteryDiagnostics = toggle(parent, "배터리·발열 진단")
@@ -415,6 +439,11 @@ class SettingsActivity : ComponentActivity() {
         select(presetSpinner, value.presetName)
         customName.setText(if (value.presetName in SettingsPresets.builtInNames) "" else value.presetName)
         with(value.camera) {
+            form.cameraPreview.isChecked = previewEnabled
+            form.roiEnabled.isChecked = recognitionRoi.enabled
+            form.roiTop.setText((recognitionRoi.top * 100).toString()); form.roiBottom.setText((recognitionRoi.bottom * 100).toString())
+            form.roiLeft.setText((recognitionRoi.left * 100).toString()); form.roiRight.setText((recognitionRoi.right * 100).toString())
+            form.roiShow.isChecked = recognitionRoi.showRegion
             form.detectInterval.setText(detectIntervalMs.toString()); form.centerCrop.isChecked = useCenterSquareCrop
             select(form.resizeMode, value.yolo.resizeMode.name); select(form.cameraResolution, "${requestedWidth}x${requestedHeight}")
         }
@@ -451,6 +480,7 @@ class SettingsActivity : ComponentActivity() {
         }
         with(value.mlKit) { form.mlKitEnabled.isChecked = enabled; form.mlKitInterval.setText(detectionIntervalMs.toString()) }
         with(value.performanceLog) {
+            select(form.testDuration, durationMinutes.toString())
             form.systemDiagnostics.isChecked = systemDiagnosticsEnabled
             form.batteryDiagnostics.isChecked = batteryDiagnosticsEnabled
             form.systemSampleInterval.setText(sampleIntervalMs.toString())
@@ -475,7 +505,9 @@ class SettingsActivity : ComponentActivity() {
         val resolution = form.cameraResolution.selectedItem.toString().split('x')
         return AppSettings(
             presetName = presetName,
-            camera = CameraSettings(form.detectInterval.l(), form.centerCrop.isChecked, resolution[0].toInt(), resolution[1].toInt()),
+            camera = CameraSettings(form.detectInterval.l(), form.centerCrop.isChecked, resolution[0].toInt(), resolution[1].toInt(), form.cameraPreview.isChecked,
+                RecognitionRoi(form.roiEnabled.isChecked, form.roiTop.f() / 100f, form.roiBottom.f() / 100f,
+                    form.roiLeft.f() / 100f, form.roiRight.f() / 100f, form.roiShow.isChecked)),
             yolo = YoloSettings(YoloResizeMode.valueOf(form.resizeMode.selectedItem.toString()), form.confidence.f(), form.nms.f(), form.threads.i(), form.maxCandidates.i(), form.xnnpack.isChecked),
             filters = FilterSettings(form.geometry.isChecked, SizeFilterMode.valueOf(form.sizeMode.selectedItem.toString()),
                 form.minArea.f(), form.minWidth.f(), form.minHeight.f(), form.bollardMinArea.f(), form.bollardMaxAspect.f(),
@@ -487,7 +519,7 @@ class SettingsActivity : ComponentActivity() {
             overlay = OverlaySettings(form.overlayEnabled.isChecked, OverlayDebugMode.valueOf(form.debugMode.selectedItem.toString()),
                 form.yoloBoxes.isChecked, form.mlKitBoxes.isChecked, form.confidenceLabel.isChecked, form.fps.isChecked, form.overlayStale.l()),
             mlKit = MlKitSettings(form.mlKitEnabled.isChecked, form.mlKitInterval.l()),
-            performanceLog = PerformanceLogSettings(form.systemDiagnostics.isChecked, form.systemSampleInterval.l(), form.batteryDiagnostics.isChecked),
+            performanceLog = PerformanceLogSettings(form.systemDiagnostics.isChecked, form.systemSampleInterval.l(), form.batteryDiagnostics.isChecked, form.testDuration.selectedItem.toString().toInt()),
             debug = DebugSettings(form.diagnostics.isChecked, form.debugLogging.isChecked, form.rawConfidence.f(), form.rawCandidates.i(),
                 form.saveInput.isChecked, form.saveInterval.l(), form.saveOnDetection.isChecked, form.legacyDebugImage.isChecked)
         )
@@ -574,6 +606,14 @@ class SettingsActivity : ComponentActivity() {
         form.mlKitInterval.isEnabled = form.mlKitEnabled.isChecked
         form.systemSampleInterval.isEnabled = form.systemDiagnostics.isChecked
         form.batteryDiagnostics.isEnabled = form.systemDiagnostics.isChecked
+        val cropEnabled = form.roiEnabled.isChecked
+        if (cropEnabled) {
+            form.centerCrop.isChecked = false
+            select(form.resizeMode, YoloResizeMode.LETTERBOX.name)
+        }
+        form.centerCrop.isEnabled = !cropEnabled
+        form.resizeMode.isEnabled = !cropEnabled
+        listOf(form.roiTop, form.roiBottom, form.roiLeft, form.roiRight).forEach { it.isEnabled = cropEnabled }
     }
 
     private fun markDirty() {
@@ -590,7 +630,7 @@ class SettingsActivity : ComponentActivity() {
         fun Boolean.onOff() = if (this) "ON" else "OFF"
         summaries[Category.CAMERA.name]?.text = with(applied) {
             "현재 적용: ${camera.requestedWidth}×${camera.requestedHeight} · ${camera.detectIntervalMs} ms\n" +
-                "ROI ${if (camera.useCenterSquareCrop) "Center Square" else "Full Frame"} · ${yolo.resizeMode}"
+                "ROI ${if (camera.recognitionRoi.enabled) "Edge Crop" else if (camera.useCenterSquareCrop) "Center Square" else "Full Frame"} · ${yolo.resizeMode} · Preview ${camera.previewEnabled.onOff()}"
         }
         summaries[Category.YOLO.name]?.text = with(applied.yolo) {
             "현재 적용: CPU Threads: $interpreterThreadCount · XNNPACK: ${useXnnpack.onOff()} (요청)\n" +
@@ -601,7 +641,7 @@ class SettingsActivity : ComponentActivity() {
                 "Temporal ${filters.adaptiveTemporalEnabled.onOff()} · ML Kit ${mlKit.enabled.onOff()}"
         }
         summaries[Category.PERFORMANCE.name]?.text = with(applied.performanceLog) {
-            "현재 적용: 시스템 진단 ${systemDiagnosticsEnabled.onOff()} · 배터리·발열 ${batteryDiagnosticsEnabled.onOff()} · $sampleIntervalMs ms"
+            "현재 적용: $durationMinutes 분 · 시스템 진단 ${systemDiagnosticsEnabled.onOff()} · 배터리·발열 ${batteryDiagnosticsEnabled.onOff()} · $sampleIntervalMs ms"
         }
         summaries[Category.DEBUG.name]?.text = with(applied) {
             "현재 적용: 상세 로그 ${debug.debugDetectionLogging.onOff()} · 입력 PNG ${debug.debugSaveInferenceInput.onOff()}\n" +
@@ -712,9 +752,13 @@ class SettingsActivity : ComponentActivity() {
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 
     private inner class Form(val container: ViewGroup) {
+        lateinit var cameraPreview: Switch
         lateinit var xnnpack: Switch
         lateinit var systemDiagnostics: Switch; lateinit var systemSampleInterval: EditText
         lateinit var batteryDiagnostics: Switch
+        lateinit var testDuration: Spinner
+        lateinit var roiEnabled: Switch; lateinit var roiShow: Switch
+        lateinit var roiTop: EditText; lateinit var roiBottom: EditText; lateinit var roiLeft: EditText; lateinit var roiRight: EditText
         lateinit var detectInterval: EditText; lateinit var centerCrop: Switch; lateinit var resizeMode: Spinner; lateinit var cameraResolution: Spinner
         lateinit var confidence: EditText; lateinit var nms: EditText; lateinit var threads: EditText; lateinit var maxCandidates: EditText; lateinit var sizeMode: Spinner
         lateinit var geometry: Switch; lateinit var minArea: EditText; lateinit var minWidth: EditText; lateinit var minHeight: EditText

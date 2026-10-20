@@ -18,6 +18,13 @@ data class FrameTrace(
     val errorStage: String? = null,
     val error: String? = null
 ) {
+    /** -1 means capture age is unknown; analyzer age must not be reported as capture latency. */
+    fun captureAgeMsAt(nowElapsedNs: Long): Long =
+        if (captureTimestampReliable && cameraTimestampNs > 0L &&
+            cameraTimestampNs <= analyzerReceivedElapsedNs && analyzerReceivedElapsedNs <= nowElapsedNs) {
+            (nowElapsedNs - cameraTimestampNs) / 1_000_000L
+        } else -1L
+
     val frameAgeAtInferenceMs: Long get() = if (captureTimestampReliable) {
         inferenceStartedElapsedNs?.let { ((it - cameraTimestampNs) / 1_000_000L).coerceAtLeast(0) } ?: -1
     } else -1

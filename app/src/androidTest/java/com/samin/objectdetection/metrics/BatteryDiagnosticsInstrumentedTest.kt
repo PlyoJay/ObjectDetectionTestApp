@@ -28,6 +28,8 @@ class BatteryDiagnosticsInstrumentedTest {
                     assertTrue(r.levelPct == null || r.levelPct in 0.0..100.0)
                     assertTrue(r.voltageMv == null || r.voltageMv > 0)
                     assertTrue(r.currentMa == null || r.currentMa.isFinite())
+                    assertEquals(BatteryUnits.currentMa(r.currentNowRaw), r.currentMa)
+                    assertEquals(BatteryUnits.currentMa(r.currentAverageRaw), r.currentAverageMa)
                     Log.i("BatteryDiagnosticsTest", "trial=$trial reading=$r estimatedBatteryPowerMw=${r.estimatedPowerMw} batteryCollectionDurationMs=${sample.collectionDurationMs}")
                     count.incrementAndGet(); ready.countDown()
                 })
@@ -62,6 +64,11 @@ class BatteryDiagnosticsInstrumentedTest {
                 assertEquals(enabled, text.contains("BATTERY_STATUS_SUMMARY |"))
                 if (enabled) {
                     assertTrue(text.contains("batteryEnergyCounterNwh="))
+                    assertTrue(text.contains("batteryCurrentNowRaw="))
+                    assertTrue(text.contains("batteryCurrentNowApiMa="))
+                    assertTrue(text.contains("batteryCurrentReliability="))
+                    assertTrue(text.contains("counterAverageDischargeCurrentMa="))
+                    assertTrue(text.contains("batteryWarnings="))
                     assertTrue(text.contains("temperature=battery_not_cpu_gpu"))
                 }
                 assertEquals(0L, saved.droppedLogLines)

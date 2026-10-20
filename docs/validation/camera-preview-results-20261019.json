@@ -1,0 +1,75 @@
+{
+  "date": "2026-10-19",
+  "timezone": "Asia/Seoul",
+  "baseCommit": "f3cf61d",
+  "remoteMainVerified": true,
+  "preExistingOverlayChangesPreserved": true,
+  "schemaVersion": 4,
+  "build": "SUCCESSFUL",
+  "command": ".\\gradlew.bat :app:assembleDebug :app:assembleDebugAndroidTest :app:testDebugUnitTest :app:connectedDebugAndroidTest :app:lintDebug -Pandroid.testInstrumentationRunnerArguments.class=com.samin.objectdetection.settings.SettingsActivityTest,com.samin.objectdetection.camera.CameraPreviewRuntimeTest,com.samin.objectdetection.ui.BoundingBoxOverlayTest --console=plain",
+  "unitTests": {
+    "total": 126,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "instrumentation": {
+    "device": "Samsung Galaxy S24 SM-S921N",
+    "android": 16,
+    "total": 20,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "lint": {
+    "errors": 0,
+    "warnings": 179
+  },
+  "cameraRebinding": {
+    "sequence": [
+      "OFF",
+      "ON",
+      "OFF"
+    ],
+    "passed": true,
+    "sensorAnalysisResolution": "1440x1080",
+    "rotatedAnalysisResolution": "1080x1440",
+    "resolutionUnchanged": true
+  },
+  "actualAppLogChecks": [
+    {
+      "previewEnabled": false,
+      "successfulFrames": 18,
+      "failedFrames": 0,
+      "frameLogRecords": 18,
+      "overlayDrawRecords": 0,
+      "systemSamples": 8,
+      "batterySamples": 3,
+      "errorRecords": 0
+    },
+    {
+      "previewEnabled": true,
+      "successfulFrames": 15,
+      "failedFrames": 0,
+      "frameLogRecords": 15,
+      "overlayDrawRecords": 15,
+      "systemSamples": 8,
+      "batterySamples": 3,
+      "errorRecords": 0
+    }
+  ],
+  "testEnvironmentNotes": [
+    "Initial locked-device failures resolved after user unlocked device.",
+    "Espresso animations disabled during tests to avoid missed clicks.",
+    "Existing Android ELF compatibility dialog dismissed by test helper only; no runtime dependencies changed.",
+    "AGP prints optional androidx.test.services MANAGE_EXTERNAL_STORAGE warning; final tests all pass.",
+    "Short integration logs started before first frame may show requested header dimensions; actual negotiated dimensions verified in CameraX log."
+  ],
+  "remainingManualChecks": [
+    "Real hazard TTS/vibration/beep and cooldown outputs",
+    "MediaProjection screen recording and detection JSON; settings lock during actual screen recording",
+    "Visual camera/BBox alignment, rotation/relaunch, long-running analysis and target appliance compatibility",
+    "Controlled-duration performance and power comparison"
+  ],
+  "diffCheck": "PASS"
+}

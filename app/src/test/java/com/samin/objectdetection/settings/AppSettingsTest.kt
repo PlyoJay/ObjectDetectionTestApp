@@ -9,6 +9,53 @@ import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class AppSettingsTest {
+    @Test fun timerAndRoiPersistWithSafeMigrationAndIndependentSettings() {
+        val old = AppSettingsCodec.decode("schemaVersion=4\nyolo.interpreterThreadCount=2\ncamera.previewEnabled=false")
+        assertEquals(5, old.performanceLog.durationMinutes)
+        assertFalse(old.camera.recognitionRoi.enabled)
+        assertFalse(old.camera.previewEnabled)
+        assertEquals(2, old.yolo.interpreterThreadCount)
+        for (minutes in listOf(3, 5, 10)) {
+            val settings = old.copy(camera = old.camera.copy(recognitionRoi = com.samin.objectdetection.camera.RecognitionRoi.PRESET),
+                performanceLog = old.performanceLog.copy(durationMinutes = minutes))
+            assertTrue(settings.validationErrors().isEmpty())
+            assertEquals(settings, AppSettingsCodec.decode(AppSettingsCodec.encode(settings)))
+            assertEquals(settings.camera.recognitionRoi, settings.toDetectionConfig().recognitionRoi)
+            val snapshot = AppSettingsCodec.snapshotLines(settings)
+            assertTrue(snapshot.contains("camera.roi.top=0.1"))
+            assertTrue(snapshot.contains("performanceLog.durationMinutes=$minutes"))
+        }
+        assertTrue(old.copy(performanceLog = old.performanceLog.copy(durationMinutes = 4)).validationErrors().isNotEmpty())
+        val crop = old.copy(camera = old.camera.copy(recognitionRoi = com.samin.objectdetection.camera.RecognitionRoi.PRESET))
+        assertTrue(crop.copy(camera = crop.camera.copy(useCenterSquareCrop = true)).validationErrors().isNotEmpty())
+        assertTrue(crop.copy(yolo = crop.yolo.copy(resizeMode = YoloResizeMode.STRETCH)).validationErrors().isNotEmpty())
+    }
+
+    @Test fun previewDefaultsAndMigrationPreservePresetsAndDetectorConfiguration() {
+        assertTrue(AppSettings().camera.previewEnabled)
+        SettingsPresets.builtInNames.forEach { assertTrue(SettingsPresets.byName(it)!!.camera.previewEnabled) }
+        for (version in 1..3) {
+            val restored = AppSettingsCodec.decode("schemaVersion=$version\npresetName=OLD\ncamera.requestedWidth=1920\noverlay.enabled=false\nyolo.confidenceThreshold=0.31")
+            assertTrue(restored.camera.previewEnabled)
+            assertEquals(1920, restored.camera.requestedWidth)
+            assertFalse(restored.overlay.enabled)
+            assertEquals(0.31f, restored.yolo.confidenceThreshold)
+            assertEquals(APP_SETTINGS_SCHEMA_VERSION, restored.schemaVersion)
+        }
+        assertTrue(AppSettingsCodec.decode("schemaVersion=3\ncamera.previewEnabled=invalid").camera.previewEnabled)
+        val source = SettingsPresets.fieldTest(YoloResizeMode.STRETCH)
+        for (overlayEnabled in listOf(true, false)) {
+            val on = source.copy(overlay = source.overlay.copy(enabled = overlayEnabled))
+            val off = on.copy(camera = on.camera.copy(previewEnabled = false))
+            val restored = AppSettingsCodec.decode(AppSettingsCodec.encode(off))
+            assertEquals(off, restored)
+            assertEquals(on.toDetectionConfig(), restored.toDetectionConfig())
+            assertEquals(on.warning, restored.warning)
+            assertEquals(on.overlay, restored.overlay)
+            assertTrue(AppSettingsCodec.snapshotLines(restored).contains("camera.previewEnabled=false"))
+        }
+    }
+
     @Test fun systemDiagnosticsDefaultsAndOldStoredSettingsLeaveDetectorDebugIndependent() {
         val defaults = AppSettingsCodec.decode("schemaVersion=2")
         assertFalse(defaults.performanceLog.systemDiagnosticsEnabled)

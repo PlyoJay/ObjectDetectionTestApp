@@ -1,0 +1,8 @@
+
+com.samin.objectdetection.settings.SettingsActivityTest:.
+
+Time: 182.7
+
+OK (1 test)
+
+

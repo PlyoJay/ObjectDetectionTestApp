@@ -12,6 +12,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 
 data class SavedPerformanceLog(
     val displayName: String,
@@ -26,10 +29,16 @@ class PerformanceLogRecorder(private val context: Context, private val onFailure
     @Volatile private var activeSession: Session? = null
 
     val isRecording: Boolean get() = activeSession != null
+    val remainingMs: Long? get() = activeSession?.window?.remainingMs(SystemClock.elapsedRealtimeNanos())
 
-    suspend fun start(header: PerformanceLogHeader): SavedPerformanceLog {
+    suspend fun start(requestedHeader: PerformanceLogHeader,
+        onStarted: (PerformanceLogHeader) -> Unit = {},
+        snapshotOnAutoStop: (() -> PerformanceSnapshot)? = null,
+        onAutoStopped: (Result<SavedPerformanceLog?>) -> Unit = {}
+    ): SavedPerformanceLog {
         check(!isRecording) { "Performance logging is already active" }
-        val displayName = "perf_${FILE_NAME_FORMAT.get()!!.format(java.util.Date(header.startedAtMs))}.txt"
+        require(requestedHeader.durationMinutes in PerformanceTestWindow.ALLOWED_MINUTES)
+        val displayName = "perf_${FILE_NAME_FORMAT.get()!!.format(java.util.Date(requestedHeader.startedAtMs))}.txt"
         val relativePath = "${Environment.DIRECTORY_DOCUMENTS}/$RELATIVE_DIRECTORY"
         val values = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
@@ -47,17 +56,29 @@ class PerformanceLogRecorder(private val context: Context, private val onFailure
             context.contentResolver.delete(uri, null, null)
             throw error
         }
+        val header = requestedHeader.copy(startedAtMs = System.currentTimeMillis(), startedElapsedNs = SystemClock.elapsedRealtimeNanos())
         try { writer.append(PerformanceLogFormatter.formatHeader(header)); writer.flush() }
         catch (error: Throwable) { runCatching { writer.close() }; throw error }
         val logging = PerformanceLogSession(header, writer,
             if (header.systemDiagnosticsEnabled) AndroidSystemMetricSource(context) else null,
             SystemClock::elapsedRealtimeNanos, System::currentTimeMillis, onFailure, MAX_QUEUE_SIZE)
-        val session = Session(displayName, relativePath, uri, logging)
+        val session = Session(displayName, relativePath, uri, logging, PerformanceTestWindow(header.startedElapsedNs, header.durationMinutes))
         synchronized(lock) {
             check(activeSession == null) { "Performance logging is already active" }
             activeSession = session
         }
+        onStarted(header)
         logging.start()
+        session.timer = scope.launch {
+            delay(session.window.remainingMs(SystemClock.elapsedRealtimeNanos()))
+            // A separate job owns stop/drain, so cancelling the timer never cancels saving.
+            scope.launch {
+                val result = runCatching {
+                    stopSession(session, { snapshotOnAutoStop?.invoke() ?: DetectionMetricsCollector().stopPerformanceSessionSnapshot(stoppedElapsedNs = SystemClock.elapsedRealtimeNanos()) }, PerformanceStopReason.AUTO_DURATION)
+                }
+                if (session.stopReason == PerformanceStopReason.AUTO_DURATION) onAutoStopped(result)
+            }
+        }
         return session.saved()
     }
 
@@ -76,21 +97,33 @@ class PerformanceLogRecorder(private val context: Context, private val onFailure
         session.logging.recordEvent(trace, execution)
     }
 
-    fun recordOverlay(trace: FrameTrace, wallMs: Long, elapsedNs: Long, ageMs: Long) {
+    fun recordOverlay(trace: FrameTrace, wallMs: Long, elapsedNs: Long, ageMs: Long, drawingEnabled: Boolean = true) {
         val session = activeSession ?: return
-        enqueue(session, "OVERLAY | sessionId=${trace.sessionId} frameId=${trace.frameId} drawUnixMs=$wallMs drawElapsedNs=$elapsedNs frameAgeOverlay=${ageMs}ms")
+        if (!session.window.accepts(trace.completedElapsedNs ?: elapsedNs)) return
+        enqueue(session, "OVERLAY | sessionId=${trace.sessionId} frameId=${trace.frameId} drawUnixMs=$wallMs drawElapsedNs=$elapsedNs frameAgeOverlay=${ageMs}ms drawingEnabled=$drawingEnabled")
     }
 
-    suspend fun stop(snapshot: PerformanceSnapshot): SavedPerformanceLog? {
-        val session = synchronized(lock) {
-            val current = activeSession ?: return null
-            activeSession = null
-            current
+    suspend fun stop(snapshot: PerformanceSnapshot, reason: PerformanceStopReason = PerformanceStopReason.MANUAL): SavedPerformanceLog? {
+        val session = activeSession ?: return null
+        return stopSession(session, { snapshot }, reason)
+    }
+
+    private suspend fun stopSession(session: Session, snapshot: () -> PerformanceSnapshot, reason: PerformanceStopReason): SavedPerformanceLog? {
+        val ownsStop = synchronized(lock) {
+            if (activeSession !== session || session.stopping) false
+            else { session.stopping = true; session.stopReason = reason; true }
         }
-        withContext(Dispatchers.IO) {
-            session.logging.close(snapshot).get()
+        if (!ownsStop) return session.finished.await()
+        session.timer?.cancel()
+        try {
+            withContext(Dispatchers.IO) { session.logging.close(snapshot(), reason).get() }
+            return session.saved().also { session.finished.complete(it) }
+        } catch (error: Throwable) {
+            session.finished.completeExceptionally(error)
+            throw error
+        } finally {
+            synchronized(lock) { if (activeSession === session) activeSession = null }
         }
-        return session.saved()
     }
 
     fun stopAsync(snapshot: PerformanceSnapshot) {
@@ -105,8 +138,13 @@ class PerformanceLogRecorder(private val context: Context, private val onFailure
         val displayName: String,
         val relativePath: String,
         val uri: Uri,
-        val logging: PerformanceLogSession
+        val logging: PerformanceLogSession,
+        val window: PerformanceTestWindow
     ) {
+        var stopping = false
+        var stopReason: PerformanceStopReason? = null
+        var timer: Job? = null
+        val finished = CompletableDeferred<SavedPerformanceLog?>()
         fun saved() = SavedPerformanceLog(displayName, relativePath, uri, logging.droppedLogLines)
     }
 

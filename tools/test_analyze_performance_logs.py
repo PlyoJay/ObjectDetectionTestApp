@@ -1,8 +1,46 @@
 import unittest
-from analyze_performance_logs import analyze, fields, battery_consistency
+from analyze_performance_logs import analyze, fields, battery_consistency, counter_discharge
 
 
 class PerformanceLogAnalysisTest(unittest.TestCase):
+    def test_timer_and_roi_metadata_are_available_for_comparable_measurements(self):
+        text = ("Dropped Log Lines: 0\nCUMULATIVE_SUMMARY | endSeconds=180 successfulFrames=1\n"
+                "camera.roi.enabled=true\ncamera.roi.top=0.1\ncamera.useCenterSquareCrop=false\nyolo.resizeMode=LETTERBOX\n"
+                "FRAME 1 | elapsedSeconds=1 inference=100ms frame=720x1280 rotation=90 roi=[36,128,684,1280]\n"
+                "TEST_SESSION | configuredDurationMs=180000 actualDurationMs=180002 stopReason=AUTO_DURATION\n")
+        result = analyze(text)["measurement"]
+        self.assertEqual("AUTO_DURATION", result["session"]["stopReason"])
+        self.assertEqual("180002", result["session"]["actualDurationMs"])
+        self.assertEqual("0.1", result["roiSettings"]["camera.roi.top"])
+        self.assertEqual([dict(frame="720x1280", rotation="90", roi="[36,128,684,1280]")], result["observedFrameRois"])
+        self.assertEqual("N/A", analyze(self.log())["measurement"]["session"])
+
+    def test_counter_estimate_does_not_depend_on_current_and_handles_missing_voltage(self):
+        before = dict(elapsedSeconds="0", batteryChargeCounterUah="4000000", batteryVoltageMv="4000",
+                      chargingStatus="Discharging", pluggedType="None")
+        after = {**before, "elapsedSeconds": "60", "batteryChargeCounterUah": "3990000"}
+        result = counter_discharge([before, after])
+        self.assertEqual(600, result["averageDischargeCurrentMa"])
+        self.assertEqual(2400, result["estimatedDischargePowerMw"])
+        self.assertEqual("N/A", counter_discharge([before, {**after, "batteryVoltageMv": "N/A"}])["estimatedDischargePowerMw"])
+        self.assertEqual("N/A", counter_discharge([before, {**after, "batteryChargeCounterUah": "4000000"}])["averageDischargeCurrentMa"])
+        for changed in [{"pluggedType": "USB"}, {"batteryChargeCounterUah": "4100000"}, {"elapsedSeconds": "121"}, {"batteryChargeCounterUah": "N/A"}]:
+            self.assertEqual("N/A", counter_discharge([before, {**after, **changed}])["averageDischargeCurrentMa"])
+
+    def test_new_logs_keep_api_consistency_evidence_and_suppress_legacy_mismatched_power(self):
+        before = dict(elapsedSeconds="0", batteryCurrentNowApiMa="-2", batteryCurrentMa="N/A",
+                      batteryChargeCounterUah="4000000", chargingStatus="Discharging", pluggedType="None")
+        after = {**before, "elapsedSeconds": "60", "batteryChargeCounterUah": "3990000"}
+        self.assertEqual("SUSPECT_CURRENT_COUNTER_MISMATCH", battery_consistency([before, after])["powerReliability"])
+        text = "Dropped Log Lines: 0\nCUMULATIVE_SUMMARY | endSeconds=60 successfulFrames=0\n"
+        for record in [before, after]:
+            record = {**record, "batteryCurrentMa": "-2", "estimatedBatteryPowerMw": "-8"}
+            text += "BATTERY_SAMPLE | " + " ".join(f"{k}={v}" for k, v in record.items()) + "\n"
+        battery = analyze(text)["diagnostics"]["battery"]
+        self.assertEqual("N/A", battery["averageDischargingCurrentMa"])
+        self.assertEqual("N/A", battery["averageEstimatedDischargingPowerMw"])
+        self.assertEqual(-2, battery["byChargingStatus"]["Discharging"]["batteryCurrentMa"]["average"])
+
     def test_cpu_policy_spaces_preserve_all_policies_and_no_current_fallback(self):
         line = "SYSTEM | elapsedSeconds=1 cpuFrequency=policy0:currentKHz=1000,relatedCpus=0 1 2 3,governor=energy_aware;policy9:currentKHz=N/A,scalingMaxKHz=2000,relatedCpus=9,governor=energy_aware cpuFrequencyScope=device_policy_kHz"
         self.assertIn("policy9:", fields(line)["cpuFrequency"])

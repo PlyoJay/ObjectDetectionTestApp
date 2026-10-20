@@ -29,8 +29,252 @@ import org.junit.Test
 import java.io.File
 import android.view.accessibility.AccessibilityNodeInfo
 
-/** Uses only the settings Activity: no camera, recording or inference pipeline is started. */
+/** Preserves applied settings/presets; the preview integration test also starts real inference. */
 class SettingsActivityTest {
+    @Test fun roiPresetValidationAndDurationStayInTheirCategoriesAndPersist() {
+        seed(AppSettings(camera = CameraSettings(useCenterSquareCrop = true), yolo = YoloSettings(resizeMode = YoloResizeMode.STRETCH)))
+        launch()
+        openCategory("카메라 및 입력")
+        onView(withText("크롭 프리셋: 상단 10% / 좌우 5% / 하단 0%")).perform(scrollTo(), click())
+        field("인식 영역 크롭 사용").check(matches(isChecked()))
+        field("Center Square ROI (OFF = Full Frame)").check(matches(not(isEnabled()))).check(matches(not(isChecked())))
+        field("Resize Mode").check(matches(not(isEnabled()))).check(matches(withSpinnerText("LETTERBOX")))
+        field("상단 크롭 (%)").perform(scrollTo(), replaceText("99"), closeSoftKeyboard())
+        field("하단 크롭 (%)").perform(scrollTo(), replaceText("2"), closeSoftKeyboard())
+        onView(withText("적용 및 저장")).perform(click())
+        onView(withText("설정값 확인")).check(matches(isDisplayed()))
+        onView(withText("확인")).perform(click())
+        field("상단 크롭 (%)").perform(scrollTo(), replaceText("10"), closeSoftKeyboard())
+        field("하단 크롭 (%)").perform(scrollTo(), replaceText("0"), closeSoftKeyboard())
+        pressBack()
+        openCategory("성능 측정 및 로그")
+        field("테스트 시간 (분)").perform(scrollTo(), click())
+        onData(`is`("3")).perform(click())
+        onView(withText("적용 및 저장")).perform(click())
+        val restored = loadHealthy()
+        assertEquals(com.samin.objectdetection.camera.RecognitionRoi.PRESET, restored.camera.recognitionRoi)
+        assertEquals(3, restored.performanceLog.durationMinutes)
+        assertFalse(restored.camera.useCenterSquareCrop)
+        assertEquals(YoloResizeMode.LETTERBOX, restored.yolo.resizeMode)
+    }
+
+    @Test fun threeMinuteAutoStopSavesAndUnlocksForBothPreviewAndThreadModes() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        listOf(android.Manifest.permission.CAMERA, android.Manifest.permission.ACCESS_COARSE_LOCATION,
+            android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.POST_NOTIFICATIONS).forEach {
+            instrumentation.uiAutomation.grantRuntimePermission(context.packageName, it)
+        }
+        val collection = android.provider.MediaStore.Files.getContentUri("external")
+        fun logs(): Set<android.net.Uri> = buildSet {
+            context.contentResolver.query(collection, arrayOf("_id"), "relative_path=?",
+                arrayOf("Documents/GOTORO/performance/"), null)?.use { cursor ->
+                while (cursor.moveToNext()) add(android.content.ContentUris.withAppendedId(collection, cursor.getLong(0)))
+            }
+        }
+        val modes = when (InstrumentationRegistry.getArguments().getString("timerRoiPreview")) {
+            "off" -> listOf(false to 4)
+            "on" -> listOf(true to 1)
+            else -> listOf(true to 1, false to 4)
+        }
+        for ((preview, threads) in modes) {
+            val before = logs()
+            seed(AppSettings(camera = CameraSettings(previewEnabled = preview,
+                recognitionRoi = com.samin.objectdetection.camera.RecognitionRoi.PRESET),
+                yolo = YoloSettings(interpreterThreadCount = threads),
+                warning = WarningSettings(enableActualVibration = false, enableActualBeep = false, enableActualTts = false),
+                performanceLog = PerformanceLogSettings(!preview, 1000, !preview, 3)))
+            val main = ActivityScenario.launch(com.samin.objectdetection.MainActivity::class.java)
+            try {
+                main.onActivity { it.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
+                dismissNativeCompatibilityWarning()
+                onView(withText("성능 로그 시작")).perform(click())
+                val deadline = android.os.SystemClock.elapsedRealtime() + 200_000
+                var completed = false
+                while (android.os.SystemClock.elapsedRealtime() < deadline) {
+                    android.os.SystemClock.sleep(1000)
+                    main.onActivity { activity ->
+                        val buttons = mutableListOf<android.widget.Button>()
+                        fun visit(view: View) {
+                            if (view is android.widget.Button) buttons.add(view)
+                            if (view is ViewGroup) (0 until view.childCount).forEach { visit(view.getChildAt(it)) }
+                        }
+                        visit(activity.window.decorView)
+                        completed = buttons.any { it.text == "성능 로그 시작" && it.isEnabled }
+                        if (!completed) {
+                            assertFalse(buttons.single { it.contentDescription == "상세 설정" }.isEnabled)
+                            assertFalse(buttons.single { it.text == "빠른 설정" }.isEnabled)
+                        }
+                    }
+                    if (completed) break
+                }
+                assertTrue("Timed session did not finish", completed)
+                val created = logs() - before
+                assertEquals(1, created.size)
+                val text = context.contentResolver.openInputStream(created.single())!!.bufferedReader().use { it.readText() }
+                File(context.cacheDir, "timer-roi-auto-$preview-$threads.txt").writeText(text)
+                assertTrue(text.contains("configuredDurationMs=180000"))
+                assertTrue(text.contains("stopReason=AUTO_DURATION"))
+                val actual = Regex("actualDurationMs=(\\d+)").find(text)!!.groupValues[1].toLong()
+                android.util.Log.i("TimerRoiValidation", "preview=$preview threads=$threads actualDurationMs=$actual " +
+                    text.lineSequence().first { it.startsWith("TEST_SESSION |") })
+                assertTrue("actual=$actual", actual in 180_000L..190_000L)
+                assertTrue(text.contains("cameraPreviewEnabled=$preview"))
+                assertTrue(text.contains("YOLO Threads: $threads"))
+                assertTrue(text.contains("mode=EDGE_CROP")); assertTrue(text.contains("camera.roi.top=0.1"))
+                assertTrue(text.lineSequence().count { it.startsWith("FRAME ") && it.contains("roi=[") } >= 3)
+                assertFalse(text.contains("ERROR |"))
+                if (!preview) { assertTrue(text.contains("BATTERY_SUMMARY")); assertTrue(text.contains("SYSTEM |")) }
+                onView(withContentDescription("상세 설정")).check(matches(isEnabled()))
+            } finally {
+                main.close()
+                (logs() - before).forEach { context.contentResolver.delete(it, null, null) }
+            }
+        }
+    }
+
+    @Test fun previewModesKeepRealInferenceDiagnosticsAndPerformanceLogSettingsLock() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        listOf(android.Manifest.permission.CAMERA, android.Manifest.permission.ACCESS_COARSE_LOCATION,
+            android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.POST_NOTIFICATIONS).forEach {
+            instrumentation.uiAutomation.grantRuntimePermission(context.packageName, it)
+        }
+        val collection = android.provider.MediaStore.Files.getContentUri("external")
+        fun performanceLogs(): Set<android.net.Uri> = buildSet {
+            context.contentResolver.query(collection, arrayOf("_id"), "relative_path=?",
+                arrayOf("Documents/GOTORO/performance/"), null)?.use { cursor ->
+                while (cursor.moveToNext()) add(android.content.ContentUris.withAppendedId(collection, cursor.getLong(0)))
+            }
+        }
+        fun awaitControl(label: String) {
+            val deadline = android.os.SystemClock.elapsedRealtime() + 20_000
+            var last: Throwable? = null
+            while (android.os.SystemClock.elapsedRealtime() < deadline) {
+                try { onView(withText(label)).check(matches(isEnabled())); return }
+                catch (error: AssertionError) { last = error }
+                catch (error: androidx.test.espresso.NoMatchingViewException) { last = error }
+                android.os.SystemClock.sleep(200)
+            }
+            throw AssertionError("Control unavailable: $label", last)
+        }
+        for (previewEnabled in listOf(false, true)) {
+            val before = performanceLogs()
+            seed(AppSettings(camera = CameraSettings(previewEnabled = previewEnabled),
+                warning = WarningSettings(enableActualVibration = false, enableActualBeep = false, enableActualTts = false),
+                overlay = OverlaySettings(debugMode = com.samin.objectdetection.ui.OverlayDebugMode.FULL),
+                performanceLog = PerformanceLogSettings(true, 1000, true)))
+            val main = ActivityScenario.launch(com.samin.objectdetection.MainActivity::class.java)
+            try {
+                dismissNativeCompatibilityWarning()
+                onView(withText("성능 로그 시작")).perform(click())
+                awaitControl("성능 로그 종료")
+                onView(withContentDescription("상세 설정")).perform(click())
+                onView(withText("객체 인식 설정")).check(androidx.test.espresso.assertion.ViewAssertions.doesNotExist())
+                onView(withText("빠른 설정")).perform(click())
+                onView(withHint("Confidence (0..1)")).check(androidx.test.espresso.assertion.ViewAssertions.doesNotExist())
+                main.onActivity { assertEquals(androidx.lifecycle.Lifecycle.State.RESUMED, it.lifecycle.currentState) }
+                android.os.SystemClock.sleep(6500)
+                if (!previewEnabled) onView(withText("화면 표시 OFF — 객체 인식 실행 중")).check(matches(isDisplayed()))
+                onView(withText("성능 로그 종료")).perform(click())
+                awaitControl("성능 로그 시작")
+                val created = performanceLogs() - before
+                assertEquals(1, created.size)
+                val text = context.contentResolver.openInputStream(created.single())!!.bufferedReader().use { it.readText() }
+                File(context.cacheDir, "preview-validation-$previewEnabled.txt").writeText(text)
+                assertTrue(text.contains("cameraPreviewEnabled=$previewEnabled"))
+                assertTrue(text.contains("configuredDurationMs=300000"))
+                assertTrue(text.contains("stopReason=MANUAL"))
+                assertTrue(text.lineSequence().count { it.startsWith("FRAME ") && it.contains("status=SUCCESS") } >= 3)
+                assertTrue(text.contains("SYSTEM |")); assertTrue(text.contains("BATTERY_SAMPLE |"))
+                assertTrue(text.contains("Failed Frames: 0"))
+                assertFalse(text.contains("ERROR |"))
+                if (!previewEnabled) {
+                    assertTrue(text.contains("NOT_DISPLAYED_PREVIEW_OFF"))
+                    assertTrue(text.contains("Overlay Latency Samples: 0"))
+                    assertFalse(text.contains("OVERLAY |"))
+                } else assertTrue(text.contains("OVERLAY |"))
+                // The same settings entry works after the performance session has drained.
+                onView(withContentDescription("상세 설정")).perform(click())
+                dismissNativeCompatibilityWarning()
+                onView(withText("객체 인식 설정")).check(matches(isDisplayed()))
+                pressBack()
+            } finally {
+                main.close()
+                (performanceLogs() - before).forEach { context.contentResolver.delete(it, null, null) }
+            }
+        }
+    }
+
+    @Test fun previewVisibilitySuppressesDebugAndBoxesWhileKeepingRecordingAndLogControls() {
+        for (enabled in listOf(false, true)) {
+            launch()
+            scenario!!.onActivity { activity ->
+                var recordings = 0; var logs = 0
+                val screen = com.samin.objectdetection.ui.MainScreenView(activity,
+                    com.samin.objectdetection.ui.OverlayDebugMode.FULL, "TEST", "Model", true, false,
+                    {}, { recordings++ }, { logs++ }, {}, {}, cameraPreviewEnabled = enabled)
+                activity.setContentView(screen.root)
+                assertEquals(if (enabled) View.VISIBLE else View.GONE, screen.previewView.visibility)
+                assertEquals(if (enabled) View.VISIBLE else View.GONE, screen.overlayView.visibility)
+                assertEquals(if (enabled) View.VISIBLE else View.GONE, screen.debugTextView.visibility)
+                assertEquals(if (enabled) View.VISIBLE else View.GONE, screen.presetTextView.visibility)
+                assertEquals(if (enabled) View.GONE else View.VISIBLE, screen.previewStatusTextView.visibility)
+                assertEquals(View.GONE, screen.warningMessageTextView.visibility)
+                screen.updatePreviewStatus("객체 인식 실행 중")
+                if (!enabled) assertEquals("화면 표시 OFF — 객체 인식 실행 중", screen.previewStatusTextView.text.toString())
+                screen.recordingButton.performClick(); screen.performanceLogButton.performClick()
+                assertEquals(1, recordings); assertEquals(1, logs)
+                assertTrue(screen.recordingButton.isEnabled); assertTrue(screen.performanceLogButton.isEnabled)
+                fun buttons(view: View): List<android.widget.Button> =
+                    (if (view is android.widget.Button) listOf(view) else emptyList()) +
+                        (if (view is ViewGroup) (0 until view.childCount).flatMap { buttons(view.getChildAt(it)) } else emptyList())
+                val overlay = buttons(screen.root).first { it.text == "Overlay ON" }
+                assertEquals(enabled, overlay.isEnabled)
+                if (enabled) {
+                    overlay.performClick()
+                    assertEquals("Overlay OFF", overlay.text.toString())
+                    assertEquals(View.VISIBLE, screen.previewView.visibility)
+                    overlay.performClick()
+                    assertEquals("Overlay ON", overlay.text.toString())
+                }
+            }
+        }
+    }
+
+    @Test fun previewSwitchSurvivesRecreationApplyReopenAndCustomPresetWithoutChangingOverlay() {
+        for (enabled in listOf(false, true)) {
+            launch()
+            openCategory("카메라 및 입력")
+            field("카메라 화면 표시 (Preview)").perform(scrollTo(), click())
+            recreate()
+            field("카메라 화면 표시 (Preview)").check(matches(if (enabled) isChecked() else not(isChecked())))
+            onView(withText("적용 및 저장")).perform(click())
+            val saved = loadHealthy()
+            assertEquals(enabled, saved.camera.previewEnabled)
+            assertTrue(saved.overlay.enabled)
+            assertEquals(AppSettings().toDetectionConfig(), saved.toDetectionConfig())
+            val store = AppSettingsStore(context)
+            store.saveCustomPreset("PREVIEW", saved)
+            assertEquals(enabled, AppSettingsStore(context).loadCustomPreset("PREVIEW")!!.camera.previewEnabled)
+            launch()
+            openCategory("카메라 및 입력")
+            field("카메라 화면 표시 (Preview)").check(matches(if (enabled) isChecked() else not(isChecked())))
+            onView(withText("취소")).perform(click())
+        }
+    }
+
+    @Test fun schemaThreeAppliedAndCustomSettingsMigratePreviewOnAndKeepOtherValues() {
+        val old = AppSettings(presetName = "OLD PREVIEW", camera = CameraSettings(detectIntervalMs = 123),
+            overlay = OverlaySettings(enabled = false))
+        val encoded = AppSettingsCodec.encode(old).lineSequence().filterNot { it.startsWith("camera.previewEnabled=") }
+            .joinToString("\n").replace("schemaVersion=$APP_SETTINGS_SCHEMA_VERSION", "schemaVersion=3")
+        preferences.edit().putString("applied_settings", encoded).putString("custom_preset.OLD PREVIEW", encoded)
+            .putStringSet("custom_preset_names", setOf("OLD PREVIEW")).commit()
+        val store = AppSettingsStore(context)
+        assertEquals(old, store.loadApplied())
+        assertEquals(old, store.loadCustomPreset("OLD PREVIEW"))
+        assertEquals(APP_SETTINGS_SCHEMA_VERSION, AppSettingsCodec.storedSchemaVersion(preferences.getString("applied_settings", "")!!))
+    }
+
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
     private val preferences = context.getSharedPreferences("object_detection_app_settings", Context.MODE_PRIVATE)
     private lateinit var original: Map<String, *>
@@ -51,7 +295,7 @@ class SettingsActivityTest {
 
     @Test fun everyExistingControlIsReachableInItsCategory() {
         launch()
-        assertEquals(61, CATEGORY_FIELDS.values.sumOf { it.size })
+        assertEquals(62, CATEGORY_FIELDS.values.sumOf { it.size })
         scenario!!.onActivity { activity ->
             fun labels(view: View): List<String> = listOfNotNull(view.tag as? String) +
                 if (view is ViewGroup) (0 until view.childCount).flatMap { labels(view.getChildAt(it)) } else emptyList()
@@ -325,7 +569,26 @@ class SettingsActivityTest {
         store.loadApplied().also { store.markAppliedHealthy() }
     }
 
-    private fun openCategory(title: String) { onView(withText(title)).perform(scrollTo(), click()) }
+    private fun openCategory(title: String) {
+        onView(withText(title)).perform(scrollTo(), click())
+        // Showing a previously GONE category requests its first layout. Espresso can become
+        // idle before that traversal; scrollTo must wait for the newly visible page's size.
+        val deadline = android.os.SystemClock.elapsedRealtime() + 3000
+        while (android.os.SystemClock.elapsedRealtime() < deadline) {
+            var ready = false
+            scenario?.onActivity { activity ->
+                fun laidOutPage(view: View): Boolean {
+                    if (view is ScrollView && view.visibility == View.VISIBLE)
+                        return view.width > 0 && view.height > 0 && !view.isLayoutRequested
+                    return view is ViewGroup && (0 until view.childCount).any { laidOutPage(view.getChildAt(it)) }
+                }
+                ready = laidOutPage(activity.window.decorView)
+            }
+            if (ready) return
+            android.os.SystemClock.sleep(16)
+        }
+        fail("Category was not laid out: $title")
+    }
     private fun field(label: String) = onView(withTagValue(`is`(label as Any)))
 
     private fun choosePreset(name: String) {
@@ -348,7 +611,7 @@ class SettingsActivityTest {
 
     companion object {
         private val CATEGORY_FIELDS = linkedMapOf(
-            "카메라 및 입력" to listOf("Detect Interval (ms)", "Center Square ROI (OFF = Full Frame)", "Resize Mode", "요청 Camera Resolution"),
+            "카메라 및 입력" to listOf("카메라 화면 표시 (Preview)", "Detect Interval (ms)", "Center Square ROI (OFF = Full Frame)", "Resize Mode", "요청 Camera Resolution"),
             "YOLO 모델 및 추론" to listOf("Confidence Threshold", "NMS Threshold", "Interpreter Thread Count", "XNNPACK 사용", "Max Candidates"),
             "탐지 필터 및 경고" to listOf(
                 "Size Filter Mode", "Geometry Filter", "Min Box Area Ratio", "Min Box Width Ratio", "Min Box Height Ratio",

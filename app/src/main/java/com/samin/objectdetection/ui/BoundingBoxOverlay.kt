@@ -15,16 +15,15 @@ import com.samin.objectdetection.warning.RiskObjectCategory
 import java.util.Locale
 import android.os.SystemClock
 import com.samin.objectdetection.metrics.FrameTrace
+import com.samin.objectdetection.camera.FrameRoi
 
 class BoundingBoxOverlay @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null
 ) : View(context, attrs) {
 
-    private var detections: List<DetectionResult> = emptyList()
-    private var mlKitDetections: List<DetectionResult> = emptyList()
-    private var frameWidth: Int = 1
-    private var frameHeight: Int = 1
+    private val yoloState = OverlayFrameState<List<DetectionResult>>(DEFAULT_MAX_OVERLAY_AGE_MS)
+    private val mlKitState = OverlayFrameState<List<DetectionResult>>(DEFAULT_MAX_OVERLAY_AGE_MS)
     private var inferenceTimeMs: Long = 0L
     private var fps: Int = 0
     private var analyzerFps = 0.0
@@ -33,19 +32,29 @@ class BoundingBoxOverlay @JvmOverloads constructor(
     private var drawnFrameId: Long? = null
     var onFrameDrawn: ((FrameTrace, Long, Long, Boolean) -> Unit)? = null
     private var enabled = true
+    private var recognitionRegion: FrameRoi? = null
+    private var recognitionWidth = 1
+    private var recognitionHeight = 1
+    private val regionPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.GREEN; style = Paint.Style.STROKE; strokeWidth = 3f
+    }
+
+    fun updateRecognitionRegion(frameWidth: Int, frameHeight: Int, roi: FrameRoi, show: Boolean) {
+        recognitionWidth = frameWidth; recognitionHeight = frameHeight
+        recognitionRegion = roi.takeIf { show }
+        postInvalidateOnAnimation()
+    }
     private var showYoloBoxes = true
     private var showMlKitBoxes = true
     private var showConfidence = false
     private var showFps = false
     private var staleTimeoutMs = DEFAULT_MAX_OVERLAY_AGE_MS
     var diagnosticLog: ((String) -> Unit)? = null
-    private var debugFrameId: Long? = null
-    private var loggedDrawFrame: Long? = null
+    private var loggedYoloDraw: Long? = null
+    private var loggedMlKitDraw: Long? = null
     private var debugMode: OverlayDebugMode = OverlayDebugMode.SIMPLE
-    private var lastDetectionUpdatedAtMs: Long = 0L
-    private var lastMlKitUpdatedAtMs: Long = 0L
-    private val clearYoloRunnable = Runnable { clearYoloIfStale() }
-    private val clearMlKitRunnable = Runnable { clearMlKitIfStale() }
+    private val clearYoloRunnable: Runnable = Runnable { clearYoloIfStale() }
+    private val clearMlKitRunnable: Runnable = Runnable { clearMlKitIfStale() }
 
     private val boxPaint = Paint().apply {
         color = Color.parseColor("#00BFFF")
@@ -90,47 +99,40 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         frameHeight: Int,
         inferenceTimeMs: Long,
         fps: Int,
-        debugFrameId: Long? = null,
-        trace: FrameTrace? = null,
+        trace: FrameTrace,
         analyzerFps: Double = fps.toDouble(),
         inferenceFps: Double = fps.toDouble()
     ) {
-        this.debugFrameId?.let { previous ->
-            if (previous != loggedDrawFrame) diagnosticLog?.invoke("[OVERLAY_SKIPPED] frame=$previous reason=REPLACED_BEFORE_DRAW")
+        val nowNs = SystemClock.elapsedRealtimeNanos()
+        val previous = yoloState.frame
+        val decision = yoloState.update(detections, frameWidth, frameHeight, trace, nowNs)
+        logUpdate(DetectionSource.YOLO, trace, nowNs, decision)
+        if (decision == OverlayFrameState.Update.OUT_OF_ORDER) return
+        if (previous != null && previous.trace.frameId != drawnFrameId) {
+            diagnosticLog?.invoke("[OVERLAY_SKIPPED] source=YOLO frame=${previous.trace.frameId} reason=REPLACED_BEFORE_DRAW")
         }
-        this.debugFrameId = debugFrameId
-        this.detections = detections
-        this.frameWidth = frameWidth.coerceAtLeast(1)
-        this.frameHeight = frameHeight.coerceAtLeast(1)
         this.inferenceTimeMs = inferenceTimeMs
         this.fps = fps
         this.frameTrace = trace
         this.analyzerFps = analyzerFps
         this.inferenceFps = inferenceFps
-        lastDetectionUpdatedAtMs = System.currentTimeMillis()
-        if (debugMode == OverlayDebugMode.FULL) {
-            logOverlayAge(this.detections)
-            logDetectionDetails(this.detections, DetectionSource.YOLO)
-        }
-        removeCallbacks(clearYoloRunnable)
-        postDelayed(clearYoloRunnable, staleTimeoutMs)
+        if (debugMode == OverlayDebugMode.FULL) logDetectionDetails(detections, DetectionSource.YOLO)
+        expireAndSchedule(yoloState, DetectionSource.YOLO, clearYoloRunnable)
         postInvalidateOnAnimation()
     }
 
     fun updateMlKitDetections(
         detections: List<DetectionResult>,
         frameWidth: Int,
-        frameHeight: Int
+        frameHeight: Int,
+        trace: FrameTrace
     ) {
-        this.mlKitDetections = detections
-        this.frameWidth = frameWidth.coerceAtLeast(1)
-        this.frameHeight = frameHeight.coerceAtLeast(1)
-        lastMlKitUpdatedAtMs = System.currentTimeMillis()
-        if (debugMode == OverlayDebugMode.FULL) {
-            logDetectionDetails(this.mlKitDetections, DetectionSource.ML_KIT)
-        }
-        removeCallbacks(clearMlKitRunnable)
-        postDelayed(clearMlKitRunnable, staleTimeoutMs)
+        val nowNs = SystemClock.elapsedRealtimeNanos()
+        val decision = mlKitState.update(detections, frameWidth, frameHeight, trace, nowNs)
+        logUpdate(DetectionSource.ML_KIT, trace, nowNs, decision)
+        if (decision == OverlayFrameState.Update.OUT_OF_ORDER) return
+        if (debugMode == OverlayDebugMode.FULL) logDetectionDetails(detections, DetectionSource.ML_KIT)
+        expireAndSchedule(mlKitState, DetectionSource.ML_KIT, clearMlKitRunnable)
         postInvalidateOnAnimation()
     }
 
@@ -146,7 +148,7 @@ class BoundingBoxOverlay @JvmOverloads constructor(
 
     fun setDrawingEnabled(enabled: Boolean) {
         this.enabled = enabled
-        loggedDrawFrame = null
+        configureStates()
         postInvalidateOnAnimation()
     }
 
@@ -163,12 +165,19 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         this.showMlKitBoxes = showMlKitBoxes
         this.showConfidence = showConfidence
         this.showFps = showFps
-        this.staleTimeoutMs = staleTimeoutMs.coerceAtLeast(100L)
+        this.staleTimeoutMs = staleTimeoutMs.coerceIn(100L, 60_000L)
+        configureStates()
         postInvalidateOnAnimation()
     }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
+        // Recognition guide is independent of bbox visibility and detector result expiry.
+        recognitionRegion?.let { roi ->
+            val transform = calculateFitCenterTransform(recognitionWidth, recognitionHeight, width, height)
+            canvas.drawRect(transform.offsetX + roi.left * transform.scale, transform.offsetY + roi.top * transform.scale,
+                transform.offsetX + roi.right * transform.scale, transform.offsetY + roi.bottom * transform.scale, regionPaint)
+        }
 
         // 중앙 감시 구역 가이드
 //        val guidePaint = Paint().apply {
@@ -179,27 +188,28 @@ class BoundingBoxOverlay @JvmOverloads constructor(
 //        canvas.drawLine(width * 0.33f, 0f, width * 0.33f, height.toFloat(), guidePaint)
 //        canvas.drawLine(width * 0.67f, 0f, width * 0.67f, height.toFloat(), guidePaint)
 
-        debugFrameId?.let { frame ->
-            if (loggedDrawFrame != frame) {
-                diagnosticLog?.invoke("[OVERLAY_DRAW] frame=$frame visible=${if (enabled) detections.size else 0} " +
-                    "drawingEnabled=$enabled view=${width}x$height frameSize=${frameWidth}x$frameHeight transform=FIT_CENTER " +
-                    "drawTimestampMs=${System.currentTimeMillis()}")
-                loggedDrawFrame = frame
-            }
-        }
+        // Timers may be delayed by a busy main thread. Recheck before every actual draw.
+        expireAndSchedule(yoloState, DetectionSource.YOLO, clearYoloRunnable)
+        expireAndSchedule(mlKitState, DetectionSource.ML_KIT, clearMlKitRunnable)
         if (!enabled) {
             notifyFrameDrawn(false)
             return
         }
 
-        val transform = calculateFitCenterTransform(
-            frameWidth = frameWidth,
-            frameHeight = frameHeight,
-            viewWidth = width,
-            viewHeight = height
-        )
-        val freshDetections = detections
-        val freshMlKitDetections = mlKitDetections
+        val yoloFrame = yoloState.frame
+        val mlKitFrame = mlKitState.frame
+        val transform = calculateFitCenterTransform(yoloFrame?.width ?: 1, yoloFrame?.height ?: 1, width, height)
+        val mlKitTransform = calculateFitCenterTransform(mlKitFrame?.width ?: 1, mlKitFrame?.height ?: 1, width, height)
+        val freshDetections = yoloFrame?.value.orEmpty()
+        val freshMlKitDetections = mlKitFrame?.value.orEmpty()
+        if (yoloFrame != null && loggedYoloDraw != yoloFrame.trace.frameId) {
+            logDraw(DetectionSource.YOLO, yoloFrame)
+            loggedYoloDraw = yoloFrame.trace.frameId
+        }
+        if (mlKitFrame != null && loggedMlKitDraw != mlKitFrame.trace.frameId) {
+            logDraw(DetectionSource.ML_KIT, mlKitFrame)
+            loggedMlKitDraw = mlKitFrame.trace.frameId
+        }
 
         if (showYoloBoxes) freshDetections.forEach { res ->
             val left = transform.offsetX + res.left * transform.scale
@@ -220,10 +230,10 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         }
 
         if (showMlKitBoxes) freshMlKitDetections.forEach { res ->
-            val left = transform.offsetX + res.left * transform.scale
-            val top = transform.offsetY + res.top * transform.scale
-            val right = transform.offsetX + res.right * transform.scale
-            val bottom = transform.offsetY + res.bottom * transform.scale
+            val left = mlKitTransform.offsetX + res.left * mlKitTransform.scale
+            val top = mlKitTransform.offsetY + res.top * mlKitTransform.scale
+            val right = mlKitTransform.offsetX + res.right * mlKitTransform.scale
+            val bottom = mlKitTransform.offsetY + res.bottom * mlKitTransform.scale
 
             canvas.drawRoundRect(left, top, right, bottom, 20f, 20f, mlKitBoxPaint)
             drawLabelIfNeeded(canvas, res, DetectionSource.ML_KIT, left, top)
@@ -231,7 +241,7 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         if (showFps) {
             canvas.drawText(String.format(Locale.US, "FPS=%.1f A=%.1f inference=%dms F=%d", inferenceFps, analyzerFps, inferenceTimeMs, frameTrace?.frameId ?: 0), 24f, 56f, infoPaint)
         }
-        notifyFrameDrawn(showYoloBoxes)
+        notifyFrameDrawn(showYoloBoxes && yoloFrame != null)
     }
 
     private fun notifyFrameDrawn(drawingEnabled: Boolean) {
@@ -388,47 +398,86 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         }
     }
 
-    private fun clearYoloIfStale() {
-        val now = System.currentTimeMillis()
-        if (detections.isNotEmpty() && now - lastDetectionUpdatedAtMs > staleTimeoutMs) {
-            debugFrameId?.let { diagnosticLog?.invoke("[OVERLAY_CLEARED] frame=$it reason=STALE ageMs=${now-lastDetectionUpdatedAtMs}") }
-            Log.d(
-                DETECTION_TIMING_TAG,
-                "overlay stale clear source=YOLO ageMs=${now - lastDetectionUpdatedAtMs} " +
-                    "count=${detections.size}"
-            )
-            detections = emptyList()
+    private fun clearYoloIfStale(): Unit = expireAndSchedule(yoloState, DetectionSource.YOLO, clearYoloRunnable)
+
+    private fun clearMlKitIfStale(): Unit = expireAndSchedule(mlKitState, DetectionSource.ML_KIT, clearMlKitRunnable)
+
+    private fun expireAndSchedule(
+        state: OverlayFrameState<List<DetectionResult>>,
+        source: DetectionSource,
+        timer: Runnable
+    ) {
+        removeCallbacks(timer)
+        val nowNs = SystemClock.elapsedRealtimeNanos()
+        state.expire(nowNs)?.let { expired ->
+            diagnosticLog?.invoke("[OVERLAY_CLEARED] source=$source frame=${expired.trace.frameId} " +
+                "reason=EXPIRED ageMs=${expired.ageMs(nowNs)} basis=${expired.timeBasis} elapsedNs=$nowNs")
             postInvalidateOnAnimation()
+        }
+        state.remainingDelayMs(nowNs)?.let { postDelayed(timer, it.coerceAtLeast(1L)) }
+    }
+
+    private fun configureStates() {
+        val nowNs = SystemClock.elapsedRealtimeNanos()
+        // Log expiry before reconfiguration can clear the state.
+        clearYoloIfStale()
+        clearMlKitIfStale()
+        configureState(yoloState, DetectionSource.YOLO, enabled && showYoloBoxes, nowNs)
+        configureState(mlKitState, DetectionSource.ML_KIT, enabled && showMlKitBoxes, nowNs)
+        clearYoloIfStale()
+        clearMlKitIfStale()
+    }
+
+    private fun configureState(state: OverlayFrameState<List<DetectionResult>>, source: DetectionSource, active: Boolean, nowNs: Long) {
+        val previous = state.frame
+        state.configure(active, staleTimeoutMs, nowNs)
+        if (previous != null && state.frame == null) {
+            diagnosticLog?.invoke("[OVERLAY_CLEARED] source=$source frame=${previous.trace.frameId} " +
+                "reason=CONFIG_CHANGED active=$active timeoutMs=$staleTimeoutMs ageMs=${previous.ageMs(nowNs)}")
         }
     }
 
-    private fun clearMlKitIfStale() {
-        val now = System.currentTimeMillis()
-        if (mlKitDetections.isNotEmpty() && now - lastMlKitUpdatedAtMs > staleTimeoutMs) {
-            Log.d(
-                DETECTION_TIMING_TAG,
-                "overlay stale clear source=ML_KIT ageMs=${now - lastMlKitUpdatedAtMs} " +
-                    "count=${mlKitDetections.size}"
-            )
-            mlKitDetections = emptyList()
-            postInvalidateOnAnimation()
-        }
+    /** Discards callbacks, payloads and draw bookkeeping at settings restart / Activity teardown. */
+    fun clearDetections() {
+        recognitionRegion = null
+        removeCallbacks(clearYoloRunnable)
+        removeCallbacks(clearMlKitRunnable)
+        val nowNs = SystemClock.elapsedRealtimeNanos()
+        yoloState.clear(nowNs)
+        mlKitState.clear(nowNs)
+        frameTrace = null
+        drawnFrameId = null
+        loggedYoloDraw = null
+        loggedMlKitDraw = null
+        postInvalidateOnAnimation()
     }
 
-    private fun logOverlayAge(detections: List<DetectionResult>) {
-        val now = System.currentTimeMillis()
-        val updateAgeMs = now - lastDetectionUpdatedAtMs
-        val newestFrameTimestamp = detections.maxOfOrNull { it.frameTimestampMs } ?: now
-        val frameAgeMs = now - newestFrameTimestamp
-        Log.d(
-            DETECTION_TIMING_TAG,
-            "overlayUpdateAge=${updateAgeMs}ms overlayResultAge=${frameAgeMs}ms overlayCount=${detections.size}"
-        )
+    override fun onDetachedFromWindow() {
+        clearDetections()
+        super.onDetachedFromWindow()
+    }
+
+    private fun logUpdate(source: DetectionSource, trace: FrameTrace, nowNs: Long, decision: OverlayFrameState.Update) {
+        diagnosticLog?.invoke("[OVERLAY_UPDATE] source=$source sessionId=${trace.sessionId} frame=${trace.frameId} " +
+            "cameraTimestampNs=${trace.cameraTimestampNs} captureTimestampReliable=${trace.captureTimestampReliable} " +
+            "analyzerReceivedElapsedNs=${trace.analyzerReceivedElapsedNs} completedElapsedNs=${trace.completedElapsedNs} " +
+            "updateElapsedNs=$nowNs analyzerAgeMs=${(nowNs - trace.analyzerReceivedElapsedNs) / 1_000_000L} " +
+            "captureAgeMs=${trace.captureAgeMsAt(nowNs)} reason=$decision")
+    }
+
+    private fun logDraw(source: DetectionSource, frame: OverlayFrameState.Frame<List<DetectionResult>>) {
+        val log = diagnosticLog ?: return
+        val nowNs = SystemClock.elapsedRealtimeNanos()
+        log("[OVERLAY_DRAW] source=$source sessionId=${frame.trace.sessionId} frame=${frame.trace.frameId} " +
+            "cameraTimestampNs=${frame.trace.cameraTimestampNs} completedElapsedNs=${frame.trace.completedElapsedNs} " +
+            "updateElapsedNs=${frame.updatedElapsedNs} drawElapsedNs=$nowNs " +
+            "ageMs=${frame.ageMs(nowNs)} basis=${frame.timeBasis} " +
+            "visible=${frame.value.size} view=${width}x$height frameSize=${frame.width}x${frame.height} transform=FIT_CENTER " +
+            "otherFrame=${if (source == DetectionSource.YOLO) mlKitState.frame?.trace?.frameId else yoloState.frame?.trace?.frameId}")
     }
 
     companion object {
         private const val DEFAULT_MAX_OVERLAY_AGE_MS = 1500L
-        private const val DETECTION_TIMING_TAG = "DetectionTiming"
         private const val TRANSFORM_TAG = "OverlayTransform"
         private const val WARNING_DETAIL_TAG = "GotoroWarning"
         private const val LABEL_HEIGHT_PX = 44f

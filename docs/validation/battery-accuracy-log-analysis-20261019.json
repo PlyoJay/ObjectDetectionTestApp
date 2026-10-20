@@ -1,0 +1,1032 @@
+[
+  {
+    "file": "perf_20261019_164442.txt",
+    "sha256": "ec95cc2816cd766819d7921f6e27a5e70e980c7f316e0b221a71ff23e661a5e5",
+    "previewEnabled": false,
+    "recordingSeconds": 206.946,
+    "frameLogComplete": true,
+    "batterySampleLogComplete": true,
+    "firstBatterySample": {
+      "sessionId": "8de40af9-36da-4c78-b04f-e8a41cec01f9",
+      "elapsedSeconds": "0.129",
+      "batteryLevelPct": "92.000",
+      "batteryTemperatureC": "32.700",
+      "batteryVoltageMv": "3773",
+      "batteryCurrentMa": "-2.457",
+      "batteryCurrentAverageMa": "-1.766",
+      "batteryChargeCounterUah": "3604520",
+      "batteryEnergyCounterNwh": "N/A",
+      "chargingStatus": "Discharging",
+      "pluggedType": "None",
+      "estimatedBatteryPowerMw": "-9.270",
+      "thermalStatus": "NONE",
+      "thermalHeadroom": "0.663",
+      "headroomAgeMs": "10.998",
+      "batteryCollectionDurationMs": "9.311",
+      "scope": "device_battery",
+      "power": "estimated_signed",
+      "temperature": "battery_not_cpu_gpu"
+    },
+    "lastBatterySample": {
+      "sessionId": "8de40af9-36da-4c78-b04f-e8a41cec01f9",
+      "elapsedSeconds": "206.947",
+      "batteryLevelPct": "89.000",
+      "batteryTemperatureC": "35.700",
+      "batteryVoltageMv": "3942",
+      "batteryCurrentMa": "-1.267",
+      "batteryCurrentAverageMa": "-1.229",
+      "batteryChargeCounterUah": "3499760",
+      "batteryEnergyCounterNwh": "N/A",
+      "chargingStatus": "Discharging",
+      "pluggedType": "None",
+      "estimatedBatteryPowerMw": "-4.995",
+      "thermalStatus": "NONE",
+      "thermalHeadroom": "0.780",
+      "headroomAgeMs": "6176.927",
+      "batteryCollectionDurationMs": "4.622",
+      "scope": "device_battery",
+      "power": "estimated_signed",
+      "temperature": "battery_not_cpu_gpu"
+    },
+    "recordedCurrentNowSampleMeanMa": -1.5338372093023256,
+    "recordedCurrentAverageSampleMeanMa": -1.5480465116279067,
+    "recordedPowerSampleMeanMw": -5.929813953488372,
+    "battery": {
+      "sampleCount": 43,
+      "levelPct": {
+        "start": 92.0,
+        "end": 89.0,
+        "delta": -3.0
+      },
+      "temperatureC": {
+        "start": 32.7,
+        "end": 35.7,
+        "delta": 3.0,
+        "sampledMaximum": 35.7
+      },
+      "byChargingStatus": {
+        "Discharging": {
+          "batteryCurrentMa": {
+            "validSamples": 43,
+            "unavailableSamples": 0,
+            "average": -1.5338372093023256,
+            "first": -2.457,
+            "last": -1.267,
+            "maximum": -1.128
+          },
+          "estimatedBatteryPowerMw": {
+            "validSamples": 43,
+            "unavailableSamples": 0,
+            "average": -5.929813953488372,
+            "first": -9.27,
+            "last": -4.995,
+            "maximum": -4.417
+          }
+        }
+      },
+      "consistency": {
+        "pairedIntervals": 42,
+        "coveredDischargingSeconds": 206.818,
+        "chargeCounterDropMah": 104.75999999999999,
+        "integratedCurrentDischargeMah": 0.08800357986111113,
+        "currentToCounterRatio": 0.0008400494450277885,
+        "powerReliability": "SUSPECT_CURRENT_COUNTER_MISMATCH",
+        "note": "Trapezoidal sampled current vs charge counter on the same contiguous unplugged discharging intervals (gaps <=120s). A factor >10 mismatch after >=60s and >=1mAh counter drop is a diagnostic heuristic, not calibration. Do not multiply current by 1000 automatically. Counter/firmware errors, sampling and unit violations require device verification; power remains a device estimate."
+      },
+      "counterDischarge": {
+        "coveredSeconds": 206.818,
+        "chargeDropMah": 104.75999999999999,
+        "averageDischargeCurrentMa": 1823.5163283660027,
+        "estimatedDischargePowerMw": 7076.357725149648,
+        "intervals": [
+          {
+            "startSeconds": 0.129,
+            "endSeconds": 5.146,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.0169999999999995
+          },
+          {
+            "startSeconds": 5.146,
+            "endSeconds": 10.159,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.013000000000001
+          },
+          {
+            "startSeconds": 10.159,
+            "endSeconds": 15.168,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.008999999999999
+          },
+          {
+            "startSeconds": 15.168,
+            "endSeconds": 20.184,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.016000000000002
+          },
+          {
+            "startSeconds": 20.184,
+            "endSeconds": 25.2,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.015999999999998
+          },
+          {
+            "startSeconds": 25.2,
+            "endSeconds": 30.216,
+            "averageDischargeCurrentMa": 11138.75598086124,
+            "estimatedDischargePowerMw": 42199.17703349281,
+            "warning": "SHORT_INTERVAL_COUNTER_QUANTIZATION",
+            "chargeDropMah": 15.52,
+            "durationSeconds": 5.016000000000002
+          },
+          {
+            "startSeconds": 30.216,
+            "endSeconds": 35.228,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.0120000000000005
+          },
+          {
+            "startSeconds": 35.228,
+            "endSeconds": 40.256,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.027999999999999
+          },
+          {
+            "startSeconds": 40.256,
+            "endSeconds": 45.274,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.018000000000001
+          },
+          {
+            "startSeconds": 45.274,
+            "endSeconds": 50.293,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.018999999999998
+          },
+          {
+            "startSeconds": 50.293,
+            "endSeconds": 55.307,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.014000000000003
+          },
+          {
+            "startSeconds": 55.307,
+            "endSeconds": 60.326,
+            "averageDischargeCurrentMa": 16698.147041243283,
+            "estimatedDischargePowerMw": 64229.422594142285,
+            "warning": "SHORT_INTERVAL_COUNTER_QUANTIZATION",
+            "chargeDropMah": 23.28,
+            "durationSeconds": 5.018999999999998
+          },
+          {
+            "startSeconds": 60.326,
+            "endSeconds": 65.35,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.023999999999994
+          },
+          {
+            "startSeconds": 65.35,
+            "endSeconds": 70.364,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.01400000000001
+          },
+          {
+            "startSeconds": 70.364,
+            "endSeconds": 75.374,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.009999999999991
+          },
+          {
+            "startSeconds": 75.374,
+            "endSeconds": 80.388,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.01400000000001
+          },
+          {
+            "startSeconds": 80.388,
+            "endSeconds": 85.406,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.018000000000001
+          },
+          {
+            "startSeconds": 85.406,
+            "endSeconds": 90.423,
+            "averageDischargeCurrentMa": 13920.669722942008,
+            "estimatedDischargePowerMw": 54325.41359378119,
+            "warning": "SHORT_INTERVAL_COUNTER_QUANTIZATION",
+            "chargeDropMah": 19.4,
+            "durationSeconds": 5.016999999999996
+          },
+          {
+            "startSeconds": 90.423,
+            "endSeconds": 95.439,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.015999999999991
+          },
+          {
+            "startSeconds": 95.439,
+            "endSeconds": 100.456,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.01700000000001
+          },
+          {
+            "startSeconds": 100.456,
+            "endSeconds": 105.471,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.015000000000001
+          },
+          {
+            "startSeconds": 105.471,
+            "endSeconds": 110.486,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.015000000000001
+          },
+          {
+            "startSeconds": 110.486,
+            "endSeconds": 115.503,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.016999999999996
+          },
+          {
+            "startSeconds": 115.503,
+            "endSeconds": 120.518,
+            "averageDischargeCurrentMa": 13926.221335992022,
+            "estimatedDischargePowerMw": 54535.08275174476,
+            "warning": "SHORT_INTERVAL_COUNTER_QUANTIZATION",
+            "chargeDropMah": 19.4,
+            "durationSeconds": 5.015000000000001
+          },
+          {
+            "startSeconds": 120.518,
+            "endSeconds": 125.538,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.019999999999996
+          },
+          {
+            "startSeconds": 125.538,
+            "endSeconds": 130.552,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.013999999999996
+          },
+          {
+            "startSeconds": 130.552,
+            "endSeconds": 135.57,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.018000000000001
+          },
+          {
+            "startSeconds": 135.57,
+            "endSeconds": 140.591,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.021000000000015
+          },
+          {
+            "startSeconds": 140.591,
+            "endSeconds": 145.607,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.015999999999991
+          },
+          {
+            "startSeconds": 145.607,
+            "endSeconds": 150.624,
+            "averageDischargeCurrentMa": 11136.535778353607,
+            "estimatedDischargePowerMw": 43610.67410803273,
+            "warning": "SHORT_INTERVAL_COUNTER_QUANTIZATION",
+            "chargeDropMah": 15.52,
+            "durationSeconds": 5.016999999999996
+          },
+          {
+            "startSeconds": 150.624,
+            "endSeconds": 155.638,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.01400000000001
+          },
+          {
+            "startSeconds": 155.638,
+            "endSeconds": 160.659,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.020999999999987
+          },
+          {
+            "startSeconds": 160.659,
+            "endSeconds": 165.678,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.0190000000000055
+          },
+          {
+            "startSeconds": 165.678,
+            "endSeconds": 170.692,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.01400000000001
+          },
+          {
+            "startSeconds": 170.692,
+            "endSeconds": 175.703,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.010999999999996
+          },
+          {
+            "startSeconds": 175.703,
+            "endSeconds": 180.72,
+            "averageDischargeCurrentMa": 8352.401833765205,
+            "estimatedDischargePowerMw": 32816.58680486349,
+            "warning": "SHORT_INTERVAL_COUNTER_QUANTIZATION",
+            "chargeDropMah": 11.64,
+            "durationSeconds": 5.016999999999996
+          },
+          {
+            "startSeconds": 180.72,
+            "endSeconds": 185.735,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.015000000000015
+          },
+          {
+            "startSeconds": 185.735,
+            "endSeconds": 190.755,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.019999999999982
+          },
+          {
+            "startSeconds": 190.755,
+            "endSeconds": 195.767,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.0120000000000005
+          },
+          {
+            "startSeconds": 195.767,
+            "endSeconds": 200.779,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.0120000000000005
+          },
+          {
+            "startSeconds": 200.779,
+            "endSeconds": 205.796,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.016999999999996
+          },
+          {
+            "startSeconds": 205.796,
+            "endSeconds": 206.947,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 1.1510000000000105
+          }
+        ],
+        "note": "Device battery counter estimate, not calibrated or app-attributed. Only eligible adjacent intervals; unchanged intervals contribute elapsed time but do not assert zero power. Power uses charge-weighted endpoint voltages; short intervals reflect counter quantization."
+      },
+      "rawCurrentNow": {
+        "validSamples": 0,
+        "unavailableSamples": 43,
+        "average": "N/A",
+        "first": "N/A",
+        "last": "N/A",
+        "maximum": "N/A"
+      },
+      "apiCurrentNowMa": {
+        "validSamples": 0,
+        "unavailableSamples": 43,
+        "average": "N/A",
+        "first": "N/A",
+        "last": "N/A",
+        "maximum": "N/A"
+      },
+      "averageDischargingCurrentMa": "N/A",
+      "averageEstimatedDischargingPowerMw": "N/A",
+      "fullSessionSummary": {
+        "sessionId": "8de40af9-36da-4c78-b04f-e8a41cec01f9",
+        "measurementDurationSeconds": "206.946",
+        "firstSampleSeconds": "0.129",
+        "lastSampleSeconds": "206.947",
+        "sampleSpanSeconds": "206.818",
+        "startBatteryLevelPct": "92.000",
+        "endBatteryLevelPct": "89.000",
+        "batteryLevelDeltaPct": "-3.000",
+        "startBatteryTemperatureC": "32.700",
+        "endBatteryTemperatureC": "35.700",
+        "maxBatteryTemperatureC": "35.700",
+        "batteryTemperatureDeltaC": "3.000",
+        "samples": "43",
+        "validSamples": "0",
+        "unavailableSamples": "43",
+        "currentValidSamples": "43",
+        "currentUnavailableSamples": "0",
+        "powerValidSamples": "43",
+        "powerUnavailableSamples": "0",
+        "temperatureValidSamples": "43",
+        "chargingStatusChanged": "false",
+        "pluggedTypeChanged": "false",
+        "thermalStatusChanged": "false",
+        "scope": "device_battery",
+        "power": "estimated_signed",
+        "sampleMean": "true"
+      },
+      "sampleLogComplete": true,
+      "fullSessionStatusSummaries": [
+        {
+          "sessionId": "8de40af9-36da-4c78-b04f-e8a41cec01f9",
+          "chargingStatus": "Discharging",
+          "averageBatteryCurrentMa": "-1.534",
+          "currentValidSamples": "43",
+          "averageEstimatedBatteryPowerMw": "-5.930",
+          "powerValidSamples": "43",
+          "scope": "device_battery"
+        }
+      ],
+      "note": "Device battery, signed current/power; estimates are not app consumption. byChargingStatus and fullSessionStatusSummaries preserve recorded numbers even if legacy logs reported unreliable power; top-level current/power are suppressed on detected mismatch. API arithmetic is not independent device validation. Means use recorded samples grouped by status. Battery temperature is not CPU/GPU temperature. 0% level delta does not mean zero power. Polls can miss transitions; headroom may be cached. See fullSessionSummary for authoritative counts/endpoints if sample lines were dropped."
+    }
+  },
+  {
+    "file": "perf_20261019_164821.txt",
+    "sha256": "0057af7869f5680c011882f17c291bf5640e92d6c68fe6502ce7309444ccf1de",
+    "previewEnabled": true,
+    "recordingSeconds": 178.681,
+    "frameLogComplete": true,
+    "batterySampleLogComplete": true,
+    "firstBatterySample": {
+      "sessionId": "84149a52-875f-42a8-a6be-9a8f87521d50",
+      "elapsedSeconds": "0.036",
+      "batteryLevelPct": "89.000",
+      "batteryTemperatureC": "35.700",
+      "batteryVoltageMv": "3942",
+      "batteryCurrentMa": "-0.242",
+      "batteryCurrentAverageMa": "-0.988",
+      "batteryChargeCounterUah": "3488120",
+      "batteryEnergyCounterNwh": "N/A",
+      "chargingStatus": "Discharging",
+      "pluggedType": "None",
+      "estimatedBatteryPowerMw": "-0.954",
+      "thermalStatus": "NONE",
+      "thermalHeadroom": "0.777",
+      "headroomAgeMs": "5.068",
+      "batteryCollectionDurationMs": "4.214",
+      "scope": "device_battery",
+      "power": "estimated_signed",
+      "temperature": "battery_not_cpu_gpu"
+    },
+    "lastBatterySample": {
+      "sessionId": "84149a52-875f-42a8-a6be-9a8f87521d50",
+      "elapsedSeconds": "178.681",
+      "batteryLevelPct": "87.000",
+      "batteryTemperatureC": "36.200",
+      "batteryVoltageMv": "3919",
+      "batteryCurrentMa": "-1.280",
+      "batteryCurrentAverageMa": "-1.325",
+      "batteryChargeCounterUah": "3406640",
+      "batteryEnergyCounterNwh": "N/A",
+      "chargingStatus": "Discharging",
+      "pluggedType": "None",
+      "estimatedBatteryPowerMw": "-5.016",
+      "thermalStatus": "NONE",
+      "thermalHeadroom": "0.797",
+      "headroomAgeMs": "8091.716",
+      "batteryCollectionDurationMs": "2.137",
+      "scope": "device_battery",
+      "power": "estimated_signed",
+      "temperature": "battery_not_cpu_gpu"
+    },
+    "recordedCurrentNowSampleMeanMa": -1.2970540540540538,
+    "recordedCurrentAverageSampleMeanMa": -1.2952972972972971,
+    "recordedPowerSampleMeanMw": -5.084378378378377,
+    "battery": {
+      "sampleCount": 37,
+      "levelPct": {
+        "start": 89.0,
+        "end": 87.0,
+        "delta": -2.0
+      },
+      "temperatureC": {
+        "start": 35.7,
+        "end": 36.2,
+        "delta": 0.5,
+        "sampledMaximum": 36.2
+      },
+      "byChargingStatus": {
+        "Discharging": {
+          "batteryCurrentMa": {
+            "validSamples": 37,
+            "unavailableSamples": 0,
+            "average": -1.2970540540540538,
+            "first": -0.242,
+            "last": -1.28,
+            "maximum": -0.242
+          },
+          "estimatedBatteryPowerMw": {
+            "validSamples": 37,
+            "unavailableSamples": 0,
+            "average": -5.084378378378377,
+            "first": -0.954,
+            "last": -5.016,
+            "maximum": -0.954
+          }
+        }
+      },
+      "consistency": {
+        "pairedIntervals": 36,
+        "coveredDischargingSeconds": 178.645,
+        "chargeCounterDropMah": 81.48,
+        "integratedCurrentDischargeMah": 0.06513604097222223,
+        "currentToCounterRatio": 0.0007994114012300224,
+        "powerReliability": "SUSPECT_CURRENT_COUNTER_MISMATCH",
+        "note": "Trapezoidal sampled current vs charge counter on the same contiguous unplugged discharging intervals (gaps <=120s). A factor >10 mismatch after >=60s and >=1mAh counter drop is a diagnostic heuristic, not calibration. Do not multiply current by 1000 automatically. Counter/firmware errors, sampling and unit violations require device verification; power remains a device estimate."
+      },
+      "counterDischarge": {
+        "coveredSeconds": 178.645,
+        "chargeDropMah": 81.48,
+        "averageDischargeCurrentMa": 1641.9603123513111,
+        "estimatedDischargePowerMw": 6433.943295362309,
+        "intervals": [
+          {
+            "startSeconds": 0.036,
+            "endSeconds": 5.044,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.008
+          },
+          {
+            "startSeconds": 5.044,
+            "endSeconds": 10.057,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.013000000000001
+          },
+          {
+            "startSeconds": 10.057,
+            "endSeconds": 15.076,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.019
+          },
+          {
+            "startSeconds": 15.076,
+            "endSeconds": 20.107,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.030999999999999
+          },
+          {
+            "startSeconds": 20.107,
+            "endSeconds": 25.124,
+            "averageDischargeCurrentMa": 8352.4018337652,
+            "estimatedDischargePowerMw": 32925.168028702414,
+            "warning": "SHORT_INTERVAL_COUNTER_QUANTIZATION",
+            "chargeDropMah": 11.64,
+            "durationSeconds": 5.0169999999999995
+          },
+          {
+            "startSeconds": 25.124,
+            "endSeconds": 30.139,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.015000000000001
+          },
+          {
+            "startSeconds": 30.139,
+            "endSeconds": 35.154,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.015000000000004
+          },
+          {
+            "startSeconds": 35.154,
+            "endSeconds": 40.173,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.018999999999998
+          },
+          {
+            "startSeconds": 40.173,
+            "endSeconds": 45.185,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.0120000000000005
+          },
+          {
+            "startSeconds": 45.185,
+            "endSeconds": 50.199,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.013999999999996
+          },
+          {
+            "startSeconds": 50.199,
+            "endSeconds": 55.215,
+            "averageDischargeCurrentMa": 8354.066985645924,
+            "estimatedDischargePowerMw": 32793.88995215308,
+            "warning": "SHORT_INTERVAL_COUNTER_QUANTIZATION",
+            "chargeDropMah": 11.64,
+            "durationSeconds": 5.016000000000005
+          },
+          {
+            "startSeconds": 55.215,
+            "endSeconds": 60.233,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.017999999999994
+          },
+          {
+            "startSeconds": 60.233,
+            "endSeconds": 65.25,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.017000000000003
+          },
+          {
+            "startSeconds": 65.25,
+            "endSeconds": 70.267,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.016999999999996
+          },
+          {
+            "startSeconds": 70.267,
+            "endSeconds": 75.283,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.016000000000005
+          },
+          {
+            "startSeconds": 75.283,
+            "endSeconds": 80.308,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.025000000000006
+          },
+          {
+            "startSeconds": 80.308,
+            "endSeconds": 85.328,
+            "averageDischargeCurrentMa": 13912.350597609573,
+            "estimatedDischargePowerMw": 54383.37848605582,
+            "warning": "SHORT_INTERVAL_COUNTER_QUANTIZATION",
+            "chargeDropMah": 19.4,
+            "durationSeconds": 5.019999999999996
+          },
+          {
+            "startSeconds": 85.328,
+            "endSeconds": 90.344,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.015999999999991
+          },
+          {
+            "startSeconds": 90.344,
+            "endSeconds": 95.361,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.01700000000001
+          },
+          {
+            "startSeconds": 95.361,
+            "endSeconds": 100.376,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.015000000000001
+          },
+          {
+            "startSeconds": 100.376,
+            "endSeconds": 105.39,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.013999999999996
+          },
+          {
+            "startSeconds": 105.39,
+            "endSeconds": 110.406,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.016000000000005
+          },
+          {
+            "startSeconds": 110.406,
+            "endSeconds": 115.421,
+            "averageDischargeCurrentMa": 8355.732801595213,
+            "estimatedDischargePowerMw": 32662.55952143569,
+            "warning": "SHORT_INTERVAL_COUNTER_QUANTIZATION",
+            "chargeDropMah": 11.64,
+            "durationSeconds": 5.015000000000001
+          },
+          {
+            "startSeconds": 115.421,
+            "endSeconds": 120.438,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.016999999999996
+          },
+          {
+            "startSeconds": 120.438,
+            "endSeconds": 125.452,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.013999999999996
+          },
+          {
+            "startSeconds": 125.452,
+            "endSeconds": 130.47,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.018000000000001
+          },
+          {
+            "startSeconds": 130.47,
+            "endSeconds": 135.482,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.0120000000000005
+          },
+          {
+            "startSeconds": 135.482,
+            "endSeconds": 140.496,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.01400000000001
+          },
+          {
+            "startSeconds": 140.496,
+            "endSeconds": 145.516,
+            "averageDischargeCurrentMa": 11129.880478087689,
+            "estimatedDischargePowerMw": 43562.352191235215,
+            "warning": "SHORT_INTERVAL_COUNTER_QUANTIZATION",
+            "chargeDropMah": 15.52,
+            "durationSeconds": 5.019999999999982
+          },
+          {
+            "startSeconds": 145.516,
+            "endSeconds": 150.533,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.016999999999996
+          },
+          {
+            "startSeconds": 150.533,
+            "endSeconds": 155.552,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.0190000000000055
+          },
+          {
+            "startSeconds": 155.552,
+            "endSeconds": 160.569,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.016999999999996
+          },
+          {
+            "startSeconds": 160.569,
+            "endSeconds": 165.584,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.015000000000015
+          },
+          {
+            "startSeconds": 165.584,
+            "endSeconds": 170.6,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 5.015999999999991
+          },
+          {
+            "startSeconds": 170.6,
+            "endSeconds": 175.624,
+            "averageDischargeCurrentMa": 8340.76433121019,
+            "estimatedDischargePowerMw": 32687.455414012733,
+            "warning": "SHORT_INTERVAL_COUNTER_QUANTIZATION",
+            "chargeDropMah": 11.64,
+            "durationSeconds": 5.024000000000001
+          },
+          {
+            "startSeconds": 175.624,
+            "endSeconds": 178.681,
+            "averageDischargeCurrentMa": "N/A",
+            "estimatedDischargePowerMw": "N/A",
+            "warning": "COUNTER_UNCHANGED_OR_QUANTIZED",
+            "chargeDropMah": 0.0,
+            "durationSeconds": 3.0570000000000164
+          }
+        ],
+        "note": "Device battery counter estimate, not calibrated or app-attributed. Only eligible adjacent intervals; unchanged intervals contribute elapsed time but do not assert zero power. Power uses charge-weighted endpoint voltages; short intervals reflect counter quantization."
+      },
+      "rawCurrentNow": {
+        "validSamples": 0,
+        "unavailableSamples": 37,
+        "average": "N/A",
+        "first": "N/A",
+        "last": "N/A",
+        "maximum": "N/A"
+      },
+      "apiCurrentNowMa": {
+        "validSamples": 0,
+        "unavailableSamples": 37,
+        "average": "N/A",
+        "first": "N/A",
+        "last": "N/A",
+        "maximum": "N/A"
+      },
+      "averageDischargingCurrentMa": "N/A",
+      "averageEstimatedDischargingPowerMw": "N/A",
+      "fullSessionSummary": {
+        "sessionId": "84149a52-875f-42a8-a6be-9a8f87521d50",
+        "measurementDurationSeconds": "178.681",
+        "firstSampleSeconds": "0.036",
+        "lastSampleSeconds": "178.681",
+        "sampleSpanSeconds": "178.645",
+        "startBatteryLevelPct": "89.000",
+        "endBatteryLevelPct": "87.000",
+        "batteryLevelDeltaPct": "-2.000",
+        "startBatteryTemperatureC": "35.700",
+        "endBatteryTemperatureC": "36.200",
+        "maxBatteryTemperatureC": "36.200",
+        "batteryTemperatureDeltaC": "0.500",
+        "samples": "37",
+        "validSamples": "0",
+        "unavailableSamples": "37",
+        "currentValidSamples": "37",
+        "currentUnavailableSamples": "0",
+        "powerValidSamples": "37",
+        "powerUnavailableSamples": "0",
+        "temperatureValidSamples": "37",
+        "chargingStatusChanged": "false",
+        "pluggedTypeChanged": "false",
+        "thermalStatusChanged": "false",
+        "scope": "device_battery",
+        "power": "estimated_signed",
+        "sampleMean": "true"
+      },
+      "sampleLogComplete": true,
+      "fullSessionStatusSummaries": [
+        {
+          "sessionId": "84149a52-875f-42a8-a6be-9a8f87521d50",
+          "chargingStatus": "Discharging",
+          "averageBatteryCurrentMa": "-1.297",
+          "currentValidSamples": "37",
+          "averageEstimatedBatteryPowerMw": "-5.084",
+          "powerValidSamples": "37",
+          "scope": "device_battery"
+        }
+      ],
+      "note": "Device battery, signed current/power; estimates are not app consumption. byChargingStatus and fullSessionStatusSummaries preserve recorded numbers even if legacy logs reported unreliable power; top-level current/power are suppressed on detected mismatch. API arithmetic is not independent device validation. Means use recorded samples grouped by status. Battery temperature is not CPU/GPU temperature. 0% level delta does not mean zero power. Polls can miss transitions; headroom may be cached. See fullSessionSummary for authoritative counts/endpoints if sample lines were dropped."
+    }
+  }
+]

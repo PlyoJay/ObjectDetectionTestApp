@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuites tests="3" failures="0" errors="0" skipped="0" time="17.818" timestamp="2026-10-19T08:08:23" hostname="localhost">
+  <testsuite name="com.samin.objectdetection.metrics.BatteryDiagnosticsInstrumentedTest" tests="3" failures="0" errors="0" skipped="0" time="16.075" timestamp="2026-10-19T08:08:23" hostname="localhost">
+    <properties>
+      <property name="device" value="SM-S921N - 16" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="mediaStoreOnOffOnPreservesLegacySummariesAndFinalBatteryEndpoint" classname="com.samin.objectdetection.metrics.BatteryDiagnosticsInstrumentedTest" time="0.118" />
+    <testcase name="realBatterySamplesAndRepeatedStopCleanUpWithoutDuplicateHeadroomQueries" classname="com.samin.objectdetection.metrics.BatteryDiagnosticsInstrumentedTest" time="10.045" />
+    <testcase name="fixedImageYoloResultsStayIdenticalWithBatteryOnOffOn" classname="com.samin.objectdetection.metrics.BatteryDiagnosticsInstrumentedTest" time="5.912" />
+  </testsuite>
+</testsuites>

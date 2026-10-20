@@ -60,7 +60,9 @@ def battery_consistency(records):
         if any(r.get("chargingStatus") != "Discharging" or r.get("pluggedType") != "None" for r in (before, after)):
             continue
         t0, t1 = numeric(before, "elapsedSeconds"), numeric(after, "elapsedSeconds")
-        i0, i1 = numeric(before, "batteryCurrentMa"), numeric(after, "batteryCurrentMa")
+        # New logs keep API arithmetic even when published current/power are suppressed.
+        i0 = numeric(before, "batteryCurrentNowApiMa" if "batteryCurrentNowApiMa" in before else "batteryCurrentMa")
+        i1 = numeric(after, "batteryCurrentNowApiMa" if "batteryCurrentNowApiMa" in after else "batteryCurrentMa")
         q0, q1 = numeric(before, "batteryChargeCounterUah"), numeric(after, "batteryChargeCounterUah")
         if None in (t0, t1, i0, i1, q0, q1) or not 0 < t1 - t0 <= 120 or q1 > q0 or max(i0, i1) > 0:
             continue  # missing values, transitions, counter reset/sign mismatch or large gap
@@ -76,6 +78,53 @@ def battery_consistency(records):
             "currentToCounterRatio": ratio if ratio is not None else "N/A",
             "powerReliability": "SUSPECT_CURRENT_COUNTER_MISMATCH" if suspect else "NOT_VALIDATED",
             "note": "Trapezoidal sampled current vs charge counter on the same contiguous unplugged discharging intervals (gaps <=120s). A factor >10 mismatch after >=60s and >=1mAh counter drop is a diagnostic heuristic, not calibration. Do not multiply current by 1000 automatically. Counter/firmware errors, sampling and unit violations require device verification; power remains a device estimate."}
+
+
+def counter_discharge(records):
+    """Counter estimates are independent of CURRENT_NOW availability; positive means discharge."""
+    records = sorted(records, key=lambda r: numeric(r, "elapsedSeconds") or 0)
+    intervals = []
+    seconds = charge_mah = energy_mwh = 0.0
+    voltage_complete = True
+    for before, after in zip(records, records[1:]):
+        t0, t1 = numeric(before, "elapsedSeconds"), numeric(after, "elapsedSeconds")
+        q0, q1 = numeric(before, "batteryChargeCounterUah"), numeric(after, "batteryChargeCounterUah")
+        warning = None
+        if any(r.get("chargingStatus") != "Discharging" or r.get("pluggedType") != "None" for r in (before, after)):
+            warning = "NOT_UNPLUGGED_DISCHARGING_OR_TRANSITION"
+        elif t0 is None or t1 is None or not 0 < t1 - t0 <= 120:
+            warning = "INVALID_INTERVAL_OR_GAP"
+        elif q0 is None or q1 is None or min(q0, q1) < 0:
+            warning = "CHARGE_COUNTER_UNAVAILABLE"
+        elif q1 > q0:
+            warning = "CHARGE_COUNTER_INCREASE_OR_RESET"
+        item = {"startSeconds": t0, "endSeconds": t1, "averageDischargeCurrentMa": "N/A",
+                "estimatedDischargePowerMw": "N/A", "warning": warning}
+        if warning is None:
+            dt, drop = t1 - t0, (q0 - q1) / 1000
+            seconds += dt
+            charge_mah += drop
+            v0, v1 = numeric(before, "batteryVoltageMv"), numeric(after, "batteryVoltageMv")
+            mv = (v0 + v1) / 2 if v0 is not None and v1 is not None and min(v0, v1) > 0 else None
+            if mv is None:
+                voltage_complete = False
+            else:
+                energy_mwh += drop * mv / 1000
+            item.update(chargeDropMah=drop, durationSeconds=dt)
+            if drop > 0:
+                current = drop * 3600 / dt
+                item.update(averageDischargeCurrentMa=current,
+                            estimatedDischargePowerMw=current * mv / 1000 if mv is not None else "N/A",
+                            warning="SHORT_INTERVAL_COUNTER_QUANTIZATION" if dt < 30 else "COUNTER_ESTIMATE_NOT_CALIBRATED")
+            else:
+                item["warning"] = "COUNTER_UNCHANGED_OR_QUANTIZED"
+        intervals.append(item)
+    current = charge_mah * 3600 / seconds if seconds > 0 and charge_mah > 0 else "N/A"
+    return {"coveredSeconds": seconds, "chargeDropMah": charge_mah if seconds else "N/A",
+            "averageDischargeCurrentMa": current,
+            "estimatedDischargePowerMw": energy_mwh * 3600 / seconds
+            if current != "N/A" and voltage_complete else "N/A", "intervals": intervals,
+            "note": "Device battery counter estimate, not calibrated or app-attributed. Only eligible adjacent intervals; unchanged intervals contribute elapsed time but do not assert zero power. Power uses charge-weighted endpoint voltages; short intervals reflect counter quantization."}
 
 
 def cpu_policies(record):
@@ -151,6 +200,9 @@ def diagnostic_analysis(lines, start, end, duration):
                              "estimatedBatteryPowerMw": metric(group, "estimatedBatteryPowerMw")}
     # Full-session summary remains authoritative when bounded writer dropped sample lines.
     summary = next((fields(line) for line in lines if line.startswith("BATTERY_SUMMARY |")), None)
+    consistency = battery_consistency(batteries)
+    suspect = consistency["powerReliability"].startswith("SUSPECT") or any(
+        r.get("batteryCurrentReliability", "").startswith("SUSPECT") for r in batteries)
     return {
         "systemSampleCount": len(systems), "processCpuUsage": metric(systems, "processCpuUsage"),
         "thermalStatusSamples": [r.get("thermalStatus", "N/A") for r in systems],
@@ -162,15 +214,17 @@ def diagnostic_analysis(lines, start, end, duration):
                     "temperatureC": {**endpoints("batteryTemperatureC"),
                                      "sampledMaximum": metric(batteries, "batteryTemperatureC")["maximum"]},
                     "byChargingStatus": by_status,
-                    "consistency": battery_consistency(batteries),
-                    "averageDischargingCurrentMa": by_status.get("Discharging", {}).get("batteryCurrentMa", {}).get("average", "N/A"),
-                    "averageEstimatedDischargingPowerMw": by_status.get("Discharging", {}).get("estimatedBatteryPowerMw", {}).get("average", "N/A"),
+                    "consistency": consistency, "counterDischarge": counter_discharge(batteries),
+                    "rawCurrentNow": metric(batteries, "batteryCurrentNowRaw"),
+                    "apiCurrentNowMa": metric(batteries, "batteryCurrentNowApiMa"),
+                    "averageDischargingCurrentMa": "N/A" if suspect else by_status.get("Discharging", {}).get("batteryCurrentMa", {}).get("average", "N/A"),
+                    "averageEstimatedDischargingPowerMw": "N/A" if suspect else by_status.get("Discharging", {}).get("estimatedBatteryPowerMw", {}).get("average", "N/A"),
                     "fullSessionSummary": summary if start == 0 and end == duration and summary else "N/A",
                     "sampleLogComplete": len(batteries) == int(summary["samples"])
                     if start == 0 and end == duration and summary and "samples" in summary else "N/A",
                     "fullSessionStatusSummaries": [fields(line) for line in lines if line.startswith("BATTERY_STATUS_SUMMARY |")]
                     if start == 0 and end == duration else [],
-                    "note": "Device battery, signed current/power; estimates are not app consumption. Means use valid recorded samples grouped by status. Battery temperature is not CPU/GPU temperature. 0% level delta does not mean zero power. Polls can miss transitions; headroom may be cached. See fullSessionSummary for authoritative full-session counts/endpoints if sample lines were dropped."}}
+                    "note": "Device battery, signed current/power; estimates are not app consumption. byChargingStatus and fullSessionStatusSummaries preserve recorded numbers even if legacy logs reported unreliable power; top-level current/power are suppressed on detected mismatch. API arithmetic is not independent device validation. Means use recorded samples grouped by status. Battery temperature is not CPU/GPU temperature. 0% level delta does not mean zero power. Polls can miss transitions; headroom may be cached. See fullSessionSummary for authoritative counts/endpoints if sample lines were dropped."}}
 
 
 def analyze(text, start_seconds=0.0, exclude_tail_seconds=0.0, interval_seconds=None):
@@ -206,7 +260,17 @@ def analyze(text, start_seconds=0.0, exclude_tail_seconds=0.0, interval_seconds=
     execution_keys = ("requestedBackend", "appliedBackend", "cpuThreads", "xnnpackRequested",
                       "initialization", "delegateVerification", "gpuSupport", "runtimeVersion")
     configurations = sorted({tuple(r.get(key, "N/A") for key in execution_keys) for r in frames})
+    timed_session = next((fields(line) for line in lines if line.startswith("TEST_SESSION |")), None)
+    roi_settings = dict(line.split("=", 1) for line in lines if
+                        line.startswith("camera.roi.") or line.startswith("camera.useCenterSquareCrop=") or
+                        line.startswith("yolo.resizeMode="))
     result = {
+        "measurement": {
+            "session": timed_session if timed_session else "N/A",
+            "roiSettings": roi_settings if roi_settings else "N/A",
+            "observedFrameRois": [dict(zip(("frame", "rotation", "roi"), value)) for value in
+                                  sorted({tuple(r.get(key, "N/A") for key in ("frame", "rotation", "roi"))
+                                          for r in frames if "roi" in r})]},
         "windowStartSeconds": start_seconds, "windowEndSeconds": end,
         "excludedTailSeconds": exclude_tail_seconds,
         "successfulFrameSamples": len(frames), "errorLinesInWindow": errors_in_window,

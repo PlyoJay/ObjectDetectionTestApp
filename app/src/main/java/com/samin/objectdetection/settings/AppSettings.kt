@@ -3,15 +3,19 @@ package com.samin.objectdetection.settings
 import com.samin.objectdetection.camera.DetectionConfig
 import com.samin.objectdetection.camera.SizeFilterMode
 import com.samin.objectdetection.camera.YoloResizeMode
+import com.samin.objectdetection.camera.RecognitionRoi
+import com.samin.objectdetection.metrics.PerformanceTestWindow
 import com.samin.objectdetection.ui.OverlayDebugMode
 
-const val APP_SETTINGS_SCHEMA_VERSION = 3
+const val APP_SETTINGS_SCHEMA_VERSION = 5
 
 data class CameraSettings(
     val detectIntervalMs: Long = 0L,
     val useCenterSquareCrop: Boolean = false,
     val requestedWidth: Int = 1280,
-    val requestedHeight: Int = 720
+    val requestedHeight: Int = 720,
+    val previewEnabled: Boolean = true,
+    val recognitionRoi: RecognitionRoi = RecognitionRoi()
 )
 
 data class YoloSettings(
@@ -71,6 +75,8 @@ data class OverlaySettings(
     val showMlKitBoxes: Boolean = true,
     val showConfidence: Boolean = false,
     val showFps: Boolean = false,
+    // Maximum frame age for drawing (capture time, or analyzer reception when capture is unreliable).
+    // Each detector has its own deadline; this setting does not change warning/output lifetimes.
     val staleTimeoutMs: Long = 1_500L
 )
 
@@ -94,7 +100,8 @@ data class DebugSettings(
 data class PerformanceLogSettings(
     val systemDiagnosticsEnabled: Boolean = false,
     val sampleIntervalMs: Long = 5_000L,
-    val batteryDiagnosticsEnabled: Boolean = false
+    val batteryDiagnosticsEnabled: Boolean = false,
+    val durationMinutes: Int = 5
 )
 
 data class AppSettings(
@@ -111,6 +118,10 @@ data class AppSettings(
     val performanceLog: PerformanceLogSettings = PerformanceLogSettings()
 ) {
     fun validationErrors(): List<String> = buildList {
+        addAll(camera.recognitionRoi.validationErrors())
+        if (performanceLog.durationMinutes !in PerformanceTestWindow.ALLOWED_MINUTES) add("성능 측정 시간은 3분, 5분, 10분 중 선택하세요.")
+        if (camera.recognitionRoi.enabled && camera.useCenterSquareCrop) add("영역 크롭과 중앙 정방형 ROI는 동시에 사용할 수 없습니다.")
+        if (camera.recognitionRoi.enabled && yolo.resizeMode != YoloResizeMode.LETTERBOX) add("영역 크롭은 640×640 Letterbox를 사용해야 합니다.")
         if (performanceLog.sampleIntervalMs !in 1_000L..60_000L) add("System Sample Interval은 1000~60000ms여야 합니다.")
         if (schemaVersion <= 0) add("설정 버전이 올바르지 않습니다.")
         if (camera.detectIntervalMs !in 0L..60_000L) add("Detect Interval은 0~60000ms여야 합니다.")
@@ -155,6 +166,7 @@ data class AppSettings(
         detectIntervalMs = camera.detectIntervalMs,
         yoloResizeMode = yolo.resizeMode,
         useCenterSquareCrop = camera.useCenterSquareCrop,
+        recognitionRoi = camera.recognitionRoi,
         confidenceThreshold = yolo.confidenceThreshold,
         nmsThreshold = yolo.nmsThreshold,
         sizeFilterMode = filters.sizeFilterMode,

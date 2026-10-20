@@ -13,6 +13,82 @@ import java.util.concurrent.atomic.AtomicInteger
 import com.samin.objectdetection.detector.InferenceExecutionInfo
 
 class PerformanceLogSessionTest {
+    @Test fun timedSessionsExcludeOutOfWindowFramesAndPersistStopReasonExactlyOnce() {
+        for (preview in listOf(false, true)) for (threads in listOf(1, 4)) for (minutes in listOf(3, 5, 10)) {
+            var now = 1_000_000_000L
+            val header = SystemPerformanceDiagnosticsTest.header(false).copy(startedElapsedNs = now,
+                cameraPreviewEnabled = preview, yoloThreads = threads, durationMinutes = minutes)
+            val output = StringWriter()
+            val session = PerformanceLogSession(header, BufferedWriter(output), null, { now }, { 0 })
+            session.start()
+            session.recordFrame(PerformanceIntervalCollectorTest.frame(101).copy(trace = trace(1, now - 1)))
+            session.recordFrame(PerformanceIntervalCollectorTest.frame(102).copy(trace = trace(2, now + 1)))
+            now += minutes * 60_000_000_000L
+            session.recordFrame(PerformanceIntervalCollectorTest.frame(103).copy(trace = trace(3, now)))
+            session.recordEvent(trace(4, now).copy(status = "ERROR"), InferenceExecutionInfo(cpuThreads = 16, xnnpackRequested = true))
+            val closed = session.close(snapshot(), PerformanceStopReason.AUTO_DURATION)
+            assertSame(closed, session.close(snapshot(), PerformanceStopReason.MANUAL))
+            closed.get(5, TimeUnit.SECONDS)
+            val text = output.toString()
+            assertTrue(text.contains("inference=102ms"))
+            assertFalse(text.contains("inference=101ms"))
+            assertFalse(text.contains("inference=103ms"))
+            assertFalse(text.contains("ERROR |"))
+            assertTrue(text.contains("configuredDurationMs=${minutes * 60_000L} actualDurationMs=${minutes * 60_000L} stopReason=AUTO_DURATION"))
+            assertEquals(1, text.lineSequence().count { it.startsWith("TEST_SESSION |") })
+        }
+    }
+
+    @Test fun manualStopRecordsActualElapsedTimeInsteadOfConfiguredDuration() {
+        var now = 1_000_000_000L
+        val output = StringWriter()
+        val session = PerformanceLogSession(SystemPerformanceDiagnosticsTest.header(false).copy(startedElapsedNs = now),
+            BufferedWriter(output), null, { now }, { 0 })
+        session.start()
+        now += 12_345_000_000L
+        session.close(snapshot(), PerformanceStopReason.MANUAL).get(5, TimeUnit.SECONDS)
+        assertTrue(output.toString().contains("configuredDurationMs=300000 actualDurationMs=12345 stopReason=MANUAL"))
+    }
+
+    @Test fun previewOffRecordsSuccessfulFramesAndDiagnosticsWithoutOverlayEventsOrFailures() {
+        val output = StringWriter()
+        var now = 1_000_000_000L
+        val sampled = CountDownLatch(1)
+        val source = object : SystemPerformanceDiagnosticsTest.FakeSource() {
+            override fun cpuFrequency(): String? { sampled.countDown(); return "policy0:currentKHz=1400000" }
+        }
+        val header = SystemPerformanceDiagnosticsTest.header(true).copy(cameraPreviewEnabled = false)
+        output.append(PerformanceLogFormatter.formatHeader(header))
+        val session = PerformanceLogSession(header, BufferedWriter(output), source, { now }, { 0 })
+        val metrics = DetectionMetricsCollector()
+        metrics.startPerformanceSession(0, now)
+        session.start()
+        try {
+            assertTrue(sampled.await(5, TimeUnit.SECONDS))
+            now = 2_000_000_000L
+            metrics.recordFrameReceived(now)
+            metrics.recordFrameAnalyzed()
+            metrics.recordInferenceSucceeded(now)
+            metrics.recordPerformance(10, 100, 5, 115, -1, 1)
+            session.recordFrame(PerformanceIntervalCollectorTest.frame(100).copy(
+                frameAgeAtOverlayMs = -1, trace = trace(1, now), detectionCount = 2))
+            val snapshot = metrics.stopPerformanceSessionSnapshot(1000, now)
+            assertEquals(1L, snapshot.successfulFrames)
+            assertEquals(0L, snapshot.failedFrames)
+            assertEquals(0L, snapshot.droppedFrames)
+            assertEquals(0, snapshot.overlayLatencySamples)
+            session.close(snapshot).get(5, TimeUnit.SECONDS)
+            val text = output.toString()
+            assertTrue(text.contains("cameraPreviewEnabled=false"))
+            assertTrue(text.contains("NOT_DISPLAYED_PREVIEW_OFF"))
+            assertTrue(text.contains("status=SUCCESS"))
+            assertTrue(text.contains("successfulFrames=1 inferenceAvgMs=100.000"))
+            assertTrue(text.contains("SYSTEM |"))
+            assertFalse(text.contains("ERROR |"))
+            assertFalse(text.contains("OVERLAY |"))
+        } finally { session.close(snapshot()).get(5, TimeUnit.SECONDS) }
+    }
+
     @Test fun recreatedOnOffSessionsKeepExecutionAndStatisticsSeparateAfterDrain() {
         val outputs = listOf(StringWriter(), StringWriter())
         for ((index, enabled) in listOf(true, false).withIndex()) {

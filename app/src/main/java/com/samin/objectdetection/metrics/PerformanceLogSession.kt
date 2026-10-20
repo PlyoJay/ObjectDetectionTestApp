@@ -17,6 +17,7 @@ class PerformanceLogSession(
     queueCapacity: Int = 512
 ) {
     private val lock = Any()
+    private val window = PerformanceTestWindow(header.startedElapsedNs, header.durationMinutes)
     private val stats = PerformanceIntervalCollector(header.startedElapsedNs)
     private val sequence = AtomicLong()
     private val batterySummary = if (header.systemDiagnosticsEnabled && header.batteryDiagnosticsEnabled) BatterySummary() else null
@@ -53,8 +54,8 @@ class PerformanceLogSession(
         batteryEnabled = batterySummary != null,
         onBattery = { sample -> synchronized(lock) {
             // Accept the final endpoint while closing, before stop completes and writer drains.
-            batterySummary?.record(sample)
-            writer.append { BatterySummary.formatSample(header, sample) }
+            val assessment = batterySummary?.record(sample) ?: BatteryAssessment()
+            writer.append { BatterySummary.formatSample(header, sample, assessment) }
         } }
     )
 
@@ -64,6 +65,7 @@ class PerformanceLogSession(
     fun recordFrame(frame: PerformanceFrameRecord) = synchronized(lock) {
         if (closing) return@synchronized
         val completed = frame.trace?.completedElapsedNs ?: elapsedNow()
+        if (!window.accepts(completed)) return@synchronized
         stats.record(frame, completed)
         val indexed = frame.copy(frameIndex = sequence.incrementAndGet(),
             elapsedSeconds = (completed - header.startedElapsedNs).coerceAtLeast(0) / 1e9)
@@ -71,23 +73,27 @@ class PerformanceLogSession(
     }
 
     fun append(line: () -> String) = synchronized(lock) {
-        if (!closing) writer.append(line)
+        if (!closing && window.accepts(elapsedNow())) writer.append(line)
     }
 
     fun recordEvent(trace: FrameTrace, execution: InferenceExecutionInfo?) = synchronized(lock) {
         if (closing) return@synchronized
-        stats.recordExecution(execution, trace.completedElapsedNs ?: elapsedNow())
+        val completed = trace.completedElapsedNs ?: elapsedNow()
+        if (!window.accepts(completed)) return@synchronized
+        stats.recordExecution(execution, completed)
         writer.append { "ERROR | ${PerformanceLogFormatter.formatTrace(trace)} | ${execution?.logFields() ?: "execution=N/A"}" }
     }
 
-    fun close(snapshot: PerformanceSnapshot): CompletableFuture<Unit> = synchronized(lock) {
+    fun close(snapshot: PerformanceSnapshot, reason: PerformanceStopReason = PerformanceStopReason.MANUAL): CompletableFuture<Unit> = synchronized(lock) {
         completion?.let { return@synchronized it }
         closing = true
         stoppedElapsedNs = elapsedNow()
+        val stopReason = window.stopReason(reason, stoppedElapsedNs)
         // Cleanup is serialized behind in-flight collection; then writer drains all accepted lines.
         diagnostics.stop().thenCompose {
             writer.close {
                 PerformanceLogFormatter.formatFinalSummary(snapshot, writer.droppedLines.get()) +
+                    "\nTEST_SESSION | configuredDurationMs=${window.durationMs} actualDurationMs=${(stoppedElapsedNs - header.startedElapsedNs).coerceAtLeast(0) / 1_000_000} stopReason=$stopReason stoppedElapsedNs=$stoppedElapsedNs" +
                     "\n--- EXACT SESSION AND 30-SECOND INTERVAL SUMMARIES ---\n" +
                     stats.finalSummaries(stoppedElapsedNs).joinToString("\n") {
                         PerformanceLogFormatter.formatInterval(header, it,

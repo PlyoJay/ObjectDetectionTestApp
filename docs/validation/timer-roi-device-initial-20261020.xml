@@ -1,0 +1,48 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuites tests="4" failures="2" errors="0" skipped="0" time="482.33" timestamp="2026-10-20T02:27:44" hostname="localhost">
+  <testsuite name="com.samin.objectdetection.camera.RecognitionRoiInstrumentedTest" tests="1" failures="0" errors="0" skipped="0" time="0.024" timestamp="2026-10-20T02:27:44" hostname="localhost">
+    <properties>
+      <property name="device" value="SM-S921N - 16" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="realBitmapRotationThenSinglePipelineCropRestoresBoxesOnEveryQuarterTurn" classname="com.samin.objectdetection.camera.RecognitionRoiInstrumentedTest" time="0.024" />
+  </testsuite>
+  <testsuite name="com.samin.objectdetection.settings.SettingsActivityTest" tests="3" failures="2" errors="0" skipped="0" time="480.659" timestamp="2026-10-20T02:27:44" hostname="localhost">
+    <properties>
+      <property name="device" value="SM-S921N - 16" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="roiPresetValidationAndDurationStayInTheirCategoriesAndPersist" classname="com.samin.objectdetection.settings.SettingsActivityTest" time="40.656">
+      <failure>androidx.test.espresso.NoActivityResumedException: No activities in stage RESUMED. Did you forget to launch the activity. (test.getActivity() or similar)?
+at dalvik.system.VMStack.getThreadStackTrace(Native Method)
+at java.lang.Thread.getStackTrace(Thread.java:2849)
+at androidx.test.espresso.base.EspressoExceptionHandler.handleSafely(EspressoExceptionHandler.java:34)
+at androidx.test.espresso.base.EspressoExceptionHandler.handleSafely(EspressoExceptionHandler.java:26)
+at androidx.test.espresso.base.DefaultFailureHandler$TypedFailureHandler.handle(DefaultFailureHandler.java:158)
+at androidx.test.espresso.base.DefaultFailureHandler.handle(DefaultFailureHandler.java:120)
+at androidx.test.espresso.ViewInteraction.waitForAndHandleInteractionResults(ViewInteraction.java:385)
+at androidx.test.espresso.ViewInteraction.desugaredPerform(ViewInteraction.java:212)
+at androidx.test.espresso.ViewInteraction.perform(ViewInteraction.java:140)
+at com.samin.objectdetection.settings.SettingsActivityTest.openCategory(SettingsActivityTest.kt:563)
+at com.samin.objectdetection.settings.SettingsActivityTest.roiPresetValidationAndDurationStayInTheirCategoriesAndPersist(SettingsActivityTest.kt:37)
+</failure>
+    </testcase>
+    <testcase name="previewModesKeepRealInferenceDiagnosticsAndPerformanceLogSettingsLock" classname="com.samin.objectdetection.settings.SettingsActivityTest" time="40.478">
+      <failure>androidx.test.espresso.NoActivityResumedException: No activities in stage RESUMED. Did you forget to launch the activity. (test.getActivity() or similar)?
+at dalvik.system.VMStack.getThreadStackTrace(Native Method)
+at java.lang.Thread.getStackTrace(Thread.java:2849)
+at androidx.test.espresso.base.EspressoExceptionHandler.handleSafely(EspressoExceptionHandler.java:34)
+at androidx.test.espresso.base.EspressoExceptionHandler.handleSafely(EspressoExceptionHandler.java:26)
+at androidx.test.espresso.base.DefaultFailureHandler$TypedFailureHandler.handle(DefaultFailureHandler.java:158)
+at androidx.test.espresso.base.DefaultFailureHandler.handle(DefaultFailureHandler.java:120)
+at androidx.test.espresso.ViewInteraction.waitForAndHandleInteractionResults(ViewInteraction.java:385)
+at androidx.test.espresso.ViewInteraction.desugaredPerform(ViewInteraction.java:212)
+at androidx.test.espresso.ViewInteraction.perform(ViewInteraction.java:140)
+at com.samin.objectdetection.settings.SettingsActivityTest.previewModesKeepRealInferenceDiagnosticsAndPerformanceLogSettingsLock(SettingsActivityTest.kt:161)
+</failure>
+    </testcase>
+    <testcase name="threeMinuteAutoStopSavesAndUnlocksForBothPreviewAndThreadModes" classname="com.samin.objectdetection.settings.SettingsActivityTest" time="399.525" />
+  </testsuite>
+</testsuites>

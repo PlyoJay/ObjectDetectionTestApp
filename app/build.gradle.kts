@@ -38,6 +38,9 @@ android {
         compose = true
         buildConfig = true
     }
+    testOptions {
+        animationsDisabled = true
+    }
 
     androidResources {
         noCompress += "tflite"

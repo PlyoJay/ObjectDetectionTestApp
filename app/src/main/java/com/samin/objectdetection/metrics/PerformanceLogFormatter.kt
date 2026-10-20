@@ -33,7 +33,10 @@ data class PerformanceLogHeader(
     val systemDiagnosticsEnabled: Boolean = false,
     val systemSampleIntervalMs: Long = 5_000L,
     val execution: InferenceExecutionInfo? = null,
-    val batteryDiagnosticsEnabled: Boolean = false
+    val batteryDiagnosticsEnabled: Boolean = false,
+    val cameraPreviewEnabled: Boolean = true,
+    val durationMinutes: Int = 5,
+    val roiDescription: String = "FULL_FRAME"
 )
 
 data class PerformanceFrameRecord(
@@ -70,7 +73,8 @@ data class PerformanceFrameRecord(
     val outputDiagnosticsNs: Long = -1L,
     val nativeInferenceNs: Long = -1L,
     val mlKitPrepareNs: Long = -1L,
-    val mlKitInFlight: Boolean = false
+    val mlKitInFlight: Boolean = false,
+    val roiDescription: String = "N/A"
 )
 
 object PerformanceLogFormatter {
@@ -98,6 +102,11 @@ object PerformanceLogFormatter {
             appendLine("Battery scope=device battery, not app consumption; temperature=battery, not CPU/GPU; signed current mA (+charging/-discharging); estimatedBatteryPowerMw=currentMa*voltageMv/1000, signed estimate, never app power even while charging")
             appendLine("Battery counters: charge=uAh, energy=nWh; unsupported/invalid=N/A; means use valid samples grouped by charging status; delta=last-first; 0% level change does not mean zero consumption")
             appendLine("Battery endpoints=first/final observed samples (see timestamps); max=sampled maximum; changes=observed transitions, between-poll changes may be missed")
+            appendLine("Battery RAW=exact getIntProperty result (including sentinels); API_DECLARED_uA is a contract, not device unit verification; *ApiMa=RAW/1000; apiEstimatedBatteryPowerMw=*ApiMa*voltageMv/1000 is unvalidated arithmetic")
+            appendLine("batteryCurrentMa/estimatedBatteryPowerMw=N/A until >=60s and >=1mAh paired unplugged discharge show current/counter ratio within [0.1,10]; mismatch/sign conflict latches for the session, no automatic rescaling; consistency is a heuristic, not calibration")
+            appendLine("batteryCurrentAverageMa=N/A: hardware averaging window is unknown; batteryCurrentAverageApiMa preserves API conversion. averageBatteryCurrentMa is the sample mean of CURRENT_NOW, not CURRENT_AVERAGE")
+            appendLine("Counter interval discharge is positive: (previousUah-currentUah)/1000*3600/seconds; power uses mean endpoint voltage. Unchanged/reset/missing counters, power transitions or gaps >120s=N/A plus warning; short intervals are quantized estimates")
+            appendLine("Battery currentValidSamples/powerValidSamples count API arithmetic availability, not verified accuracy; counter totals cover eligible adjacent pairs only; final status means are N/A unless every sample in that status is covered by paired consistency checks")
         }
         appendLine("System metrics unavailable=N/A; processCpuUsage=all app process threads, 100%=one CPU core (may exceed 100%); cpuFrequency=device cpufreq policy, not process scope")
         appendLine("Thermal Headroom: forecastSeconds=0, minimum API call interval=10000ms; cached values include sample time/age, 1.0=SEVERE threshold, not a temperature")
@@ -114,6 +123,10 @@ object PerformanceLogFormatter {
         appendLine("Input Size: ${header.inputWidth}x${header.inputHeight}")
         appendLine("Requested Camera Resolution: ${header.requestedCameraWidth}x${header.requestedCameraHeight}")
         appendLine("Camera Resolution: ${header.cameraWidth}x${header.cameraHeight}")
+        appendLine("cameraPreviewEnabled=${header.cameraPreviewEnabled}")
+        appendLine("configuredDurationMs=${header.durationMinutes * 60_000L}; timerClock=elapsedRealtimeNanos; completionWindow=[start,deadline)")
+        appendLine("Recognition ROI: ${header.roiDescription}; coordinateSpace=rotated_full_frame_pixels; proxyCropApplied=false; MLKit=shared_ROI")
+        appendLine("Overlay Draw: ${if (header.cameraPreviewEnabled) "AVAILABLE_WHEN_DRAWN" else "NOT_DISPLAYED_PREVIEW_OFF"}; missing draw events/age (-1) are not inference or frame errors")
         appendLine("resizeMode=${header.resizeMode}")
         appendLine("YOLO Threads: ${header.yoloThreads}")
         appendLine("Inference Execution: ${header.execution?.logFields() ?: "N/A"}")
@@ -155,6 +168,7 @@ object PerformanceLogFormatter {
             " | rgbWrite=${detailMs(frame.rgbWriteNs)}ms | inputDiagnostics=${detailMs(frame.inputDiagnosticsNs)}ms" +
             " | outputDiagnostics=${detailMs(frame.outputDiagnosticsNs)}ms | nativeInvoke=${detailMs(frame.nativeInferenceNs)}ms" +
             " | mlKitPrepare=${detailMs(frame.mlKitPrepareNs)}ms | mlKitInFlight=${frame.mlKitInFlight}" +
+            " | ${frame.roiDescription}" +
             " | ${frame.execution?.logFields() ?: "execution=N/A"}" +
             (frame.trace?.let { " | ${formatTrace(it)}" } ?: "")
 

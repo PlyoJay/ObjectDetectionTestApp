@@ -38,6 +38,8 @@ class PerformanceLogFormatterTest {
 
         assertTrue(text.contains("Model: model.tflite"))
         assertTrue(text.contains("Camera Resolution: 1280x720"))
+        assertTrue(text.contains("cameraPreviewEnabled=true"))
+        assertTrue(text.contains("Overlay Draw: AVAILABLE_WHEN_DRAWN"))
         assertTrue(text.contains("resizeMode=LETTERBOX"))
         assertTrue(text.contains("ML Kit Enabled: false"))
         assertTrue(text.contains("Preset: FIELD TEST - LETTERBOX"))

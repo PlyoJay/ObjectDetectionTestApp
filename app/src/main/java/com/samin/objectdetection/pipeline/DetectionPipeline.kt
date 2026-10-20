@@ -5,6 +5,7 @@ import android.graphics.Rect
 import android.os.SystemClock
 import android.util.Log
 import com.samin.objectdetection.camera.DetectionConfig
+import com.samin.objectdetection.camera.FrameRoi
 import com.samin.objectdetection.detector.DetectionResult
 import com.samin.objectdetection.detector.DetectionStageCounts
 import com.samin.objectdetection.detector.ObjectDetector
@@ -209,13 +210,8 @@ class DetectionPipeline(
         (SystemClock.elapsedRealtimeNanos() - startNs) / 1_000_000L
 
     private fun createInferenceRect(width: Int, height: Int): Rect {
-        if (!config.useCenterSquareCrop) {
-            return Rect(0, 0, width, height)
-        }
-        val size = minOf(width, height)
-        val left = (width - size) / 2
-        val top = (height - size) / 2
-        return Rect(left, top, left + size, top + size)
+        val roi = FrameRoi.calculate(width, height, config.recognitionRoi, config.useCenterSquareCrop)
+        return Rect(roi.left, roi.top, roi.right, roi.bottom)
     }
 
     private fun mapToOriginalFrame(
@@ -223,13 +219,14 @@ class DetectionPipeline(
         cropRect: Rect,
         timestampMs: Long
     ): DetectionResult {
+        val roi = FrameRoi(cropRect.left, cropRect.top, cropRect.right, cropRect.bottom)
         return DetectionResult(
             label = result.label,
             confidence = result.confidence,
-            left = result.left + cropRect.left,
-            top = result.top + cropRect.top,
-            right = result.right + cropRect.left,
-            bottom = result.bottom + cropRect.top,
+            left = roi.sourceX(result.left),
+            top = roi.sourceY(result.top),
+            right = roi.sourceX(result.right),
+            bottom = roi.sourceY(result.bottom),
             frameTimestampMs = timestampMs
         )
     }
@@ -252,7 +249,7 @@ class DetectionPipeline(
             "frameTimestamp=$timestampMs modelSha256=${model?.sha256Prefix ?: "unknown"} " +
                 "inputImage=${frameWidth}x$frameHeight roi=[${cropRect.left},${cropRect.top},${cropRect.right},${cropRect.bottom}] " +
                 "roiApplied=${!cropRect.isFullFrame(frameWidth, frameHeight)} rotationDegrees=$rotationDegrees " +
-                "preprocess=${if (config.useCenterSquareCrop) "center_square_crop" else "full_frame"}" +
+                "preprocess=${config.recognitionRoi.description(config.useCenterSquareCrop)}" +
                 "_then_${config.yoloResizeMode.name.lowercase()}_${config.inputSize}x${config.inputSize}_rgb_float_0_to_1 " +
                 "inferenceTimeMs=${stats?.inferenceTimeMs ?: -1} rawTop5=${stats?.rawTopConfidences ?: emptyList<Float>()} " +
                 "rawDetectionCount=${stats?.rawCandidateCount ?: -1} " +

@@ -1,0 +1,42 @@
+[
+  {
+    "file": "docs\\validation\\timer-roi-auto-on-1thread-20261020.txt",
+    "configuredMs": "180000",
+    "actualMs": "180016",
+    "stopReason": "AUTO_DURATION",
+    "frames": 374,
+    "complete": true,
+    "errors": 0,
+    "roi": "{\"frame\":\"1080x1440\",\"rotation\":\"90\",\"roi\":\"[54,144,1026,1440]\"}"
+  },
+  {
+    "file": "docs\\validation\\timer-roi-auto-off-4threads-20261020.txt",
+    "configuredMs": "180000",
+    "actualMs": "180037",
+    "stopReason": "AUTO_DURATION",
+    "frames": 237,
+    "complete": true,
+    "errors": 0,
+    "roi": "{\"frame\":\"1080x1440\",\"rotation\":\"90\",\"roi\":\"[54,144,1026,1440]\"}"
+  },
+  {
+    "file": "docs\\validation\\timer-roi-manual-on-20261020.txt",
+    "configuredMs": "300000",
+    "actualMs": "7286",
+    "stopReason": "MANUAL",
+    "frames": 11,
+    "complete": true,
+    "errors": 0,
+    "roi": "{\"frame\":\"1080x1440\",\"rotation\":\"90\",\"roi\":\"[0,0,1080,1440]\"}"
+  },
+  {
+    "file": "docs\\validation\\timer-roi-manual-off-20261020.txt",
+    "configuredMs": "300000",
+    "actualMs": "7988",
+    "stopReason": "MANUAL",
+    "frames": 13,
+    "complete": true,
+    "errors": 0,
+    "roi": "{\"frame\":\"1080x1440\",\"rotation\":\"90\",\"roi\":\"[0,0,1080,1440]\"}"
+  }
+]

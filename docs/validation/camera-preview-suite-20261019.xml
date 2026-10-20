@@ -1,0 +1,44 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuites tests="20" failures="0" errors="0" skipped="0" time="91.329" timestamp="2026-10-19T06:45:37" hostname="localhost">
+  <testsuite name="com.samin.objectdetection.settings.SettingsActivityTest" tests="14" failures="0" errors="0" skipped="0" time="85.591" timestamp="2026-10-19T06:45:37" hostname="localhost">
+    <properties>
+      <property name="device" value="SM-S921N - 16" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="schemaThreeAppliedAndCustomSettingsMigratePreviewOnAndKeepOtherValues" classname="com.samin.objectdetection.settings.SettingsActivityTest" time="0.059" />
+    <testcase name="categoryScrollIsRetainedAcrossNavigationAndRecreation" classname="com.samin.objectdetection.settings.SettingsActivityTest" time="6.361" />
+    <testcase name="builtInAndNamedPresetsStillApplyWithoutChangingOtherValues" classname="com.samin.objectdetection.settings.SettingsActivityTest" time="2.738" />
+    <testcase name="previewSwitchSurvivesRecreationApplyReopenAndCustomPresetWithoutChangingOverlay" classname="com.samin.objectdetection.settings.SettingsActivityTest" time="7.944" />
+    <testcase name="previewVisibilitySuppressesDebugAndBoxesWhileKeepingRecordingAndLogControls" classname="com.samin.objectdetection.settings.SettingsActivityTest" time="0.488" />
+    <testcase name="customPresetSaveRenameDeleteAndResetKeepTheirExistingMeaning" classname="com.samin.objectdetection.settings.SettingsActivityTest" time="3.979" />
+    <testcase name="everyExistingControlIsReachableInItsCategory" classname="com.samin.objectdetection.settings.SettingsActivityTest" time="3.832" />
+    <testcase name="schemaTwoAndCustomPresetsDefaultXnnpackOnWithoutLosingExistingValues" classname="com.samin.objectdetection.settings.SettingsActivityTest" time="0.028" />
+    <testcase name="incompleteDraftSurvivesRecreationAndCancelDoesNotSave" classname="com.samin.objectdetection.settings.SettingsActivityTest" time="6.056" />
+    <testcase name="diagnosticsAndIntervalSurviveNavigationRecreationApplyAndReopen" classname="com.samin.objectdetection.settings.SettingsActivityTest" time="6.949" />
+    <testcase name="legacyMigrationPreservesCustomPresetAndRecreationDoesNotAdvanceRollback" classname="com.samin.objectdetection.settings.SettingsActivityTest" time="2.972" />
+    <testcase name="previewModesKeepRealInferenceDiagnosticsAndPerformanceLogSettingsLock" classname="com.samin.objectdetection.settings.SettingsActivityTest" time="19.392" />
+    <testcase name="xnnpackSwitchPersistsOffOnAndThreadSettingsAcrossEditorAndStoreRecreation" classname="com.samin.objectdetection.settings.SettingsActivityTest" time="16.842" />
+    <testcase name="browsingFocusingAndRevertingAnEditDoNotWriteSettings" classname="com.samin.objectdetection.settings.SettingsActivityTest" time="7.951" />
+  </testsuite>
+  <testsuite name="com.samin.objectdetection.camera.CameraPreviewRuntimeTest" tests="1" failures="0" errors="0" skipped="0" time="3.721" timestamp="2026-10-19T06:45:37" hostname="localhost">
+    <properties>
+      <property name="device" value="SM-S921N - 16" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="analysisDeliversFramesWithAndWithoutPreviewAcrossRestart" classname="com.samin.objectdetection.camera.CameraPreviewRuntimeTest" time="3.721" />
+  </testsuite>
+  <testsuite name="com.samin.objectdetection.ui.BoundingBoxOverlayTest" tests="5" failures="0" errors="0" skipped="0" time="0.579" timestamp="2026-10-19T06:45:37" hostname="localhost">
+    <properties>
+      <property name="device" value="SM-S921N - 16" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="delayedMainThreadCannotDrawExpiredFrameEvenBeforeTimerRuns" classname="com.samin.objectdetection.ui.BoundingBoxOverlayTest" time="0.187" />
+    <testcase name="togglesAndTimeoutChangesNeverReviveOldPayload" classname="com.samin.objectdetection.ui.BoundingBoxOverlayTest" time="0.002" />
+    <testcase name="freshDrawsAndContinuouslyArrivingStaleResultsDoNotDraw" classname="com.samin.objectdetection.ui.BoundingBoxOverlayTest" time="0.002" />
+    <testcase name="attachedTimerExpiresWithoutFurtherResultsAndRecreationClearsOldView" classname="com.samin.objectdetection.ui.BoundingBoxOverlayTest" time="0.386" />
+    <testcase name="detectorDimensionsAndExpirationAreIndependent" classname="com.samin.objectdetection.ui.BoundingBoxOverlayTest" time="0.002" />
+  </testsuite>
+</testsuites>

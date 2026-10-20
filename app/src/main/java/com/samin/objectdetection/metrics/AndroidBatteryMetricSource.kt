@@ -34,15 +34,18 @@ class AndroidBatteryMetricSource(context: Context) {
         val present = intent?.takeIf { it.hasExtra(BatteryManager.EXTRA_PRESENT) }
             ?.getBooleanExtra(BatteryManager.EXTRA_PRESENT, false)
         if (present == false) return BatteryReading(chargingStatus = status, pluggedType = plugged)
+        // Read each property once. Keep the exact API result, including unsupported sentinels.
+        val currentNowRaw = property(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
+        val currentAverageRaw = property(BatteryManager.BATTERY_PROPERTY_CURRENT_AVERAGE)
         return BatteryReading(
             BatteryUnits.levelPct(extra(BatteryManager.EXTRA_LEVEL), extra(BatteryManager.EXTRA_SCALE)),
             BatteryUnits.temperatureC(extra(BatteryManager.EXTRA_TEMPERATURE)),
             extra(BatteryManager.EXTRA_VOLTAGE)?.takeIf { it in 1..100_000 },
-            BatteryUnits.currentMa(property(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)),
-            BatteryUnits.currentMa(property(BatteryManager.BATTERY_PROPERTY_CURRENT_AVERAGE)),
+            BatteryUnits.currentMa(currentNowRaw),
+            BatteryUnits.currentMa(currentAverageRaw),
             BatteryUnits.chargeUah(property(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER)),
             BatteryUnits.energyNwh(safe { manager?.getLongProperty(BatteryManager.BATTERY_PROPERTY_ENERGY_COUNTER) }),
-            status, plugged
+            status, plugged, currentNowRaw, currentAverageRaw
         )
     }
 
