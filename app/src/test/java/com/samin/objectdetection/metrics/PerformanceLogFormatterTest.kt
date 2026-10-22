@@ -84,7 +84,7 @@ class PerformanceLogFormatterTest {
                 trace = FrameTrace("test-session", 42, 1000, 0, false, 1000, 100,
                     completedAtMs = 1100, completedElapsedNs = 200),
                 totalProcessingMs = 117,
-                cameraToBitmapNs = 1_125_000, rotationNs = 0,
+                cameraToBitmapNs = 1_125_000, rotationNs = 0, rotationDegrees = 90,
                 inputBufferMs = 10, getPixelsNs = 300_000, rgbWriteNs = 1_900_000,
                 inputDiagnosticsNs = 0, outputDiagnosticsNs = 0, nativeInferenceNs = 85_100_000,
                 mlKitPrepareNs = 25_000, mlKitInFlight = true,
@@ -100,11 +100,28 @@ class PerformanceLogFormatterTest {
         assertTrue(text.contains("sessionId=test-session frameId=42 status=SUCCESS"))
         assertTrue(text.contains("analyzerFps=12.5 | inferenceFps=8.25"))
         assertTrue(text.contains("totalProcessing=117ms"))
-        assertTrue(text.contains("cameraToBitmap=1.125ms | rotation=0.000ms"))
+        assertTrue(text.contains("cameraToBitmap=1.125ms | rotationMs=0.000 | rotationDegrees=90"))
+        assertTrue(!Regex("\\brotation=").containsMatchIn(text))
+        val keys = Regex("(?:^|[ |])(\\w+)=").findAll(text).map { it.groupValues[1] }.toList()
+        assertTrue(keys.size == keys.distinct().size)
         assertTrue(text.contains("inputBuffer=10ms | getPixels=0.300ms | rgbWrite=1.900ms"))
         assertTrue(text.contains("nativeInvoke=85.100ms"))
         assertTrue(text.contains("mlKitPrepare=0.025ms | mlKitInFlight=true"))
         assertTrue(text.contains("lastInference=SUCCESS inferenceErrors=1 cpuFallbackCount=0"))
+    }
+
+    @Test fun inferenceReturnAndPipelineCompletionHaveDistinctClocksAndMissingStaysUnknown() {
+        val trace = FrameTrace("session", 1, 0, 1, true, 0, 2,
+            inferenceStartedElapsedNs = 10, inferenceEndedElapsedNs = 40, completedElapsedNs = 50)
+        val text = PerformanceLogFormatter.formatTrace(trace)
+        assertTrue(text.contains("inferenceStartElapsedNs=10"))
+        assertTrue(text.contains("inferenceEndElapsedNs=40 pipelineCompletedElapsedNs=50"))
+        val failed = PerformanceLogFormatter.formatTrace(trace.copy(status = "ERROR", inferenceEndedElapsedNs = null))
+        assertTrue(failed.contains("inferenceEndElapsedNs=-1 pipelineCompletedElapsedNs=-1"))
+        val unavailable = PerformanceLogFormatter.formatTrace(trace.copy(inferenceStartedElapsedNs = null,
+            inferenceStartedAtMs = null, completedElapsedNs = null, completedAtMs = null))
+        assertTrue(unavailable.contains("inferenceStartUnixMs=-1 inferenceStartElapsedNs=-1"))
+        assertTrue(unavailable.contains("completedUnixMs=-1 completedElapsedNs=-1"))
     }
 
     @Test

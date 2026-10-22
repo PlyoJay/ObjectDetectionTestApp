@@ -4,8 +4,12 @@ import android.content.Context
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import android.util.Log
+import com.samin.objectdetection.metrics.FrameLatencyRecorder
+import com.samin.objectdetection.metrics.TtsStartTracker
 import com.samin.objectdetection.warning.FeedbackLevel
 import com.samin.objectdetection.warning.WarningCandidate
 import java.util.Locale
@@ -24,6 +28,7 @@ class TtsWarningPlayer(
     @Volatile
     private var lastSpeakAtMs: Long = 0L
     private lateinit var textToSpeech: TextToSpeech
+    private val startTracker = TtsStartTracker(SystemClock::elapsedRealtimeNanos)
 
     init {
         textToSpeech = TextToSpeech(context.applicationContext) { status ->
@@ -34,6 +39,14 @@ class TtsWarningPlayer(
                         result != TextToSpeech.LANG_NOT_SUPPORTED
                     textToSpeech.setSpeechRate(SPEECH_RATE)
                     textToSpeech.setPitch(SPEECH_PITCH)
+                    textToSpeech.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                        override fun onStart(utteranceId: String) = startTracker.onStart(utteranceId)
+                        override fun onDone(utteranceId: String) = startTracker.terminal(utteranceId, "DONE_WITHOUT_START")
+                        @Deprecated("Legacy TTS callback")
+                        override fun onError(utteranceId: String) = startTracker.terminal(utteranceId, "TTS_ERROR")
+                        override fun onError(utteranceId: String, errorCode: Int) = startTracker.terminal(utteranceId, "TTS_ERROR")
+                        override fun onStop(utteranceId: String, interrupted: Boolean) = startTracker.terminal(utteranceId, "TTS_STOPPED_OR_FLUSHED")
+                    })
                     Log.d(TAG, "TextToSpeech ready=$isReady, languageResult=$result")
                 } else {
                     isReady = false
@@ -48,7 +61,8 @@ class TtsWarningPlayer(
         speak(candidate, message)
     }
 
-    fun speak(candidate: WarningCandidate, message: String, force: Boolean = false): TtsResult {
+    fun speak(candidate: WarningCandidate, message: String, force: Boolean = false,
+        latency: FrameLatencyRecorder? = null): TtsResult {
         if (candidate.feedback.voiceLevel == FeedbackLevel.NONE) {
             return TtsResult(executed = false, skippedReason = "voice_none")
         }
@@ -68,14 +82,17 @@ class TtsWarningPlayer(
             return TtsResult(executed = false, skippedReason = "tts_duplicate")
         }
 
+        val utteranceId = if (latency == null) "${candidate.warningKey}:$nowMs" else
+            "${candidate.warningKey}:$nowMs:${latency.trace.sessionId}:${latency.trace.frameId}"
+        val request = latency?.let { startTracker.register(utteranceId, it) }
         return try {
-            val utteranceId = "${candidate.warningKey}:$nowMs"
             val result = textToSpeech.speak(
                 message,
                 TextToSpeech.QUEUE_FLUSH,
                 Bundle.EMPTY,
                 utteranceId
             )
+            request?.let { startTracker.requestReturned(it, result != TextToSpeech.ERROR) }
             if (result == TextToSpeech.ERROR) {
                 Log.w(TAG, "TTS speak returned ERROR")
                 TtsResult(executed = false, skippedReason = "tts_error")
@@ -86,6 +103,7 @@ class TtsWarningPlayer(
                 TtsResult(executed = true, skippedReason = null)
             }
         } catch (e: Exception) {
+            request?.let { startTracker.requestReturned(it, null, "API_EXCEPTION") }
             Log.w(TAG, "TTS speak failed", e)
             TtsResult(executed = false, skippedReason = "tts_exception")
         }
@@ -95,6 +113,7 @@ class TtsWarningPlayer(
         if (isReleased || !isReady) return
         try {
             textToSpeech.stop()
+            startTracker.clear("STOP_WITHOUT_START")
         } catch (e: Exception) {
             Log.w(TAG, "TTS stop failed", e)
         }
@@ -115,6 +134,7 @@ class TtsWarningPlayer(
             try {
                 textToSpeech.stop()
                 textToSpeech.shutdown()
+                startTracker.clear("RELEASE_WITHOUT_START")
             } catch (e: Exception) {
                 Log.w(TAG, "TTS release failed", e)
             }

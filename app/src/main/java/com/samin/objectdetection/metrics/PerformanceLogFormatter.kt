@@ -78,7 +78,8 @@ data class PerformanceFrameRecord(
     val nativeInferenceNs: Long = -1L,
     val mlKitPrepareNs: Long = -1L,
     val mlKitInFlight: Boolean = false,
-    val roiDescription: String = "N/A"
+    val roiDescription: String = "N/A",
+    val rotationDegrees: Int? = null
 )
 
 object PerformanceLogFormatter {
@@ -100,6 +101,11 @@ object PerformanceLogFormatter {
         appendLine("Clock: *AtMs/UnixMs=Unix wall ms; *ElapsedNs=elapsedRealtimeNanos; cameraTimestampNs=camera source")
         appendLine("FPS: fps/Average FPS=successful pipeline completions; analyzerFps=delivered analyzer frames; droppedFrames=explicit app skips")
         appendLine("Unknown camera capture latency=-1; FRAME time is pipeline completion, OVERLAY is a separate draw event")
+        appendLine("Latency Schema: 1; LATENCY events join by sessionId/frameId, use elapsedRealtimeNanos, and never contribute FPS/FRAME statistics")
+        appendLine("inferenceStartElapsedNs/inferenceEndElapsedNs bracket the Java Interpreter call; pipelineCompletedElapsedNs aliases completedElapsedNs. Neither is physical output onset.")
+        appendLine("rotationMs=rotation processing milliseconds; rotationDegrees=image rotation angle. Detail fields overlap existing aggregates; never sum them again.")
+        appendLine("LATENCY: CAMERA_RECEIVED, ANALYZER, MLKIT, WARNING, OUTPUT; missing=-1/N/A. Async observations outside the recording window or after stop are not retained; row order is not event-time order.")
+        appendLine("ANALYZER callback end is observed after ImageProxy.close, before telemetry enqueue. TTS start=onStart callback receipt; Beep/Vibration expose API request boundaries only; physicalOutputStartedElapsedNs=-1.")
         appendLine("System Performance Diagnostics: ${header.systemDiagnosticsEnabled}; Sample Interval: ${header.systemSampleIntervalMs}ms")
         appendLine("Battery Thermal Diagnostics: ${header.batteryDiagnosticsEnabled}; Effective: ${header.systemDiagnosticsEnabled && header.batteryDiagnosticsEnabled}; battery polling uses system ticks, minimum 5000ms plus final endpoint")
         if (header.batteryDiagnosticsEnabled && header.systemDiagnosticsEnabled) {
@@ -140,7 +146,7 @@ object PerformanceLogFormatter {
         appendLine("CPU thread count is the accepted Interpreter option; active worker count/partition coverage are unavailable in Java. Confirm native delegate application with Logcat/profiling.")
         appendLine("Execution settings are fixed for this session. Stop/drain this log before applying settings; the recreated app uses a new session and recorder.")
         appendLine("pipeline=DetectionPipeline.process only; totalProcessing=analyzer receipt through pipeline completion (includes bitmap conversion and ML Kit input preparation; excludes UI draw/warning output)")
-        appendLine("Detail timings are overlapping subsets, never summed into aggregates: cameraToBitmap/rotation within bitmap; getPixels/rgbWrite/inputDiagnostics within inputBuffer within preprocess; nativeInvoke within inference; outputDiagnostics within detector/pipeline but outside post. mlKitPrepare includes eligibility check/input resize/dispatch before pipeline; mlKitInFlight is a concurrency hint, not CPU time. Detail milliseconds retain 3 decimals; -1=unavailable, 0=skipped.")
+        appendLine("Detail timings are overlapping subsets, never summed into aggregates: cameraToBitmap/rotationMs within bitmap; getPixels/rgbWrite/inputDiagnostics within inputBuffer within preprocess; nativeInvoke within inference; outputDiagnostics within detector/pipeline but outside post. mlKitPrepare includes eligibility check/input resize/dispatch before pipeline; mlKitInFlight is a concurrency hint, not CPU time. Detail milliseconds retain 3 decimals; -1=unavailable, 0=skipped.")
         appendLine("ML Kit Enabled: ${header.mlKitEnabled}")
         appendLine("Geometry Filter Enabled: ${header.geometryFilterEnabled}")
         appendLine("Adaptive Temporal Enabled: ${header.adaptiveTemporalEnabled}")
@@ -169,7 +175,8 @@ object PerformanceLogFormatter {
             " | analyzerFps=${frame.analyzerFps} | inferenceFps=${frame.inferenceFps}" +
             " | elapsedSeconds=${number(frame.elapsedSeconds)}" +
             " | totalProcessing=${frame.totalProcessingMs}ms" +
-            " | cameraToBitmap=${detailMs(frame.cameraToBitmapNs)}ms | rotation=${detailMs(frame.rotationNs)}ms" +
+            " | cameraToBitmap=${detailMs(frame.cameraToBitmapNs)}ms | rotationMs=${detailMs(frame.rotationNs)}" +
+            " | rotationDegrees=${frame.rotationDegrees ?: "N/A"}" +
             " | inputBuffer=${frame.inputBufferMs}ms | getPixels=${detailMs(frame.getPixelsNs)}ms" +
             " | rgbWrite=${detailMs(frame.rgbWriteNs)}ms | inputDiagnostics=${detailMs(frame.inputDiagnosticsNs)}ms" +
             " | outputDiagnostics=${detailMs(frame.outputDiagnosticsNs)}ms | nativeInvoke=${detailMs(frame.nativeInferenceNs)}ms" +
@@ -182,9 +189,31 @@ object PerformanceLogFormatter {
         "sessionId=$sessionId frameId=$frameId status=$status captureUnixMs=$frameTimestampMs " +
             "cameraTimestampNs=$cameraTimestampNs captureTimestampReliable=$captureTimestampReliable " +
             "analyzerUnixMs=$analyzerReceivedMs analyzerElapsedNs=$analyzerReceivedElapsedNs " +
-            "inferenceStartUnixMs=$inferenceStartedAtMs inferenceStartElapsedNs=$inferenceStartedElapsedNs " +
-            "completedUnixMs=$completedAtMs completedElapsedNs=$completedElapsedNs analyzerToInferenceMs=$analyzerToInferenceMs " +
+            "inferenceStartUnixMs=${inferenceStartedAtMs ?: -1L} inferenceStartElapsedNs=${inferenceStartedElapsedNs ?: -1L} " +
+            "completedUnixMs=${completedAtMs ?: -1L} completedElapsedNs=${completedElapsedNs ?: -1L} analyzerToInferenceMs=$analyzerToInferenceMs " +
+            "inferenceEndElapsedNs=${inferenceEndedElapsedNs ?: -1L} pipelineCompletedElapsedNs=${completedElapsedNs?.takeIf { status == "SUCCESS" } ?: -1L} " +
             "errorStage=$errorStage error=${error?.replace('\n', ' ')?.replace('\r', ' ')}"
+    }
+
+    fun formatLatency(trace: FrameTrace, event: FrameLatencyEvent): String {
+        val fields = when (event) {
+            is FrameLatencyEvent.Received -> "stage=CAMERA_RECEIVED analyzerReceivedElapsedNs=${trace.analyzerReceivedElapsedNs} " +
+                "cameraTimestampNs=${trace.cameraTimestampNs} captureTimestampReliable=${trace.captureTimestampReliable}"
+            is FrameLatencyEvent.Analyzer -> "stage=ANALYZER analyzerWorkEndElapsedNs=${event.workEndedElapsedNs} " +
+                "imageProxyCloseStartElapsedNs=${event.closeStartedElapsedNs} imageProxyCloseEndElapsedNs=${event.closeEndedElapsedNs} " +
+                "analyzerCallbackEndElapsedNs=${event.observedElapsedNs} closeSucceeded=${event.closeSucceeded} outcome=${event.outcome}"
+            is FrameLatencyEvent.MlKit -> "stage=MLKIT mlKitDispatchedElapsedNs=${event.dispatchedElapsedNs} " +
+                "mlKitRequestElapsedNs=${event.requestedElapsedNs} mlKitCompletedElapsedNs=${event.observedElapsedNs} " +
+                "outcome=${event.outcome} completionBasis=${event.completionBasis}"
+            is FrameLatencyEvent.Warning -> "stage=WARNING warningCandidateFinalizedElapsedNs=${event.candidateFinalizedElapsedNs} " +
+                "warningSubmittedElapsedNs=${event.submittedElapsedNs} warningSubmitReturnedElapsedNs=${event.observedElapsedNs} " +
+                "candidatePresent=${event.candidatePresent} accepted=${event.accepted} skippedReason=${event.skippedReason ?: "N/A"}"
+            is FrameLatencyEvent.Output -> "stage=OUTPUT kind=${event.kind} observation=${event.observation} " +
+                "outputRequestElapsedNs=${event.requestStartedElapsedNs} outputRequestReturnedElapsedNs=${event.requestReturnedElapsedNs} " +
+                "outputStartedElapsedNs=${event.startedElapsedNs} physicalOutputStartedElapsedNs=-1 " +
+                "accepted=${event.accepted ?: "N/A"} pulseIndex=${event.pulseIndex} reason=${event.reason ?: "N/A"}"
+        }
+        return "LATENCY | sessionId=${trace.sessionId} frameId=${trace.frameId} eventElapsedNs=${event.observedElapsedNs} $fields"
     }
 
     fun formatFinalSummary(snapshot: PerformanceSnapshot, droppedLogLines: Long): String = buildString {

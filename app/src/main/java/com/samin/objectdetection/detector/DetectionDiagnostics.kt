@@ -44,7 +44,8 @@ data class DetectorFrameDiagnostics(
     val rgbWriteTimeNs: Long = -1L,
     val inputDiagnosticsTimeNs: Long = -1L,
     val outputDiagnosticsTimeNs: Long = -1L,
-    val nativeInferenceTimeNs: Long = -1L
+    val nativeInferenceTimeNs: Long = -1L,
+    val inferenceEndedElapsedNs: Long? = null
 )
 
 /** Actual execution order: confidence, valid box, detector size, candidate limit, NMS,

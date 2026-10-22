@@ -87,6 +87,9 @@ class PerformanceLogRecorder(private val context: Context, private val onFailure
         session.logging.recordFrame(frame)
     }
 
+    fun beginFrameLatency(trace: FrameTrace): FrameLatencyRecorder? =
+        activeSession?.logging?.beginFrameLatency(trace)
+
     fun recordSummary(summary: String) {
         val session = activeSession ?: return
         enqueue(session, "\n$summary\n")

@@ -60,6 +60,10 @@ class DetectorPreprocessingRegressionTest {
                     assertEquals(0L, timing.inputDiagnosticsTimeNs)
                     assertEquals(0L, timing.outputDiagnosticsTimeNs)
                     assertTrue(timing.getPixelsTimeNs >= 0 && timing.rgbWriteTimeNs >= 0 && timing.nativeInferenceTimeNs > 0)
+                    val inferenceEndNs = checkNotNull(timing.inferenceEndedElapsedNs)
+                    assertTrue(inferenceEndNs >= timing.inferenceStartedElapsedNs)
+                    assertEquals(timing.inferenceTimeMs,
+                        (inferenceEndNs - timing.inferenceStartedElapsedNs) / 1_000_000L)
                 } finally { source.recycle(); referenceBitmap.recycle() }
             }
         } finally { detector.close() }

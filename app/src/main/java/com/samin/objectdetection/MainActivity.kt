@@ -39,6 +39,8 @@ import com.samin.objectdetection.evaluation.ScreenRecordService
 import com.samin.objectdetection.evaluation.RecordingState
 import com.samin.objectdetection.detector.InferenceException
 import com.samin.objectdetection.metrics.FrameTrace
+import com.samin.objectdetection.metrics.FrameLatencyEvent
+import com.samin.objectdetection.metrics.FrameLatencyRecorder
 import com.samin.objectdetection.metrics.FrameRateMeter
 import com.samin.objectdetection.location.UserLocationTracker
 import com.samin.objectdetection.metrics.DetectionMetricsCollector
@@ -512,6 +514,9 @@ class MainActivity : ComponentActivity() {
             targetHeight = appSettings.camera.requestedHeight,
             cameraPreviewEnabled = appSettings.camera.previewEnabled,
             listener = object : CameraController.Listener {
+                override fun onAnalyzerStarted(timing: CameraFrameTiming): FrameLatencyRecorder? =
+                    if (performanceLogRecorder.isRecording) performanceLogRecorder.beginFrameLatency(frameTrace(timing)) else null
+
                 override fun onFrameReceived(frameTimestampMs: Long, analyzerReceivedMs: Long) {
                     metricsCollector.recordFrameReceived(SystemClock.elapsedRealtimeNanos())
                     frameRates.received(SystemClock.elapsedRealtimeNanos())
@@ -565,7 +570,7 @@ class MainActivity : ComponentActivity() {
 
         // Both detectors receive the same ROI in the already rotated full-frame coordinate space.
         val mlKitPrepareStartNs = SystemClock.elapsedRealtimeNanos()
-        maybeRunMlKitDetection(bitmap, bitmap.width, bitmap.height, frameTrace(frameTiming))
+        maybeRunMlKitDetection(bitmap, bitmap.width, bitmap.height, frameTrace(frameTiming), frameTiming.latency)
         val mlKitPrepareNs = SystemClock.elapsedRealtimeNanos() - mlKitPrepareStartNs
         val mlKitInFlight = isMlKitProcessing.get()
 
@@ -593,6 +598,7 @@ class MainActivity : ComponentActivity() {
         val trace = frameTrace(frameTiming).copy(
             inferenceStartedAtMs = detectorDiagnostics?.inferenceStartedAtMs,
             inferenceStartedElapsedNs = detectorDiagnostics?.inferenceStartedElapsedNs,
+            inferenceEndedElapsedNs = detectorDiagnostics?.inferenceEndedElapsedNs,
             completedAtMs = completedAtMs, completedElapsedNs = completedNs)
         val topOverlayObject = pipelineResult.topOverlayObject
         metricsCollector.recordYoloDetections(
@@ -614,15 +620,22 @@ class MainActivity : ComponentActivity() {
         val crowdDecision = WarningPolicy.resolveCrowdDecision(warningDetections)
         val crowdCandidate = crowdDecision.toWarningCandidate()
         val selectedCandidate = warningCandidateSelector.selectWithCrowd(warningCandidates, crowdCandidate)
+        val candidateFinalizedNs = frameTiming.latency?.nowNs() ?: -1L
         val selectedCooldownPassed = selectedCandidate?.let { candidate ->
             warningCooldownManager.canNotify(candidate.warningKey, start)
         } ?: false
         val selectedFeedback = selectedCandidate?.feedback
+        val warningSubmittedNs = frameTiming.latency?.nowNs() ?: -1L
         val outputResult = warningOutputController.submit(
             candidate = selectedCandidate,
             cooldownAllowed = selectedCooldownPassed,
-            timestampMs = start
+            timestampMs = start,
+            latency = frameTiming.latency
         )
+        frameTiming.latency?.let { latency ->
+            latency.record(FrameLatencyEvent.Warning(candidateFinalizedNs, warningSubmittedNs, latency.nowNs(),
+                selectedCandidate != null, outputResult.accepted, outputResult.skippedReason))
+        }
         val vibrationExecuted = outputResult.vibrationExecuted
         val beepExecuted = outputResult.beepExecuted
         val ttsExecuted = outputResult.ttsExecuted
@@ -776,7 +789,8 @@ class MainActivity : ComponentActivity() {
                     nativeInferenceNs = detectorDiagnostics?.nativeInferenceTimeNs ?: -1L,
                     mlKitPrepareNs = mlKitPrepareNs,
                     mlKitInFlight = mlKitInFlight,
-                    roiDescription = "frame=${width}x$height rotation=$rotationDegrees roi=[${cropRect.left},${cropRect.top},${cropRect.right},${cropRect.bottom}]",
+                    roiDescription = "frame=${width}x$height roi=[${cropRect.left},${cropRect.top},${cropRect.right},${cropRect.bottom}]",
+                    rotationDegrees = rotationDegrees,
                     totalProcessingMs = if (frameTiming.analyzerReceivedElapsedNs > 0L)
                         (completedNs - frameTiming.analyzerReceivedElapsedNs).coerceAtLeast(0L) / 1_000_000L else -1L
                 )
@@ -1174,6 +1188,7 @@ class MainActivity : ComponentActivity() {
             errorStage = inferenceError?.stage ?: if (error is com.samin.objectdetection.camera.BitmapConversionException) "BITMAP_CONVERSION" else "PIPELINE",
             error = error.stackTraceToString(), inferenceStartedAtMs = inferenceError?.inferenceStartedAtMs,
             inferenceStartedElapsedNs = inferenceError?.inferenceStartedElapsedNs,
+            inferenceEndedElapsedNs = inferenceError?.inferenceEndedElapsedNs,
             completedAtMs = System.currentTimeMillis(), completedElapsedNs = SystemClock.elapsedRealtimeNanos())
         evaluationDataRecorder.recordError(trace, timing.frameWidth.takeIf { it > 0 } ?: actualAnalysisWidth,
             timing.frameHeight.takeIf { it > 0 } ?: actualAnalysisHeight)
@@ -1329,7 +1344,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun maybeRunMlKitDetection(bitmap: Bitmap, frameWidth: Int, frameHeight: Int, sourceTrace: FrameTrace) {
+    private fun maybeRunMlKitDetection(bitmap: Bitmap, frameWidth: Int, frameHeight: Int, sourceTrace: FrameTrace,
+        latency: FrameLatencyRecorder? = null) {
         if (!detectionConfig.enableMlKitDetection) return
         val now = System.currentTimeMillis()
 
@@ -1355,12 +1371,13 @@ class MainActivity : ComponentActivity() {
             throw error
         }
 
+        val mlKitDispatchedNs = latency?.nowNs() ?: -1L
         captureWork.launch {
             try {
                 val mlStart = System.currentTimeMillis()
                 val mlStartNs = SystemClock.elapsedRealtimeNanos()
 
-                val mlKitResults = mlKitDetector.detect(mlBitmap)
+                val mlKitResults = mlKitDetector.detect(mlBitmap, latency, mlKitDispatchedNs)
                 val mlTrace = sourceTrace.copy(inferenceStartedAtMs = mlStart, inferenceStartedElapsedNs = mlStartNs,
                     completedAtMs = System.currentTimeMillis(), completedElapsedNs = SystemClock.elapsedRealtimeNanos())
 

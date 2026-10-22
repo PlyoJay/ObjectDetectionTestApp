@@ -62,6 +62,17 @@ class PerformanceLogSession(
     val droppedLogLines: Long get() = writer.droppedLines.get()
     fun start() = diagnostics.start()
 
+    fun beginFrameLatency(trace: FrameTrace): FrameLatencyRecorder? = synchronized(lock) {
+        if (closing || trace.sessionId != header.sessionId || !window.accepts(trace.analyzerReceivedElapsedNs)) return@synchronized null
+        FrameLatencyRecorder(trace, elapsedNow) { event ->
+            synchronized(lock) {
+                if (!closing && window.accepts(event.observedElapsedNs)) {
+                    writer.append { PerformanceLogFormatter.formatLatency(trace, event) }
+                }
+            }
+        }.also { it.record(FrameLatencyEvent.Received(trace.analyzerReceivedElapsedNs)) }
+    }
+
     fun recordFrame(frame: PerformanceFrameRecord) = synchronized(lock) {
         if (closing) return@synchronized
         val completed = frame.trace?.completedElapsedNs ?: elapsedNow()

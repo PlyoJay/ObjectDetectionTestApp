@@ -9,6 +9,8 @@ fun JSONObject.putTrace(trace: FrameTrace): JSONObject = apply {
     put("analyzerReceivedMs", trace.analyzerReceivedMs); put("analyzerReceivedElapsedNs", trace.analyzerReceivedElapsedNs)
     put("inferenceStartedAtMs", trace.inferenceStartedAtMs ?: JSONObject.NULL)
     put("inferenceStartedElapsedNs", trace.inferenceStartedElapsedNs ?: JSONObject.NULL)
+    put("inferenceEndedElapsedNs", trace.inferenceEndedElapsedNs ?: JSONObject.NULL)
+    put("pipelineCompletedElapsedNs", trace.completedElapsedNs?.takeIf { trace.status == "SUCCESS" } ?: JSONObject.NULL)
     put("completedAtMs", trace.completedAtMs ?: JSONObject.NULL); put("completedElapsedNs", trace.completedElapsedNs ?: JSONObject.NULL)
     put("frameAgeAtInferenceMs", trace.frameAgeAtInferenceMs); put("analyzerToInferenceMs", trace.analyzerToInferenceMs)
     put("errorStage", trace.errorStage ?: JSONObject.NULL); put("error", trace.error ?: JSONObject.NULL)

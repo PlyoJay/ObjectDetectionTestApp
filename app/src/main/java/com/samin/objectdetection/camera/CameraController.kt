@@ -17,6 +17,8 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
+import com.samin.objectdetection.metrics.FrameLatencyRecorder
+import com.samin.objectdetection.metrics.finishAnalyzerFrame
 import java.util.concurrent.Executors
 import java.util.concurrent.CompletableFuture
 
@@ -33,7 +35,8 @@ data class CameraFrameTiming(
     val frameWidth: Int = 0,
     val frameHeight: Int = 0,
     val cameraToBitmapNs: Long = -1L,
-    val rotationNs: Long = -1L
+    val rotationNs: Long = -1L,
+    val latency: FrameLatencyRecorder? = null
 ) {
     val cameraToAnalyzerMs: Long get() = if (captureTimestampReliable) (analyzerReceivedMs - frameTimestampMs).coerceAtLeast(0L) else -1L
     val bitmapConversionMs: Long get() =
@@ -53,6 +56,7 @@ class CameraController(
 ) : AutoCloseable {
 
     interface Listener {
+        fun onAnalyzerStarted(timing: CameraFrameTiming): FrameLatencyRecorder? = null
         fun onFrameReceived(frameTimestampMs: Long, analyzerReceivedMs: Long)
         fun onFrameSkipped(reason: SkipReason, skippedFrameCount: Long)
         fun onFrame(bitmap: Bitmap, timing: CameraFrameTiming, rotationDegrees: Int)
@@ -113,11 +117,14 @@ class CameraController(
                 analyzerReceivedMs, frameId, cameraNs, receivedNs, reliable,
                 frameWidth = if (imageProxy.imageInfo.rotationDegrees % 180 == 0) imageProxy.width else imageProxy.height,
                 frameHeight = if (imageProxy.imageInfo.rotationDegrees % 180 == 0) imageProxy.height else imageProxy.width)
+            var outcome = "CLOSED"
             try {
+                listener.onAnalyzerStarted(timing)?.let { timing = timing.copy(latency = it) }
                 if (closed) return@setAnalyzer
                 listener.onFrameReceived(frameTimestampMs, analyzerReceivedMs)
                 val receivedElapsedMs = receivedNs / 1_000_000L
                 if (receivedElapsedMs - lastDetectionStartTimeMs < detectIntervalMs) {
+                    outcome = "INTERVAL_SKIPPED"
                     recordSkipped(SkipReason.INTERVAL)
                     return@setAnalyzer
                 }
@@ -142,6 +149,7 @@ class CameraController(
                     bitmapConversionDurationMs = (SystemClock.elapsedRealtimeNanos() - conversionStartNs) / 1_000_000L,
                     cameraToBitmapNs = cameraToBitmapNs, rotationNs = rotationNs)
                 if (bitmap == null) {
+                    outcome = "BITMAP_UNAVAILABLE"
                     recordSkipped(SkipReason.BITMAP_CONVERSION)
                     listener.onFrameError(IllegalStateException("Camera bitmap conversion failed; see ImageProxyExt cause"), timing)
                     return@setAnalyzer
@@ -152,16 +160,18 @@ class CameraController(
                         timing,
                         imageProxy.imageInfo.rotationDegrees
                     )
+                    outcome = "DELIVERED"
                 } finally {
                     if (!bitmap.isRecycled) {
                         bitmap.recycle()
                     }
                 }
             } catch (error: Exception) {
+                outcome = "ERROR"
                 if (error is BitmapConversionException) recordSkipped(SkipReason.BITMAP_CONVERSION)
                 listener.onFrameError(error, timing)
             } finally {
-                imageProxy.close()
+                finishAnalyzerFrame(timing.latency, outcome) { imageProxy.close() }
             }
         }
 

@@ -192,6 +192,7 @@ class VisionStyleYoloDetector(
         var stage = "PREPROCESS"
         var runStartedAtMs: Long? = null
         var runStartedNs: Long? = null
+        var runEndedNs: Long? = null
         return try {
             val resizeStartNs = SystemClock.elapsedRealtimeNanos()
             val transform = cachedTransform?.takeIf {
@@ -280,11 +281,14 @@ class VisionStyleYoloDetector(
                     interpreter.runForMultipleInputsOutputs(interpreterInputs, interpreterOutputs)
                 }
             } catch (error: Exception) {
+                runEndedNs = SystemClock.elapsedRealtimeNanos()
                 execution = execution.copy(lastInference = "ERROR", inferenceErrors = execution.inferenceErrors + 1)
                 Log.e(TAG, "[INFERENCE_EXECUTION] ${execution.logFields()}", error)
                 throw error
             }
-            val inferenceTimeMs = elapsedMs(inferenceStartNs)
+            val inferenceEndNs = SystemClock.elapsedRealtimeNanos()
+            runEndedNs = inferenceEndNs
+            val inferenceTimeMs = (inferenceEndNs - inferenceStartNs) / 1_000_000L
             val nativeInferenceTimeNs = interpreter.lastNativeInferenceDurationNanoseconds ?: -1L
             if (execution.lastInference != "SUCCESS") {
                 execution = execution.copy(lastInference = "SUCCESS")
@@ -311,6 +315,7 @@ class VisionStyleYoloDetector(
                 detectorStartNs = detectorStartNs,
                 inferenceStartedAtMs = runStartedAtMs,
                 inferenceStartedElapsedNs = inferenceStartNs,
+                inferenceEndedElapsedNs = inferenceEndNs,
                 inputDiagnosticsTimeNs = inputDiagnosticsTimeNs,
                 outputDiagnosticsTimeNs = outputDiagnosticsTimeNs,
                 nativeInferenceTimeNs = nativeInferenceTimeNs
@@ -325,7 +330,7 @@ class VisionStyleYoloDetector(
             debugFrame?.line("[DETECTOR_ERROR] frame=${debugFrame?.id} error=$e")
             Log.e(TAG, "detect error", e)
             if (goldenDirectory != null) throw IllegalStateException("Self test inference failed", e)
-            throw InferenceException(stage, runStartedAtMs, runStartedNs, e)
+            throw InferenceException(stage, runStartedAtMs, runStartedNs, e, runEndedNs)
         }
     }
 
@@ -354,6 +359,7 @@ class VisionStyleYoloDetector(
         detectorStartNs: Long,
         inferenceStartedAtMs: Long,
         inferenceStartedElapsedNs: Long,
+        inferenceEndedElapsedNs: Long,
         inputDiagnosticsTimeNs: Long,
         outputDiagnosticsTimeNs: Long,
         nativeInferenceTimeNs: Long
@@ -553,6 +559,7 @@ class VisionStyleYoloDetector(
             rawCoordinateMax = rawCoordinateMax.takeIf { it.isFinite() },
             inferenceStartedAtMs = inferenceStartedAtMs,
             inferenceStartedElapsedNs = inferenceStartedElapsedNs,
+            inferenceEndedElapsedNs = inferenceEndedElapsedNs,
             getPixelsTimeNs = getPixelsTimeNs,
             rgbWriteTimeNs = rgbWriteTimeNs,
             inputDiagnosticsTimeNs = inputDiagnosticsTimeNs,

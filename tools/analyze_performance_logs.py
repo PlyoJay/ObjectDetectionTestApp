@@ -12,7 +12,22 @@ from pathlib import Path
 
 
 def fields(line):
-    result = dict(re.findall(r"(?:^|[\s|])(\w+)=([^\s|]+)", line))
+    pairs = re.findall(r"(?:^|[\s|])(\w+)=([^\s|]+)", line)
+    result = dict(pairs)
+    # Historical FRAME rows used rotation twice: a duration with 'ms', then an angle.
+    # Recover both from the original pairs before dict's last-key-wins loses the duration.
+    legacy_rotation = [value for key, value in pairs if key == "rotation"]
+    if "rotationMs" not in result:
+        duration = next((v for v in legacy_rotation if v.endswith("ms")), None)
+        if duration is not None:
+            result["rotationMs"] = duration.removesuffix("ms")
+    if "rotationDegrees" not in result:
+        angle = next((v for v in reversed(legacy_rotation) if not v.endswith("ms")), None)
+        if angle is not None:
+            result["rotationDegrees"] = angle
+    # Preserve the analysis API's legacy ROI angle key, never use this alias as a duration.
+    if "rotationDegrees" in result:
+        result["rotation"] = result["rotationDegrees"]
     # relatedCpus contains spaces; the generic token parser truncated all later policies.
     frequency = re.search(r"(?:^|[\s|])cpuFrequency=(.*?)\s+cpuFrequencyScope=", line)
     if frequency:
@@ -29,8 +44,15 @@ def stats(records, key):
 
 def detail_stats(records, key):
     """Overlapping detail fields are reported separately, never added to total latency."""
-    values = sorted(float(r[key].removesuffix("ms")) for r in records
-                    if key in r and float(r[key].removesuffix("ms")) >= 0)
+    values = []
+    for record in records:
+        try:
+            value = float(record[key].removesuffix("ms"))
+        except (KeyError, ValueError, TypeError):
+            continue
+        if math.isfinite(value) and value >= 0:
+            values.append(value)
+    values.sort()
     return {"samples": len(values), "averageMs": sum(values) / len(values) if values else None,
             "p95Ms": values[math.ceil(len(values) * 0.95) - 1] if values else None}
 
@@ -242,9 +264,16 @@ def analyze(text, start_seconds=0.0, exclude_tail_seconds=0.0, interval_seconds=
     start_ns = int(elapsed_start.group(1)) if elapsed_start else None
 
     def elapsed(record):
-        if start_ns is not None and record.get("completedElapsedNs", "null") != "null":
-            return (int(record["completedElapsedNs"]) - start_ns) / 1e9
-        return float(record["elapsedSeconds"])
+        try:
+            completed_ns = int(record.get("completedElapsedNs", "-1"))
+        except (TypeError, ValueError):
+            completed_ns = -1
+        if start_ns is not None and completed_ns > 0:
+            return (completed_ns - start_ns) / 1e9
+        try:
+            return float(record["elapsedSeconds"])
+        except (KeyError, TypeError, ValueError):
+            return math.nan  # Unknown placement is excluded, never interpreted as zero latency.
 
     all_frames = [fields(line) for line in lines if line.startswith("FRAME ")]
     frames = [r for r in all_frames if r.get("status", "SUCCESS") == "SUCCESS" and
@@ -256,7 +285,8 @@ def analyze(text, start_seconds=0.0, exclude_tail_seconds=0.0, interval_seconds=
     dropped = re.search(r"Dropped Log Lines: (\d+)", text)
     dropped_count = int(dropped.group(1)) if dropped else None
     expected_count = int(cumulative["successfulFrames"])
-    complete = dropped_count == 0 and len(all_frames) == expected_count
+    unplaced_frames = sum(not math.isfinite(elapsed(r)) for r in all_frames)
+    complete = dropped_count == 0 and len(all_frames) == expected_count and unplaced_frames == 0
     execution_keys = ("requestedBackend", "appliedBackend", "cpuThreads", "xnnpackRequested",
                       "initialization", "delegateVerification", "gpuSupport", "runtimeVersion")
     configurations = sorted({tuple(r.get(key, "N/A") for key in execution_keys) for r in frames})
@@ -269,17 +299,18 @@ def analyze(text, start_seconds=0.0, exclude_tail_seconds=0.0, interval_seconds=
             "session": timed_session if timed_session else "N/A",
             "roiSettings": roi_settings if roi_settings else "N/A",
             "observedFrameRois": [dict(zip(("frame", "rotation", "roi"), value)) for value in
-                                  sorted({tuple(r.get(key, "N/A") for key in ("frame", "rotation", "roi"))
+                                  sorted({tuple(r.get(key, "N/A") for key in ("frame", "rotationDegrees", "roi"))
                                           for r in frames if "roi" in r})]},
         "windowStartSeconds": start_seconds, "windowEndSeconds": end,
         "excludedTailSeconds": exclude_tail_seconds,
         "successfulFrameSamples": len(frames), "errorLinesInWindow": errors_in_window,
         "droppedLogLines": dropped_count, "frameLogComplete": complete,
-        "fpsFromRecordedFrames": len(frames) / (end - start_seconds),
+        "unplacedFrameLines": unplaced_frames,
+        "fpsFromRecordedFrames": len(frames) / (end - start_seconds) if unplaced_frames == 0 else None,
         "inference": stats(frames, "inference"), "pipeline": stats(frames, "pipeline"),
         "totalProcessing": stats(frames, "totalProcessing"),
         "preprocess": stats(frames, "preprocess"), "bitmap": stats(frames, "bitmap"),
-        "details": {key: detail_stats(frames, key) for key in
+        "details": {key: detail_stats(frames, "rotationMs" if key == "rotation" else key) for key in
                     ("cameraToBitmap", "rotation", "inputBuffer", "getPixels", "rgbWrite",
                      "inputDiagnostics", "outputDiagnostics", "nativeInvoke", "mlKitPrepare")},
         "preprocessByInputDiagnostics": {
@@ -289,11 +320,107 @@ def analyze(text, start_seconds=0.0, exclude_tail_seconds=0.0, interval_seconds=
         "execution": [dict(zip(execution_keys, values)) for values in configurations],
         "cpuFallbackCountLifetimeObserved": max((int(r["cpuFallbackCount"]) for r in frames if "cpuFallbackCount" in r), default=None),
         "diagnostics": diagnostic_analysis(lines, start_seconds, end, duration),
+        "latency": latency_analysis(lines, frames, start_ns, start_seconds, end),
         "note": "Statistics use recorded successful FRAME samples. If frameLogComplete=false, FPS/P95/averages are incomplete. Error lines count only recorded errors; fallback counters have detector lifetime scope."
     }
     if interval_seconds is not None:
         result["longRun"] = long_run_analysis(frames, [fields(l) for l in lines if l.startswith("SYSTEM |")],
                                               start_seconds, end, interval_seconds)
+    return result
+
+
+def latency_analysis(lines, frames, start_ns, start, end):
+    """Join sparse events by both IDs. Never infer physical output start or sum overlapping spans."""
+    def integer(record, key):
+        try:
+            value = int(record[key])
+            return value if value > 0 else None
+        except (KeyError, TypeError, ValueError):
+            return None
+
+    def key(record):
+        return (record.get("sessionId"), record.get("frameId"))
+
+    def delta(record, later, earlier):
+        hi, lo = integer(record, later), integer(record, earlier)
+        return (hi - lo) / 1e6 if hi is not None and lo is not None and hi >= lo else None
+
+    def summary(values):
+        values = sorted(v for v in values if v is not None and math.isfinite(v))
+        return {"samples": len(values), "averageMs": sum(values) / len(values) if values else None,
+                "p95Ms": values[math.ceil(.95 * len(values)) - 1] if values else None}
+
+    events = []
+    unplaced = 0
+    for line in lines:
+        if not line.startswith("LATENCY |"):
+            continue
+        event = fields(line)
+        observed = integer(event, "eventElapsedNs")
+        if start_ns is None or observed is None:
+            unplaced += 1
+            continue
+        if start <= (observed - start_ns) / 1e9 < end:
+            events.append(event)
+
+    by_stage = {stage: [r for r in events if r.get("stage") == stage]
+                for stage in ("CAMERA_RECEIVED", "ANALYZER", "MLKIT", "WARNING", "OUTPUT")}
+    sources = {key(f): f for f in frames if all(key(f))}
+    sources.update({key(r): r for r in by_stage["CAMERA_RECEIVED"] if all(key(r))})
+    warnings = {key(r): r for r in by_stage["WARNING"] if all(key(r))}
+
+    def joined_delta(event, later, source_field):
+        source = sources.get(key(event), {})
+        return delta({"later": event.get(later), "earlier": source.get(source_field)}, "later", "earlier")
+
+    result = {
+        "eventCounts": {stage: len(records) for stage, records in by_stage.items()},
+        "unplacedEventLines": unplaced,
+        "inferenceCall": summary(delta(f, "inferenceEndElapsedNs", "inferenceStartElapsedNs") for f in frames),
+        "inferenceEndToPipelineComplete": summary(
+            delta(f, "pipelineCompletedElapsedNs", "inferenceEndElapsedNs") for f in frames),
+        "analyzerToInferenceStart": summary(delta(f, "inferenceStartElapsedNs", "analyzerElapsedNs") for f in frames),
+        "captureToPipelineComplete": summary(delta(f, "completedElapsedNs", "cameraTimestampNs") for f in frames
+                                              if f.get("captureTimestampReliable") == "true"),
+        "analyzerCallback": summary(joined_delta(r, "analyzerCallbackEndElapsedNs", "analyzerReceivedElapsedNs")
+                                    if "analyzerReceivedElapsedNs" in sources.get(key(r), {}) else
+                                    joined_delta(r, "analyzerCallbackEndElapsedNs", "analyzerElapsedNs")
+                                    for r in by_stage["ANALYZER"]),
+        "imageProxyClose": summary(delta(r, "imageProxyCloseEndElapsedNs", "imageProxyCloseStartElapsedNs")
+                                    for r in by_stage["ANALYZER"] if r.get("closeSucceeded") == "true"),
+        "mlKitDispatchToRequest": summary(delta(r, "mlKitRequestElapsedNs", "mlKitDispatchedElapsedNs")
+                                         for r in by_stage["MLKIT"]),
+        "mlKitRequestToCompletionObservation": summary(delta(r, "mlKitCompletedElapsedNs", "mlKitRequestElapsedNs")
+                                                       for r in by_stage["MLKIT"]),
+        "warningFinalizeToSubmit": summary(delta(r, "warningSubmittedElapsedNs", "warningCandidateFinalizedElapsedNs")
+                                           for r in by_stage["WARNING"]),
+        "warningSubmitCall": summary(delta(r, "warningSubmitReturnedElapsedNs", "warningSubmittedElapsedNs")
+                                     for r in by_stage["WARNING"]),
+        "outputs": {},
+        "note": "Events use observation-time windows and may arrive out of order. Joins require sessionId and frameId. "
+                "Missing spans/callbacks, logging boundaries and queue drops stay unavailable; event counts are not FPS. "
+                "Interpreter times bracket the Java call. TTS onStart is callback receipt. Beep/vibration only expose API requests. "
+                "Physical actuator/audio onset is unavailable. All intervals overlap existing FRAME totals; never add them."
+    }
+    for kind in ("TTS", "BEEP", "VIBRATION"):
+        records = [r for r in by_stage["OUTPUT"] if r.get("kind") == kind]
+        requests = [r for r in records if r.get("observation") == "API_REQUEST"]
+        starts = [r for r in records if r.get("observation") == "TTS_ON_START"]
+        first_requests = [r for r in requests if r.get("pulseIndex", "0") == "0"]
+        def submit_to_request(record):
+            warning = warnings.get(key(record), {})
+            return delta({"request": record.get("outputRequestElapsedNs"),
+                          "submit": warning.get("warningSubmittedElapsedNs")}, "request", "submit")
+        result["outputs"][kind] = {
+            "requestObservations": len(requests), "startCallbackObservations": len(starts),
+            "startUnavailableObservations": sum(r.get("observation") == "TTS_START_UNAVAILABLE" for r in records),
+            "apiCall": summary(delta(r, "outputRequestReturnedElapsedNs", "outputRequestElapsedNs") for r in requests),
+            "warningSubmitToFirstRequest": summary(submit_to_request(r) for r in first_requests),
+            "requestToStartCallback": summary(delta(r, "outputStartedElapsedNs", "outputRequestElapsedNs") for r in starts),
+            "captureToStartCallback": summary(joined_delta(r, "outputStartedElapsedNs", "cameraTimestampNs")
+                                               for r in starts if sources.get(key(r), {}).get("captureTimestampReliable") == "true"),
+            "physicalStart": "N/A"
+        }
     return result
 
 

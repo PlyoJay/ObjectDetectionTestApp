@@ -1,6 +1,7 @@
 package com.samin.objectdetection.warning.output
 
 import android.util.Log
+import com.samin.objectdetection.metrics.FrameLatencyRecorder
 import com.samin.objectdetection.warning.FeedbackLevel
 import com.samin.objectdetection.warning.ObjectPriority
 import com.samin.objectdetection.warning.RiskLevel
@@ -32,7 +33,8 @@ class WarningOutputController(
     fun submit(
         candidate: WarningCandidate?,
         cooldownAllowed: Boolean,
-        timestampMs: Long
+        timestampMs: Long,
+        latency: FrameLatencyRecorder? = null
     ): OutputSubmissionResult {
         if (candidate == null) {
             val result = OutputSubmissionResult(skippedReason = "candidate_none")
@@ -76,7 +78,7 @@ class WarningOutputController(
         }
 
         currentJob = scope.launch {
-            runOutput(candidate, cooldownAllowed, timestampMs, interrupted, outputId)
+            runOutput(candidate, cooldownAllowed, timestampMs, interrupted, outputId, latency)
         }
 
         val result = OutputSubmissionResult(
@@ -106,7 +108,8 @@ class WarningOutputController(
         cooldownAllowed: Boolean,
         timestampMs: Long,
         interrupted: Boolean,
-        outputId: Long
+        outputId: Long,
+        latency: FrameLatencyRecorder?
     ) {
         var vibrationExecuted = false
         var beepExecuted = false
@@ -116,12 +119,12 @@ class WarningOutputController(
         try {
             val outputPlan = resolveOutputPlan(candidate)
             if (enableActualVibration() && outputPlan.vibrationLevel != FeedbackLevel.NONE) {
-                vibrationExecuted = vibrationWarningPlayer.play(outputPlan.vibrationLevel)
+                vibrationExecuted = vibrationWarningPlayer.play(outputPlan.vibrationLevel, latency)
             }
 
             if (enableActualBeep() && shouldPlayBeep(outputPlan.beepLevel)) {
                 val beepDelayMs = beepWarningPlayer.expectedDurationMs(outputPlan.beepLevel)
-                beepExecuted = beepWarningPlayer.play(outputPlan.beepLevel)
+                beepExecuted = beepWarningPlayer.play(outputPlan.beepLevel, latency)
                 delay(beepDelayMs + TTS_PRE_DELAY_MS)
             } else {
                 delay(TTS_PRE_DELAY_MS)
@@ -135,7 +138,8 @@ class WarningOutputController(
                     else -> ttsWarningPlayer.speak(
                         candidate = candidate,
                         message = message,
-                        force = candidate.riskLevel == RiskLevel.CRITICAL || interrupted
+                        force = candidate.riskLevel == RiskLevel.CRITICAL || interrupted,
+                        latency = latency
                     )
                 }
                 ttsExecuted = ttsResult.executed

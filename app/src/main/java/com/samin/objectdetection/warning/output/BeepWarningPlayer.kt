@@ -5,6 +5,9 @@ import android.media.ToneGenerator
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import com.samin.objectdetection.metrics.FrameLatencyRecorder
+import com.samin.objectdetection.metrics.OutputKind
+import com.samin.objectdetection.metrics.observeOutputRequest
 import com.samin.objectdetection.warning.FeedbackLevel
 import com.samin.objectdetection.warning.WarningCandidate
 
@@ -23,7 +26,7 @@ class BeepWarningPlayer : WarningPlayer {
         play(candidate.feedback.beepLevel)
     }
 
-    fun play(beepLevel: FeedbackLevel): Boolean {
+    fun play(beepLevel: FeedbackLevel, latency: FrameLatencyRecorder? = null): Boolean {
         if (beepLevel == FeedbackLevel.NONE || beepLevel == FeedbackLevel.LOW) return false
 
         val toneGenerator = toneGenerator
@@ -41,12 +44,14 @@ class BeepWarningPlayer : WarningPlayer {
         }
 
         isPlaying = true
-        delays.forEach { delayMs ->
+        delays.forEachIndexed { pulseIndex, delayMs ->
             handler.postDelayed({
                 try {
                     val durationMs = if (beepLevel == FeedbackLevel.HIGH) HIGH_BEEP_DURATION_MS else MEDIUM_BEEP_DURATION_MS
                     Log.d(TAG, "play beep: level=$beepLevel, delay=${delayMs}ms, duration=${durationMs}ms")
-                    toneGenerator.startTone(TONE_TYPE, durationMs)
+                    observeOutputRequest(latency, OutputKind.BEEP, pulseIndex) {
+                        toneGenerator.startTone(TONE_TYPE, durationMs)
+                    }
                 } catch (e: Exception) {
                     Log.w(TAG, "beep failed", e)
                 }

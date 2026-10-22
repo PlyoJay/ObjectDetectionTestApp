@@ -17,5 +17,10 @@ class FrameTraceJsonTest {
         assertTrue(failureJson.isNull("inferenceStartedElapsedNs"))
         assertEquals("session", failureJson.getString("sessionId")); assertEquals(8L, failureJson.getLong("frameId"))
         assertEquals(-1L, failureJson.getLong("frameAgeAtInferenceMs"))
+        assertTrue(successJson.isNull("inferenceEndedElapsedNs"))
+        assertEquals(200L, successJson.getLong("pipelineCompletedElapsedNs"))
+        assertTrue(failureJson.isNull("pipelineCompletedElapsedNs"))
+        assertEquals(150L, JSONObject().putTrace(empty.copy(inferenceEndedElapsedNs = 150))
+            .getLong("inferenceEndedElapsedNs"))
     }
 }

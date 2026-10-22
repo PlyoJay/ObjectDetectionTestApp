@@ -6,6 +6,9 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.util.Log
+import com.samin.objectdetection.metrics.FrameLatencyRecorder
+import com.samin.objectdetection.metrics.OutputKind
+import com.samin.objectdetection.metrics.observeOutputRequest
 import com.samin.objectdetection.warning.FeedbackLevel
 import com.samin.objectdetection.warning.WarningCandidate
 
@@ -25,7 +28,7 @@ class VibrationWarningPlayer(
         play(candidate.feedback.vibrationLevel)
     }
 
-    fun play(vibrationLevel: FeedbackLevel): Boolean {
+    fun play(vibrationLevel: FeedbackLevel, latency: FrameLatencyRecorder? = null): Boolean {
         if (vibrationLevel == FeedbackLevel.NONE) return false
 
         val currentVibrator = vibrator ?: return false
@@ -33,9 +36,9 @@ class VibrationWarningPlayer(
 
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrateOreoAndAbove(currentVibrator, vibrationLevel)
+                vibrateOreoAndAbove(currentVibrator, vibrationLevel, latency)
             } else {
-                vibrateLegacy(currentVibrator, vibrationLevel)
+                vibrateLegacy(currentVibrator, vibrationLevel, latency)
             }
             return true
         } catch (e: Exception) {
@@ -44,7 +47,7 @@ class VibrationWarningPlayer(
         }
     }
 
-    private fun vibrateOreoAndAbove(vibrator: Vibrator, vibrationLevel: FeedbackLevel) {
+    private fun vibrateOreoAndAbove(vibrator: Vibrator, vibrationLevel: FeedbackLevel, latency: FrameLatencyRecorder?) {
         val effect = when (vibrationLevel) {
             FeedbackLevel.LOW -> VibrationEffect.createOneShot(
                 LOW_DURATION_MS,
@@ -54,16 +57,20 @@ class VibrationWarningPlayer(
             FeedbackLevel.HIGH -> VibrationEffect.createWaveform(HIGH_PATTERN, NO_REPEAT)
             FeedbackLevel.NONE -> return
         }
-        vibrator.vibrate(effect)
+        observeOutputRequest(latency, OutputKind.VIBRATION) { vibrator.vibrate(effect); true }
     }
 
     @Suppress("DEPRECATION")
-    private fun vibrateLegacy(vibrator: Vibrator, vibrationLevel: FeedbackLevel) {
-        when (vibrationLevel) {
-            FeedbackLevel.LOW -> vibrator.vibrate(LOW_DURATION_MS)
-            FeedbackLevel.MEDIUM -> vibrator.vibrate(MEDIUM_PATTERN, NO_REPEAT)
-            FeedbackLevel.HIGH -> vibrator.vibrate(HIGH_PATTERN, NO_REPEAT)
-            FeedbackLevel.NONE -> return
+    private fun vibrateLegacy(vibrator: Vibrator, vibrationLevel: FeedbackLevel, latency: FrameLatencyRecorder?) {
+        if (vibrationLevel == FeedbackLevel.NONE) return
+        observeOutputRequest(latency, OutputKind.VIBRATION) {
+            when (vibrationLevel) {
+                FeedbackLevel.LOW -> vibrator.vibrate(LOW_DURATION_MS)
+                FeedbackLevel.MEDIUM -> vibrator.vibrate(MEDIUM_PATTERN, NO_REPEAT)
+                FeedbackLevel.HIGH -> vibrator.vibrate(HIGH_PATTERN, NO_REPEAT)
+                FeedbackLevel.NONE -> Unit
+            }
+            true
         }
     }
 
