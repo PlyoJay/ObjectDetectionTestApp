@@ -48,6 +48,7 @@ import com.samin.objectdetection.metrics.PerformanceFrameRecord
 import com.samin.objectdetection.metrics.PerformanceLogHeader
 import com.samin.objectdetection.metrics.PerformanceLogRecorder
 import com.samin.objectdetection.mlkit.MlKitObjectDetector
+import com.samin.objectdetection.mlkit.MlKitInputBuffer
 import com.samin.objectdetection.motion.ObjectMotionTracker
 import com.samin.objectdetection.pipeline.DetectionPipeline
 import com.samin.objectdetection.policy.OverlayObjectFilter
@@ -119,6 +120,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var warningOutputController: WarningOutputController
 
     private val isMlKitProcessing = AtomicBoolean(false)
+    private val mlKitInputBuffer = MlKitInputBuffer()
     @Volatile
     private var lastMlKitCount = 0
 
@@ -1354,70 +1356,71 @@ class MainActivity : ComponentActivity() {
 
         lastMlKitDetectionTime = now
 
-        val mlInputWidth = 640
-        val mlInputHeight = 360
-        val roi = FrameRoi.calculate(frameWidth, frameHeight, detectionConfig.recognitionRoi, detectionConfig.useCenterSquareCrop)
-        // Create the ML Kit input while the camera bitmap is still owned by the analyzer thread.
-        // The camera bitmap is recycled immediately after processBitmap returns.
-        val cropped = Bitmap.createBitmap(bitmap, roi.left, roi.top, roi.width, roi.height)
-        val mlBitmap = try {
-            val scaled = Bitmap.createScaledBitmap(cropped, mlInputWidth, mlInputHeight, true)
-            val owned = if (scaled === bitmap) checkNotNull(scaled.copy(Bitmap.Config.ARGB_8888, false)) else scaled
-            if (cropped !== bitmap && cropped !== owned) cropped.recycle()
-            owned
-        } catch (error: Exception) {
-            if (cropped !== bitmap && !cropped.isRecycled) cropped.recycle()
+        val mlInputWidth = MlKitInputBuffer.WIDTH
+        val mlInputHeight = MlKitInputBuffer.HEIGHT
+        val roi: FrameRoi
+        val input = try {
+            roi = FrameRoi.calculate(frameWidth, frameHeight, detectionConfig.recognitionRoi, detectionConfig.useCenterSquareCrop)
+            mlKitInputBuffer.acquire(bitmap, roi)
+        } catch (error: Throwable) {
             isMlKitProcessing.set(false)
             throw error
         }
 
         val mlKitDispatchedNs = latency?.nowNs() ?: -1L
-        captureWork.launch {
-            try {
-                val mlStart = System.currentTimeMillis()
-                val mlStartNs = SystemClock.elapsedRealtimeNanos()
+        val job = try {
+            captureWork.launch {
+                try {
+                    val mlStart = System.currentTimeMillis()
+                    val mlStartNs = SystemClock.elapsedRealtimeNanos()
 
-                val mlKitResults = mlKitDetector.detect(mlBitmap, latency, mlKitDispatchedNs)
-                val mlTrace = sourceTrace.copy(inferenceStartedAtMs = mlStart, inferenceStartedElapsedNs = mlStartNs,
-                    completedAtMs = System.currentTimeMillis(), completedElapsedNs = SystemClock.elapsedRealtimeNanos())
+                    val mlKitResults = mlKitDetector.detect(input.bitmap, latency, mlKitDispatchedNs)
+                    val mlTrace = sourceTrace.copy(inferenceStartedAtMs = mlStart, inferenceStartedElapsedNs = mlStartNs,
+                        completedAtMs = System.currentTimeMillis(), completedElapsedNs = SystemClock.elapsedRealtimeNanos())
 
-                lastMlKitTimeMs = System.currentTimeMillis() - mlStart
-                lastMlKitCount = mlKitResults.size
-                metricsCollector.recordMlKitResult(lastMlKitTimeMs, lastMlKitCount)
+                    lastMlKitTimeMs = System.currentTimeMillis() - mlStart
+                    lastMlKitCount = mlKitResults.size
+                    metricsCollector.recordMlKitResult(lastMlKitTimeMs, lastMlKitCount)
 
-                // 작은 Bitmap 기준 bbox를 원본 프레임 기준 좌표로 복원
+                    // 작은 Bitmap 기준 bbox를 원본 프레임 기준 좌표로 복원
 
-                val results = mlKitResults.map { detection ->
-                    val box = detection.boundingBox
+                    val results = mlKitResults.map { detection ->
+                        val box = detection.boundingBox
 
-                    DetectionResult(
-                        label = "ML Kit",
-                        confidence = 1f,
-                        left = roi.sourceX(box.left.toFloat(), mlInputWidth),
-                        top = roi.sourceY(box.top.toFloat(), mlInputHeight),
-                        right = roi.sourceX(box.right.toFloat(), mlInputWidth),
-                        bottom = roi.sourceY(box.bottom.toFloat(), mlInputHeight),
-                        frameTimestampMs = sourceTrace.frameTimestampMs
-                    )
+                        DetectionResult(
+                            label = "ML Kit",
+                            confidence = 1f,
+                            left = roi.sourceX(box.left.toFloat(), mlInputWidth),
+                            top = roi.sourceY(box.top.toFloat(), mlInputHeight),
+                            right = roi.sourceX(box.right.toFloat(), mlInputWidth),
+                            bottom = roi.sourceY(box.bottom.toFloat(), mlInputHeight),
+                            frameTimestampMs = sourceTrace.frameTimestampMs
+                        )
+                    }
+                    if (appSettings.camera.previewEnabled) mlKitUiUpdates.submit {
+                        if (destroying) return@submit
+                        overlayView.updateMlKitDetections(
+                            results,
+                            frameWidth,
+                            frameHeight,
+                            mlTrace
+                        )
+                    }
+
+                } catch (e: Exception) {
+                    Log.e(TAG, "ML Kit detection error", e)
                 }
-                if (appSettings.camera.previewEnabled) mlKitUiUpdates.submit {
-                    if (destroying) return@submit
-                    overlayView.updateMlKitDetections(
-                        results,
-                        frameWidth,
-                        frameHeight,
-                        mlTrace
-                    )
-                }
-
-            } catch (e: Exception) {
-                Log.e(TAG, "ML Kit detection error", e)
-            } finally {
-                if (mlBitmap !== bitmap && !mlBitmap.isRecycled) {
-                    mlBitmap.recycle()
-                }
-                isMlKitProcessing.set(false)
             }
+        } catch (error: Throwable) {
+            input.close()
+            isMlKitProcessing.set(false)
+            throw error
+        }
+        // Also runs if launch is cancelled before entering its body. detect drains the SDK Task
+        // before this Job can complete, so neither reuse nor recycle can race ML Kit's reader.
+        job.invokeOnCompletion {
+            input.close()
+            isMlKitProcessing.set(false)
         }
     }
 
@@ -1482,6 +1485,7 @@ class MainActivity : ComponentActivity() {
                 .onFailure { Log.e(TAG, "analyzer shutdown failed; interpreter retained", it) }.isSuccess
             captureWork.coroutineContext[Job]?.children?.toList()?.joinAll()
             captureWork.cancel()
+            mlKitInputBuffer.close()
             if (analyzerStopped && ::detector.isInitialized) withContext(Dispatchers.IO) { detector.close() }
             if (::mlKitDetector.isInitialized) mlKitDetector.close()
             if (::userLocationTracker.isInitialized) userLocationTracker.stop()

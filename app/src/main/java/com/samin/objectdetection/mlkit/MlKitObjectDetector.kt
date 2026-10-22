@@ -10,6 +10,8 @@ import com.google.mlkit.vision.objects.ObjectDetection
 import com.google.mlkit.vision.objects.ObjectDetector
 import com.google.mlkit.vision.objects.defaults.ObjectDetectorOptions
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import com.samin.objectdetection.metrics.FrameLatencyEvent
 import com.samin.objectdetection.metrics.FrameLatencyRecorder
 import java.util.concurrent.Executor
@@ -19,14 +21,13 @@ data class MlKitObjectDetection(
     val trackingId: Int?
 )
 
-class MlKitObjectDetector {
-
-    private val detector: ObjectDetector = ObjectDetection.getClient(
+class MlKitObjectDetector internal constructor(private val detector: ObjectDetector) {
+    constructor() : this(ObjectDetection.getClient(
         ObjectDetectorOptions.Builder()
             .setDetectorMode(ObjectDetectorOptions.STREAM_MODE)
             .enableMultipleObjects()
             .build()
-    )
+    ))
 
     suspend fun detect(bitmap: Bitmap, latency: FrameLatencyRecorder? = null,
         dispatchedElapsedNs: Long = -1L): List<MlKitObjectDetection> {
@@ -52,7 +53,9 @@ class MlKitObjectDetector {
                     true
                 }.getOrDefault(false)
             }
-            task.await().map { detectedObject ->
+            // await() alone stops waiting on coroutine cancellation without stopping ML Kit.
+            // Keep the caller's input lease alive until the Task reaches a terminal state.
+            withContext(NonCancellable) { task.await() }.map { detectedObject ->
                 MlKitObjectDetection(
                     boundingBox = Rect(detectedObject.boundingBox),
                     trackingId = detectedObject.trackingId
