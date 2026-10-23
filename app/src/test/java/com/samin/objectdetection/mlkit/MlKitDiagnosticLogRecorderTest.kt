@@ -17,6 +17,29 @@ import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 
 class MlKitDiagnosticLogRecorderTest {
+    @Test fun temporaryOptInRecordsAppliedOffSnapshotWithoutChangingRuntimeSetting() {
+        val recorder = owner()
+        val off = "debug.enableMlKitDiagnostics=false"
+        recorder.runtimeStarted("A", false, off)
+        val first = recorder.start(off, false, temporaryEnable = true).done()
+        assertTrue(recorder.isRecordingFor("A")); assertFalse(recorder.isRecordingFor("B"))
+        recorder.runtimeStarted("A", false, off)
+        recorder.files().done()
+        assertTrue(recorder.isRecordingFor("A"))
+        recorder.record("A", "stage=SDK sdkCount=2")
+        recorder.stop().done()
+        assertFalse(recorder.isRecordingFor("A"))
+        val text = recorder.preview(first).done()
+        assertTrue(text.contains(off)); assertTrue(text.contains("recording.temporaryDiagnostics=true"))
+        assertTrue(text.contains("sdkCount=2")); assertTrue(text.contains("END endedAt="))
+        val second = recorder.start(off, false, temporaryEnable = true).done()
+        assertNotEquals(first, second)
+        recorder.runtimeStarted("B", false, off)
+        recorder.files().done()
+        assertFalse(recorder.isRecordingFor("A")); assertFalse(recorder.isRecordingFor("B"))
+        try { recorder.start(off, false).done(); fail("Temporary opt-in must not persist") }
+        catch (_: ExecutionException) { }
+    }
     @get:Rule val temporary = TemporaryFolder()
     private val owners = mutableListOf<MlKitDiagnosticLogRecorder>()
     private val settings = "debug.enableMlKitDiagnostics=true\nmlKit.detectionIntervalMs=1500\ncamera.roi.top=0.2\ncamera.previewEnabled=true"

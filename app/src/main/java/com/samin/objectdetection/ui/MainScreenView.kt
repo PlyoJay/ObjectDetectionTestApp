@@ -6,6 +6,7 @@ import android.view.View
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.camera.view.PreviewView
@@ -24,7 +25,9 @@ class MainScreenView(
     onTogglePerformanceLogging: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenQuickSettings: () -> Unit,
-    private val cameraPreviewEnabled: Boolean = true
+    private val cameraPreviewEnabled: Boolean = true,
+    onToggleMlKitLogging: () -> Unit = {},
+    onShareMlKitLog: () -> Unit = {}
 ) {
     val previewView = PreviewView(activity).apply { scaleType = PreviewView.ScaleType.FIT_CENTER }
     val overlayView = BoundingBoxOverlay(activity).apply { setDebugMode(debugMode) }
@@ -60,6 +63,20 @@ class MainScreenView(
         setTextColor(Color.RED)
         visibility = View.GONE
         setPadding(12, 0, 12, 0)
+    }
+    val mlKitLogButton = Button(activity).apply {
+        text = "ML Kit 로그 시작"
+        setOnClickListener { onToggleMlKitLogging() }
+    }
+    val mlKitShareButton = Button(activity).apply {
+        text = "ML Kit 로그 공유"
+        setOnClickListener { onShareMlKitLog() }
+    }
+    val mlKitRecordingTextView = TextView(activity).apply {
+        text = "ML Kit 로그 중지"
+        textSize = 12f
+        setTextColor(Color.DKGRAY)
+        setPadding(12, 0, 12, 4)
     }
     val presetTextView = TextView(activity).apply {
         visibility = if (cameraPreviewEnabled) View.VISIBLE else View.GONE
@@ -103,19 +120,30 @@ class MainScreenView(
             text = "캡쳐"
             setOnClickListener { onCapture() }
         }
+        fun LinearLayout.addButton(button: Button) {
+            button.textSize = 13f
+            button.minWidth = 0
+            button.maxLines = 2
+            button.setPadding(dp(activity, 4), 0, dp(activity, 4), 0)
+            addView(button, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        }
         val controlRow = LinearLayout(activity).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
-            addView(toggleButton)
-            addView(captureButton)
-            addView(recordingButton)
+            addButton(toggleButton)
+            addButton(captureButton)
+            addButton(recordingButton)
         }
         val performanceRow = LinearLayout(activity).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
-            addView(performanceLogButton)
-            addView(performanceRecordingTextView)
-            addView(Button(activity).apply { text = "빠른 설정"; setOnClickListener { onOpenQuickSettings() }; measurementControls.add(this) })
+            addButton(performanceLogButton)
+            addButton(Button(activity).apply { text = "빠른 설정"; setOnClickListener { onOpenQuickSettings() }; measurementControls.add(this) })
+        }
+        val mlKitRow = LinearLayout(activity).apply {
+            orientation = LinearLayout.HORIZONTAL
+            addButton(mlKitLogButton)
+            addButton(mlKitShareButton)
         }
         val settingsButton = Button(activity).apply { text = "⚙"; contentDescription = "상세 설정"; setOnClickListener { onOpenSettings() } }
         measurementControls.add(settingsButton)
@@ -124,41 +152,55 @@ class MainScreenView(
             gravity = Gravity.CENTER
             addView(controlRow)
             addView(performanceRow)
+            addView(performanceRecordingTextView)
+            addView(mlKitRow)
+            addView(mlKitRecordingTextView)
+            setPadding(dp(activity, 8), dp(activity, 4), dp(activity, 8), dp(activity, 4))
         }
+        measurementControls.addAll(listOf(mlKitLogButton, mlKitShareButton))
         val debugParams = fullWidthAt(Gravity.TOP, 20, 40, 20, 0)
         val presetParams = wrapAt(Gravity.TOP or Gravity.START, 20, 20, 20, 0)
         val settingsParams = wrapAt(Gravity.TOP or Gravity.END, 20, 12, 20, 0)
-        val controlsParams = wrapAt(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL, 20, 20, 20, 40)
-        val warningParams = wrapAt(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL, 20, 20, 20, 190)
-        root = FrameLayout(activity).apply {
+        val warningParams = fullWidthAt(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL, 20, 20, 20, dp(activity, 8))
+        val viewport = FrameLayout(activity).apply {
             if (!cameraPreviewEnabled) setBackgroundColor(Color.BLACK)
             addView(previewView, FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
             addView(overlayView, FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
             addView(debugTextView, debugParams)
             addView(presetTextView, presetParams)
             addView(settingsButton, settingsParams)
-            addView(controls, controlsParams)
             addView(warningMessageTextView, warningParams)
             addView(previewStatusTextView, fullWidthAt(Gravity.CENTER, 20, 0, 20, 0))
+        }
+        // A separate footer reserves camera/warning space. On short/large-font windows all
+        // controls stay reachable by scrolling, rather than overlapping or clipping buttons.
+        val footer = object : ScrollView(activity) {
+            override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+                val limit = (View.MeasureSpec.getSize(heightMeasureSpec) / 2).coerceAtLeast(1)
+                super.onMeasure(widthMeasureSpec, View.MeasureSpec.makeMeasureSpec(limit, View.MeasureSpec.AT_MOST))
+            }
+        }.apply { addView(controls); setBackgroundColor(Color.WHITE) }
+        root = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(viewport, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
+            addView(footer, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
         }
         previewView.visibility = if (cameraPreviewEnabled) View.VISIBLE else View.GONE
         overlayView.visibility = if (cameraPreviewEnabled) View.VISIBLE else View.GONE
         ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            presetParams.topMargin = bars.top + dp(activity, 8)
-            settingsParams.topMargin = bars.top + dp(activity, 4)
-            debugParams.topMargin = bars.top + dp(activity, 100)
+            root.setPadding(0, bars.top, 0, bars.bottom)
+            presetParams.topMargin = dp(activity, 8)
+            settingsParams.topMargin = dp(activity, 4)
+            debugParams.topMargin = dp(activity, 100)
             // Reserve the settings button's width when a model asset has a long name.
             presetParams.width = (activity.resources.displayMetrics.widthPixels - dp(activity, 100)).coerceAtLeast(1)
-            controlsParams.bottomMargin = bars.bottom + dp(activity, 12)
-            warningParams.bottomMargin = bars.bottom + dp(activity, 116)
             root.requestLayout()
             insets
         }
         overlayView.bringToFront()
         debugTextView.bringToFront()
         warningMessageTextView.bringToFront()
-        controls.bringToFront()
         presetTextView.bringToFront()
         settingsButton.bringToFront()
     }

@@ -51,6 +51,7 @@ import com.samin.objectdetection.mlkit.MlKitObjectDetector
 import com.samin.objectdetection.mlkit.MlKitInputBuffer
 import com.samin.objectdetection.mlkit.MlKitDiagnostics
 import com.samin.objectdetection.mlkit.MlKitDiagnosticLogs
+import com.samin.objectdetection.mlkit.MlKitDiagnosticLogRecorder
 import com.samin.objectdetection.motion.ObjectMotionTracker
 import com.samin.objectdetection.pipeline.DetectionPipeline
 import com.samin.objectdetection.policy.OverlayObjectFilter
@@ -64,6 +65,7 @@ import com.samin.objectdetection.settings.AppSettingsStore
 import com.samin.objectdetection.settings.SettingsActivity
 import com.samin.objectdetection.settings.SettingsPresets
 import com.samin.objectdetection.settings.AppSettingsCodec
+import com.samin.objectdetection.settings.LogShareManager
 import com.samin.objectdetection.warning.CrowdDecision
 import com.samin.objectdetection.warning.FeedbackLevel
 import com.samin.objectdetection.warning.RiskLevel
@@ -123,7 +125,12 @@ class MainActivity : ComponentActivity() {
 
     private val isMlKitProcessing = AtomicBoolean(false)
     private val mlKitInputBuffer = MlKitInputBuffer()
-    private var mlKitDiagnostics: MlKitDiagnostics? = null
+    @Volatile private var mlKitDiagnostics: MlKitDiagnostics? = null
+    private lateinit var sessionMlKitDiagnostics: MlKitDiagnostics
+    private lateinit var mlKitLogRecorder: MlKitDiagnosticLogRecorder
+    private var mlKitLogJob: Job? = null
+    private var mlKitHasSavedLog = false
+    private var mlKitObservedCompletion: MlKitDiagnosticLogRecorder.Status? = null
     @Volatile
     private var lastMlKitCount = 0
 
@@ -216,21 +223,18 @@ class MainActivity : ComponentActivity() {
         appSettings = settingsStore.loadApplied()
         val yoloDetector = createYoloDetectorWithRecovery() ?: return
         // Recovery can restore different applied settings, including the diagnostics opt-in.
-        val diagnosticFiles = if (appSettings.debug.enableMlKitDiagnostics) MlKitDiagnosticLogs.get(applicationContext)
-            else MlKitDiagnosticLogs.peek()
-        diagnosticFiles?.runtimeStarted(sessionId, appSettings.debug.enableMlKitDiagnostics, AppSettingsCodec.snapshotLines(appSettings))
-        if (appSettings.debug.enableMlKitDiagnostics) {
-            mlKitDiagnostics = MlKitDiagnostics(sessionId, SystemClock::elapsedRealtimeNanos) {
+        mlKitLogRecorder = MlKitDiagnosticLogs.get(applicationContext)
+        mlKitLogRecorder.runtimeStarted(sessionId, appSettings.debug.enableMlKitDiagnostics, AppSettingsCodec.snapshotLines(appSettings))
+        sessionMlKitDiagnostics = MlKitDiagnostics(sessionId, SystemClock::elapsedRealtimeNanos) {
                 Log.i("MlKitDiagnostics", it)
-                diagnosticFiles?.record(sessionId, it)
-            }
-            mlKitDiagnostics?.event(-1L, "CONFIG") {
-                "sdkMode=STREAM_MODE multipleObjects=true enabled=${appSettings.mlKit.enabled} " +
-                    "intervalMs=${appSettings.mlKit.detectionIntervalMs} preview=${appSettings.camera.previewEnabled} " +
-                    "overlay=${appSettings.overlay.enabled} boxes=${appSettings.overlay.showMlKitBoxes} " +
-                    "staleMs=${appSettings.overlay.staleTimeoutMs} roi=${appSettings.camera.recognitionRoi}"
-            }
+                mlKitLogRecorder.record(sessionId, it)
+        }.apply {
+            // Old SDK callbacks retain this gate: a stopped temporary session cannot keep
+            // diagnostics enabled, even before the next main-thread status refresh.
+            enabled = { appSettings.debug.enableMlKitDiagnostics || mlKitLogRecorder.isRecordingFor(sessionId) }
         }
+        updateMlKitDiagnosticActivation()
+        logMlKitConfiguration()
         detector = yoloDetector
         val modelIdentity = yoloDetector.modelIdentity()
         detectionConfig = detectionConfig.copy(inputSize = modelIdentity.inputWidth, inputHeight = modelIdentity.inputHeight)
@@ -344,7 +348,9 @@ class MainActivity : ComponentActivity() {
             onTogglePerformanceLogging = ::togglePerformanceLogging,
             onOpenSettings = ::openSettings,
             onOpenQuickSettings = ::openQuickSettings,
-            cameraPreviewEnabled = appSettings.camera.previewEnabled
+            cameraPreviewEnabled = appSettings.camera.previewEnabled,
+            onToggleMlKitLogging = ::toggleMlKitLogging,
+            onShareMlKitLog = ::shareMlKitLog
         )
         overlayView = screen.overlayView
         overlayView.onFrameDrawn = { trace, wallMs, elapsedNs, enabled ->
@@ -368,6 +374,7 @@ class MainActivity : ComponentActivity() {
                 }
                 metricsCollector.recordFps(rates.inferenceFps.roundToInt(), nowNs)
                 updatePerformanceCountdown()
+                updateMlKitLogUi()
             }
         }
         overlayView.configure(
@@ -381,6 +388,119 @@ class MainActivity : ComponentActivity() {
         if (detectionConfig.debugDetectionLogging) overlayView.diagnosticLog = detectionDebugRecorder::record
         overlayView.mlKitDiagnostics = mlKitDiagnostics
         setContentView(screen.root)
+        refreshMlKitLogFiles()
+        updateMlKitLogUi()
+    }
+
+    private fun updateMlKitDiagnosticActivation() {
+        mlKitDiagnostics = sessionMlKitDiagnostics.takeIf { it.enabled() }
+        if (::overlayView.isInitialized) overlayView.mlKitDiagnostics = mlKitDiagnostics
+    }
+
+    private fun logMlKitConfiguration() {
+        mlKitDiagnostics?.event(-1L, "CONFIG") {
+            "sdkMode=STREAM_MODE multipleObjects=true enabled=${appSettings.mlKit.enabled} " +
+                "intervalMs=${appSettings.mlKit.detectionIntervalMs} preview=${appSettings.camera.previewEnabled} " +
+                "overlay=${appSettings.overlay.enabled} boxes=${appSettings.overlay.showMlKitBoxes} " +
+                "staleMs=${appSettings.overlay.staleTimeoutMs} roi=${appSettings.camera.recognitionRoi} " +
+                "appliedDiagnostics=${appSettings.debug.enableMlKitDiagnostics}"
+        }
+    }
+
+    private fun refreshMlKitLogFiles() {
+        recordingWork.launch {
+            runCatching { withContext(Dispatchers.IO) { mlKitLogRecorder.files().get() } }
+                .onSuccess { mlKitHasSavedLog = it.isNotEmpty() }
+            if (!destroying) updateMlKitLogUi()
+        }
+    }
+
+    private fun mlKitFileSessionActive(): Boolean = mlKitLogRecorder.status().phase in listOf(
+        MlKitDiagnosticLogRecorder.Phase.STARTING, MlKitDiagnosticLogRecorder.Phase.RECORDING,
+        MlKitDiagnosticLogRecorder.Phase.SAVING) || mlKitLogJob?.isActive == true
+
+    private fun toggleMlKitLogging() {
+        if (destroying || mlKitLogJob?.isActive == true) return
+        if (performanceLogRecorder.isRecording || performanceJob?.isActive == true) {
+            Toast.makeText(this, "성능 로그 종료 후 ML Kit 로그를 시작하세요. 동시 기록은 성능 비교에 영향을 줍니다.", Toast.LENGTH_LONG).show()
+            return
+        }
+        val phase = mlKitLogRecorder.status().phase
+        if (phase in listOf(MlKitDiagnosticLogRecorder.Phase.STARTING, MlKitDiagnosticLogRecorder.Phase.SAVING)) return
+        val stopping = phase == MlKitDiagnosticLogRecorder.Phase.RECORDING
+        mlKitLogJob = recordingWork.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    if (stopping) mlKitLogRecorder.stop().get()
+                    else mlKitLogRecorder.start(AppSettingsCodec.snapshotLines(appSettings),
+                        appSettings.debug.enableMlKitDiagnostics, temporaryEnable = !appSettings.debug.enableMlKitDiagnostics).get()
+                }
+                if (!destroying) {
+                    updateMlKitDiagnosticActivation()
+                    if (!stopping) {
+                        logMlKitConfiguration()
+                        Toast.makeText(this@MainActivity, "ML Kit 로그 시작 · 성능 로그와 동시 기록하지 않습니다.", Toast.LENGTH_LONG).show()
+                    }
+                }
+            } catch (error: Exception) {
+                if (!destroying) Toast.makeText(this@MainActivity, "ML Kit 로그 실패: ${error.cause?.message ?: error.message}", Toast.LENGTH_LONG).show()
+            } finally {
+                mlKitLogJob = null
+                if (!destroying) { updateMlKitLogUi(); refreshMlKitLogFiles() }
+            }
+        }
+        updateMlKitLogUi()
+    }
+
+    private fun shareMlKitLog() {
+        if (destroying || mlKitLogJob?.isActive == true) return
+        if (performanceLogRecorder.isRecording || performanceJob?.isActive == true) {
+            Toast.makeText(this, "성능 로그 종료 후 공유하세요.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        mlKitLogJob = recordingWork.launch {
+            try {
+                val file = withContext(Dispatchers.IO) { mlKitLogRecorder.prepareShare().get() }
+                if (!destroying) LogShareManager(this@MainActivity).shareMlKit(file)
+            } catch (error: Exception) {
+                if (!destroying) Toast.makeText(this@MainActivity, "ML Kit 로그 공유 실패: ${error.cause?.message ?: error.message}", Toast.LENGTH_LONG).show()
+            } finally {
+                mlKitLogJob = null
+                if (!destroying) { updateMlKitLogUi(); refreshMlKitLogFiles() }
+            }
+        }
+        updateMlKitLogUi()
+    }
+
+    private fun updateMlKitLogUi() {
+        updateMlKitDiagnosticActivation()
+        val state = mlKitLogRecorder.status()
+        val active = state.phase == MlKitDiagnosticLogRecorder.Phase.RECORDING
+        val busy = mlKitLogJob?.isActive == true || state.phase in listOf(
+            MlKitDiagnosticLogRecorder.Phase.STARTING, MlKitDiagnosticLogRecorder.Phase.SAVING)
+        val performanceBusy = performanceLogRecorder.isRecording || performanceJob?.isActive == true
+        val seconds = ((SystemClock.elapsedRealtimeNanos() - state.startedElapsedNs) / 1_000_000_000L).coerceAtLeast(0)
+        screen.mlKitLogButton.text = if (busy) "ML Kit 저장 중…" else if (active) "ML Kit 로그 종료" else "ML Kit 로그 시작"
+        screen.mlKitLogButton.isEnabled = !busy && !performanceBusy
+        screen.mlKitShareButton.isEnabled = !busy && !performanceBusy && (active || mlKitHasSavedLog)
+        screen.mlKitRecordingTextView.setTextColor(if (active) android.graphics.Color.RED else android.graphics.Color.DKGRAY)
+        screen.mlKitRecordingTextView.text = when {
+            busy -> "ML Kit 로그 처리 중…"
+            active -> String.format(Locale.US, "ML KIT REC %02d:%02d · 누락 %d줄", seconds / 60, seconds % 60, state.droppedLines)
+            state.phase == MlKitDiagnosticLogRecorder.Phase.ERROR -> "ML Kit 저장 실패 · TXT 확인 필요: ${state.error}"
+            state.phase == MlKitDiagnosticLogRecorder.Phase.SAVED -> "ML Kit 저장 완료 · 누락 ${state.droppedLines}줄"
+            performanceBusy -> "성능 로그 중에는 ML Kit 파일 기록을 시작할 수 없습니다."
+            appSettings.debug.enableMlKitDiagnostics -> "ML Kit 로그 중지 · Diagnostics 적용 ON"
+            else -> "ML Kit 로그 중지 · 시작 시 이번 기록에서만 진단 활성화"
+        }
+        if (state.phase in listOf(MlKitDiagnosticLogRecorder.Phase.SAVED, MlKitDiagnosticLogRecorder.Phase.ERROR) && state != mlKitObservedCompletion) {
+            mlKitObservedCompletion = state
+            Toast.makeText(this, if (state.phase == MlKitDiagnosticLogRecorder.Phase.ERROR)
+                "ML Kit 로그 저장 실패: ${state.error}. 남은 TXT를 확인하세요."
+                else "ML Kit 로그 저장 완료: ${state.fileName} · 누락 ${state.droppedLines}줄", Toast.LENGTH_LONG).show()
+            refreshMlKitLogFiles()
+        }
+        if (!performanceBusy) performanceLogButton.isEnabled = !busy && !active
     }
 
     private fun openSettings() {
@@ -986,6 +1106,10 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun startPerformanceLogging() {
+        if (mlKitFileSessionActive()) {
+            Toast.makeText(this, "ML Kit 로그 종료 후 성능 측정을 시작하세요. 동시 기록은 성능 비교에 영향을 줍니다.", Toast.LENGTH_LONG).show()
+            return
+        }
         val startedAtMs = System.currentTimeMillis()
         val startedElapsedNs = SystemClock.elapsedRealtimeNanos()
         val model = checkNotNull(detector.modelIdentity()) { "Loaded YOLO tensor metadata is required for performance logging" }

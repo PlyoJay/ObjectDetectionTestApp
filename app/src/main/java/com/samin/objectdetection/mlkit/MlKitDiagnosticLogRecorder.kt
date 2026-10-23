@@ -34,7 +34,7 @@ internal class MlKitDiagnosticLogRecorder(
     data class LogFile(val name: String, val bytes: Long, val modifiedMs: Long)
     private data class Runtime(val source: String, val enabled: Boolean, val settings: String)
     private class Session(val file: File, val marker: File, val settings: String,
-        @Volatile var source: String?, val startedWallMs: Long, val startedNs: Long, val logging: OrderedLogWriter,
+        @Volatile var source: String?, val temporaryEnable: Boolean, val startedWallMs: Long, val startedNs: Long, val logging: OrderedLogWriter,
         var reservedBytes: Long) {
         var timer: ScheduledFuture<*>? = null
         var limitReached = false
@@ -51,6 +51,9 @@ internal class MlKitDiagnosticLogRecorder(
 
     fun status(): Status = active?.let { state.copy(droppedLines = it.dropped()) } ?: state
 
+    /** Memory-only gate, also safe for callbacks holding an old diagnostics reference. */
+    fun isRecordingFor(source: String): Boolean = active?.source == source
+
     fun runtimeStarted(source: String, enabled: Boolean, settings: String) {
         val needsCheck = synchronized(admission) {
             runtime = Runtime(source, enabled, settings)
@@ -60,9 +63,9 @@ internal class MlKitDiagnosticLogRecorder(
         command {
             val current = active
             val latest = runtime
-            if (current != null && latest != null && (!latest.enabled || current.settings != latest.settings ||
+            if (current != null && latest != null && ((!latest.enabled && !current.temporaryEnable) || current.settings != latest.settings ||
                     (current.source != null && current.source != latest.source))) {
-                finish(if (latest.enabled) "RUNTIME_RESTART" else "DIAGNOSTICS_OFF")
+                finish(if (current.source != latest.source || current.settings != latest.settings) "RUNTIME_RESTART" else "DIAGNOSTICS_OFF")
             }
         }
     }
@@ -72,11 +75,11 @@ internal class MlKitDiagnosticLogRecorder(
         synchronized(admission) { if (runtime?.source == source) runtime = null }
     }
 
-    fun start(settings: String, diagnosticsEnabled: Boolean): CompletableFuture<String> = command {
+    fun start(settings: String, diagnosticsEnabled: Boolean, temporaryEnable: Boolean = false): CompletableFuture<String> = command {
         synchronized(admission) {
-            check(diagnosticsEnabled) { "ML Kit Diagnostics를 ON으로 적용 및 저장한 뒤 시작하세요." }
+            check(diagnosticsEnabled || temporaryEnable) { "ML Kit Diagnostics를 ON으로 적용 및 저장한 뒤 시작하세요." }
             check(active == null) { "이미 기록 중입니다." }
-            runtime?.let { check(it.enabled && it.settings == settings) { "적용 설정이 바뀌었습니다. 설정 화면을 다시 열어 주세요." } }
+            runtime?.let { check((it.enabled || temporaryEnable) && it.settings == settings) { "적용 설정이 바뀌었습니다. 설정 화면을 다시 열어 주세요." } }
             state = Status(Phase.STARTING)
         }
         try {
@@ -88,11 +91,12 @@ internal class MlKitDiagnosticLogRecorder(
             val stamp = SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.US).format(Date(startedWall))
             val file = File(directory, "mlkit_${stamp}_${UUID.randomUUID().toString().take(8)}.txt")
             val marker = File(directory, "${file.name}.open")
-            val source = runtime?.takeIf { it.enabled && it.settings == settings }?.source
+            val source = runtime?.takeIf { (it.enabled || temporaryEnable) && it.settings == settings }?.source
             val header = buildString {
                 appendLine("ML Kit Diagnostics / UTF-8 / text only")
                 appendLine("startedAt=${date(startedWall)} startedUnixMs=$startedWall startedElapsedNs=$startedNs")
                 appendLine("sourceSessionId=${source ?: "PENDING"}")
+                appendLine("recording.temporaryDiagnostics=$temporaryEnable recording.effectiveDiagnostics=true")
                 appendLine("[MLKIT_DIAG] session=${source ?: "PENDING"} frame=-1 stage=CONFIG origin=RECORDING_HEADER")
                 appendLine("Missing END means an interrupted recording; dropped count then is UNKNOWN.")
                 appendLine("--- Applied settings at recording start ---")
@@ -114,7 +118,7 @@ internal class MlKitDiagnosticLogRecorder(
                         }
                     }
                 }
-                val session = Session(file, marker, settings, source, startedWall, startedNs, logging,
+                val session = Session(file, marker, settings, source, temporaryEnable, startedWall, startedNs, logging,
                     header.toByteArray(Charsets.UTF_8).size.toLong())
                 synchronized(admission) { active = session; state = Status(Phase.RECORDING, file.name, startedNs) }
                 session.timer = control.schedule({ if (active === session) finish("TIME_LIMIT") }, maxDurationMs, TimeUnit.MILLISECONDS)

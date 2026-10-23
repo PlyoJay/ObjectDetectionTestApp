@@ -6,6 +6,7 @@ internal class MlKitDiagnostics(
     private val nowNs: () -> Long,
     private val sink: (String) -> Unit
 ) {
+    @Volatile var enabled: () -> Boolean = { true }
     private var lastSkipNs: Long? = null
     private var suppressedSkips = 0L
     @Volatile private var activeFrame = -1L
@@ -13,6 +14,7 @@ internal class MlKitDiagnostics(
     private var requests = 0L
 
     fun event(frameId: Long, stage: String, detail: () -> String) {
+        if (!enabled()) return
         // Diagnostics must never change SDK completion, lease release or rendering.
         try { sink("[MLKIT_DIAG] session=$sessionId frame=$frameId stage=$stage ${detail()}") }
         catch (_: Exception) { }
@@ -20,6 +22,7 @@ internal class MlKitDiagnostics(
 
     @Synchronized
     fun skipped(frameId: Long, reason: String, inFlight: Boolean) {
+        if (!enabled()) return
         val now = nowNs()
         val previous = lastSkipNs
         if (previous != null && now - previous < SKIP_INTERVAL_NS) {

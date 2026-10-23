@@ -79,7 +79,7 @@ internal class MlKitLogControls(
                 else -> "기록 중지 상태"
             })
             append("\n최근 기록: ${files.firstOrNull()?.let { "${it.name} (${it.bytes} bytes)" } ?: "없음"}")
-            if (!applied().debug.enableMlKitDiagnostics) append("\nDiagnostics ON을 먼저 적용 및 저장하세요.")
+            if (!active && !applied().debug.enableMlKitDiagnostics) append("\n메인 화면에서 설정 변경 없이 기록을 시작할 수 있습니다.")
             if (active) append("\n설정 화면을 나가도 기록합니다. 공유하면 먼저 중지·저장합니다.")
         }
         start.isEnabled = !busy && !active && !saving && applied().debug.enableMlKitDiagnostics

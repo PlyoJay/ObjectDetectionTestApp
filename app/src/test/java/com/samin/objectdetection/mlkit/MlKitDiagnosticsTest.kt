@@ -4,6 +4,25 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class MlKitDiagnosticsTest {
+    @Test fun runtimeGateSuppressesCapturedCallbackAndLazyInputSamplingAfterTemporaryStop() {
+        var enabled = false
+        var sampled = 0
+        val lines = mutableListOf<String>()
+        val logger = MlKitDiagnostics("runtime", { 1_000L }) { lines.add(it) }
+        logger.enabled = { enabled }
+        val callback = { logger.event(7, "SDK") { sampled++; "sdkCount=2" } }
+        callback(); logger.skipped(8, "INTERVAL", false)
+        assertEquals(0, sampled); assertTrue(lines.isEmpty())
+        enabled = true
+        logger.acquired(7); callback()
+        assertEquals(1, sampled)
+        enabled = false
+        logger.released(7); callback()
+        assertEquals(1, sampled); assertEquals(2, lines.size)
+        enabled = true // Explicit applied ON remains effective independently of file recording.
+        callback()
+        assertEquals(2, sampled)
+    }
     @Test fun skipsShareOneFiveSecondLimitAcrossReasonsAndCountSuppressedEvents() {
         val fixture = Fixture()
         fixture.logger.skipped(1, "DISABLED", false)

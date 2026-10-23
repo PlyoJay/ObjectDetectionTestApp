@@ -16,6 +16,11 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 class LogShareManager(private val activity: ComponentActivity) {
+    /** The recorder has already stopped, flushed and copied this closed TXT into shared_logs. */
+    fun shareMlKit(file: File) {
+        activity.startActivity(Intent.createChooser(mlKitShareIntent(activity, file), "ML Kit 진단 로그 공유"))
+    }
+
     fun shareLatest() {
         activity.lifecycleScope.launch {
             runCatching { withContext(Dispatchers.IO) { createLatestArchive() } }
@@ -87,6 +92,18 @@ class LogShareManager(private val activity: ComponentActivity) {
                 file.isFile && file.extension.lowercase() in setOf("json", "jsonl", "txt")
             }.orEmpty()
                 .sortedByDescending(File::lastModified).take(3)
+        }
+    }
+
+    companion object {
+        internal fun mlKitShareIntent(context: android.content.Context, file: File): Intent {
+            val uri = FileProvider.getUriForFile(context, "${context.packageName}.files", file)
+            return Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                clipData = android.content.ClipData.newRawUri("ML Kit Diagnostics", uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
         }
     }
 }
