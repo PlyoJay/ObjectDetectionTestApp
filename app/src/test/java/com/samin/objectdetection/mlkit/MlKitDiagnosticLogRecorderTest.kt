@@ -17,6 +17,23 @@ import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 
 class MlKitDiagnosticLogRecorderTest {
+    @Test fun headerRecordsActualRuntimeModeAndKeepsModeSessionsSeparateWithDiagnosticsAppliedOff() {
+        val recorder = owner()
+        val stream = "debug.enableMlKitDiagnostics=false\nmlKit.mode=STREAM_MODE"
+        recorder.runtimeStarted("stream", false, stream, "STREAM_MODE")
+        val first = recorder.start(stream, false, temporaryEnable = true).done()
+        recorder.record("stream", "event=PROCESS_REQUEST mode=STREAM_MODE")
+        val single = stream.replace("STREAM_MODE", "SINGLE_IMAGE_MODE")
+        recorder.runtimeStarted("single", false, single, "SINGLE_IMAGE_MODE")
+        recorder.files().done()
+        assertTrue(recorder.preview(first).done().contains("sdkMode=STREAM_MODE"))
+        val second = recorder.start(single, false, temporaryEnable = true).done()
+        recorder.sourceEnded("stream").done()
+        assertTrue(recorder.isRecordingFor("single"))
+        recorder.stop().done()
+        assertTrue(recorder.preview(second).done().contains("sdkMode=SINGLE_IMAGE_MODE"))
+        assertTrue(recorder.preview(second).done().contains("mlKit.mode=SINGLE_IMAGE_MODE"))
+    }
     @Test fun temporaryOptInRecordsAppliedOffSnapshotWithoutChangingRuntimeSetting() {
         val recorder = owner()
         val off = "debug.enableMlKitDiagnostics=false"

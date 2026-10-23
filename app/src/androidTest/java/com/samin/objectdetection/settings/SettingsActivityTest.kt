@@ -31,6 +31,26 @@ import android.view.accessibility.AccessibilityNodeInfo
 
 /** Preserves applied settings/presets; the preview integration test also starts real inference. */
 class SettingsActivityTest {
+    @Test fun mlKitModeDraftApplyAndPresetPersistWithoutChangingIntervalRoiOrYolo() {
+        val original = AppSettings()
+        seed(original)
+        launch()
+        openCategory("탐지 필터 및 경고")
+        field("ML Kit Detector Mode").check(matches(withSpinnerText("STREAM_MODE")))
+        field("ML Kit Detector Mode").perform(scrollTo(), click())
+        onData(`is`("SINGLE_IMAGE_MODE")).perform(click())
+        recreate()
+        field("ML Kit Detector Mode").check(matches(withSpinnerText("SINGLE_IMAGE_MODE")))
+        onView(withText("적용 및 저장")).perform(click())
+        val expected = original.copy(presetName = SettingsPresets.CUSTOM,
+            mlKit = original.mlKit.copy(mode = com.samin.objectdetection.mlkit.MlKitDetectionMode.SINGLE_IMAGE_MODE))
+        assertEquals(expected, loadHealthy())
+        val store = AppSettingsStore(context)
+        store.saveCustomPreset("SINGLE MODE TEST", expected)
+        assertEquals(expected.mlKit, store.loadCustomPreset("SINGLE MODE TEST")!!.mlKit)
+        launch(); openCategory("탐지 필터 및 경고")
+        field("ML Kit Detector Mode").check(matches(withSpinnerText("SINGLE_IMAGE_MODE")))
+    }
     @Test fun modelChoiceSurvivesDraftRecreationApplyReopenAndCustomPreset() {
         launch()
         openCategory("YOLO 모델 및 추론")
@@ -333,7 +353,7 @@ class SettingsActivityTest {
 
     @Test fun everyExistingControlIsReachableInItsCategory() {
         launch()
-        assertEquals(70, CATEGORY_FIELDS.values.sumOf { it.size })
+        assertEquals(72, CATEGORY_FIELDS.values.sumOf { it.size })
         scenario!!.onActivity { activity ->
             fun labels(view: View): List<String> = listOfNotNull(view.tag as? String) +
                 if (view is ViewGroup) (0 until view.childCount).flatMap { labels(view.getChildAt(it)) } else emptyList()
@@ -621,7 +641,8 @@ class SettingsActivityTest {
     }
 
     private fun openCategory(title: String) {
-        onView(withText(title)).perform(scrollTo(), click())
+        openSettingsCategory(title)
+        CATEGORY_FIELDS[title]?.firstOrNull()?.let { awaitSettingsViewLayout(withTagValue(`is`(it as Any))) }
         awaitVisiblePageLayout()
     }
 
@@ -679,13 +700,13 @@ class SettingsActivityTest {
                 "Temporal Confirmation Confidence", "Temporal Match IoU", "Max History Size", "Min History Size",
                 "Max Match Distance Ratio", "Min Sample Interval (ms)", "Stale Track Timeout (ms)", "Min Absolute Area Change",
                 "Min Relative Area Change", "Min Absolute Height Change", "Min Relative Height Change", "ML Kit Detection",
-                "Detection Interval (ms)", "Warning Cooldown (ms)", "Ignore Top Ratio", "Max Guide Object Count",
+                "ML Kit Detector Mode", "Detection Interval (ms)", "Warning Cooldown (ms)", "Ignore Top Ratio", "Max Guide Object Count",
                 "Very Near Height Ratio", "Near Height Ratio", "Mid Height Ratio", "Very Near Area Ratio", "Near Area Ratio",
                 "Mid Area Ratio", "실제 진동", "실제 Beep", "실제 TTS"
             ),
             "성능 측정 및 로그" to listOf("System Performance Diagnostics", "배터리·발열 진단", "Sample Interval (ms)", "테스트 시간 (분)"),
             "디버그 및 고급 설정" to listOf(
-                "Enable Detector Diagnostics", "Debug Detection Logging", "Diagnostic Raw Confidence Threshold",
+                "Enable Detector Diagnostics", "ML Kit Diagnostics", "Debug Detection Logging", "Diagnostic Raw Confidence Threshold",
                 "Diagnostic Max Raw Candidates", "Debug Save Inference Input", "Debug Save Interval (ms)",
                 "Debug Save On Detection", "기존 호환 Debug Image", "Overlay", "Overlay Debug Mode", "YOLO bbox",
                 "ML Kit bbox", "Confidence 표시", "FPS 표시", "Overlay Stale Timeout (ms)"

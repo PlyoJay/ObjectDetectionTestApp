@@ -83,6 +83,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.joinAll
@@ -222,9 +223,12 @@ class MainActivity : ComponentActivity() {
         settingsStore = AppSettingsStore(this)
         appSettings = settingsStore.loadApplied()
         val yoloDetector = createYoloDetectorWithRecovery() ?: return
+        detector = yoloDetector
         // Recovery can restore different applied settings, including the diagnostics opt-in.
         mlKitLogRecorder = MlKitDiagnosticLogs.get(applicationContext)
-        mlKitLogRecorder.runtimeStarted(sessionId, appSettings.debug.enableMlKitDiagnostics, AppSettingsCodec.snapshotLines(appSettings))
+        mlKitDetector = MlKitObjectDetector(appSettings.mlKit.mode)
+        mlKitLogRecorder.runtimeStarted(sessionId, appSettings.debug.enableMlKitDiagnostics,
+            AppSettingsCodec.snapshotLines(appSettings), mlKitDetector.mode.name)
         sessionMlKitDiagnostics = MlKitDiagnostics(sessionId, SystemClock::elapsedRealtimeNanos) {
                 Log.i("MlKitDiagnostics", it)
                 mlKitLogRecorder.record(sessionId, it)
@@ -235,11 +239,9 @@ class MainActivity : ComponentActivity() {
         }
         updateMlKitDiagnosticActivation()
         logMlKitConfiguration()
-        detector = yoloDetector
         val modelIdentity = yoloDetector.modelIdentity()
         detectionConfig = detectionConfig.copy(inputSize = modelIdentity.inputWidth, inputHeight = modelIdentity.inputHeight)
         warningCooldownManager = WarningCooldownManager(appSettings.warning.cooldownMs)
-        mlKitDetector = MlKitObjectDetector()
         evaluationDataRecorder = EvaluationDataRecorder(
             context = this,
             detectionConfig = detectionConfig,
@@ -399,7 +401,7 @@ class MainActivity : ComponentActivity() {
 
     private fun logMlKitConfiguration() {
         mlKitDiagnostics?.event(-1L, "CONFIG") {
-            "sdkMode=STREAM_MODE multipleObjects=true enabled=${appSettings.mlKit.enabled} " +
+            "sdkMode=${mlKitDetector.mode} multipleObjects=true enabled=${appSettings.mlKit.enabled} " +
                 "intervalMs=${appSettings.mlKit.detectionIntervalMs} preview=${appSettings.camera.previewEnabled} " +
                 "overlay=${appSettings.overlay.enabled} boxes=${appSettings.overlay.showMlKitBoxes} " +
                 "staleMs=${appSettings.overlay.staleTimeoutMs} roi=${appSettings.camera.recognitionRoi} " +
@@ -593,10 +595,33 @@ class MainActivity : ComponentActivity() {
                 }
                 return@launch
             }
-            captureWork.coroutineContext[Job]?.children?.toList()?.joinAll()
-            withContext(Dispatchers.IO) { detector.close() }
-            Log.i(TAG, "[SETTINGS_RESTART] analyzerStopped=true oldInterpreterClosed=true")
+            val resourcesClosed = runCatching {
+                closeMlKitAfterCaptureDrain()
+                withContext(Dispatchers.IO) { mlKitLogRecorder.sourceEnded(sessionId).get() }
+                withContext(Dispatchers.IO) { detector.close() }
+            }.onFailure { Log.e(TAG, "settings apply: resource shutdown failed", it) }.isSuccess
+            if (!resourcesClosed) {
+                if (!isDestroyed) {
+                    previewOffStatus = "종료 실패: 앱을 다시 시작하세요."
+                    debugTextView.text = previewOffStatus
+                    screen.updatePreviewStatus(previewOffStatus)
+                    Toast.makeText(this@MainActivity, previewOffStatus, Toast.LENGTH_LONG).show()
+                }
+                return@launch
+            }
+            Log.i(TAG, "[SETTINGS_RESTART] analyzerStopped=true oldInterpreterClosed=true oldMlKitClosed=true oldMode=${mlKitDetector.mode}")
             if (!isFinishing && !isDestroyed) recreate()
+        }
+    }
+
+    /** No new frames after analyzer drain. Existing SDK Tasks retain their leases until terminal. */
+    private suspend fun closeMlKitAfterCaptureDrain() {
+        captureWork.coroutineContext[Job]?.children?.toList()?.joinAll()
+        // Also covers a late child if analyzer shutdown failed during Activity destruction.
+        captureWork.coroutineContext[Job]?.cancelAndJoin()
+        withContext(Dispatchers.IO) {
+            mlKitInputBuffer.close()
+            if (::mlKitDetector.isInitialized) mlKitDetector.close()
         }
     }
 
@@ -1677,12 +1702,9 @@ class MainActivity : ComponentActivity() {
         recordingWork.launch {
             val analyzerStopped = runCatching { withContext(Dispatchers.IO) { stopped.get() } }
                 .onFailure { Log.e(TAG, "analyzer shutdown failed; interpreter retained", it) }.isSuccess
-            captureWork.coroutineContext[Job]?.children?.toList()?.joinAll()
-            captureWork.cancel()
-            mlKitInputBuffer.close()
+            closeMlKitAfterCaptureDrain()
             MlKitDiagnosticLogs.peek()?.sourceEnded(sessionId)
             if (analyzerStopped && ::detector.isInitialized) withContext(Dispatchers.IO) { detector.close() }
-            if (::mlKitDetector.isInitialized) mlKitDetector.close()
             if (::userLocationTracker.isInitialized) userLocationTracker.stop()
             if (::warningOutputController.isInitialized) warningOutputController.release()
             if (::vibrationWarningPlayer.isInitialized) vibrationWarningPlayer.release()

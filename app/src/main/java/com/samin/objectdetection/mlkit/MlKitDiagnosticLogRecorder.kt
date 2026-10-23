@@ -32,7 +32,7 @@ internal class MlKitDiagnosticLogRecorder(
     data class Status(val phase: Phase = Phase.IDLE, val fileName: String? = null,
         val startedElapsedNs: Long = 0L, val droppedLines: Long = 0L, val error: String? = null)
     data class LogFile(val name: String, val bytes: Long, val modifiedMs: Long)
-    private data class Runtime(val source: String, val enabled: Boolean, val settings: String)
+    private data class Runtime(val source: String, val enabled: Boolean, val settings: String, val detectorMode: String?)
     private class Session(val file: File, val marker: File, val settings: String,
         @Volatile var source: String?, val temporaryEnable: Boolean, val startedWallMs: Long, val startedNs: Long, val logging: OrderedLogWriter,
         var reservedBytes: Long) {
@@ -54,9 +54,9 @@ internal class MlKitDiagnosticLogRecorder(
     /** Memory-only gate, also safe for callbacks holding an old diagnostics reference. */
     fun isRecordingFor(source: String): Boolean = active?.source == source
 
-    fun runtimeStarted(source: String, enabled: Boolean, settings: String) {
+    fun runtimeStarted(source: String, enabled: Boolean, settings: String, detectorMode: String? = null) {
         val needsCheck = synchronized(admission) {
-            runtime = Runtime(source, enabled, settings)
+            runtime = Runtime(source, enabled, settings, detectorMode)
             active != null || state.phase == Phase.STARTING
         }
         if (!needsCheck) return
@@ -91,13 +91,15 @@ internal class MlKitDiagnosticLogRecorder(
             val stamp = SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.US).format(Date(startedWall))
             val file = File(directory, "mlkit_${stamp}_${UUID.randomUUID().toString().take(8)}.txt")
             val marker = File(directory, "${file.name}.open")
-            val source = runtime?.takeIf { (it.enabled || temporaryEnable) && it.settings == settings }?.source
+            val recordingRuntime = runtime?.takeIf { (it.enabled || temporaryEnable) && it.settings == settings }
+            val source = recordingRuntime?.source
             val header = buildString {
                 appendLine("ML Kit Diagnostics / UTF-8 / text only")
                 appendLine("startedAt=${date(startedWall)} startedUnixMs=$startedWall startedElapsedNs=$startedNs")
                 appendLine("sourceSessionId=${source ?: "PENDING"}")
+                appendLine("sdkMode=${recordingRuntime?.detectorMode ?: "UNKNOWN_NO_ACTIVE_DETECTOR"}")
                 appendLine("recording.temporaryDiagnostics=$temporaryEnable recording.effectiveDiagnostics=true")
-                appendLine("[MLKIT_DIAG] session=${source ?: "PENDING"} frame=-1 stage=CONFIG origin=RECORDING_HEADER")
+                appendLine("[MLKIT_DIAG] session=${source ?: "PENDING"} frame=-1 stage=CONFIG origin=RECORDING_HEADER sdkMode=${recordingRuntime?.detectorMode ?: "UNKNOWN_NO_ACTIVE_DETECTOR"}")
                 appendLine("Missing END means an interrupted recording; dropped count then is UNKNOWN.")
                 appendLine("--- Applied settings at recording start ---")
                 appendLine(settings)

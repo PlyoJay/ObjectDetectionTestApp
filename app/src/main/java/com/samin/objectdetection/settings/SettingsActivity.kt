@@ -38,6 +38,7 @@ import com.samin.objectdetection.camera.YoloResizeMode
 import com.samin.objectdetection.camera.RecognitionRoi
 import com.samin.objectdetection.detector.ModelAssets
 import com.samin.objectdetection.detector.YoloModel
+import com.samin.objectdetection.mlkit.MlKitDetectionMode
 import com.samin.objectdetection.detector.ModelIdentity
 import com.samin.objectdetection.ui.OverlayDebugMode
 import kotlinx.coroutines.Dispatchers
@@ -413,6 +414,8 @@ class SettingsActivity : ComponentActivity() {
     private fun buildMlKitSection(parent: LinearLayout) {
         section(parent, "ML Kit")
         form.mlKitEnabled = toggle(parent, "ML Kit Detection")
+        form.mlKitMode = choice(parent, "ML Kit Detector Mode", MlKitDetectionMode.entries.map { it.name })
+        note(parent, "기본 STREAM_MODE. 모드를 선택하고 적용 및 저장하면 진행 중인 SDK Task와 입력 반환을 기다린 뒤 Detector를 재생성합니다. 비교 시 간격·ROI·Preview 등 다른 조건은 동일하게 유지하세요.")
         form.mlKitInterval = number(parent, "Detection Interval (ms)", "0..60000")
     }
 
@@ -500,7 +503,10 @@ class SettingsActivity : ComponentActivity() {
             form.mlKitBoxes.isChecked = showMlKitBoxes; form.confidenceLabel.isChecked = showConfidence; form.fps.isChecked = showFps
             form.overlayStale.setText(staleTimeoutMs.toString())
         }
-        with(value.mlKit) { form.mlKitEnabled.isChecked = enabled; form.mlKitInterval.setText(detectionIntervalMs.toString()) }
+        with(value.mlKit) {
+            form.mlKitEnabled.isChecked = enabled; form.mlKitInterval.setText(detectionIntervalMs.toString())
+            select(form.mlKitMode, mode.name)
+        }
         with(value.performanceLog) {
             select(form.testDuration, durationMinutes.toString())
             form.systemDiagnostics.isChecked = systemDiagnosticsEnabled
@@ -541,7 +547,8 @@ class SettingsActivity : ComponentActivity() {
                 form.midHeight.f(), form.veryNearArea.f(), form.nearArea.f(), form.midArea.f(), form.vibration.isChecked, form.beep.isChecked, form.tts.isChecked),
             overlay = OverlaySettings(form.overlayEnabled.isChecked, OverlayDebugMode.valueOf(form.debugMode.selectedItem.toString()),
                 form.yoloBoxes.isChecked, form.mlKitBoxes.isChecked, form.confidenceLabel.isChecked, form.fps.isChecked, form.overlayStale.l()),
-            mlKit = MlKitSettings(form.mlKitEnabled.isChecked, form.mlKitInterval.l()),
+            mlKit = MlKitSettings(form.mlKitEnabled.isChecked, form.mlKitInterval.l(),
+                MlKitDetectionMode.valueOf(form.mlKitMode.selectedItem.toString())),
             performanceLog = PerformanceLogSettings(form.systemDiagnostics.isChecked, form.systemSampleInterval.l(), form.batteryDiagnostics.isChecked, form.testDuration.selectedItem.toString().toInt()),
             debug = DebugSettings(form.diagnostics.isChecked, form.debugLogging.isChecked, form.rawConfidence.f(), form.rawCandidates.i(),
                 form.saveInput.isChecked, form.saveInterval.l(), form.saveOnDetection.isChecked, form.legacyDebugImage.isChecked,
@@ -649,6 +656,7 @@ class SettingsActivity : ComponentActivity() {
         val temporalEnabled = form.temporal.isChecked
         listOf(form.temporalImmediate, form.temporalConfirmation, form.temporalIou).forEach { it.isEnabled = temporalEnabled }
         form.mlKitInterval.isEnabled = form.mlKitEnabled.isChecked
+        form.mlKitMode.isEnabled = form.mlKitEnabled.isChecked
         form.systemSampleInterval.isEnabled = form.systemDiagnostics.isChecked
         form.batteryDiagnostics.isEnabled = form.systemDiagnostics.isChecked
         val cropEnabled = form.roiEnabled.isChecked
@@ -683,7 +691,7 @@ class SettingsActivity : ComponentActivity() {
         }
         summaries[Category.FILTERS.name]?.text = with(applied) {
             "현재 적용: Size ${filters.sizeFilterMode} · Geometry ${filters.geometryFilterEnabled.onOff()}\n" +
-                "Temporal ${filters.adaptiveTemporalEnabled.onOff()} · ML Kit ${mlKit.enabled.onOff()}"
+                "Temporal ${filters.adaptiveTemporalEnabled.onOff()} · ML Kit ${mlKit.enabled.onOff()} / ${mlKit.mode}"
         }
         summaries[Category.PERFORMANCE.name]?.text = with(applied.performanceLog) {
             "현재 적용: $durationMinutes 분 · 시스템 진단 ${systemDiagnosticsEnabled.onOff()} · 배터리·발열 ${batteryDiagnosticsEnabled.onOff()} · $sampleIntervalMs ms"
@@ -818,7 +826,7 @@ class SettingsActivity : ComponentActivity() {
         lateinit var vibration: Switch; lateinit var beep: Switch; lateinit var tts: Switch
         lateinit var overlayEnabled: Switch; lateinit var debugMode: Spinner; lateinit var yoloBoxes: Switch; lateinit var mlKitBoxes: Switch
         lateinit var confidenceLabel: Switch; lateinit var fps: Switch; lateinit var overlayStale: EditText
-        lateinit var mlKitEnabled: Switch; lateinit var mlKitInterval: EditText
+        lateinit var mlKitEnabled: Switch; lateinit var mlKitInterval: EditText; lateinit var mlKitMode: Spinner
         lateinit var diagnostics: Switch; lateinit var debugLogging: Switch; lateinit var rawConfidence: EditText; lateinit var rawCandidates: EditText
         lateinit var mlKitDiagnostics: Switch
         lateinit var saveInput: Switch; lateinit var saveInterval: EditText; lateinit var saveOnDetection: Switch; lateinit var legacyDebugImage: Switch

@@ -44,7 +44,8 @@ class MlKitLogControlsTest {
             preferences.edit().clear().putString("applied_settings", encoded).commit()
             ActivityScenario.launch(SettingsActivity::class.java).use { scenario ->
                 dismissCompatibilityWarning()
-                onView(withText("디버그 및 고급 설정")).perform(scrollTo(), click())
+                openSettingsCategory("디버그 및 고급 설정")
+                awaitSettingsViewLayout(withText("ML Kit 진단 로그 기록 시작"))
                 await { onView(withText("ML Kit 진단 로그 기록 시작")).check(matches(isEnabled())); true }
                 onView(withText("ML Kit 진단 로그 기록 시작")).perform(scrollTo(), click())
                 await { recorder.status().phase == MlKitDiagnosticLogRecorder.Phase.RECORDING }
@@ -53,6 +54,7 @@ class MlKitLogControlsTest {
                 scenario.recreate()
                 dismissCompatibilityWarning()
                 assertEquals(MlKitDiagnosticLogRecorder.Phase.RECORDING, recorder.status().phase)
+                awaitSettingsViewLayout(withText("기록 중지 및 파일 저장"))
                 await { onView(withText("기록 중지 및 파일 저장")).check(matches(isEnabled())); true }
                 onView(withText("기록 중지 및 파일 저장")).perform(scrollTo(), click())
                 await { recorder.status().phase == MlKitDiagnosticLogRecorder.Phase.SAVED }
@@ -76,7 +78,8 @@ class MlKitLogControlsTest {
             preferences.edit().putString("applied_settings", AppSettingsCodec.encode(AppSettings())).commit()
             ActivityScenario.launch(SettingsActivity::class.java).use {
                 dismissCompatibilityWarning()
-                onView(withText("디버그 및 고급 설정")).perform(scrollTo(), click())
+                openSettingsCategory("디버그 및 고급 설정")
+                awaitSettingsViewLayout(withText("ML Kit 진단 로그 기록 시작"))
                 onView(withText("ML Kit 진단 로그 기록 시작")).check(matches(not(isEnabled())))
             }
         } finally {

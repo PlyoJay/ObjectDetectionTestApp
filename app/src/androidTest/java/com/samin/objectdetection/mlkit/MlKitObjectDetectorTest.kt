@@ -32,6 +32,28 @@ import java.util.concurrent.atomic.AtomicLong
 
 /** Deterministic SDK Tasks exercise the production wrapper without requiring a downloaded ML model. */
 class MlKitObjectDetectorTest {
+    @Test fun modesMapToSdkOptionsAndDiagnosticRequestsUseImmutableSelectedMode() = runBlocking {
+        val bitmap = inputBitmap()
+        try {
+            for (mode in MlKitDetectionMode.entries) {
+                val options = MlKitObjectDetector.options(mode)
+                assertEquals(if (mode == MlKitDetectionMode.STREAM_MODE)
+                    com.google.mlkit.vision.objects.defaults.ObjectDetectorOptions.STREAM_MODE
+                    else com.google.mlkit.vision.objects.defaults.ObjectDetectorOptions.SINGLE_IMAGE_MODE, options.detectorMode)
+                assertTrue(options.isMultipleObjectsEnabled)
+                assertFalse(options.isClassificationEnabled)
+                val fake = FakeDetector { TaskCompletionSource<List<DetectedObject>>().apply { setResult(emptyList()) }.task }
+                val detector = MlKitObjectDetector(fake, mode)
+                val lines = mutableListOf<String>()
+                detector.detect(bitmap, diagnosticLog = lines::add)
+                assertTrue(lines.single { it.startsWith("event=PROCESS_REQUEST") }.contains("mode=$mode"))
+                val complete = lines.single { it.startsWith("event=TASK_COMPLETE") }
+                assertTrue(complete.contains("mode=$mode")); assertTrue(complete.contains("elapsedMs="))
+                detector.close(); detector.close()
+                assertEquals(1, fake.closeCalls)
+            }
+        } finally { bitmap.recycle() }
+    }
     @Test fun successPreservesInputAndCopiesBoxesTrackingIdsAndCompletionLatency() = runBlocking {
         val bitmap = inputBitmap()
         val sdkObject = DetectedObject(Rect(4, 5, 20, 30), 42, emptyList())
@@ -334,6 +356,7 @@ class MlKitObjectDetectorTest {
 
     private class FakeDetector(private val onProcess: (InputImage) -> Task<List<DetectedObject>>) : GoogleObjectDetector {
         var closed = false
+        var closeCalls = 0
         override fun process(image: InputImage) = onProcess(image)
         override fun process(image: MlImage): Task<List<DetectedObject>> = error("Unexpected MlImage input")
         override fun process(bitmap: Bitmap, rotation: Int): Task<List<DetectedObject>> = error("Unexpected Bitmap input")
@@ -342,6 +365,6 @@ class MlKitObjectDetectorTest {
         override fun process(buffer: ByteBuffer, width: Int, height: Int, rotation: Int, format: Int): Task<List<DetectedObject>> =
             error("Unexpected ByteBuffer input")
         override fun getDetectorType() = 5
-        override fun close() { closed = true }
+        override fun close() { closed = true; closeCalls++ }
     }
 }

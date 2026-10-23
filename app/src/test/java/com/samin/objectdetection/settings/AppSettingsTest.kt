@@ -3,12 +3,31 @@ package com.samin.objectdetection.settings
 import com.samin.objectdetection.camera.YoloResizeMode
 import com.samin.objectdetection.camera.DetectionConfig
 import com.samin.objectdetection.camera.SizeFilterMode
+import com.samin.objectdetection.mlkit.MlKitDetectionMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class AppSettingsTest {
+    @Test fun mlKitModeRoundTripsIndependentlyAndOlderOrInvalidValuesKeepStreamDefault() {
+        val original = AppSettings(camera = CameraSettings(previewEnabled = false),
+            yolo = YoloSettings(interpreterThreadCount = 2), mlKit = MlKitSettings(detectionIntervalMs = 1500))
+        assertEquals(MlKitDetectionMode.STREAM_MODE, original.mlKit.mode)
+        for (mode in MlKitDetectionMode.entries) {
+            val selected = original.copy(mlKit = original.mlKit.copy(mode = mode))
+            val restored = AppSettingsCodec.decode(AppSettingsCodec.encode(selected))
+            assertEquals(selected, restored)
+            assertEquals(original.toDetectionConfig(), restored.toDetectionConfig())
+            assertEquals(original, restored.copy(mlKit = original.mlKit))
+            assertTrue(AppSettingsCodec.snapshotLines(restored).contains("mlKit.mode=$mode"))
+        }
+        val encoded = AppSettingsCodec.encode(original)
+        val old = encoded.lineSequence().filterNot { it.startsWith("mlKit.mode=") }.joinToString("\n")
+        assertEquals(original, AppSettingsCodec.decode(old.replace("schemaVersion=$APP_SETTINGS_SCHEMA_VERSION", "schemaVersion=6")))
+        assertEquals(original, AppSettingsCodec.decode(old + "\nmlKit.mode=UNKNOWN"))
+        assertEquals(original, AppSettingsCodec.decode(old + "\nmlKit.mode="))
+    }
     @Test fun mlKitDiagnosticsOptInRoundTripsWithoutChangingDetectorOrOverlaySettings() {
         val original = AppSettings(yolo = YoloSettings(
             model = com.samin.objectdetection.detector.YoloModel.YOLO_512, interpreterThreadCount = 2))

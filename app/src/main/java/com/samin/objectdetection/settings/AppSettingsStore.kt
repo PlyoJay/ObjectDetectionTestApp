@@ -6,6 +6,7 @@ import com.samin.objectdetection.camera.YoloResizeMode
 import com.samin.objectdetection.camera.RecognitionRoi
 import com.samin.objectdetection.ui.OverlayDebugMode
 import com.samin.objectdetection.detector.YoloModel
+import com.samin.objectdetection.mlkit.MlKitDetectionMode
 import java.io.StringReader
 import java.io.StringWriter
 import java.util.Properties
@@ -173,7 +174,9 @@ object AppSettingsCodec {
             put("overlay.showConfidence", showConfidence); put("overlay.showFps", showFps)
             put("overlay.staleTimeoutMs", staleTimeoutMs)
         }
-        with(value.mlKit) { put("mlKit.enabled", enabled); put("mlKit.detectionIntervalMs", detectionIntervalMs) }
+        with(value.mlKit) {
+            put("mlKit.enabled", enabled); put("mlKit.detectionIntervalMs", detectionIntervalMs); put("mlKit.mode", mode.name)
+        }
         with(value.performanceLog) {
             put("performanceLog.durationMinutes", durationMinutes)
             put("performanceLog.systemDiagnosticsEnabled", systemDiagnosticsEnabled)
@@ -262,7 +265,8 @@ object AppSettingsCodec {
                 b("overlay.showConfidence", d.overlay.showConfidence), b("overlay.showFps", d.overlay.showFps),
                 l("overlay.staleTimeoutMs", d.overlay.staleTimeoutMs)
             ),
-            mlKit = MlKitSettings(b("mlKit.enabled", d.mlKit.enabled), l("mlKit.detectionIntervalMs", d.mlKit.detectionIntervalMs)),
+            mlKit = MlKitSettings(b("mlKit.enabled", d.mlKit.enabled), l("mlKit.detectionIntervalMs", d.mlKit.detectionIntervalMs),
+                MlKitDetectionMode.entries.firstOrNull { it.name == s("mlKit.mode", d.mlKit.mode.name) } ?: d.mlKit.mode),
             performanceLog = PerformanceLogSettings(
                 b("performanceLog.systemDiagnosticsEnabled", d.performanceLog.systemDiagnosticsEnabled),
                 l("performanceLog.sampleIntervalMs", d.performanceLog.sampleIntervalMs),

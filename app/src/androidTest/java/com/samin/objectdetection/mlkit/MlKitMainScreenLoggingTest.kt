@@ -41,6 +41,7 @@ class MlKitMainScreenLoggingTest {
         val settings = AppSettings(camera = CameraSettings(previewEnabled = preview,
             recognitionRoi = RecognitionRoi(true, top = .20f, left = .10f, right = .10f)),
             yolo = YoloSettings(model = YoloModel.YOLO_512, interpreterThreadCount = 2),
+            mlKit = MlKitSettings(mode = if (preview) MlKitDetectionMode.STREAM_MODE else MlKitDetectionMode.SINGLE_IMAGE_MODE),
             warning = WarningSettings(enableActualVibration = false, enableActualBeep = false, enableActualTts = false))
         var chooser: Intent? = null
         val monitor = object : Instrumentation.ActivityMonitor() {
@@ -60,6 +61,7 @@ class MlKitMainScreenLoggingTest {
             recorder.stop().get(10, TimeUnit.SECONDS)
             preferences.edit().clear().putString("applied_settings", AppSettingsCodec.encode(settings)).commit()
             scenario = ActivityScenario.launch(MainActivity::class.java)
+            scenario.onActivity { it.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
             dismissCompatibilityWarning()
             await { onView(withText("ML Kit 로그 시작")).check(matches(isEnabled())); true }
             // Two reentrant requests during preparation must produce one recording.
@@ -84,6 +86,9 @@ class MlKitMainScreenLoggingTest {
             assertTrue(text.contains("debug.enableMlKitDiagnostics=false"))
             assertTrue(text.contains("recording.temporaryDiagnostics=true"))
             assertTrue(text.contains("camera.previewEnabled=$preview"))
+            assertTrue(text.contains("sdkMode=${settings.mlKit.mode}"))
+            assertTrue(text.contains("rotation=0 mode=${settings.mlKit.mode}"))
+            assertTrue(text.contains("elapsedMs="))
             assertTrue(text.contains("event=PROCESS_REQUEST")); assertTrue(text.contains("sdkCount="))
             assertTrue(text.contains("END endedAt=")); assertTrue(text.contains("droppedLines="))
             await { onView(withText("ML Kit 로그 공유")).check(matches(isEnabled())); true }
@@ -114,7 +119,8 @@ class MlKitMainScreenLoggingTest {
             if (preview) {
                 onView(withContentDescription("상세 설정")).perform(click())
                 dismissCompatibilityWarning()
-                onView(withText("디버그 및 고급 설정")).perform(scrollTo(), click())
+                openSettingsCategory("디버그 및 고급 설정")
+                awaitSettingsViewLayout(withText("기록 중지 및 파일 저장"))
                 await { onView(withText("기록 중지 및 파일 저장")).check(matches(isEnabled())); true }
                 onView(withText("ML Kit Diagnostics")).check(matches(not(isChecked())))
                 onView(withText("기록 중지 및 파일 저장")).perform(scrollTo(), click())

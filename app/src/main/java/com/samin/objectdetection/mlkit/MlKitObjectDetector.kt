@@ -15,19 +15,18 @@ import kotlinx.coroutines.withContext
 import com.samin.objectdetection.metrics.FrameLatencyEvent
 import com.samin.objectdetection.metrics.FrameLatencyRecorder
 import java.util.concurrent.Executor
+import java.util.concurrent.atomic.AtomicBoolean
 
 data class MlKitObjectDetection(
     val boundingBox: Rect,
     val trackingId: Int?
 )
 
-class MlKitObjectDetector internal constructor(private val detector: ObjectDetector) {
-    constructor() : this(ObjectDetection.getClient(
-        ObjectDetectorOptions.Builder()
-            .setDetectorMode(ObjectDetectorOptions.STREAM_MODE)
-            .enableMultipleObjects()
-            .build()
-    ))
+class MlKitObjectDetector internal constructor(private val detector: ObjectDetector,
+    val mode: MlKitDetectionMode = MlKitDetectionMode.STREAM_MODE) {
+    constructor(mode: MlKitDetectionMode = MlKitDetectionMode.STREAM_MODE) : this(ObjectDetection.getClient(options(mode)), mode)
+
+    private val closed = AtomicBoolean(false)
 
     suspend fun detect(bitmap: Bitmap, latency: FrameLatencyRecorder? = null,
         dispatchedElapsedNs: Long = -1L, diagnosticLog: ((String) -> Unit)? = null): List<MlKitObjectDetection> {
@@ -41,8 +40,9 @@ class MlKitObjectDetector internal constructor(private val detector: ObjectDetec
             val inputImageNs = SystemClock.elapsedRealtimeNanos() - inputStartNs
             requestedNs = latency?.nowNs() ?: -1L
             diagnosticLog?.let { log -> diagnose(log) {
-                "event=PROCESS_REQUEST input=${bitmap.width}x${bitmap.height} rotation=0 mode=STREAM_MODE"
+                "event=PROCESS_REQUEST input=${bitmap.width}x${bitmap.height} rotation=0 mode=$mode"
             } }
+            val sdkRequestedNs = SystemClock.elapsedRealtimeNanos()
             val task = detector.process(image)
             if (latency != null || diagnosticLog != null) {
                 val requestForCallbackNs = requestedNs
@@ -54,7 +54,8 @@ class MlKitObjectDetector internal constructor(private val detector: ObjectDetec
                             "TASK_COMPLETION_LISTENER"))
                         diagnosticLog?.let { log -> diagnose(log) { "event=TASK_COMPLETE outcome=" +
                             (if (completed.isSuccessful) "SUCCESS" else if (completed.isCanceled) "CANCELLED" else "ERROR") +
-                            " sdkCount=${if (completed.isSuccessful) completed.result.size else -1} " +
+                            " mode=$mode elapsedMs=${(SystemClock.elapsedRealtimeNanos() - sdkRequestedNs) / 1_000_000.0} " +
+                            "sdkCount=${if (completed.isSuccessful) completed.result.size else -1} " +
                             "boxes=${if (completed.isSuccessful) completed.result.take(5).joinToString { it.boundingBox.toShortString() } else "N/A"} " +
                             "error=${completed.exception?.javaClass?.simpleName ?: "none"}" } }
                     }
@@ -87,7 +88,7 @@ class MlKitObjectDetector internal constructor(private val detector: ObjectDetec
     }
 
     fun close() {
-        detector.close()
+        if (closed.compareAndSet(false, true)) detector.close()
     }
 
     private inline fun diagnose(log: (String) -> Unit, detail: () -> String) {
@@ -95,6 +96,12 @@ class MlKitObjectDetector internal constructor(private val detector: ObjectDetec
     }
 
     companion object {
+        internal fun options(mode: MlKitDetectionMode): ObjectDetectorOptions = ObjectDetectorOptions.Builder()
+            .setDetectorMode(when (mode) {
+                MlKitDetectionMode.STREAM_MODE -> ObjectDetectorOptions.STREAM_MODE
+                MlKitDetectionMode.SINGLE_IMAGE_MODE -> ObjectDetectorOptions.SINGLE_IMAGE_MODE
+            }).enableMultipleObjects().build()
+
         private const val TAG = "MlKitObjectDetector"
         private val DIRECT_EXECUTOR = Executor { it.run() }
     }

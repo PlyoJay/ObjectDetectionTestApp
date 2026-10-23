@@ -6,9 +6,10 @@ import com.samin.objectdetection.camera.YoloResizeMode
 import com.samin.objectdetection.camera.RecognitionRoi
 import com.samin.objectdetection.metrics.PerformanceTestWindow
 import com.samin.objectdetection.detector.YoloModel
+import com.samin.objectdetection.mlkit.MlKitDetectionMode
 import com.samin.objectdetection.ui.OverlayDebugMode
 
-const val APP_SETTINGS_SCHEMA_VERSION = 6
+const val APP_SETTINGS_SCHEMA_VERSION = 7
 
 data class CameraSettings(
     val detectIntervalMs: Long = 0L,
@@ -84,7 +85,8 @@ data class OverlaySettings(
 
 data class MlKitSettings(
     val enabled: Boolean = true,
-    val detectionIntervalMs: Long = 1_500L
+    val detectionIntervalMs: Long = 1_500L,
+    val mode: MlKitDetectionMode = MlKitDetectionMode.STREAM_MODE
 )
 
 data class DebugSettings(
