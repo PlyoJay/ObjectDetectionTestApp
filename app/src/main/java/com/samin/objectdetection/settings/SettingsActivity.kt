@@ -432,6 +432,9 @@ class SettingsActivity : ComponentActivity() {
         section(parent, "Debug / Logging")
         note(parent, "후보별 로그와 PNG 저장은 성능에 영향을 줄 수 있습니다.")
         form.diagnostics = toggle(parent, "Enable Detector Diagnostics")
+        form.mlKitDiagnostics = toggle(parent, "ML Kit Diagnostics")
+        note(parent, "기본 OFF. ON을 적용 및 저장한 뒤 파일 기록을 시작하세요. 기록 시작 후 카메라 화면으로 돌아가 테스트하고, 이곳에서 중지·공유합니다. Logcat 출력은 유지하며 이미지 저장·주기·timeout은 변경하지 않습니다.")
+        MlKitLogControls(this, parent, { applied }, { currentScreen == Category.DEBUG.name })
         form.debugLogging = toggle(parent, "Debug Detection Logging")
         form.rawConfidence = number(parent, "Diagnostic Raw Confidence Threshold", "0..1", true)
         form.rawCandidates = number(parent, "Diagnostic Max Raw Candidates", ">= 0")
@@ -506,6 +509,7 @@ class SettingsActivity : ComponentActivity() {
         }
         with(value.debug) {
             form.diagnostics.isChecked = enableDetectorDiagnostics; form.debugLogging.isChecked = debugDetectionLogging
+            form.mlKitDiagnostics.isChecked = enableMlKitDiagnostics
             form.rawConfidence.setText(diagnosticRawConfidenceThreshold.toString()); form.rawCandidates.setText(diagnosticMaxRawCandidates.toString())
             form.saveInput.isChecked = debugSaveInferenceInput; form.saveInterval.setText(debugSaveIntervalMs.toString())
             form.saveOnDetection.isChecked = debugSaveOnDetection; form.legacyDebugImage.isChecked = legacyDebugImageEnabled
@@ -540,7 +544,8 @@ class SettingsActivity : ComponentActivity() {
             mlKit = MlKitSettings(form.mlKitEnabled.isChecked, form.mlKitInterval.l()),
             performanceLog = PerformanceLogSettings(form.systemDiagnostics.isChecked, form.systemSampleInterval.l(), form.batteryDiagnostics.isChecked, form.testDuration.selectedItem.toString().toInt()),
             debug = DebugSettings(form.diagnostics.isChecked, form.debugLogging.isChecked, form.rawConfidence.f(), form.rawCandidates.i(),
-                form.saveInput.isChecked, form.saveInterval.l(), form.saveOnDetection.isChecked, form.legacyDebugImage.isChecked)
+                form.saveInput.isChecked, form.saveInterval.l(), form.saveOnDetection.isChecked, form.legacyDebugImage.isChecked,
+                form.mlKitDiagnostics.isChecked)
         )
     }
 
@@ -815,6 +820,7 @@ class SettingsActivity : ComponentActivity() {
         lateinit var confidenceLabel: Switch; lateinit var fps: Switch; lateinit var overlayStale: EditText
         lateinit var mlKitEnabled: Switch; lateinit var mlKitInterval: EditText
         lateinit var diagnostics: Switch; lateinit var debugLogging: Switch; lateinit var rawConfidence: EditText; lateinit var rawCandidates: EditText
+        lateinit var mlKitDiagnostics: Switch
         lateinit var saveInput: Switch; lateinit var saveInterval: EditText; lateinit var saveOnDetection: Switch; lateinit var legacyDebugImage: Switch
     }
 

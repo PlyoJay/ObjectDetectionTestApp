@@ -9,6 +9,35 @@ import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class AppSettingsTest {
+    @Test fun mlKitDiagnosticsOptInRoundTripsWithoutChangingDetectorOrOverlaySettings() {
+        val original = AppSettings(yolo = YoloSettings(
+            model = com.samin.objectdetection.detector.YoloModel.YOLO_512, interpreterThreadCount = 2))
+        assertFalse(original.debug.enableMlKitDiagnostics)
+        val enabled = original.copy(debug = original.debug.copy(enableMlKitDiagnostics = true))
+        val restored = AppSettingsCodec.decode(AppSettingsCodec.encode(enabled))
+        assertEquals(enabled, restored)
+        assertTrue(restored.debug.enableMlKitDiagnostics)
+        assertEquals(original.toDetectionConfig(), restored.toDetectionConfig())
+        assertEquals(original.yolo, restored.yolo)
+        assertEquals(original.mlKit, restored.mlKit)
+        assertEquals(original.overlay, restored.overlay)
+        assertEquals(original.warning, restored.warning)
+        assertTrue(AppSettingsCodec.snapshotLines(restored).contains("debug.enableMlKitDiagnostics=true"))
+    }
+
+    @Test fun missingOrInvalidMlKitDiagnosticsDefaultsOffForOldAndCurrentSettings() {
+        for (version in 1..APP_SETTINGS_SCHEMA_VERSION) {
+            val restored = AppSettingsCodec.decode("schemaVersion=$version\npresetName=CUSTOM\n" +
+                "yolo.interpreterThreadCount=2\nmlKit.enabled=true\noverlay.showMlKitBoxes=true")
+            assertFalse("Missing opt-in must remain OFF for schema $version", restored.debug.enableMlKitDiagnostics)
+            assertEquals(2, restored.yolo.interpreterThreadCount)
+            assertTrue(restored.mlKit.enabled)
+            assertTrue(restored.overlay.showMlKitBoxes)
+        }
+        assertFalse(AppSettingsCodec.decode("schemaVersion=$APP_SETTINGS_SCHEMA_VERSION\n" +
+            "debug.enableMlKitDiagnostics=invalid").debug.enableMlKitDiagnostics)
+    }
+
     @Test fun modelSelectionRoundTripsWithoutChangingPresetsThresholdsOrRoi() {
         val original = SettingsPresets.fieldTest(YoloResizeMode.LETTERBOX).copy(
             presetName = "MY MODEL TEST", camera = CameraSettings(recognitionRoi = com.samin.objectdetection.camera.RecognitionRoi.PRESET))

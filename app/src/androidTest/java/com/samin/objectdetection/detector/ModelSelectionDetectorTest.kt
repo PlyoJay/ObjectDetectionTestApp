@@ -106,7 +106,8 @@ class ModelSelectionDetectorTest {
                             assertEquals(roi.width, bitmap.width); assertEquals(roi.height, bitmap.height)
                             return detector.javaClass.declaredMethods.single { it.name == "parseOutput" }.apply { isAccessible = true }
                                 .invoke(detector, buffer, transform, 0L, 0L, 0L, SystemClock.elapsedRealtimeNanos(),
-                                    System.currentTimeMillis(), SystemClock.elapsedRealtimeNanos(), 0L, 0L, 0L) as List<DetectionResult>
+                                    System.currentTimeMillis(), SystemClock.elapsedRealtimeNanos(), SystemClock.elapsedRealtimeNanos(),
+                                    0L, 0L, 0L) as List<DetectionResult>
                         }
                         override fun close() = Unit
                     }

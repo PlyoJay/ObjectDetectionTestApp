@@ -49,6 +49,8 @@ import com.samin.objectdetection.metrics.PerformanceLogHeader
 import com.samin.objectdetection.metrics.PerformanceLogRecorder
 import com.samin.objectdetection.mlkit.MlKitObjectDetector
 import com.samin.objectdetection.mlkit.MlKitInputBuffer
+import com.samin.objectdetection.mlkit.MlKitDiagnostics
+import com.samin.objectdetection.mlkit.MlKitDiagnosticLogs
 import com.samin.objectdetection.motion.ObjectMotionTracker
 import com.samin.objectdetection.pipeline.DetectionPipeline
 import com.samin.objectdetection.policy.OverlayObjectFilter
@@ -121,6 +123,7 @@ class MainActivity : ComponentActivity() {
 
     private val isMlKitProcessing = AtomicBoolean(false)
     private val mlKitInputBuffer = MlKitInputBuffer()
+    private var mlKitDiagnostics: MlKitDiagnostics? = null
     @Volatile
     private var lastMlKitCount = 0
 
@@ -212,6 +215,22 @@ class MainActivity : ComponentActivity() {
         settingsStore = AppSettingsStore(this)
         appSettings = settingsStore.loadApplied()
         val yoloDetector = createYoloDetectorWithRecovery() ?: return
+        // Recovery can restore different applied settings, including the diagnostics opt-in.
+        val diagnosticFiles = if (appSettings.debug.enableMlKitDiagnostics) MlKitDiagnosticLogs.get(applicationContext)
+            else MlKitDiagnosticLogs.peek()
+        diagnosticFiles?.runtimeStarted(sessionId, appSettings.debug.enableMlKitDiagnostics, AppSettingsCodec.snapshotLines(appSettings))
+        if (appSettings.debug.enableMlKitDiagnostics) {
+            mlKitDiagnostics = MlKitDiagnostics(sessionId, SystemClock::elapsedRealtimeNanos) {
+                Log.i("MlKitDiagnostics", it)
+                diagnosticFiles?.record(sessionId, it)
+            }
+            mlKitDiagnostics?.event(-1L, "CONFIG") {
+                "sdkMode=STREAM_MODE multipleObjects=true enabled=${appSettings.mlKit.enabled} " +
+                    "intervalMs=${appSettings.mlKit.detectionIntervalMs} preview=${appSettings.camera.previewEnabled} " +
+                    "overlay=${appSettings.overlay.enabled} boxes=${appSettings.overlay.showMlKitBoxes} " +
+                    "staleMs=${appSettings.overlay.staleTimeoutMs} roi=${appSettings.camera.recognitionRoi}"
+            }
+        }
         detector = yoloDetector
         val modelIdentity = yoloDetector.modelIdentity()
         detectionConfig = detectionConfig.copy(inputSize = modelIdentity.inputWidth, inputHeight = modelIdentity.inputHeight)
@@ -360,6 +379,7 @@ class MainActivity : ComponentActivity() {
             staleTimeoutMs = appSettings.overlay.staleTimeoutMs
         )
         if (detectionConfig.debugDetectionLogging) overlayView.diagnosticLog = detectionDebugRecorder::record
+        overlayView.mlKitDiagnostics = mlKitDiagnostics
         setContentView(screen.root)
     }
 
@@ -1348,11 +1368,20 @@ class MainActivity : ComponentActivity() {
 
     private fun maybeRunMlKitDetection(bitmap: Bitmap, frameWidth: Int, frameHeight: Int, sourceTrace: FrameTrace,
         latency: FrameLatencyRecorder? = null) {
-        if (!detectionConfig.enableMlKitDetection) return
+        if (!detectionConfig.enableMlKitDetection) {
+            mlKitDiagnostics?.skipped(sourceTrace.frameId, "DISABLED", isMlKitProcessing.get())
+            return
+        }
         val now = System.currentTimeMillis()
 
-        if (now - lastMlKitDetectionTime < detectionConfig.mlKitDetectionIntervalMs) return
-        if (!isMlKitProcessing.compareAndSet(false, true)) return
+        if (now - lastMlKitDetectionTime < detectionConfig.mlKitDetectionIntervalMs) {
+            mlKitDiagnostics?.skipped(sourceTrace.frameId, "INTERVAL", isMlKitProcessing.get())
+            return
+        }
+        if (!isMlKitProcessing.compareAndSet(false, true)) {
+            mlKitDiagnostics?.skipped(sourceTrace.frameId, "IN_FLIGHT", true)
+            return
+        }
 
         lastMlKitDetectionTime = now
 
@@ -1364,7 +1393,17 @@ class MainActivity : ComponentActivity() {
             mlKitInputBuffer.acquire(bitmap, roi)
         } catch (error: Throwable) {
             isMlKitProcessing.set(false)
+            mlKitDiagnostics?.event(sourceTrace.frameId, "INPUT_ERROR") { "inFlight=false error=${error.javaClass.simpleName}" }
             throw error
+        }
+        mlKitDiagnostics?.acquired(sourceTrace.frameId)
+        mlKitDiagnostics?.event(sourceTrace.frameId, "INPUT") {
+            "source=${frameWidth}x$frameHeight roi=[${roi.left},${roi.top},${roi.right},${roi.bottom}] " +
+                "input=${input.bitmap.width}x${input.bitmap.height} config=${input.bitmap.config} " +
+                "generation=${input.bitmap.generationId} recycled=${input.bitmap.isRecycled} ${mlKitInputSamples(input.bitmap)}"
+        }
+        val sdkDiagnosticLog: ((String) -> Unit)? = mlKitDiagnostics?.let { diagnostics ->
+            { message -> diagnostics.event(sourceTrace.frameId, "SDK") { message } }
         }
 
         val mlKitDispatchedNs = latency?.nowNs() ?: -1L
@@ -1374,7 +1413,7 @@ class MainActivity : ComponentActivity() {
                     val mlStart = System.currentTimeMillis()
                     val mlStartNs = SystemClock.elapsedRealtimeNanos()
 
-                    val mlKitResults = mlKitDetector.detect(input.bitmap, latency, mlKitDispatchedNs)
+                    val mlKitResults = mlKitDetector.detect(input.bitmap, latency, mlKitDispatchedNs, sdkDiagnosticLog)
                     val mlTrace = sourceTrace.copy(inferenceStartedAtMs = mlStart, inferenceStartedElapsedNs = mlStartNs,
                         completedAtMs = System.currentTimeMillis(), completedElapsedNs = SystemClock.elapsedRealtimeNanos())
 
@@ -1397,8 +1436,20 @@ class MainActivity : ComponentActivity() {
                             frameTimestampMs = sourceTrace.frameTimestampMs
                         )
                     }
+                    mlKitDiagnostics?.event(sourceTrace.frameId, "MAPPED") {
+                        "returnedCount=${mlKitResults.size} mappedCount=${results.size} " +
+                            "boxes=${results.take(5).joinToString { "[${it.left},${it.top},${it.right},${it.bottom}]" }}"
+                    }
+                    mlKitDiagnostics?.event(sourceTrace.frameId, "UI_SUBMIT") {
+                        "overlayCount=${results.size} preview=${appSettings.camera.previewEnabled} " +
+                            "reason=${if (appSettings.camera.previewEnabled) "QUEUED" else "PREVIEW_OFF"}"
+                    }
                     if (appSettings.camera.previewEnabled) mlKitUiUpdates.submit {
-                        if (destroying) return@submit
+                        if (destroying) {
+                            mlKitDiagnostics?.event(sourceTrace.frameId, "UI_SKIP") { "reason=DESTROYING" }
+                            return@submit
+                        }
+                        mlKitDiagnostics?.event(sourceTrace.frameId, "UI_APPLY") { "overlayCount=${results.size}" }
                         overlayView.updateMlKitDetections(
                             results,
                             frameWidth,
@@ -1408,12 +1459,14 @@ class MainActivity : ComponentActivity() {
                     }
 
                 } catch (e: Exception) {
+                    mlKitDiagnostics?.event(sourceTrace.frameId, "RESULT_ERROR") { "error=${e.javaClass.simpleName}" }
                     Log.e(TAG, "ML Kit detection error", e)
                 }
             }
         } catch (error: Throwable) {
             input.close()
             isMlKitProcessing.set(false)
+            mlKitDiagnostics?.released(sourceTrace.frameId)
             throw error
         }
         // Also runs if launch is cancelled before entering its body. detect drains the SDK Task
@@ -1421,7 +1474,23 @@ class MainActivity : ComponentActivity() {
         job.invokeOnCompletion {
             input.close()
             isMlKitProcessing.set(false)
+            mlKitDiagnostics?.released(sourceTrace.frameId)
         }
+    }
+
+    /** Only called inside an opt-in diagnostic lambda; no images or full pixel arrays are saved. */
+    private fun mlKitInputSamples(bitmap: Bitmap): String {
+        var minimum = 255
+        var maximum = 0
+        var fingerprint = 1
+        for (row in 0..3) for (column in 0..7) {
+            val pixel = bitmap.getPixel((bitmap.width - 1) * column / 7, (bitmap.height - 1) * row / 3)
+            val brightness = (((pixel ushr 16) and 255) + ((pixel ushr 8) and 255) + (pixel and 255)) / 3
+            minimum = minOf(minimum, brightness)
+            maximum = maxOf(maximum, brightness)
+            fingerprint = 31 * fingerprint + pixel
+        }
+        return "sampleBrightness=[$minimum,$maximum] sampleFingerprint=${Integer.toHexString(fingerprint)}"
     }
 
     private fun hasCameraPermission(): Boolean {
@@ -1466,6 +1535,7 @@ class MainActivity : ComponentActivity() {
             overlayView.clearDetections()
             overlayView.onFrameDrawn = null
             overlayView.diagnosticLog = null
+            overlayView.mlKitDiagnostics = null
         }
         super.onDestroy()
         if (isRecording) stopEvaluationRecording()
@@ -1486,6 +1556,7 @@ class MainActivity : ComponentActivity() {
             captureWork.coroutineContext[Job]?.children?.toList()?.joinAll()
             captureWork.cancel()
             mlKitInputBuffer.close()
+            MlKitDiagnosticLogs.peek()?.sourceEnded(sessionId)
             if (analyzerStopped && ::detector.isInitialized) withContext(Dispatchers.IO) { detector.close() }
             if (::mlKitDetector.isInitialized) mlKitDetector.close()
             if (::userLocationTracker.isInitialized) userLocationTracker.stop()

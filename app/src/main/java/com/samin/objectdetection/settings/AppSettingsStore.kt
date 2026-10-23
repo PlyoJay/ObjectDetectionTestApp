@@ -189,6 +189,7 @@ object AppSettingsCodec {
             put("debug.debugSaveIntervalMs", debugSaveIntervalMs)
             put("debug.debugSaveOnDetection", debugSaveOnDetection)
             put("debug.legacyDebugImageEnabled", legacyDebugImageEnabled)
+            put("debug.enableMlKitDiagnostics", enableMlKitDiagnostics)
         }
         return StringWriter().also { p.store(it, "ObjectDetection AppSettings") }.toString()
     }
@@ -276,7 +277,8 @@ object AppSettingsCodec {
                 b("debug.debugSaveInferenceInput", d.debug.debugSaveInferenceInput),
                 l("debug.debugSaveIntervalMs", d.debug.debugSaveIntervalMs),
                 b("debug.debugSaveOnDetection", d.debug.debugSaveOnDetection),
-                b("debug.legacyDebugImageEnabled", d.debug.legacyDebugImageEnabled)
+                b("debug.legacyDebugImageEnabled", d.debug.legacyDebugImageEnabled),
+                b("debug.enableMlKitDiagnostics", d.debug.enableMlKitDiagnostics)
             )
         )
         // Only an unchanged v1 DEFAULT can be identified safely as the former default.

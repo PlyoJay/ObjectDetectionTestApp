@@ -90,6 +90,145 @@ class MlKitObjectDetectorTest {
         } finally { detector.close(); bitmap.recycle() }
     }
 
+    @Test fun successfulZeroSingleAndMultipleObjectsPreserveSdkCountAndOrder() = runBlocking {
+        val bitmap = inputBitmap()
+        var requestedObjects = emptyList<DetectedObject>()
+        val detector = MlKitObjectDetector(FakeDetector {
+            TaskCompletionSource<List<DetectedObject>>().apply { setResult(requestedObjects) }.task
+        })
+        try {
+            for (count in listOf(0, 1, 3)) {
+                requestedObjects = List(count) { index ->
+                    DetectedObject(Rect(index * 100, index * 40, index * 100 + 80, index * 40 + 30),
+                        if (index == 1) null else index + 10, emptyList())
+                }
+                val events = ConcurrentLinkedQueue<FrameLatencyEvent>()
+                val results = detector.detect(bitmap, latency(events), 90L)
+                assertEquals(count, results.size)
+                requestedObjects.zip(results).forEach { (sdk, actual) ->
+                    assertEquals(sdk.boundingBox, actual.boundingBox)
+                    assertEquals(sdk.trackingId, actual.trackingId)
+                    assertNotSame(sdk.boundingBox, actual.boundingBox)
+                }
+                // A legitimate zero-object completion remains distinguishable from SDK errors.
+                assertCompletion(events, "SUCCESS")
+            }
+        } finally { detector.close(); bitmap.recycle() }
+    }
+
+    @Test fun diagnosticsWithoutP0DistinguishZeroOneMultipleObjectsAndSdkFailure() = runBlocking {
+        val bitmap = inputBitmap()
+        var requestedCount = 0
+        val detector = MlKitObjectDetector(FakeDetector {
+            TaskCompletionSource<List<DetectedObject>>().apply {
+                if (requestedCount < 0) setException(IllegalStateException("scripted SDK error"))
+                else setResult(List(requestedCount) { DetectedObject(Rect(10, 20, 80, 90), it, emptyList()) })
+            }.task
+        })
+        try {
+            for (count in listOf(0, 1, 3, -1)) {
+                requestedCount = count
+                val diagnostics = mutableListOf<String>()
+                val results = detector.detect(bitmap, diagnosticLog = diagnostics::add)
+                assertEquals(count.coerceAtLeast(0), results.size)
+                val request = diagnostics.single { it.startsWith("event=PROCESS_REQUEST ") }
+                assertTrue(request.contains("input=640x360"))
+                assertTrue(request.contains("rotation=0"))
+                assertTrue(request.contains("mode=STREAM_MODE"))
+                val completion = diagnostics.single { it.startsWith("event=TASK_COMPLETE ") }
+                assertTrue(completion.contains("outcome=${if (count < 0) "ERROR" else "SUCCESS"} "))
+                assertTrue(completion.contains("sdkCount=$count "))
+                if (count < 0) {
+                    assertTrue(completion.contains("boxes=N/A"))
+                    assertTrue(diagnostics.any { it.startsWith("event=DETECT_ERROR ") })
+                } else {
+                    assertFalse(diagnostics.any { it.startsWith("event=DETECT_ERROR ") })
+                    assertTrue(completion.contains("error=none"))
+                }
+            }
+        } finally { detector.close(); bitmap.recycle() }
+    }
+
+    @Test fun throwingDiagnosticsCannotChangeSdkResultsOrDuplicateP0Completion() = runBlocking {
+        val bitmap = inputBitmap()
+        var sdkFails = false
+        val detector = MlKitObjectDetector(FakeDetector {
+            TaskCompletionSource<List<DetectedObject>>().apply {
+                if (sdkFails) setException(IllegalStateException("actual SDK failure"))
+                else setResult(listOf(DetectedObject(Rect(10, 20, 80, 90), 23, emptyList())))
+            }.task
+        })
+        try {
+            for (fails in listOf(false, true)) {
+                sdkFails = fails
+                val diagnosticsAttempted = mutableListOf<String>()
+                val events = ConcurrentLinkedQueue<FrameLatencyEvent>()
+                val results = detector.detect(bitmap, latency(events), 90L) { line ->
+                    diagnosticsAttempted.add(line)
+                    throw IllegalArgumentException("diagnostic sink failed")
+                }
+                assertEquals(if (fails) 0 else 1, results.size)
+                if (!fails) assertEquals(23, results.single().trackingId)
+                assertTrue(diagnosticsAttempted.any { it.startsWith("event=PROCESS_REQUEST ") })
+                assertTrue(diagnosticsAttempted.any { it.startsWith("event=TASK_COMPLETE ") })
+                assertCompletion(events, if (fails) "ERROR" else "SUCCESS")
+                assertFalse(bitmap.isRecycled)
+            }
+        } finally { detector.close(); bitmap.recycle() }
+    }
+
+    @Test fun repeatedProcessFailuresAndSdkCancellationReleaseLeaseAndAllowNextSuccess() = runBlocking {
+        val source = inputBitmap()
+        val buffer = MlKitInputBuffer()
+        val failed = TaskCompletionSource<List<DetectedObject>>().apply {
+            setException(IllegalStateException("scripted asynchronous failure"))
+        }.task
+        val cancellation = CancellationTokenSource()
+        val cancelled = TaskCompletionSource<List<DetectedObject>>(cancellation.token).task
+        cancellation.cancel()
+        val succeeded = TaskCompletionSource<List<DetectedObject>>().apply {
+            setResult(listOf(DetectedObject(Rect(10, 20, 100, 120), 17, emptyList())))
+        }.task
+        var requests = 0
+        val detector = MlKitObjectDetector(FakeDetector {
+            when (requests++ % 4) {
+                0 -> throw IllegalStateException("scripted synchronous failure")
+                1 -> failed
+                2 -> cancelled
+                else -> succeeded
+            }
+        })
+        var retained: Bitmap? = null
+        try {
+            repeat(8) { attempt ->
+                val lease = buffer.acquire(source, FrameRoi(0, 0, 640, 360))
+                retained?.let { assertSame(it, lease.bitmap) }
+                retained = lease.bitmap
+                val inFlight = AtomicBoolean(true)
+                val events = ConcurrentLinkedQueue<FrameLatencyEvent>()
+                var results: List<MlKitObjectDetection>? = null
+                val job = launch(start = CoroutineStart.UNDISPATCHED) {
+                    results = detector.detect(lease.bitmap, latency(events), 90L)
+                }
+                job.invokeOnCompletion { lease.close(); inFlight.set(false) }
+                try {
+                    withTimeout(5_000) { job.join() }
+                    assertFalse(inFlight.get())
+                    assertFalse(lease.bitmap.isRecycled)
+                    val stage = attempt % 4
+                    val event = events.single() as FrameLatencyEvent.MlKit
+                    assertEquals(listOf("ERROR", "ERROR", "CANCELLED", "SUCCESS")[stage], event.outcome)
+                    assertEquals(if (stage == 0) "AWAIT_RETURN_FALLBACK" else "TASK_COMPLETION_LISTENER",
+                        event.completionBasis)
+                    assertEquals(if (stage == 3) 1 else 0, checkNotNull(results).size)
+                    if (stage == 3) assertEquals(17, checkNotNull(results).single().trackingId)
+                } finally { lease.close() }
+            }
+            assertEquals(8, requests)
+        } finally { detector.close(); buffer.close(); source.recycle() }
+        assertTrue(checkNotNull(retained).isRecycled)
+    }
+
     @Test fun coroutineCancellationKeepsLeaseAndInputUnchangedUntilSdkCompletion() = runBlocking {
         val source = inputBitmap()
         source.eraseColor(Color.GREEN)

@@ -16,6 +16,7 @@ import java.util.Locale
 import android.os.SystemClock
 import com.samin.objectdetection.metrics.FrameTrace
 import com.samin.objectdetection.camera.FrameRoi
+import com.samin.objectdetection.mlkit.MlKitDiagnostics
 
 class BoundingBoxOverlay @JvmOverloads constructor(
     context: Context,
@@ -50,6 +51,7 @@ class BoundingBoxOverlay @JvmOverloads constructor(
     private var showFps = false
     private var staleTimeoutMs = DEFAULT_MAX_OVERLAY_AGE_MS
     var diagnosticLog: ((String) -> Unit)? = null
+    internal var mlKitDiagnostics: MlKitDiagnostics? = null
     private var loggedYoloDraw: Long? = null
     private var loggedMlKitDraw: Long? = null
     private var debugMode: OverlayDebugMode = OverlayDebugMode.SIMPLE
@@ -130,6 +132,13 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         val nowNs = SystemClock.elapsedRealtimeNanos()
         val decision = mlKitState.update(detections, frameWidth, frameHeight, trace, nowNs)
         logUpdate(DetectionSource.ML_KIT, trace, nowNs, decision)
+        mlKitDiagnostics?.event(trace.frameId, "OVERLAY_UPDATE") {
+            "receivedCount=${detections.size} decision=$decision enabled=$enabled boxes=$showMlKitBoxes " +
+                "timeoutMs=$staleTimeoutMs captureAgeMs=${trace.captureAgeMsAt(nowNs)} " +
+                "analyzerAgeMs=${(nowNs - trace.analyzerReceivedElapsedNs) / 1_000_000L} " +
+                "frameSize=${frameWidth}x$frameHeight view=${width}x$height " +
+                "visibility=$visibility shown=$isShown attached=$isAttachedToWindow windowVisibility=$windowVisibility"
+        }
         if (decision == OverlayFrameState.Update.OUT_OF_ORDER) return
         if (debugMode == OverlayDebugMode.FULL) logDetectionDetails(detections, DetectionSource.ML_KIT)
         expireAndSchedule(mlKitState, DetectionSource.ML_KIT, clearMlKitRunnable)
@@ -208,6 +217,25 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         }
         if (mlKitFrame != null && loggedMlKitDraw != mlKitFrame.trace.frameId) {
             logDraw(DetectionSource.ML_KIT, mlKitFrame)
+            mlKitDiagnostics?.event(mlKitFrame.trace.frameId, "OVERLAY_DRAW") {
+                val drawable = freshMlKitDetections.count { box ->
+                    val left = mlKitTransform.offsetX + box.left * mlKitTransform.scale
+                    val top = mlKitTransform.offsetY + box.top * mlKitTransform.scale
+                    val right = mlKitTransform.offsetX + box.right * mlKitTransform.scale
+                    val bottom = mlKitTransform.offsetY + box.bottom * mlKitTransform.scale
+                    left.isFinite() && top.isFinite() && right.isFinite() && bottom.isFinite() &&
+                        right > left && bottom > top && right > 0 && bottom > 0 && left < width && top < height
+                }
+                "drawCalls=${if (showMlKitBoxes) freshMlKitDetections.size else 0} " +
+                    "inViewCount=${if (showMlKitBoxes && width > 0 && height > 0) drawable else 0} " +
+                    "reason=${if (!showMlKitBoxes) "BOXES_DISABLED" else if (width <= 0 || height <= 0) "VIEW_EMPTY" else if (freshMlKitDetections.isEmpty()) "EMPTY_RESULT" else if (drawable == 0) "OUTSIDE_VIEW_OR_INVALID_BOX" else "DRAWN"} " +
+                    "ageMs=${mlKitFrame.ageMs(SystemClock.elapsedRealtimeNanos())} " +
+                    "scale=${mlKitTransform.scale} offset=[${mlKitTransform.offsetX},${mlKitTransform.offsetY}] " +
+                    "screenBoxes=${freshMlKitDetections.take(5).joinToString { box ->
+                        "[${mlKitTransform.offsetX + box.left * mlKitTransform.scale},${mlKitTransform.offsetY + box.top * mlKitTransform.scale}," +
+                            "${mlKitTransform.offsetX + box.right * mlKitTransform.scale},${mlKitTransform.offsetY + box.bottom * mlKitTransform.scale}]"
+                    }}"
+            }
             loggedMlKitDraw = mlKitFrame.trace.frameId
         }
 
@@ -410,6 +438,9 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         removeCallbacks(timer)
         val nowNs = SystemClock.elapsedRealtimeNanos()
         state.expire(nowNs)?.let { expired ->
+            if (source == DetectionSource.ML_KIT) mlKitDiagnostics?.event(expired.trace.frameId, "OVERLAY_CLEARED") {
+                "reason=EXPIRED ageMs=${expired.ageMs(nowNs)} basis=${expired.timeBasis} count=${expired.value.size}"
+            }
             diagnosticLog?.invoke("[OVERLAY_CLEARED] source=$source frame=${expired.trace.frameId} " +
                 "reason=EXPIRED ageMs=${expired.ageMs(nowNs)} basis=${expired.timeBasis} elapsedNs=$nowNs")
             postInvalidateOnAnimation()
@@ -432,6 +463,9 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         val previous = state.frame
         state.configure(active, staleTimeoutMs, nowNs)
         if (previous != null && state.frame == null) {
+            if (source == DetectionSource.ML_KIT) mlKitDiagnostics?.event(previous.trace.frameId, "OVERLAY_CLEARED") {
+                "reason=CONFIG_CHANGED active=$active timeoutMs=$staleTimeoutMs"
+            }
             diagnosticLog?.invoke("[OVERLAY_CLEARED] source=$source frame=${previous.trace.frameId} " +
                 "reason=CONFIG_CHANGED active=$active timeoutMs=$staleTimeoutMs ageMs=${previous.ageMs(nowNs)}")
         }
@@ -439,6 +473,7 @@ class BoundingBoxOverlay @JvmOverloads constructor(
 
     /** Discards callbacks, payloads and draw bookkeeping at settings restart / Activity teardown. */
     fun clearDetections() {
+        mlKitState.frame?.let { frame -> mlKitDiagnostics?.event(frame.trace.frameId, "OVERLAY_CLEARED") { "reason=RESET" } }
         recognitionRegion = null
         removeCallbacks(clearYoloRunnable)
         removeCallbacks(clearMlKitRunnable)

@@ -82,6 +82,76 @@ class BoundingBoxOverlayTest {
         view.clearDetections()
     }
 
+    @Test fun mlKitYellowBoxesRequireBothVisibilityGatesAndFreshResultAfterReenable() = instrumentation.runOnMainSync {
+        val view = overlay()
+        try {
+            view.configure(false, false, true, false, false, 1500)
+            view.updateMlKitDetections(box, 200, 200, trace(1))
+            assertFalse("Global overlay OFF must suppress ML Kit boxes", hasPixels(view))
+            view.configure(true, false, false, false, false, 1500)
+            view.updateMlKitDetections(box, 200, 200, trace(2))
+            assertFalse("ML Kit box visibility OFF must suppress boxes", hasPixels(view))
+            view.configure(true, false, true, false, false, 1500)
+            assertFalse("Enabling boxes must not revive a suppressed payload", hasPixels(view))
+            view.updateMlKitDetections(box, 200, 200, trace(3))
+            val rendered = render(view)
+            try { assertEquals(Color.YELLOW, rendered.getPixel(20, 50)) } finally { rendered.recycle() }
+            view.setDrawingEnabled(false)
+            view.setDrawingEnabled(true)
+            assertFalse("Global OFF/ON must require another fresh SDK result", hasPixels(view))
+            view.updateMlKitDetections(box, 200, 200, trace(4))
+            assertTrue(hasPixels(view))
+        } finally { view.clearDetections() }
+    }
+
+    @Test fun mlKitSuccessfulButStaleResultIsRejectedBeforeAnyYellowBoxDraw() = instrumentation.runOnMainSync {
+        val view = overlay()
+        val logs = mutableListOf<String>()
+        view.diagnosticLog = logs::add
+        try {
+            view.configure(true, false, true, false, false, 1500)
+            view.updateMlKitDetections(box, 200, 200, trace(1))
+            assertTrue(hasPixels(view))
+            view.updateMlKitDetections(box, 200, 200, trace(2, 1600))
+            assertFalse("A completed SDK result can already be stale on arrival", hasPixels(view))
+            assertTrue(logs.any { it.contains("source=ML_KIT") && it.contains("reason=EXPIRED_AT_UPDATE") })
+            assertFalse(logs.any { it.contains("[OVERLAY_DRAW]") && it.contains("source=ML_KIT") && it.contains("frame=2 ") })
+        } finally { view.diagnosticLog = null; view.clearDetections() }
+    }
+
+    @Test fun mlKitMultipleObjectsDrawAndNextSuccessfulEmptyResultClearsPreviousBoxes() = instrumentation.runOnMainSync {
+        val view = overlay()
+        try {
+            view.configure(true, false, true, false, false, 1500)
+            val multiple = box + DetectionResult("ML Kit", 1f, 120f, 120f, 180f, 180f)
+            view.updateMlKitDetections(multiple, 200, 200, trace(1))
+            val rendered = render(view)
+            try {
+                assertEquals(Color.YELLOW, rendered.getPixel(20, 50))
+                assertEquals(Color.YELLOW, rendered.getPixel(120, 150))
+            } finally { rendered.recycle() }
+            view.updateMlKitDetections(emptyList(), 200, 200, trace(2))
+            assertFalse("A fresh zero-object SDK result must clear previous ML Kit boxes", hasPixels(view))
+        } finally { view.clearDetections() }
+    }
+
+    @Test fun mlKitPortraitRoiBoxUsesUprightFullFrameFitCenterCoordinates() = instrumentation.runOnMainSync {
+        val view = overlay()
+        try {
+            view.configure(true, false, true, false, false, 1500)
+            // 1080x1440 upright frame; top 20%, left/right 10% ROI restored from a 640x360 box.
+            view.updateMlKitDetections(listOf(DetectionResult("ML Kit", 1f, 108f, 288f, 972f, 1440f)),
+                1080, 1440, trace(1))
+            val rendered = render(view)
+            try {
+                // FIT_CENTER => scale=200/1440, offsetX=25. ROI's vertical sides are x=40 and x=160.
+                assertEquals(Color.YELLOW, rendered.getPixel(40, 80))
+                assertEquals(Color.YELLOW, rendered.getPixel(160, 80))
+                assertEquals(Color.TRANSPARENT, rendered.getPixel(25, 80))
+            } finally { rendered.recycle() }
+        } finally { view.clearDetections() }
+    }
+
     @Test fun togglesAndTimeoutChangesNeverReviveOldPayload() = instrumentation.runOnMainSync {
         val view = overlay()
         view.updateDetections(box, 200, 200, 1, 1, trace(1))

@@ -30,7 +30,7 @@ class MlKitObjectDetector internal constructor(private val detector: ObjectDetec
     ))
 
     suspend fun detect(bitmap: Bitmap, latency: FrameLatencyRecorder? = null,
-        dispatchedElapsedNs: Long = -1L): List<MlKitObjectDetection> {
+        dispatchedElapsedNs: Long = -1L, diagnosticLog: ((String) -> Unit)? = null): List<MlKitObjectDetection> {
         val start = System.currentTimeMillis()
         var requestedNs = -1L
         var completionRegistered = false
@@ -40,15 +40,23 @@ class MlKitObjectDetector internal constructor(private val detector: ObjectDetec
             val image = trace("MLKit.InputImage") { InputImage.fromBitmap(bitmap, 0) }
             val inputImageNs = SystemClock.elapsedRealtimeNanos() - inputStartNs
             requestedNs = latency?.nowNs() ?: -1L
+            diagnosticLog?.let { log -> diagnose(log) {
+                "event=PROCESS_REQUEST input=${bitmap.width}x${bitmap.height} rotation=0 mode=STREAM_MODE"
+            } }
             val task = detector.process(image)
-            if (latency != null) {
+            if (latency != null || diagnosticLog != null) {
                 val requestForCallbackNs = requestedNs
-                // Observe completion before await's dispatcher resumes. Callback work is bounded enqueue only.
+                // P0 observes completion before await resumes. Text diagnostics are opt-in and bounded.
                 completionRegistered = runCatching {
                     task.addOnCompleteListener(DIRECT_EXECUTOR) { completed ->
-                        latency.record(FrameLatencyEvent.MlKit(dispatchedElapsedNs, requestForCallbackNs, latency.nowNs(),
+                        latency?.record(FrameLatencyEvent.MlKit(dispatchedElapsedNs, requestForCallbackNs, latency.nowNs(),
                             if (completed.isSuccessful) "SUCCESS" else if (completed.isCanceled) "CANCELLED" else "ERROR",
                             "TASK_COMPLETION_LISTENER"))
+                        diagnosticLog?.let { log -> diagnose(log) { "event=TASK_COMPLETE outcome=" +
+                            (if (completed.isSuccessful) "SUCCESS" else if (completed.isCanceled) "CANCELLED" else "ERROR") +
+                            " sdkCount=${if (completed.isSuccessful) completed.result.size else -1} " +
+                            "boxes=${if (completed.isSuccessful) completed.result.take(5).joinToString { it.boundingBox.toShortString() } else "N/A"} " +
+                            "error=${completed.exception?.javaClass?.simpleName ?: "none"}" } }
                     }
                     true
                 }.getOrDefault(false)
@@ -65,6 +73,9 @@ class MlKitObjectDetector internal constructor(private val detector: ObjectDetec
                 Log.d(TAG, "detections=${results.size}, time=${System.currentTimeMillis() - start}ms inputImageNs=$inputImageNs")
             }
         } catch (e: Exception) {
+            diagnosticLog?.let { log -> diagnose(log) {
+                "event=DETECT_ERROR error=${e.javaClass.simpleName} detail=${e.message?.replace('\n', ' ')?.take(160)}"
+            } }
             Log.e(TAG, "detect error", e)
             emptyList()
         } finally {
@@ -77,6 +88,10 @@ class MlKitObjectDetector internal constructor(private val detector: ObjectDetec
 
     fun close() {
         detector.close()
+    }
+
+    private inline fun diagnose(log: (String) -> Unit, detail: () -> String) {
+        try { log(detail()) } catch (_: Exception) { }
     }
 
     companion object {

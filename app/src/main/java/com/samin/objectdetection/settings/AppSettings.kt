@@ -95,7 +95,8 @@ data class DebugSettings(
     val debugSaveInferenceInput: Boolean = false,
     val debugSaveIntervalMs: Long = 2_000L,
     val debugSaveOnDetection: Boolean = false,
-    val legacyDebugImageEnabled: Boolean = false
+    val legacyDebugImageEnabled: Boolean = false,
+    val enableMlKitDiagnostics: Boolean = false
 )
 
 /** Independent of detector debug/PNG settings; active only during Performance Log recording. */

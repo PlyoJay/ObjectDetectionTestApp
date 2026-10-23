@@ -29,6 +29,25 @@ class RecognitionRoiTest {
         assertEquals(1, FrameRoi.calculate(1, 1, RecognitionRoi(true, top = .999f), false).height)
     }
 
+    @Test fun portrait1080x1440MlKitCoordinatesRestoreCrop20Top10Sides() {
+        val roi = FrameRoi.calculate(1080, 1440,
+            RecognitionRoi(true, top = .20f, left = .10f, right = .10f), false)
+        assertEquals(FrameRoi(108, 288, 972, 1440), roi)
+        assertEquals(864, roi.width)
+        assertEquals(1152, roi.height)
+        // ML Kit sees this portrait ROI stretched to 640x360, then returns input-pixel boxes.
+        assertEquals(108f, roi.sourceX(0f, 640), .001f)
+        assertEquals(288f, roi.sourceY(0f, 360), .001f)
+        assertEquals(972f, roi.sourceX(640f, 640), .001f)
+        assertEquals(1440f, roi.sourceY(360f, 360), .001f)
+        assertEquals(540f, roi.sourceX(320f, 640), .001f)
+        assertEquals(864f, roi.sourceY(180f, 360), .001f)
+        assertEquals(194.4f, roi.sourceX(64f, 640), .001f)
+        assertEquals(403.2f, roi.sourceY(36f, 360), .001f)
+        assertEquals(885.6f, roi.sourceX(576f, 640), .001f)
+        assertEquals(1324.8f, roi.sourceY(324f, 360), .001f)
+    }
+
     @Test fun letterboxAndMlKitMapToSameUprightFullFrameForAllQuarterTurns() {
         // CameraX applies rotation first. 90/270 swap dimensions; edge ratios stay on upright axes.
         for (modelSize in listOf(640, 512)) for (rotation in listOf(0, 90, 180, 270)) {
