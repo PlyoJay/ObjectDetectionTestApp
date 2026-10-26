@@ -74,9 +74,7 @@ class VisionStyleYoloDetector(
     private var rgbWriteTimeNs = 0L
 
     private val labels: List<String> = runCatching {
-        context.assets.open(ModelConfig.LABEL_ASSET_NAME).bufferedReader().useLines { lines ->
-            lines.map(String::trim).filter(String::isNotEmpty).toList()
-        }
+        ModelAssets.labels(context, modelName)
     }.getOrElse { cause ->
         throw IllegalStateException("Failed to load labels asset: ${ModelConfig.LABEL_ASSET_NAME}", cause)
     }
@@ -90,9 +88,6 @@ class VisionStyleYoloDetector(
     override fun setDebugFrame(frame: DetectionDebugFrame?) { debugFrame = frame }
 
     init {
-        require(labels == ModelConfig.CLASS_LABELS) {
-            "Label order mismatch: ${ModelConfig.LABEL_ASSET_NAME} must contain ${ModelConfig.CLASS_LABELS}, actual=$labels"
-        }
         val modelBuffer = ModelAssets.load(context, modelName)
         val options = Interpreter.Options().apply {
             setNumThreads(interpreterThreadCount.coerceAtLeast(1))
@@ -136,7 +131,7 @@ class VisionStyleYoloDetector(
             }
             require(labels.size == modelClassCount) {
                 "Model/label mismatch: model=$modelName exposes $modelClassCount classes, " +
-                    "${ModelConfig.LABEL_ASSET_NAME} contains ${labels.size} labels"
+                    "configured class order contains ${labels.size} labels"
             }
 
             inputBuffer = ByteBuffer.allocateDirect(inputTensor.numBytes())
@@ -162,7 +157,8 @@ class VisionStyleYoloDetector(
                 "modelAsset=asset://$modelName sizeBytes=${loadedModelIdentity.assetSizeBytes} " +
                     "sha256=${loadedModelIdentity.sha256} inputShape=${loadedModelIdentity.inputShape} " +
                     "inputType=$inputType outputShape=${loadedModelIdentity.outputShape} outputType=$outputType " +
-                    "labels=${labels.size} classCount=$modelClassCount coordinateScale=${loadedModelIdentity.coordinateScale}"
+                    "labels=${labels.size} classCount=$modelClassCount coordinateScale=${loadedModelIdentity.coordinateScale} " +
+                    "classOrder=${labels.withIndex().joinToString { "${it.index}:${it.value}" }}"
             )
             Log.i(TAG, "[INPUT_CONTRACT] layout=${inputRgbShape.layout} RGB channel/255.0f " +
                 "inputCodec=$inputCodec outputCodec=$outputCodec parser=xywh_plus_class_scores_no_objectness_no_sigmoid")

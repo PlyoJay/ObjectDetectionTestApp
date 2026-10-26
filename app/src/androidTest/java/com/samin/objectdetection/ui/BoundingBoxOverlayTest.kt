@@ -16,6 +16,23 @@ import java.util.concurrent.TimeUnit
 
 /** Canvas pixels and real View callbacks; no camera, model, warning output or settings writes. */
 class BoundingBoxOverlayTest {
+    @Test fun animalBoxesUseTheirColorsAndLabelsWhileExistingColorsStayTheSame() = instrumentation.runOnMainSync {
+        for ((label, expectedColor) in listOf("cat" to Color.rgb(186, 104, 200),
+            "dog" to Color.rgb(38, 198, 218), "bollard" to Color.rgb(0, 191, 255),
+            "person" to Color.rgb(255, 105, 180))) {
+            val view = overlay().apply { setDebugMode(OverlayDebugMode.SIMPLE) }
+            val detection = box.single().copy(label = label, confidence = .9f)
+            view.updateDetections(listOf(detection), 200, 200, 1, 1, trace(1))
+            val bitmap = render(view)
+            try { assertEquals(label, expectedColor, bitmap.getPixel(20, 50)) }
+            finally { bitmap.recycle(); view.clearDetections() }
+            val method = view.javaClass.getDeclaredMethod("buildLabel", DetectionResult::class.java,
+                com.samin.objectdetection.model.DetectionSource::class.java).apply { isAccessible = true }
+            assertTrue((method.invoke(view, detection, com.samin.objectdetection.model.DetectionSource.YOLO) as String)
+                .startsWith(label))
+        }
+    }
+
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val box = listOf(DetectionResult("box", 1f, 20f, 20f, 80f, 80f))
 

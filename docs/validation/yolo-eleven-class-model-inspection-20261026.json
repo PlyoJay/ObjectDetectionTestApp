@@ -1,0 +1,1024 @@
+[
+  {
+    "model": "best_512.tflite",
+    "bytes": 37929451,
+    "sha256": "cc189262fd705e7d0b48246ebe42f868ff9b7370d97a0a6d7a7f756f16d4bad1",
+    "inspectionRuntime": {
+      "package": "ai-edge-litert",
+      "version": "2.2.0",
+      "scope": "host inspection, not Android benchmark"
+    },
+    "inputs": [
+      {
+        "name": "serving_default_args_0",
+        "shape": [
+          1,
+          3,
+          512,
+          512
+        ],
+        "shapeSignature": [
+          1,
+          3,
+          512,
+          512
+        ],
+        "bytes": 3145728,
+        "dtype": "float32",
+        "scale": 0.0,
+        "zeroPoint": 0,
+        "scales": [],
+        "zeroPoints": []
+      }
+    ],
+    "outputs": [
+      {
+        "name": "serving_default_output_0_output",
+        "shape": [
+          1,
+          15,
+          5376
+        ],
+        "shapeSignature": [
+          1,
+          15,
+          5376
+        ],
+        "bytes": 322560,
+        "dtype": "float32",
+        "scale": 0.0,
+        "zeroPoint": 0,
+        "scales": [],
+        "zeroPoints": []
+      }
+    ],
+    "exportMetadata": {
+      "description": "Ultralytics YOLO11s model trained on /home/samin_khj/datasets/03_merged/v1/data.yaml",
+      "author": "Ultralytics",
+      "date": "2026-10-26T09:25:50.449592+09:00",
+      "version": "8.4.173",
+      "license": "AGPL-3.0 License (https://ultralytics.com/license)",
+      "docs": "https://docs.ultralytics.com",
+      "stride": 32,
+      "task": "detect",
+      "head": "Detect",
+      "batch": 1,
+      "imgsz": [
+        512,
+        512
+      ],
+      "names": {
+        "0": "bollard",
+        "1": "person",
+        "2": "bicycle",
+        "3": "car",
+        "4": "motorcycle",
+        "5": "bus",
+        "6": "truck",
+        "7": "stop sign",
+        "8": "bench",
+        "9": "cat",
+        "10": "dog"
+      },
+      "args": {
+        "data": null,
+        "batch": 1,
+        "fraction": 1.0,
+        "quantize": null
+      },
+      "channels": 3,
+      "end2end": false
+    },
+    "graphSummary": {
+      "subgraphs": 1,
+      "operators": 353,
+      "operatorCounts": {
+        "ADD": 16,
+        "BATCH_MATMUL": 2,
+        "CONCATENATION": 21,
+        "CONV_2D": 81,
+        "DEPTHWISE_CONV_2D": 7,
+        "LOGISTIC": 77,
+        "MAX_POOL_2D": 3,
+        "MUL": 80,
+        "PAD": 7,
+        "RESHAPE": 16,
+        "RESIZE_NEAREST_NEIGHBOR": 2,
+        "SLICE": 23,
+        "SOFTMAX": 2,
+        "SUB": 2,
+        "TRANSPOSE": 14
+      },
+      "operatorVersions": {
+        "ADD": [
+          1
+        ],
+        "BATCH_MATMUL": [
+          1
+        ],
+        "CONCATENATION": [
+          1
+        ],
+        "CONV_2D": [
+          1
+        ],
+        "DEPTHWISE_CONV_2D": [
+          1
+        ],
+        "LOGISTIC": [
+          1
+        ],
+        "MAX_POOL_2D": [
+          1
+        ],
+        "MUL": [
+          1
+        ],
+        "PAD": [
+          1
+        ],
+        "RESHAPE": [
+          1
+        ],
+        "RESIZE_NEAREST_NEIGHBOR": [
+          3
+        ],
+        "SLICE": [
+          1
+        ],
+        "SOFTMAX": [
+          1
+        ],
+        "SUB": [
+          1
+        ],
+        "TRANSPOSE": [
+          1
+        ]
+      },
+      "tensorTypes": {
+        "FLOAT32": 535,
+        "INT32": 37
+      },
+      "quantizedTensors": 0,
+      "dynamicSignatureTensors": 0,
+      "conv2dMacsOnly": 6806880256,
+      "batchMatmulShapes": [
+        {
+          "operator": 141,
+          "inputs": [
+            [
+              4,
+              256,
+              32
+            ],
+            [
+              4,
+              32,
+              256
+            ]
+          ],
+          "outputs": [
+            [
+              4,
+              256,
+              256
+            ]
+          ]
+        },
+        {
+          "operator": 147,
+          "inputs": [
+            [
+              4,
+              64,
+              256
+            ],
+            [
+              4,
+              256,
+              256
+            ]
+          ],
+          "outputs": [
+            [
+              4,
+              64,
+              256
+            ]
+          ]
+        }
+      ],
+      "note": "Static FlatBuffer inventory, not Android delegation coverage or a latency measurement. MACs exclude non-CONV_2D ops."
+    },
+    "graphBoundaries": [
+      {
+        "index": 0,
+        "builtinCode": 39,
+        "inputs": [
+          {
+            "index": 0,
+            "name": "serving_default_args_0",
+            "shape": [
+              1,
+              3,
+              512,
+              512
+            ]
+          },
+          {
+            "index": 215,
+            "name": "arith.constant16",
+            "shape": [
+              4
+            ],
+            "constant": [
+              0,
+              2,
+              3,
+              1
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 219,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.conv.Conv_0/torch.nn.modules.conv.Conv2d_conv;2",
+            "shape": [
+              1,
+              512,
+              512,
+              3
+            ]
+          }
+        ]
+      },
+      {
+        "index": 1,
+        "builtinCode": 34,
+        "inputs": [
+          {
+            "index": 219,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.conv.Conv_0/torch.nn.modules.conv.Conv2d_conv;2",
+            "shape": [
+              1,
+              512,
+              512,
+              3
+            ]
+          },
+          {
+            "index": 106,
+            "name": "arith.constant10",
+            "shape": [
+              4,
+              2
+            ],
+            "constant": [
+              0,
+              0,
+              1,
+              1,
+              1,
+              1,
+              0,
+              0
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 220,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.conv.Conv_0/torch.nn.modules.conv.Conv2d_conv;3",
+            "shape": [
+              1,
+              514,
+              514,
+              3
+            ]
+          }
+        ]
+      },
+      {
+        "index": 2,
+        "builtinCode": 3,
+        "inputs": [
+          {
+            "index": 220,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.conv.Conv_0/torch.nn.modules.conv.Conv2d_conv;3",
+            "shape": [
+              1,
+              514,
+              514,
+              3
+            ]
+          },
+          {
+            "index": 208,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.conv.Conv_0/torch.nn.modules.conv.Conv2d_conv;1",
+            "shape": [
+              32,
+              3,
+              3,
+              3
+            ]
+          },
+          {
+            "index": 105,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.conv.Conv_0/torch.nn.modules.conv.Conv2d_conv;",
+            "shape": [
+              32
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 221,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.conv.Conv_0/torch.nn.modules.conv.Conv2d_conv;4",
+            "shape": [
+              1,
+              256,
+              256,
+              32
+            ]
+          }
+        ]
+      },
+      {
+        "index": 348,
+        "builtinCode": 2,
+        "inputs": [
+          {
+            "index": 565,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.head.Detect_23;24",
+            "shape": [
+              1,
+              2,
+              5376
+            ]
+          },
+          {
+            "index": 566,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.head.Detect_23;25",
+            "shape": [
+              1,
+              2,
+              5376
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 567,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.head.Detect_23;26",
+            "shape": [
+              1,
+              4,
+              5376
+            ]
+          }
+        ]
+      },
+      {
+        "index": 349,
+        "builtinCode": 18,
+        "inputs": [
+          {
+            "index": 567,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.head.Detect_23;26",
+            "shape": [
+              1,
+              4,
+              5376
+            ]
+          },
+          {
+            "index": 216,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.head.Detect_23;9",
+            "shape": [
+              1,
+              1,
+              5376
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 568,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.head.Detect_23;27",
+            "shape": [
+              1,
+              4,
+              5376
+            ]
+          }
+        ]
+      },
+      {
+        "index": 350,
+        "builtinCode": 14,
+        "inputs": [
+          {
+            "index": 554,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.head.Detect_23;18",
+            "shape": [
+              1,
+              11,
+              5376
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 569,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.head.Detect_23;28",
+            "shape": [
+              1,
+              11,
+              5376
+            ]
+          }
+        ]
+      },
+      {
+        "index": 351,
+        "builtinCode": 18,
+        "inputs": [
+          {
+            "index": 568,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.head.Detect_23;27",
+            "shape": [
+              1,
+              4,
+              5376
+            ]
+          },
+          {
+            "index": 1,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords;",
+            "shape": [],
+            "constant": [
+              0.001953125
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 570,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords;1",
+            "shape": [
+              1,
+              4,
+              5376
+            ]
+          }
+        ]
+      },
+      {
+        "index": 352,
+        "builtinCode": 2,
+        "inputs": [
+          {
+            "index": 570,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords;1",
+            "shape": [
+              1,
+              4,
+              5376
+            ]
+          },
+          {
+            "index": 569,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.head.Detect_23;28",
+            "shape": [
+              1,
+              11,
+              5376
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 571,
+            "name": "serving_default_output_0_output",
+            "shape": [
+              1,
+              15,
+              5376
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "model": "best.tflite",
+    "bytes": 37962632,
+    "sha256": "32a44bc7432ef2d7ca5de802dd8e714a26568aea16566bad3fd7fcd2b85bcee2",
+    "inspectionRuntime": {
+      "package": "ai-edge-litert",
+      "version": "2.2.0",
+      "scope": "host inspection, not Android benchmark"
+    },
+    "inputs": [
+      {
+        "name": "serving_default_args_0",
+        "shape": [
+          1,
+          3,
+          640,
+          640
+        ],
+        "shapeSignature": [
+          1,
+          3,
+          640,
+          640
+        ],
+        "bytes": 4915200,
+        "dtype": "float32",
+        "scale": 0.0,
+        "zeroPoint": 0,
+        "scales": [],
+        "zeroPoints": []
+      }
+    ],
+    "outputs": [
+      {
+        "name": "serving_default_output_0_output",
+        "shape": [
+          1,
+          13,
+          8400
+        ],
+        "shapeSignature": [
+          1,
+          13,
+          8400
+        ],
+        "bytes": 436800,
+        "dtype": "float32",
+        "scale": 0.0,
+        "zeroPoint": 0,
+        "scales": [],
+        "zeroPoints": []
+      }
+    ],
+    "exportMetadata": {
+      "description": "Ultralytics YOLO11s model trained on /home/samin_khj/datasets/gotoro_merged_dataset/data.yaml",
+      "author": "Ultralytics",
+      "date": "2026-10-12T09:41:11.852205+09:00",
+      "version": "8.4.173",
+      "license": "AGPL-3.0 License (https://ultralytics.com/license)",
+      "docs": "https://docs.ultralytics.com",
+      "stride": 32,
+      "task": "detect",
+      "head": "Detect",
+      "batch": 1,
+      "imgsz": [
+        640,
+        640
+      ],
+      "names": {
+        "0": "bollard",
+        "1": "person",
+        "2": "bicycle",
+        "3": "car",
+        "4": "motorcycle",
+        "5": "bus",
+        "6": "truck",
+        "7": "stop sign",
+        "8": "bench"
+      },
+      "args": {
+        "data": null,
+        "batch": 1,
+        "fraction": 1.0,
+        "quantize": null
+      },
+      "channels": 3,
+      "end2end": false
+    },
+    "graphSummary": {
+      "subgraphs": 1,
+      "operators": 353,
+      "operatorCounts": {
+        "ADD": 16,
+        "BATCH_MATMUL": 2,
+        "CONCATENATION": 21,
+        "CONV_2D": 81,
+        "DEPTHWISE_CONV_2D": 7,
+        "LOGISTIC": 77,
+        "MAX_POOL_2D": 3,
+        "MUL": 80,
+        "PAD": 7,
+        "RESHAPE": 16,
+        "RESIZE_NEAREST_NEIGHBOR": 2,
+        "SLICE": 23,
+        "SOFTMAX": 2,
+        "SUB": 2,
+        "TRANSPOSE": 14
+      },
+      "operatorVersions": {
+        "ADD": [
+          1
+        ],
+        "BATCH_MATMUL": [
+          1
+        ],
+        "CONCATENATION": [
+          1
+        ],
+        "CONV_2D": [
+          1
+        ],
+        "DEPTHWISE_CONV_2D": [
+          1
+        ],
+        "LOGISTIC": [
+          1
+        ],
+        "MAX_POOL_2D": [
+          1
+        ],
+        "MUL": [
+          1
+        ],
+        "PAD": [
+          1
+        ],
+        "RESHAPE": [
+          1
+        ],
+        "RESIZE_NEAREST_NEIGHBOR": [
+          3
+        ],
+        "SLICE": [
+          1
+        ],
+        "SOFTMAX": [
+          1
+        ],
+        "SUB": [
+          1
+        ],
+        "TRANSPOSE": [
+          1
+        ]
+      },
+      "tensorTypes": {
+        "FLOAT32": 535,
+        "INT32": 37
+      },
+      "quantizedTensors": 0,
+      "dynamicSignatureTensors": 0,
+      "conv2dMacsOnly": 10633600000,
+      "batchMatmulShapes": [
+        {
+          "operator": 141,
+          "inputs": [
+            [
+              4,
+              400,
+              32
+            ],
+            [
+              4,
+              32,
+              400
+            ]
+          ],
+          "outputs": [
+            [
+              4,
+              400,
+              400
+            ]
+          ]
+        },
+        {
+          "operator": 147,
+          "inputs": [
+            [
+              4,
+              64,
+              400
+            ],
+            [
+              4,
+              400,
+              400
+            ]
+          ],
+          "outputs": [
+            [
+              4,
+              64,
+              400
+            ]
+          ]
+        }
+      ],
+      "note": "Static FlatBuffer inventory, not Android delegation coverage or a latency measurement. MACs exclude non-CONV_2D ops."
+    },
+    "graphBoundaries": [
+      {
+        "index": 0,
+        "builtinCode": 39,
+        "inputs": [
+          {
+            "index": 0,
+            "name": "serving_default_args_0",
+            "shape": [
+              1,
+              3,
+              640,
+              640
+            ]
+          },
+          {
+            "index": 215,
+            "name": "arith.constant16",
+            "shape": [
+              4
+            ],
+            "constant": [
+              0,
+              2,
+              3,
+              1
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 219,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.conv.Conv_0/torch.nn.modules.conv.Conv2d_conv;2",
+            "shape": [
+              1,
+              640,
+              640,
+              3
+            ]
+          }
+        ]
+      },
+      {
+        "index": 1,
+        "builtinCode": 34,
+        "inputs": [
+          {
+            "index": 219,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.conv.Conv_0/torch.nn.modules.conv.Conv2d_conv;2",
+            "shape": [
+              1,
+              640,
+              640,
+              3
+            ]
+          },
+          {
+            "index": 106,
+            "name": "arith.constant10",
+            "shape": [
+              4,
+              2
+            ],
+            "constant": [
+              0,
+              0,
+              1,
+              1,
+              1,
+              1,
+              0,
+              0
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 220,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.conv.Conv_0/torch.nn.modules.conv.Conv2d_conv;3",
+            "shape": [
+              1,
+              642,
+              642,
+              3
+            ]
+          }
+        ]
+      },
+      {
+        "index": 2,
+        "builtinCode": 3,
+        "inputs": [
+          {
+            "index": 220,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.conv.Conv_0/torch.nn.modules.conv.Conv2d_conv;3",
+            "shape": [
+              1,
+              642,
+              642,
+              3
+            ]
+          },
+          {
+            "index": 208,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.conv.Conv_0/torch.nn.modules.conv.Conv2d_conv;1",
+            "shape": [
+              32,
+              3,
+              3,
+              3
+            ]
+          },
+          {
+            "index": 105,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.conv.Conv_0/torch.nn.modules.conv.Conv2d_conv;",
+            "shape": [
+              32
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 221,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.conv.Conv_0/torch.nn.modules.conv.Conv2d_conv;4",
+            "shape": [
+              1,
+              320,
+              320,
+              32
+            ]
+          }
+        ]
+      },
+      {
+        "index": 348,
+        "builtinCode": 2,
+        "inputs": [
+          {
+            "index": 565,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.head.Detect_23;24",
+            "shape": [
+              1,
+              2,
+              8400
+            ]
+          },
+          {
+            "index": 566,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.head.Detect_23;25",
+            "shape": [
+              1,
+              2,
+              8400
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 567,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.head.Detect_23;26",
+            "shape": [
+              1,
+              4,
+              8400
+            ]
+          }
+        ]
+      },
+      {
+        "index": 349,
+        "builtinCode": 18,
+        "inputs": [
+          {
+            "index": 567,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.head.Detect_23;26",
+            "shape": [
+              1,
+              4,
+              8400
+            ]
+          },
+          {
+            "index": 216,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.head.Detect_23;9",
+            "shape": [
+              1,
+              1,
+              8400
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 568,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.head.Detect_23;27",
+            "shape": [
+              1,
+              4,
+              8400
+            ]
+          }
+        ]
+      },
+      {
+        "index": 350,
+        "builtinCode": 14,
+        "inputs": [
+          {
+            "index": 554,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.head.Detect_23;18",
+            "shape": [
+              1,
+              9,
+              8400
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 569,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.head.Detect_23;28",
+            "shape": [
+              1,
+              9,
+              8400
+            ]
+          }
+        ]
+      },
+      {
+        "index": 351,
+        "builtinCode": 18,
+        "inputs": [
+          {
+            "index": 568,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.head.Detect_23;27",
+            "shape": [
+              1,
+              4,
+              8400
+            ]
+          },
+          {
+            "index": 1,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords;",
+            "shape": [],
+            "constant": [
+              0.0015625000232830644
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 570,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords;1",
+            "shape": [
+              1,
+              4,
+              8400
+            ]
+          }
+        ]
+      },
+      {
+        "index": 352,
+        "builtinCode": 2,
+        "inputs": [
+          {
+            "index": 570,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords;1",
+            "shape": [
+              1,
+              4,
+              8400
+            ]
+          },
+          {
+            "index": 569,
+            "name": "ultralytics.utils.export.engine._NormalizeCoords/ultralytics.nn.tasks.DetectionModel_model/ultralytics.nn.modules.head.Detect_23;28",
+            "shape": [
+              1,
+              9,
+              8400
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "index": 571,
+            "name": "serving_default_output_0_output",
+            "shape": [
+              1,
+              13,
+              8400
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

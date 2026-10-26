@@ -22,16 +22,16 @@ class DetectorCpuOptimizationTest {
         val bitmap = if (input != null) requireNotNull(BitmapFactory.decodeFile(input)) else
             context.assets.open("self_test/known.png").use { requireNotNull(BitmapFactory.decodeStream(it)) }
         try {
-            for (threads in listOf(2, 4)) for (xnnpack in listOf(true, false)) {
-                val detector = VisionStyleYoloDetector(context, confidenceThreshold = 0.2f, nmsThreshold = 0.45f,
+            for (model in YoloModel.entries) for (threads in listOf(2, 4)) for (xnnpack in listOf(true, false)) {
+                val detector = VisionStyleYoloDetector(context, model.assetName, confidenceThreshold = 0.2f, nmsThreshold = 0.45f,
                     sizeFilterMode = SizeFilterMode.DISABLED, interpreterThreadCount = threads, useXnnpack = xnnpack)
                 try {
-                    val directory = File(context.filesDir, "golden/cpu_optimization_$threads${if (xnnpack) "" else "_xnnpack_off"}")
+                    val directory = File(context.filesDir, "golden/cpu_optimization_${model.name}_$threads${if (xnnpack) "" else "_xnnpack_off"}")
                     val actual = detector.runSelfTest(bitmap, input ?: "self_test/known.png", directory)
                     val modelInput = requireNotNull(BitmapFactory.decodeFile(File(directory, "input.png").path))
                     try {
                         // Freeze the original run() API and writer/parser, matching runtime options.
-                        Interpreter(ModelAssets.load(context), Interpreter.Options().setNumThreads(threads)
+                        Interpreter(ModelAssets.load(context, model.assetName), Interpreter.Options().setNumThreads(threads)
                             .setUseXNNPACK(xnnpack)).use { reference ->
                             val inputTensor = reference.getInputTensor(0)
                             val shape = RgbTensorShape.from(inputTensor.shape())
@@ -52,7 +52,7 @@ class DetectorCpuOptimizationTest {
                             val quant = outputTensor.quantizationParams()
                             val codec = TensorValueCodec(outputTensor.dataType(), quant.scale, quant.zeroPoint)
                             val optimized = ByteBuffer.wrap(File(directory, "output_0.bin").readBytes()).order(ByteOrder.nativeOrder())
-                            val outputShape = YoloOutputShape.from(outputTensor.shape(), ModelConfig.CLASS_LABELS.size)
+                            val outputShape = YoloOutputShape.from(outputTensor.shape(), model.classLabels.size)
                             val rows = Array(outputShape.channels) { FloatArray(outputShape.candidates) }
                             for (index in 0 until outputTensor.numElements()) {
                                 val expected = codec.read(output)
@@ -65,7 +65,7 @@ class DetectorCpuOptimizationTest {
                             }
                             val transform = YoloResizeTransform.calculate(YoloResizeMode.LETTERBOX,
                                 bitmap.width, bitmap.height, shape.width, shape.height)
-                            val expected = originalDetections(rows, transform)
+                            val expected = originalDetections(rows, transform, model.classLabels)
                             assertEquals(expected.size, actual.size)
                             expected.zip(actual).forEach { (old, new) ->
                                 assertEquals(old.label, new.label)
@@ -101,12 +101,12 @@ class DetectorCpuOptimizationTest {
     }
 
     // Frozen pre-optimization box/clipping/NMS behavior, with size filtering disabled for comparison.
-    private fun originalDetections(rows: Array<FloatArray>, transform: YoloResizeTransform): List<DetectionResult> {
+    private fun originalDetections(rows: Array<FloatArray>, transform: YoloResizeTransform, labels: List<String>): List<DetectionResult> {
         val candidates = mutableListOf<DetectionResult>()
         for (i in rows[0].indices) {
             var id = -1
             var score = 0f
-            for (c in ModelConfig.CLASS_LABELS.indices) {
+            for (c in labels.indices) {
                 val value = rows[4 + c][i]
                 if (value.isFinite() && value > score) { id = c; score = value }
             }
@@ -115,7 +115,7 @@ class DetectorCpuOptimizationTest {
             if (!cx.isFinite() || !cy.isFinite() || !w.isFinite() || !h.isFinite() || w <= 0 || h <= 0) continue
             val normalized = RectF((cx-w/2f).coerceIn(0f,1f), (cy-h/2f).coerceIn(0f,1f),
                 (cx+w/2f).coerceIn(0f,1f), (cy+h/2f).coerceIn(0f,1f))
-            val box = DetectionResult(ModelConfig.CLASS_LABELS[id], score,
+            val box = DetectionResult(labels[id], score,
                 transform.sourceX(normalized.left), transform.sourceY(normalized.top),
                 transform.sourceX(normalized.right), transform.sourceY(normalized.bottom))
             if (box.right > box.left && box.bottom > box.top) candidates.add(box)

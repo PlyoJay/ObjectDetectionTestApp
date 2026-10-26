@@ -6,6 +6,7 @@ import com.samin.objectdetection.detector.ModelConfig
 import com.samin.objectdetection.warning.FeedbackLevel
 import com.samin.objectdetection.warning.ObjectPriority
 import com.samin.objectdetection.warning.RiskObjectCategory
+import com.samin.objectdetection.warning.WarningFeedback
 import java.util.Locale
 
 object ObjectTuningPolicyRegistry {
@@ -15,7 +16,7 @@ object ObjectTuningPolicyRegistry {
 
     val currentModelLabels: Set<String> = ModelConfig.CLASS_LABELS.toSet()
 
-    // Reserved policy templates. These are not emitted or enabled by the current nine-class model.
+    // Reserved policy templates. These are not emitted or enabled by either bundled model.
     val futureCustomLabels = setOf(
         "stairs",
         "curb",
@@ -23,6 +24,19 @@ object ObjectTuningPolicyRegistry {
     )
 
     private val policies = buildList {
+        listOf("cat", "dog").forEach { label ->
+            add(ObjectTuningPolicy(
+                label = label,
+                minConfidence = DetectionConfig.DEFAULT_CONFIDENCE_THRESHOLD,
+                minAreaRatio = 0.015f,
+                enableOverlay = true,
+                enableWarning = false,
+                enableVoice = false,
+                priority = ObjectPriority.LOW,
+                category = RiskObjectCategory.UNKNOWN,
+                note = "신규 동물 클래스는 탐지·표시·통계만 지원하며 경고·음성 안내에서 제외"
+            ))
+        }
         add(
             ObjectTuningPolicy(
                 label = "person",
@@ -145,6 +159,7 @@ object ObjectTuningPolicyRegistry {
 
     fun applyVoiceTuning(detection: DetectionResult): DetectionResult {
         val policy = get(detection.label) ?: return detection
+        if (!policy.enableWarning) return detection.copy(warningFeedback = WarningFeedback.NONE)
         if (policy.enableVoice) return detection
         val feedback = detection.warningFeedback.copy(
             voiceLevel = FeedbackLevel.NONE,

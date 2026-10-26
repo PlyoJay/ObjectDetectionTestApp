@@ -1,0 +1,38 @@
+{
+  "date": "2026-10-26",
+  "modelSha256BeforeAndAfter": "cc189262fd705e7d0b48246ebe42f868ff9b7370d97a0a6d7a7f756f16d4bad1",
+  "modelPreserved": true,
+  "unitTests": {
+    "tests": 191,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "hostModelContractTest": "PASS (both real assets, all names, Interpreter inference)",
+  "device": "SM-S921N",
+  "instrumentedRuns": {
+    "yolo-eleven-class-instrumented-20261026.txt": {
+      "tests": 44,
+      "passed": 43,
+      "failed": 1
+    },
+    "yolo-eleven-class-recheck-20261026.txt": {
+      "tests": 3,
+      "passed": 3,
+      "failed": 0
+    },
+    "yolo-eleven-class-settings-20261026.txt": {
+      "tests": 1,
+      "passed": 1,
+      "failed": 0
+    }
+  },
+  "uniqueInstrumentedTests": 45,
+  "finalInstrumentedFailures": [],
+  "initialUiFailure": "Screen Dozing / Activity STOPPED; passed after waking the display without changing device settings.",
+  "knownLimitations": [
+    "No annotated cat/dog positive images or evaluation dataset supplied",
+    "Training YAML unavailable locally; all class IDs verified from embedded export metadata",
+    "No long-run latency, FPS, battery or thermal comparison"
+  ]
+}

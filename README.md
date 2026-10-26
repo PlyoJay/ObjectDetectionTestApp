@@ -2,9 +2,12 @@
 
 The app includes test-only capture and recording controls on the camera screen.
 
-The app now targets the YOLO11s nine-class contract. The checked-in `best.tflite`
-is still the earlier one-class binary and must be replaced before running the app.
-See [nine-class migration and validation](docs/yolo11s-nine-class-migration.md).
+The app supports the bundled YOLO11s exports: `best_512.tflite` has 11 classes
+(existing IDs 0–8, cat=9, dog=10); `best.tflite` retains its nine-class contract.
+Select the 512 model in YOLO settings to detect cat/dog. Existing saved settings
+and the 640 default are preserved. Cat/dog are displayed and counted without warnings.
+See [eleven-class migration and validation](docs/yolo-eleven-class-migration-20261026.md)
+and the historical [nine-class migration](docs/yolo11s-nine-class-migration.md).
 
 For the earlier one-class `best.tflite` NCHW input correction, actual PC/Android golden results,
 and camera-free debug Self Test, see [TFLite inference correctness](docs/tflite-inference-correctness.md).

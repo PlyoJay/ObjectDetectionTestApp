@@ -248,6 +248,8 @@ class BoundingBoxOverlay @JvmOverloads constructor(
             boxPaint.color = when {
                 res.isIgnored -> Color.parseColor("#888888")
                 res.label == "person" || res.label == "사람" -> Color.parseColor("#FF69B4")
+                res.label == "cat" -> Color.parseColor("#BA68C8")
+                res.label == "dog" -> Color.parseColor("#26C6DA")
                 res.riskObjectCategory == RiskObjectCategory.VEHICLE_RISK -> Color.parseColor("#FF9800")
                 res.riskObjectCategory == RiskObjectCategory.TRAFFIC_CONTROL -> Color.parseColor("#00E676")
                 else -> Color.parseColor("#00BFFF")

@@ -89,6 +89,7 @@ class DetectionMetricsCollector {
     private val confidenceSumByLabel = mutableMapOf<String, Double>()
     private val rawCountByLabel = mutableMapOf<String, Long>()
     private val visibleCountByLabel = mutableMapOf<String, Long>()
+    private val visibleConfidenceSumByLabel = mutableMapOf<String, Double>()
     private val warningCountByLabel = mutableMapOf<String, Long>()
     private val ignoredCountByLabel = mutableMapOf<String, Long>()
     private val smallBoxFilteredCountByLabel = mutableMapOf<String, Long>()
@@ -147,6 +148,10 @@ class DetectionMetricsCollector {
 
         incrementCounts(rawCountByLabel, beforeFilter)
         incrementCounts(visibleCountByLabel, afterSmallBoxFilter)
+        afterSmallBoxFilter.forEach { detection ->
+            val label = normalizeLabel(detection.label)
+            visibleConfidenceSumByLabel[label] = visibleConfidenceSumByLabel.getOrDefault(label, 0.0) + detection.confidence
+        }
         incrementCounts(warningCountByLabel, afterPolicyFilter)
         recordFilterBreakdown(beforeFilter, afterSmallBoxFilter, afterPolicyFilter)
 
@@ -328,6 +333,11 @@ class DetectionMetricsCollector {
             appendLine("Avg conf: $avgConfidence")
             appendLine("Label raw: ${formatTopLabelCounts(rawCountByLabel)}")
             appendLine("Label visible: ${formatTopLabelCounts(visibleCountByLabel)}")
+            // Includes display-only classes without changing warning-based Top labels / Avg conf.
+            appendLine("Visible avg conf: ${visibleCountByLabel.entries.sortedByDescending { it.value }
+                .take(ObjectTuningPolicyRegistry.currentModelLabels.size).joinToString(", ") { (label, count) ->
+                    "$label ${String.format(Locale.US, "%.2f", visibleConfidenceSumByLabel.getOrDefault(label, 0.0) / count.coerceAtLeast(1))}"
+                }.ifBlank { "none" }}")
             appendLine("Label warning: ${formatTopLabelCounts(warningCountByLabel)}")
             appendLine("Label ignored: ${formatTopLabelCounts(ignoredCountByLabel)}")
             appendLine("Label small/conf: small=${formatTopLabelCounts(smallBoxFilteredCountByLabel)} / conf=${formatTopLabelCounts(confidenceFilteredCountByLabel)}")
@@ -387,7 +397,7 @@ class DetectionMetricsCollector {
     private fun formatTopLabelCounts(counts: Map<String, Long>): String {
         return counts.entries
             .sortedByDescending { it.value }
-            .take(SUMMARY_LABEL_LIMIT)
+            .take(ObjectTuningPolicyRegistry.currentModelLabels.size)
             .joinToString(", ") { "${it.key} ${it.value}" }
             .ifBlank { "none" }
     }

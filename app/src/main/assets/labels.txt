@@ -7,3 +7,5 @@ bus
 truck
 stop sign
 bench
+cat
+dog

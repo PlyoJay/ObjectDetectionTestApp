@@ -35,10 +35,12 @@ class ModelSelectionDetectorTest {
                         val identity = detector.modelIdentity()
                         assertEquals(model.inputSize, identity.inputWidth)
                         assertEquals(model.inputSize, identity.inputHeight)
-                        assertEquals(9, identity.classCount)
+                        assertEquals(model.classLabels.size, identity.classCount)
                         assertEquals(ModelAssets.sha256(context, model.assetName), identity.sha256)
                         val contract = ModelAssets.validate(field(detector, "interpreter") as org.tensorflow.lite.Interpreter,
-                            model.assetName, 9)
+                            model.assetName, model.classLabels.size)
+                        assertEquals(4 + model.classLabels.size, contract.output.channels)
+                        assertEquals(identity, ModelAssets.inspect(context, model, threads = 4, useXnnpack = true))
                         assertEquals(if (model == YoloModel.YOLO_512) 5376 else 8400, contract.output.candidates)
                         val buffer = field(detector, "inputBuffer") as ByteBuffer
                         val bitmap = field(detector, "reusableInputBitmap") as Bitmap
@@ -82,7 +84,8 @@ class ModelSelectionDetectorTest {
                 try {
                     val roi = FrameRoi.calculate(source.width, source.height, RecognitionRoi.PRESET, false)
                     val transform = YoloResizeTransform.calculate(mode, roi.width, roi.height, model.inputSize, model.inputSize)
-                    val contract = ModelAssets.validate(field(detector, "interpreter") as org.tensorflow.lite.Interpreter, model.assetName, 9)
+                    val contract = ModelAssets.validate(field(detector, "interpreter") as org.tensorflow.lite.Interpreter,
+                        model.assetName, model.classLabels.size)
                     val buffer = field(detector, "outputBuffer") as ByteBuffer
                     val values = buffer.asFloatBuffer()
                     repeat(values.capacity()) { values.put(it, 0f) }

@@ -7,6 +7,36 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 class YoloTensorContractTest {
+    @Test fun elevenClassDetectAcceptsBothLayoutsAndRejectsMismatchedClassCounts() {
+        assertEquals(YoloOutputShape(true, 15, 5376), YoloOutputShape.from(intArrayOf(1, 15, 5376), 11))
+        assertEquals(YoloOutputShape(false, 15, 5376), YoloOutputShape.from(intArrayOf(1, 5376, 15), 11))
+        for (shape in listOf(intArrayOf(1, 13, 5376), intArrayOf(1, 16, 5376),
+            intArrayOf(1, 15, 15), intArrayOf(2, 15, 5376))) {
+            assertThrows(IllegalArgumentException::class.java) { YoloOutputShape.from(shape, 11) }
+        }
+        assertThrows(IllegalArgumentException::class.java) { YoloOutputShape.from(intArrayOf(1, 15, 5376), 9) }
+    }
+
+    @Test fun outputReaderCopiesAllElevenClassChannelsWithoutTruncationInBothLayouts() {
+        for (channelsFirst in listOf(true, false)) {
+            val rows = Array(15) { FloatArray(5376) }
+            val bytes = buffer(15 * 5376 * 4)
+            for (a in 0 until (if (channelsFirst) 15 else 5376)) {
+                for (b in 0 until (if (channelsFirst) 5376 else 15)) {
+                    val channel = if (channelsFirst) a else b
+                    val candidate = if (channelsFirst) b else a
+                    bytes.putFloat(channel * 10000f + candidate)
+                }
+            }
+            bytes.rewind()
+            YoloOutputReader.copy(bytes, bytes.asFloatBuffer(), TensorValueCodec(DataType.FLOAT32), channelsFirst, rows)
+            for (channel in rows.indices) for (candidate in rows[channel].indices) {
+                assertEquals(channel * 10000f + candidate, rows[channel][candidate], 0f)
+            }
+            assertEquals(0, bytes.position())
+        }
+    }
+
     @Test fun inputAndOutputContractsUseEachTensorDimensionsAndCandidateAxis() {
         for ((size, count) in listOf(640 to 8400, 512 to 5376, 320 to 2100)) {
             assertEquals(RgbTensorShape(RgbTensorLayout.NCHW, size, size), RgbTensorShape.from(intArrayOf(1, 3, size, size)))

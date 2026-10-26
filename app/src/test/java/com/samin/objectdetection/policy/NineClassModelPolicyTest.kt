@@ -15,9 +15,10 @@ class NineClassModelPolicyTest {
     private val labels = listOf("bollard", "person", "bicycle", "car", "motorcycle", "bus", "truck", "stop sign", "bench")
 
     @Test fun classIdsAndEnabledPoliciesMatchTheNineClassContract() {
-        assertEquals(labels, ModelConfig.CLASS_LABELS)
-        assertEquals(labels.toSet(), ObjectTuningPolicyRegistry.currentModelLabels)
-        assertEquals(labels.toSet(), OverlayObjectFilter.allowedLabels)
+        assertEquals(labels, ModelConfig.LEGACY_CLASS_LABELS)
+        assertEquals(labels, ModelConfig.CLASS_LABELS.take(9))
+        assertEquals(ModelConfig.CLASS_LABELS.toSet(), ObjectTuningPolicyRegistry.currentModelLabels)
+        assertEquals(ModelConfig.CLASS_LABELS.toSet(), OverlayObjectFilter.allowedLabels)
         assertEquals(labels.toSet(), YoloDefaultPolicyRegistry.getAll().map { it.label }.toSet())
         val riskCategories = listOf(
             RiskObjectCategory.TEMPORARY_OBSTACLE, RiskObjectCategory.HUMAN_FLOW,

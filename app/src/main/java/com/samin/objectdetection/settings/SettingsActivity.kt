@@ -311,7 +311,8 @@ class SettingsActivity : ComponentActivity() {
     }
 
     private fun ModelIdentity.description() = "Model: $assetName\n입력 크기: ${inputWidth}×$inputHeight\n" +
-        "Input: $inputShape ($inputType)\nOutput: $outputShape ($outputType)\nSHA256: $sha256"
+        "Input: $inputShape ($inputType)\nOutput: $outputShape ($outputType)\n" +
+        "클래스 ($classCount): ${com.samin.objectdetection.detector.ModelConfig.labelsFor(assetName).joinToString()}\nSHA256: $sha256"
 
     private fun buildCameraSection(parent: LinearLayout) {
         section(parent, "카메라 / 전처리")
@@ -345,6 +346,7 @@ class SettingsActivity : ComponentActivity() {
     private fun buildYoloSection(parent: LinearLayout) {
         section(parent, "YOLO")
         form.model = choice(parent, "모델 선택", YoloModel.entries.map { it.displayName })
+        note(parent, "512 모델은 기존 9종에 cat(9), dog(10)을 추가한 11종입니다. cat/dog은 표시·통계에만 포함하며 경고·음성은 비활성화합니다. 640 모델은 기존 9종입니다.")
         form.confidence = floatSlider(parent, "Confidence Threshold", 0f, 1f)
         form.nms = floatSlider(parent, "NMS Threshold", 0f, 1f)
         form.threads = number(parent, "Interpreter Thread Count", "1..16")

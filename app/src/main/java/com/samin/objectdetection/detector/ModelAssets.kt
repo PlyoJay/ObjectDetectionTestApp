@@ -9,6 +9,17 @@ import java.security.MessageDigest
 
 /** Shared asset access for inference and the read-only settings screen. */
 object ModelAssets {
+    /** The shared labels asset contains all 11 verified IDs; the 640 export has only IDs 0..8. */
+    fun labels(context: Context, modelName: String): List<String> {
+        val assetLabels = context.assets.open(ModelConfig.LABEL_ASSET_NAME).bufferedReader().useLines {
+            it.map(String::trim).filter(String::isNotEmpty).toList()
+        }
+        require(assetLabels == ModelConfig.CLASS_LABELS) {
+            "Label order mismatch: ${ModelConfig.LABEL_ASSET_NAME} must contain ${ModelConfig.CLASS_LABELS}, actual=$assetLabels"
+        }
+        return ModelConfig.labelsFor(modelName)
+    }
+
     fun load(context: Context, modelName: String = ModelConfig.MODEL_ASSET_NAME): MappedByteBuffer {
         val descriptor = try { context.assets.openFd(modelName) } catch (error: java.io.IOException) {
             throw IllegalArgumentException("모델 파일을 열 수 없습니다: $modelName (app/src/main/assets/에 파일이 있는지 확인하세요)", error)
@@ -53,10 +64,7 @@ object ModelAssets {
     }
 
     fun inspect(context: Context, model: YoloModel, threads: Int = 1, useXnnpack: Boolean = false): ModelIdentity {
-        val labels = context.assets.open(ModelConfig.LABEL_ASSET_NAME).bufferedReader().useLines {
-            it.map(String::trim).filter(String::isNotEmpty).toList()
-        }
-        require(labels == ModelConfig.CLASS_LABELS) { "클래스 순서가 labels.txt 계약과 일치하지 않습니다: $labels" }
+        val labels = labels(context, model.assetName)
         val options = Interpreter.Options().setNumThreads(threads).setUseXNNPACK(useXnnpack)
         Interpreter(load(context, model.assetName), options).use { interpreter ->
             validate(interpreter, model.assetName, labels.size)
