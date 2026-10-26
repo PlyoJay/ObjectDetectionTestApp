@@ -1,0 +1,125 @@
+{
+  "verifiedAtKst": "2026-10-26T11:25:42.185790+09:00",
+  "scope": "Preparation only. No app launch/install or five-minute performance measurement. One one-second system-only config probe.",
+  "sourceHead": "3a71eb2e2077ed6a8ff75e555f28a5339e9a3d3c",
+  "buildCommand": [
+    "D:\\develop\\Projects\\TestProjects\\ObjectDetection\\gradlew.bat",
+    "assembleDebug",
+    "--offline",
+    "--console=plain"
+  ],
+  "buildResult": "PASS",
+  "apk": {
+    "path": "D:\\develop\\Projects\\TestProjects\\ObjectDetection\\app\\build\\outputs\\apk\\debug\\app-debug.apk",
+    "sha256": "5595b51a4949cf6d969a6185c1283856b18b7a448a59c920eab645172260561b",
+    "sourceBinding": "BUILT_FROM_RECORDED_SOURCES",
+    "modelSha256": "cc189262fd705e7d0b48246ebe42f868ff9b7370d97a0a6d7a7f756f16d4bad1",
+    "labelsSha256": "220c3328d829855d2c7dcdb0f0b0617c158908e9f8193e02aaacf6e086001733"
+  },
+  "installedApkMatchesPrepared": true,
+  "model": {
+    "sha256": "cc189262fd705e7d0b48246ebe42f868ff9b7370d97a0a6d7a7f756f16d4bad1",
+    "bytes": 37929451,
+    "inputs": [
+      {
+        "name": "serving_default_args_0",
+        "shape": [
+          1,
+          3,
+          512,
+          512
+        ],
+        "shapeSignature": [
+          1,
+          3,
+          512,
+          512
+        ],
+        "bytes": 3145728,
+        "dtype": "float32",
+        "scale": 0.0,
+        "zeroPoint": 0,
+        "scales": [],
+        "zeroPoints": []
+      }
+    ],
+    "outputs": [
+      {
+        "name": "serving_default_output_0_output",
+        "shape": [
+          1,
+          15,
+          5376
+        ],
+        "shapeSignature": [
+          1,
+          15,
+          5376
+        ],
+        "bytes": 322560,
+        "dtype": "float32",
+        "scale": 0.0,
+        "zeroPoint": 0,
+        "scales": [],
+        "zeroPoints": []
+      }
+    ],
+    "inspectionRuntime": {
+      "package": "ai-edge-litert",
+      "version": "2.2.0",
+      "scope": "host inspection, not Android benchmark"
+    }
+  },
+  "tests": {
+    "pythonMeasurement": 8,
+    "pythonExistingAnalyzer": 12,
+    "powershellContracts": 4,
+    "powershellMockFullRuns": 2,
+    "powershellAst": "PASS"
+  },
+  "probe": {
+    "traceSha256": "7ea1ec1cfb426657973513e8b8e5f024e360e61e76eb95569a00bb7ff938cbef",
+    "configuredDurationMs": 1000,
+    "device": "SM-S921N / API 36",
+    "recorderVersion": "51.2",
+    "processorVersion": "58.2",
+    "events": {
+      "sched_switch": {
+        "name": "sched_switch",
+        "samples": "1416"
+      },
+      "sched_waking": {
+        "name": "sched_waking",
+        "samples": "814"
+      },
+      "cpu_frequency": {
+        "name": "cpu_frequency",
+        "samples": "147"
+      },
+      "cpu_idle": {
+        "name": "cpu_idle",
+        "samples": "1829"
+      }
+    },
+    "loss": {
+      "status": "NO_RECORDED_LOSS",
+      "findings": [],
+      "note": "Also inspect all stats/setup errors; missing counters do not prove zero loss."
+    },
+    "setupErrors": [],
+    "clockOffsetNs": 0,
+    "appProcessRunning": false,
+    "yoloSlices": "N/A: app not launched"
+  },
+  "notMeasured": [
+    "five-minute 11-class baseline",
+    "actual YOLO/Bitmap slices during camera inference",
+    "trace FPS overhead",
+    "CPU/frequency/GC causal relation",
+    "long-run degradation cause"
+  ],
+  "artifactsDirectory": "D:\\develop\\Projects\\TestProjects\\ObjectDetection\\build\\yolo-measurements",
+  "applicationSourceChanged": false,
+  "modelOrLabelsChanged": false,
+  "committedOrPushed": false
+}

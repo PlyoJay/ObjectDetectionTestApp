@@ -1,0 +1,24 @@
+Run label / date / operator:
+Planned mode: Baseline (no Perfetto) / Perfetto
+ML Kit condition: OFF / ON (measure and compare separately)
+Prepared build-manifest path / APK SHA256:
+Device / OS / battery level / battery temperature before start:
+Room temperature / cooling interval / previous workload:
+Charging state / USB or wireless ADB / USB charging behavior:
+Power saving mode / background apps:
+Fixed scene / light / camera mount / orientation:
+Display brightness / refresh rate / screen timeout / keep-foreground method:
+App/camera activation to performance Start interval (seconds):
+512 model / CPU threads 2 / XNNPACK requested ON:
+LETTERBOX / Preview OFF / requested camera 1280x720:
+Actual rotated image 1080x1440 / rotation 90 / ROI [108,288,972,1440]:
+Detection interval 0ms / ROI left10 right10 top20 bottom0 percent:
+Performance duration 5min / system+battery diagnostics ON / sample 5000ms:
+Detection details OFF / ML Kit details OFF / tensor diagnostics+PNG OFF:
+Confidence 0.2 / NMS 0.45 / maxCandidates 100 / current filters:
+Beep / TTS / vibration (preserve existing settings):
+ML Kit SINGLE_IMAGE_MODE / 1500ms when ON:
+Other profiler / system tracing / screen recording OFF:
+Baseline/replay run order / matched run labels:
+Notes during run (scene changes, warning output, UI/background interruptions):
+Post-run battery state / cooling notes:

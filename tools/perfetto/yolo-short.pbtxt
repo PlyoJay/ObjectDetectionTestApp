@@ -1,0 +1,32 @@
+# 20 s only. Use the PowerShell runner to place this within a 5 min app session.
+buffers { size_kb: 32768 fill_policy: RING_BUFFER }
+duration_ms: 20000
+data_sources {
+  config {
+    name: "linux.ftrace"
+    ftrace_config {
+      ftrace_events: "sched/sched_switch"
+      ftrace_events: "sched/sched_waking"
+      ftrace_events: "power/cpu_frequency"
+      ftrace_events: "power/cpu_idle"
+      atrace_categories: "dalvik"
+      atrace_apps: "com.samin.objectdetection"
+      buffer_size_kb: 2048
+      drain_period_ms: 250
+    }
+  }
+}
+data_sources {
+  config {
+    name: "linux.process_stats"
+    process_stats_config { scan_all_processes_on_start: true }
+  }
+}
+# Seed frequency tracks even if the kernel emits no transition during the trace.
+# This polling runs only inside each short trace, never throughout the 5 minutes.
+data_sources {
+  config {
+    name: "linux.sys_stats"
+    sys_stats_config { cpufreq_period_ms: 500 }
+  }
+}
