@@ -10,6 +10,8 @@ import com.samin.objectdetection.mlkit.MlKitDetectionMode
 import java.io.StringReader
 import java.io.StringWriter
 import java.util.Properties
+import com.samin.objectdetection.distance.DistanceSettings
+import com.samin.objectdetection.distance.DistanceOpticsMode
 
 class AppSettingsStore(context: Context) {
     private val preferences = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
@@ -169,6 +171,7 @@ object AppSettingsCodec {
             put("warning.enableActualBeep", enableActualBeep); put("warning.enableActualTts", enableActualTts)
         }
         with(value.overlay) {
+            put("overlay.showDistance", showDistance)
             put("overlay.enabled", enabled); put("overlay.debugMode", debugMode.name)
             put("overlay.showYoloBoxes", showYoloBoxes); put("overlay.showMlKitBoxes", showMlKitBoxes)
             put("overlay.showConfidence", showConfidence); put("overlay.showFps", showFps)
@@ -176,6 +179,12 @@ object AppSettingsCodec {
         }
         with(value.mlKit) {
             put("mlKit.enabled", enabled); put("mlKit.detectionIntervalMs", detectionIntervalMs); put("mlKit.mode", mode.name)
+        }
+        with(value.distance) {
+            cameraHeightCm?.let { put("distance.cameraHeightCm", it) }
+            downwardPitchDegrees?.let { put("distance.downwardPitchDegrees", it) }
+            put("distance.opticsMode", opticsMode.name)
+            manualVerticalFovDegrees?.let { put("distance.manualVerticalFovDegrees", it) }
         }
         with(value.performanceLog) {
             put("performanceLog.durationMinutes", durationMinutes)
@@ -208,6 +217,10 @@ object AppSettingsCodec {
         fun i(key: String, default: Int) = s(key, default.toString()).toIntOrNull() ?: default
         fun l(key: String, default: Long) = s(key, default.toString()).toLongOrNull() ?: default
         fun f(key: String, default: Float) = s(key, default.toString()).toFloatOrNull()?.takeIf(Float::isFinite) ?: default
+        fun optionalFloat(key: String): Float? = p.getProperty(key)?.trim()?.takeIf { it.isNotEmpty() }?.let {
+            // Reject corrupt calibration rather than silently converting it into a plausible value.
+            it.toFloatOrNull()?.takeIf(Float::isFinite) ?: throw IllegalArgumentException("Invalid calibration: $key")
+        }
         fun b(key: String, default: Boolean) = when (s(key, default.toString()).lowercase()) {
             "true" -> true; "false" -> false; else -> default
         }
@@ -263,7 +276,14 @@ object AppSettingsCodec {
                 b("overlay.enabled", d.overlay.enabled), overlayMode("overlay.debugMode", d.overlay.debugMode),
                 b("overlay.showYoloBoxes", d.overlay.showYoloBoxes), b("overlay.showMlKitBoxes", d.overlay.showMlKitBoxes),
                 b("overlay.showConfidence", d.overlay.showConfidence), b("overlay.showFps", d.overlay.showFps),
-                l("overlay.staleTimeoutMs", d.overlay.staleTimeoutMs)
+                l("overlay.staleTimeoutMs", d.overlay.staleTimeoutMs), b("overlay.showDistance", false)
+            ),
+            distance = DistanceSettings(
+                optionalFloat("distance.cameraHeightCm"), optionalFloat("distance.downwardPitchDegrees"),
+                DistanceOpticsMode.entries.firstOrNull {
+                    it.name == s("distance.opticsMode", "AUTO")
+                } ?: DistanceOpticsMode.AUTO,
+                optionalFloat("distance.manualVerticalFovDegrees")
             ),
             mlKit = MlKitSettings(b("mlKit.enabled", d.mlKit.enabled), l("mlKit.detectionIntervalMs", d.mlKit.detectionIntervalMs),
                 MlKitDetectionMode.entries.firstOrNull { it.name == s("mlKit.mode", d.mlKit.mode.name) } ?: d.mlKit.mode),

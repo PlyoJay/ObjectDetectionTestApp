@@ -38,6 +38,8 @@ class MainScreenLoggingLayoutTest {
                     }
                     assertFalse(Rect.intersects(bounds(screen.mlKitLogButton), bounds(screen.mlKitShareButton)))
                     assertEquals(if (preview) View.VISIBLE else View.GONE, screen.previewView.visibility)
+                    screen.overlayView.configure(true, true, false, false, false, 1500, showDistance = true)
+                    assertEquals(if (preview) View.VISIBLE else View.GONE, screen.overlayView.visibility)
                 }
             }
         }

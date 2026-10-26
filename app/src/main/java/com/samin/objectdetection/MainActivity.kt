@@ -54,6 +54,7 @@ import com.samin.objectdetection.mlkit.MlKitDiagnosticLogs
 import com.samin.objectdetection.mlkit.MlKitDiagnosticLogRecorder
 import com.samin.objectdetection.motion.ObjectMotionTracker
 import com.samin.objectdetection.pipeline.DetectionPipeline
+import com.samin.objectdetection.distance.DistanceOpticsMode
 import com.samin.objectdetection.policy.OverlayObjectFilter
 import com.samin.objectdetection.policy.YoloDefaultPolicyRegistry
 import com.samin.objectdetection.ui.BoundingBoxOverlay
@@ -280,7 +281,8 @@ class MainActivity : ComponentActivity() {
                 staleTrackTimeoutMs = detectionConfig.motionStaleTrackTimeoutMs
             ),
             userLocationSnapshotProvider = { userLocationTracker.currentSnapshot },
-            debugRecorder = detectionDebugRecorder
+            debugRecorder = detectionDebugRecorder,
+            distanceSettings = appSettings.distance
         )
         vibrationWarningPlayer = VibrationWarningPlayer(this)
         beepWarningPlayer = BeepWarningPlayer()
@@ -385,7 +387,8 @@ class MainActivity : ComponentActivity() {
             showMlKitBoxes = appSettings.overlay.showMlKitBoxes,
             showConfidence = appSettings.overlay.showConfidence,
             showFps = appSettings.overlay.showFps,
-            staleTimeoutMs = appSettings.overlay.staleTimeoutMs
+            staleTimeoutMs = appSettings.overlay.staleTimeoutMs,
+            showDistance = appSettings.overlay.showDistance
         )
         if (detectionConfig.debugDetectionLogging) overlayView.diagnosticLog = detectionDebugRecorder::record
         overlayView.mlKitDiagnostics = mlKitDiagnostics
@@ -680,6 +683,9 @@ class MainActivity : ComponentActivity() {
             targetWidth = appSettings.camera.requestedWidth,
             targetHeight = appSettings.camera.requestedHeight,
             cameraPreviewEnabled = appSettings.camera.previewEnabled,
+            distanceMetadataEnabled = appSettings.distance.cameraHeightCm != null &&
+                appSettings.distance.downwardPitchDegrees != null &&
+                appSettings.distance.opticsMode == DistanceOpticsMode.AUTO,
             listener = object : CameraController.Listener {
                 override fun onAnalyzerStarted(timing: CameraFrameTiming): FrameLatencyRecorder? =
                     if (performanceLogRecorder.isRecording) performanceLogRecorder.beginFrameLatency(frameTrace(timing)) else null
@@ -741,7 +747,8 @@ class MainActivity : ComponentActivity() {
         val mlKitPrepareNs = SystemClock.elapsedRealtimeNanos() - mlKitPrepareStartNs
         val mlKitInFlight = isMlKitProcessing.get()
 
-        val pipelineResult = detectionPipeline.process(bitmap, frameReceivedTimeMs, rotationDegrees, frameTiming.frameId)
+        val pipelineResult = detectionPipeline.process(bitmap, frameReceivedTimeMs, rotationDegrees, frameTiming.frameId,
+            frameTiming.distanceGeometry)
         val completedNs = SystemClock.elapsedRealtimeNanos()
         val completedAtMs = System.currentTimeMillis()
         previewOffStatus = "객체 인식 실행 중"

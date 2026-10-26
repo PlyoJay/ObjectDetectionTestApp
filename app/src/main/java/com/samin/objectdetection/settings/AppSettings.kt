@@ -8,8 +8,9 @@ import com.samin.objectdetection.metrics.PerformanceTestWindow
 import com.samin.objectdetection.detector.YoloModel
 import com.samin.objectdetection.mlkit.MlKitDetectionMode
 import com.samin.objectdetection.ui.OverlayDebugMode
+import com.samin.objectdetection.distance.DistanceSettings
 
-const val APP_SETTINGS_SCHEMA_VERSION = 7
+const val APP_SETTINGS_SCHEMA_VERSION = 8
 
 data class CameraSettings(
     val detectIntervalMs: Long = 0L,
@@ -80,7 +81,8 @@ data class OverlaySettings(
     val showFps: Boolean = false,
     // Maximum frame age for drawing (capture time, or analyzer reception when capture is unreliable).
     // Each detector has its own deadline; this setting does not change warning/output lifetimes.
-    val staleTimeoutMs: Long = 1_500L
+    val staleTimeoutMs: Long = 1_500L,
+    val showDistance: Boolean = false
 )
 
 data class MlKitSettings(
@@ -120,9 +122,11 @@ data class AppSettings(
     val overlay: OverlaySettings = OverlaySettings(),
     val mlKit: MlKitSettings = MlKitSettings(),
     val debug: DebugSettings = DebugSettings(),
-    val performanceLog: PerformanceLogSettings = PerformanceLogSettings()
+    val performanceLog: PerformanceLogSettings = PerformanceLogSettings(),
+    val distance: DistanceSettings = DistanceSettings()
 ) {
     fun validationErrors(): List<String> = buildList {
+        addAll(distance.validationErrors())
         addAll(camera.recognitionRoi.validationErrors())
         if (performanceLog.durationMinutes !in PerformanceTestWindow.ALLOWED_MINUTES) add("성능 측정 시간은 3분, 5분, 10분 중 선택하세요.")
         if (camera.recognitionRoi.enabled && camera.useCenterSquareCrop) add("영역 크롭과 중앙 정방형 ROI는 동시에 사용할 수 없습니다.")

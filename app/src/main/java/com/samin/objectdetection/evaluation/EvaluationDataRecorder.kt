@@ -332,6 +332,7 @@ class EvaluationDataRecorder(
     ): JSONObject {
         val detectionId = buildDetectionId(snapshot.frameTimestampMs, index, label)
         return JSONObject()
+            .putDistance(this)
             .put("detectionIndex", index)
             .apply { snapshot.trace?.let { putTrace(it) } }
             .put("detectionId", detectionId)

@@ -9,6 +9,9 @@ import android.util.Size
 import androidx.camera.core.CameraSelector
 import androidx.camera.camera2.interop.Camera2CameraInfo
 import androidx.camera.camera2.interop.ExperimentalCamera2Interop
+import androidx.camera.camera2.interop.Camera2Interop
+import com.samin.objectdetection.distance.AnalysisCameraGeometry
+import com.samin.objectdetection.distance.Camera2DistanceGeometry
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.core.resolutionselector.ResolutionSelector
@@ -36,7 +39,8 @@ data class CameraFrameTiming(
     val frameHeight: Int = 0,
     val cameraToBitmapNs: Long = -1L,
     val rotationNs: Long = -1L,
-    val latency: FrameLatencyRecorder? = null
+    val latency: FrameLatencyRecorder? = null,
+    val distanceGeometry: AnalysisCameraGeometry? = null
 ) {
     val cameraToAnalyzerMs: Long get() = if (captureTimestampReliable) (analyzerReceivedMs - frameTimestampMs).coerceAtLeast(0L) else -1L
     val bitmapConversionMs: Long get() =
@@ -52,7 +56,8 @@ class CameraController(
     private val targetWidth: Int = TARGET_WIDTH,
     private val targetHeight: Int = TARGET_HEIGHT,
     private val cameraPreviewEnabled: Boolean = true,
-    private val listener: Listener
+    private val listener: Listener,
+    private val distanceMetadataEnabled: Boolean = false
 ) : AutoCloseable {
 
     interface Listener {
@@ -76,6 +81,7 @@ class CameraController(
     @Volatile private var closed = false
     @Volatile private var realtimeTimestamps = false
     private val stopped = CompletableFuture<Unit>()
+    private val distanceGeometry = Camera2DistanceGeometry()
 
     fun start() {
         val providerFuture = ProcessCameraProvider.getInstance(context)
@@ -100,11 +106,14 @@ class CameraController(
                 )
             )
             .build()
-        val analysis = ImageAnalysis.Builder()
+        val analysisBuilder = ImageAnalysis.Builder()
             .setResolutionSelector(resolutionSelector)
             .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-            .build()
+        if (distanceMetadataEnabled) {
+            Camera2Interop.Extender(analysisBuilder).setSessionCaptureCallback(distanceGeometry.captureCallback)
+        }
+        val analysis = analysisBuilder.build()
 
         analysis.setAnalyzer(analyzerExecutor) { imageProxy ->
             val analyzerReceivedMs = System.currentTimeMillis()
@@ -147,7 +156,8 @@ class CameraController(
                 timing = timing.copy(bitmapConversionStartMs = bitmapConversionStartMs,
                     bitmapConversionEndMs = bitmapConversionEndMs,
                     bitmapConversionDurationMs = (SystemClock.elapsedRealtimeNanos() - conversionStartNs) / 1_000_000L,
-                    cameraToBitmapNs = cameraToBitmapNs, rotationNs = rotationNs)
+                    cameraToBitmapNs = cameraToBitmapNs, rotationNs = rotationNs,
+                    distanceGeometry = distanceGeometry.geometry(imageProxy, distanceMetadataEnabled))
                 if (bitmap == null) {
                     outcome = "BITMAP_UNAVAILABLE"
                     recordSkipped(SkipReason.BITMAP_CONVERSION)
@@ -194,7 +204,9 @@ class CameraController(
             "analysisCrop=${analysis.resolutionInfo?.cropRect} previewResolution=${preview?.resolutionInfo?.resolution} " +
             "previewCrop=${preview?.resolutionInfo?.cropRect}")
         realtimeTimestamps = runCatching {
-            Camera2CameraInfo.from(camera.cameraInfo).getCameraCharacteristic(CameraCharacteristics.SENSOR_INFO_TIMESTAMP_SOURCE) ==
+            val info = Camera2CameraInfo.from(camera.cameraInfo)
+            distanceGeometry.bind(info)
+            info.getCameraCharacteristic(CameraCharacteristics.SENSOR_INFO_TIMESTAMP_SOURCE) ==
                 CameraCharacteristics.SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME
         }.getOrDefault(false)
     }

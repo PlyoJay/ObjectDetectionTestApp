@@ -40,13 +40,26 @@ class CameraPreviewRuntimeTest {
                     val preview = PreviewView(activity)
                     activity.setContentView(preview, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
                     controller = CameraController(context, activity, preview, 0, false,
-                        cameraPreviewEnabled = previewEnabled, listener = object : CameraController.Listener {
+                        cameraPreviewEnabled = previewEnabled, distanceMetadataEnabled = true, listener = object : CameraController.Listener {
                             override fun onFrameReceived(frameTimestampMs: Long, analyzerReceivedMs: Long) = Unit
                             override fun onFrameSkipped(reason: CameraController.SkipReason, skippedFrameCount: Long) = Unit
                             override fun onCameraStarted() = Unit
                             override fun onCameraError(error: Throwable) { failure.set(error); repeat(3) { frames.countDown() } }
                             override fun onFrameError(error: Throwable, timing: CameraFrameTiming?) { failure.set(error); repeat(3) { frames.countDown() } }
                             override fun onFrame(bitmap: Bitmap, timing: CameraFrameTiming, rotationDegrees: Int) {
+                                val geometry = requireNotNull(timing.distanceGeometry)
+                                assertTrue(geometry.automaticIntrinsics != null || !geometry.automaticUnavailableReason.isNullOrBlank())
+                                assertEquals(bitmap.width, geometry.width)
+                                assertEquals(bitmap.height, geometry.height)
+                                val k = requireNotNull(geometry.intrinsics(com.samin.objectdetection.distance.DistanceSettings(
+                                    150f, 10f, com.samin.objectdetection.distance.DistanceOpticsMode.MANUAL, 60f)))
+                                val bottom = k.cy + k.fy * .1f
+                                val estimate = com.samin.objectdetection.distance.GroundPlaneDistanceEstimator(
+                                    com.samin.objectdetection.distance.DistanceSettings(150f, 10f,
+                                        com.samin.objectdetection.distance.DistanceOpticsMode.MANUAL, 60f)).estimate(
+                                    com.samin.objectdetection.detector.DetectionResult("person", .9f, k.cx - 10, k.cy - 10,
+                                        k.cx + 10, bottom), geometry)
+                                assertNotNull("Distance analysis must continue when preview=$previewEnabled", estimate.meters)
                                 size.set(bitmap.width to bitmap.height)
                                 frames.countDown()
                             }

@@ -41,6 +41,8 @@ import com.samin.objectdetection.detector.YoloModel
 import com.samin.objectdetection.mlkit.MlKitDetectionMode
 import com.samin.objectdetection.detector.ModelIdentity
 import com.samin.objectdetection.ui.OverlayDebugMode
+import com.samin.objectdetection.distance.DistanceSettings
+import com.samin.objectdetection.distance.DistanceOpticsMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -408,6 +410,12 @@ class SettingsActivity : ComponentActivity() {
         form.yoloBoxes = toggle(parent, "YOLO bbox")
         form.mlKitBoxes = toggle(parent, "ML Kit bbox")
         form.confidenceLabel = toggle(parent, "Confidence 표시")
+        form.distanceLabel = toggle(parent, "YOLO 거리 표시")
+        form.cameraHeight = number(parent, "카메라 설치 높이 (cm)", "1..1000, 미설정은 비워 두기", true)
+        form.cameraPitch = number(parent, "카메라 하향 각도 (°)", "0..89, 수평=0, 미설정은 비워 두기", true)
+        form.distanceOptics = choice(parent, "거리 화각 설정", DistanceOpticsMode.entries.map { it.name })
+        form.manualFov = number(parent, "수동 수직 화각 (°)", "5..150, 회전 전 전체 분석 버퍼 기준", true)
+        note(parent, "고정 설치·평탄한 지면·좌우 기울기 0°를 가정합니다. 높이와 하향 각도가 비어 있으면 거리를 표시하지 않습니다. AUTO는 실제 프레임의 Camera2 광학/크롭 정보를 검사하며 신뢰할 수 없으면 계산하지 않습니다. MANUAL은 현재 해상도·줌에서 회전 전 전체 ImageAnalysis 버퍼의 수직 화각을 실측해 입력하세요. ROI나 모델 입력 화각이 아닙니다. 설치 방향·해상도·줌 변경 후 다시 보정하세요. 거리는 경고 판단에 사용하지 않습니다.")
         form.fps = toggle(parent, "FPS 표시")
         form.overlayStale = number(parent, "Overlay Stale Timeout (ms)", "100..60000")
         note(parent, "촬영 후 박스를 표시할 수 있는 최대 시간입니다. 촬영 시각을 비교할 수 없으면 분석 수신 시각을 사용합니다. 경고·TTS·진동의 유효시간에는 영향을 주지 않습니다.")
@@ -501,9 +509,16 @@ class SettingsActivity : ComponentActivity() {
             form.vibration.isChecked = enableActualVibration; form.beep.isChecked = enableActualBeep; form.tts.isChecked = enableActualTts
         }
         with(value.overlay) {
+            form.distanceLabel.isChecked = showDistance
             form.overlayEnabled.isChecked = enabled; select(form.debugMode, debugMode.name); form.yoloBoxes.isChecked = showYoloBoxes
             form.mlKitBoxes.isChecked = showMlKitBoxes; form.confidenceLabel.isChecked = showConfidence; form.fps.isChecked = showFps
             form.overlayStale.setText(staleTimeoutMs.toString())
+        }
+        with(value.distance) {
+            form.cameraHeight.setText(cameraHeightCm?.toString().orEmpty())
+            form.cameraPitch.setText(downwardPitchDegrees?.toString().orEmpty())
+            select(form.distanceOptics, opticsMode.name)
+            form.manualFov.setText(manualVerticalFovDegrees?.toString().orEmpty())
         }
         with(value.mlKit) {
             form.mlKitEnabled.isChecked = enabled; form.mlKitInterval.setText(detectionIntervalMs.toString())
@@ -533,6 +548,7 @@ class SettingsActivity : ComponentActivity() {
         fun EditText.l() = text.toString().trim().toLong()
         fun EditText.i() = text.toString().trim().toInt()
         fun EditText.f() = text.toString().trim().toFloat()
+        fun EditText.optionalFloat(): Float? = text.toString().trim().takeIf { it.isNotEmpty() }?.toFloat()
         val resolution = form.cameraResolution.selectedItem.toString().split('x')
         return AppSettings(
             presetName = presetName,
@@ -548,7 +564,9 @@ class SettingsActivity : ComponentActivity() {
             warning = WarningSettings(form.cooldown.l(), form.ignoreTop.f(), form.maxGuide.i(), form.veryNearHeight.f(), form.nearHeight.f(),
                 form.midHeight.f(), form.veryNearArea.f(), form.nearArea.f(), form.midArea.f(), form.vibration.isChecked, form.beep.isChecked, form.tts.isChecked),
             overlay = OverlaySettings(form.overlayEnabled.isChecked, OverlayDebugMode.valueOf(form.debugMode.selectedItem.toString()),
-                form.yoloBoxes.isChecked, form.mlKitBoxes.isChecked, form.confidenceLabel.isChecked, form.fps.isChecked, form.overlayStale.l()),
+                form.yoloBoxes.isChecked, form.mlKitBoxes.isChecked, form.confidenceLabel.isChecked, form.fps.isChecked, form.overlayStale.l(), form.distanceLabel.isChecked),
+            distance = DistanceSettings(form.cameraHeight.optionalFloat(), form.cameraPitch.optionalFloat(),
+                DistanceOpticsMode.valueOf(form.distanceOptics.selectedItem.toString()), form.manualFov.optionalFloat()),
             mlKit = MlKitSettings(form.mlKitEnabled.isChecked, form.mlKitInterval.l(),
                 MlKitDetectionMode.valueOf(form.mlKitMode.selectedItem.toString())),
             performanceLog = PerformanceLogSettings(form.systemDiagnostics.isChecked, form.systemSampleInterval.l(), form.batteryDiagnostics.isChecked, form.testDuration.selectedItem.toString().toInt()),
@@ -661,6 +679,7 @@ class SettingsActivity : ComponentActivity() {
         form.mlKitMode.isEnabled = form.mlKitEnabled.isChecked
         form.systemSampleInterval.isEnabled = form.systemDiagnostics.isChecked
         form.batteryDiagnostics.isEnabled = form.systemDiagnostics.isChecked
+        form.manualFov.isEnabled = form.distanceOptics.selectedItem?.toString() == "MANUAL"
         val cropEnabled = form.roiEnabled.isChecked
         if (cropEnabled) {
             form.centerCrop.isChecked = false
@@ -828,6 +847,8 @@ class SettingsActivity : ComponentActivity() {
         lateinit var vibration: Switch; lateinit var beep: Switch; lateinit var tts: Switch
         lateinit var overlayEnabled: Switch; lateinit var debugMode: Spinner; lateinit var yoloBoxes: Switch; lateinit var mlKitBoxes: Switch
         lateinit var confidenceLabel: Switch; lateinit var fps: Switch; lateinit var overlayStale: EditText
+        lateinit var distanceLabel: Switch; lateinit var cameraHeight: EditText; lateinit var cameraPitch: EditText
+        lateinit var distanceOptics: Spinner; lateinit var manualFov: EditText
         lateinit var mlKitEnabled: Switch; lateinit var mlKitInterval: EditText; lateinit var mlKitMode: Spinner
         lateinit var diagnostics: Switch; lateinit var debugLogging: Switch; lateinit var rawConfidence: EditText; lateinit var rawCandidates: EditText
         lateinit var mlKitDiagnostics: Switch

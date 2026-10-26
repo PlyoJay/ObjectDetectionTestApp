@@ -2,11 +2,27 @@ package com.samin.objectdetection.evaluation
 
 import com.samin.objectdetection.detector.DetectionStageCounts
 import com.samin.objectdetection.detector.ModelIdentity
+import com.samin.objectdetection.detector.DetectionResult
 import com.samin.objectdetection.settings.AppSettings
 import com.samin.objectdetection.settings.AppSettingsCodec
 import org.json.JSONObject
 import java.io.StringReader
 import java.util.Properties
+
+/** Additive keys shared by capture JSON and detection JSONL; existing parser keys stay intact. */
+internal fun JSONObject.putDistance(detection: DetectionResult): JSONObject = apply {
+    val estimate = detection.distanceEstimation
+    val meters = detection.estimatedDistanceMeters?.takeIf { it.isFinite() && it > 0f }
+    put("estimatedDistanceMeters", meters?.toDouble() ?: JSONObject.NULL)
+    put("distanceEstimationMethod", estimate?.method ?: JSONObject.NULL)
+    put("distanceEstimationValid", meters != null)
+    put("distanceEstimationStatus", estimate?.status ?: "NOT_ESTIMATED")
+    put("distanceOpticsSource", estimate?.intrinsics?.source ?: JSONObject.NULL)
+    put("distanceIntrinsics", estimate?.intrinsics?.let { k -> JSONObject()
+        .put("fx", k.fx.toDouble()).put("fy", k.fy.toDouble())
+        .put("cx", k.cx.toDouble()).put("cy", k.cy.toDouble())
+        .put("coordinateSpace", "UPRIGHT_FULL_ANALYSIS_BUFFER") } ?: JSONObject.NULL)
+}
 
 internal fun ModelIdentity.toJson(): JSONObject = JSONObject()
     .put("assetName", assetName)

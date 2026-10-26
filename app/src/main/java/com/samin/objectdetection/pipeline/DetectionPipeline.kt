@@ -18,14 +18,20 @@ import com.samin.objectdetection.policy.SmallBoxFilterPolicy
 import com.samin.objectdetection.policy.AdaptiveTemporalValidator
 import com.samin.objectdetection.policy.BollardGeometryValidator
 import com.samin.objectdetection.warning.WarningPolicy
+import com.samin.objectdetection.distance.AnalysisCameraGeometry
+import com.samin.objectdetection.distance.DistanceSettings
+import com.samin.objectdetection.distance.GroundPlaneDistanceEstimator
+import com.samin.objectdetection.distance.ImageBounds
 
 class DetectionPipeline(
     private val detector: ObjectDetector,
     private val config: DetectionConfig,
     private val objectMotionTracker: ObjectMotionTracker,
     private val userLocationSnapshotProvider: () -> UserLocationSnapshot,
-    private val debugRecorder: DetectionDebugRecorder? = null
+    private val debugRecorder: DetectionDebugRecorder? = null,
+    distanceSettings: DistanceSettings = DistanceSettings()
 ) {
+    private val distanceEstimator = GroundPlaneDistanceEstimator(distanceSettings)
     private val temporalValidator = AdaptiveTemporalValidator(
         immediateConfidence = config.temporalImmediateConfidence,
         confirmationConfidence = config.temporalConfirmationConfidence,
@@ -36,7 +42,8 @@ class DetectionPipeline(
         bitmap: Bitmap,
         timestampMs: Long,
         rotationDegrees: Int,
-        frameId: Long? = null
+        frameId: Long? = null,
+        cameraGeometry: AnalysisCameraGeometry? = null
     ): DetectionPipelineResult {
         val pipelineStartedAtMs = System.currentTimeMillis()
         val pipelineStartNs = SystemClock.elapsedRealtimeNanos()
@@ -69,8 +76,12 @@ class DetectionPipeline(
             val postprocessStartNs = SystemClock.elapsedRealtimeNanos()
             val mappedDetections = croppedResults.map { result ->
                 val detection = mapToOriginalFrame(result, cropRect, timestampMs)
+                val geometry = cameraGeometry?.takeIf { it.width == width && it.height == height }
+                val withDistance = distanceEstimator.estimate(detection, geometry,
+                    ImageBounds(cropRect.left.toFloat(), cropRect.top.toFloat(), cropRect.right.toFloat(), cropRect.bottom.toFloat()))
+                    .applyTo(detection)
                 WarningPolicy.evaluate(
-                    detection = detection,
+                    detection = withDistance,
                     frameWidth = width,
                     frameHeight = height,
                     veryNearHeightRatio = config.warningVeryNearHeightRatio,

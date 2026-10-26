@@ -16,6 +16,67 @@ import java.util.concurrent.TimeUnit
 
 /** Canvas pixels and real View callbacks; no camera, model, warning output or settings writes. */
 class BoundingBoxOverlayTest {
+    @Test fun distanceLabelWorksInNoneModePreservesConfidenceAndExcludesMlKit() = instrumentation.runOnMainSync {
+        val view = overlay()
+        val detection = box.single().copy(label = "bollard", confidence = .9f, estimatedDistanceMeters = 2.3f)
+        val method = view.javaClass.getDeclaredMethod("buildLabel", DetectionResult::class.java,
+            com.samin.objectdetection.model.DetectionSource::class.java).apply { isAccessible = true }
+        fun label(source: com.samin.objectdetection.model.DetectionSource = com.samin.objectdetection.model.DetectionSource.YOLO) =
+            method.invoke(view, detection, source) as String?
+        try {
+            assertNull(label())
+            view.configure(true, true, true, true, false, 1500, showDistance = true)
+            assertEquals("bollard 약 2.3m 0.90", label())
+            assertNull(label(com.samin.objectdetection.model.DetectionSource.ML_KIT))
+            view.setDebugMode(OverlayDebugMode.SIMPLE)
+            val oldLabel = "bollard ${detection.riskLevel} 0.90"
+            assertEquals("bollard 약 2.3m ${detection.riskLevel} 0.90", label())
+            view.configure(true, true, true, true, false, 1500, showDistance = false)
+            assertEquals(oldLabel, label())
+            view.setDebugMode(OverlayDebugMode.NONE)
+            view.configure(true, true, true, false, false, 1500, showDistance = true)
+            for (invalid in listOf(null, 0f, -1f, Float.NaN, Float.POSITIVE_INFINITY)) {
+                assertNull(method.invoke(view, detection.copy(estimatedDistanceMeters = invalid), com.samin.objectdetection.model.DetectionSource.YOLO))
+            }
+        } finally { view.clearDetections() }
+    }
+
+    @Test fun distancePayloadExpiresWithBoxAndVisibilityTogglesRequireFreshFrame() = instrumentation.runOnMainSync {
+        val view = overlay()
+        val withDistance = box.map { it.copy(estimatedDistanceMeters = 2.3f) }
+        try {
+            view.configure(true, true, false, false, false, 1500, showDistance = true)
+            view.updateDetections(withDistance, 200, 200, 1, 1, trace(1))
+            assertTrue(hasPixels(view))
+            view.updateDetections(withDistance, 200, 200, 1, 1, trace(2, 1600))
+            assertFalse(hasPixels(view))
+            view.updateDetections(withDistance, 200, 200, 1, 1, trace(3))
+            view.setDrawingEnabled(false)
+            assertFalse(hasPixels(view))
+            view.setDrawingEnabled(true)
+            assertFalse(hasPixels(view))
+            view.updateDetections(withDistance, 200, 200, 1, 1, trace(4))
+            assertTrue(hasPixels(view))
+            view.configure(true, false, false, false, false, 1500, showDistance = true)
+            assertFalse(hasPixels(view))
+        } finally { view.clearDetections() }
+    }
+
+    @Test fun longDistanceLabelsStayInsideScreenAndAvoidEachOther() = instrumentation.runOnMainSync {
+        val view = overlay()
+        try {
+            view.configure(true, true, false, true, false, 1500, showDistance = true)
+            val boxes = listOf(DetectionResult("very long bollard label", .9f, 160f, 1f, 199f, 65f, estimatedDistanceMeters = 123.4f),
+                DetectionResult("person", .9f, 150f, 2f, 199f, 65f, estimatedDistanceMeters = 2.3f))
+            view.updateDetections(boxes, 200, 200, 1, 1, trace(1))
+            render(view).recycle()
+            @Suppress("UNCHECKED_CAST")
+            val bounds = view.javaClass.getDeclaredField("labelBounds").apply { isAccessible = true }.get(view) as List<android.graphics.RectF>
+            assertEquals(2, bounds.size)
+            for (b in bounds) assertTrue(b.left >= 0 && b.top >= 0 && b.right <= 200 && b.bottom <= 200)
+            assertFalse(android.graphics.RectF.intersects(bounds[0], bounds[1]))
+        } finally { view.clearDetections() }
+    }
     @Test fun animalBoxesUseTheirColorsAndLabelsWhileExistingColorsStayTheSame() = instrumentation.runOnMainSync {
         for ((label, expectedColor) in listOf("cat" to Color.rgb(186, 104, 200),
             "dog" to Color.rgb(38, 198, 218), "bollard" to Color.rgb(0, 191, 255),

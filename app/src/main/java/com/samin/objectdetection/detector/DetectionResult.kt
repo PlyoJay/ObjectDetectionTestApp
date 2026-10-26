@@ -2,6 +2,7 @@ package com.samin.objectdetection.detector
 
 import android.graphics.Bitmap
 import android.graphics.Rect
+import com.samin.objectdetection.distance.DistanceEstimate
 import com.samin.objectdetection.motion.ApproachSpeedLevel
 import com.samin.objectdetection.motion.MotionDirection
 import com.samin.objectdetection.motion.ObjectMovementState
@@ -39,7 +40,9 @@ data class DetectionResult(
     val riskLevel: RiskLevel = RiskLevel.NONE,
     val warningScenario: WarningScenario = WarningScenario.MONITORING,
     val isIgnored: Boolean = false,
-    val warningFeedback: WarningFeedback = WarningFeedback.NONE
+    val warningFeedback: WarningFeedback = WarningFeedback.NONE,
+    val estimatedDistanceMeters: Float? = null,
+    val distanceEstimation: DistanceEstimate? = null
 )
 
 interface ObjectDetector {

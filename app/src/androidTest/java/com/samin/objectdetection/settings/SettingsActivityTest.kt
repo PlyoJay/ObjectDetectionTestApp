@@ -31,6 +31,36 @@ import android.view.accessibility.AccessibilityNodeInfo
 
 /** Preserves applied settings/presets; the preview integration test also starts real inference. */
 class SettingsActivityTest {
+    @Test fun distanceCalibrationValidatesPersistsAcrossRecreationAndRoundTripsCustomPreset() {
+        seed(AppSettings())
+        launch()
+        openCategory("디버그 및 고급 설정")
+        field("YOLO 거리 표시").perform(scrollTo(), click())
+        field("카메라 설치 높이 (cm)").perform(scrollTo(), replaceText("0"), closeSoftKeyboard())
+        field("카메라 하향 각도 (°)").perform(scrollTo(), replaceText("12.3"), closeSoftKeyboard())
+        onView(withText("적용 및 저장")).perform(click())
+        onView(withText("설정값 확인")).check(matches(isDisplayed()))
+        onView(withText("확인")).perform(click())
+        field("카메라 설치 높이 (cm)").perform(scrollTo(), replaceText("153.5"), closeSoftKeyboard())
+        field("거리 화각 설정").perform(scrollTo(), click())
+        onData(`is`("MANUAL")).perform(click())
+        field("수동 수직 화각 (°)").perform(scrollTo(), replaceText("60"), closeSoftKeyboard())
+        recreate()
+        field("카메라 설치 높이 (cm)").perform(scrollTo()).check(matches(withText("153.5")))
+        field("수동 수직 화각 (°)").perform(scrollTo()).check(matches(withText("60")))
+        onView(withText("적용 및 저장")).perform(click())
+        val saved = loadHealthy()
+        assertTrue(saved.overlay.showDistance)
+        assertEquals(com.samin.objectdetection.distance.DistanceSettings(153.5f, 12.3f,
+            com.samin.objectdetection.distance.DistanceOpticsMode.MANUAL, 60f), saved.distance)
+        assertEquals(AppSettings().toDetectionConfig(), saved.toDetectionConfig())
+        val store = AppSettingsStore(context)
+        store.saveCustomPreset("DISTANCE TEST", saved)
+        assertEquals(saved.distance, AppSettingsStore(context).loadCustomPreset("DISTANCE TEST")!!.distance)
+        launch(); openCategory("디버그 및 고급 설정")
+        field("YOLO 거리 표시").perform(scrollTo()).check(matches(isChecked()))
+        field("카메라 하향 각도 (°)").perform(scrollTo()).check(matches(withText("12.3")))
+    }
     @Test fun mlKitModeDraftApplyAndPresetPersistWithoutChangingIntervalRoiOrYolo() {
         val original = AppSettings()
         seed(original)
@@ -353,7 +383,7 @@ class SettingsActivityTest {
 
     @Test fun everyExistingControlIsReachableInItsCategory() {
         launch()
-        assertEquals(72, CATEGORY_FIELDS.values.sumOf { it.size })
+        assertEquals(77, CATEGORY_FIELDS.values.sumOf { it.size })
         scenario!!.onActivity { activity ->
             fun labels(view: View): List<String> = listOfNotNull(view.tag as? String) +
                 if (view is ViewGroup) (0 until view.childCount).flatMap { labels(view.getChildAt(it)) } else emptyList()
@@ -709,7 +739,8 @@ class SettingsActivityTest {
                 "Enable Detector Diagnostics", "ML Kit Diagnostics", "Debug Detection Logging", "Diagnostic Raw Confidence Threshold",
                 "Diagnostic Max Raw Candidates", "Debug Save Inference Input", "Debug Save Interval (ms)",
                 "Debug Save On Detection", "기존 호환 Debug Image", "Overlay", "Overlay Debug Mode", "YOLO bbox",
-                "ML Kit bbox", "Confidence 표시", "FPS 표시", "Overlay Stale Timeout (ms)"
+                "ML Kit bbox", "Confidence 표시", "YOLO 거리 표시", "카메라 설치 높이 (cm)", "카메라 하향 각도 (°)",
+                "거리 화각 설정", "수동 수직 화각 (°)", "FPS 표시", "Overlay Stale Timeout (ms)"
             )
         )
     }

@@ -6,6 +6,11 @@ import android.graphics.Color
 import android.graphics.CornerPathEffect
 import android.graphics.Paint
 import android.graphics.Typeface
+import android.graphics.RectF
+import android.text.Layout
+import android.text.StaticLayout
+import android.text.TextPaint
+import android.text.TextUtils
 import android.util.AttributeSet
 import android.util.Log
 import android.view.View
@@ -48,6 +53,8 @@ class BoundingBoxOverlay @JvmOverloads constructor(
     private var showYoloBoxes = true
     private var showMlKitBoxes = true
     private var showConfidence = false
+    private var showDistance = false
+    private val labelBounds = mutableListOf<RectF>()
     private var showFps = false
     private var staleTimeoutMs = DEFAULT_MAX_OVERLAY_AGE_MS
     var diagnosticLog: ((String) -> Unit)? = null
@@ -167,12 +174,14 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         showMlKitBoxes: Boolean,
         showConfidence: Boolean,
         showFps: Boolean,
-        staleTimeoutMs: Long
+        staleTimeoutMs: Long,
+        showDistance: Boolean = false
     ) {
         this.enabled = enabled
         this.showYoloBoxes = showYoloBoxes
         this.showMlKitBoxes = showMlKitBoxes
         this.showConfidence = showConfidence
+        this.showDistance = showDistance
         this.showFps = showFps
         this.staleTimeoutMs = staleTimeoutMs.coerceIn(100L, 60_000L)
         configureStates()
@@ -181,6 +190,7 @@ class BoundingBoxOverlay @JvmOverloads constructor(
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
+        labelBounds.clear()
         // Recognition guide is independent of bbox visibility and detector result expiry.
         recognitionRegion?.let { roi ->
             val transform = calculateFitCenterTransform(recognitionWidth, recognitionHeight, width, height)
@@ -256,7 +266,7 @@ class BoundingBoxOverlay @JvmOverloads constructor(
             }
 
             canvas.drawRoundRect(left, top, right, bottom, 20f, 20f, boxPaint)
-            drawLabelIfNeeded(canvas, res, DetectionSource.YOLO, left, top)
+            drawLabelIfNeeded(canvas, res, DetectionSource.YOLO, left, top, bottom)
         }
 
         if (showMlKitBoxes) freshMlKitDetections.forEach { res ->
@@ -266,7 +276,7 @@ class BoundingBoxOverlay @JvmOverloads constructor(
             val bottom = mlKitTransform.offsetY + res.bottom * mlKitTransform.scale
 
             canvas.drawRoundRect(left, top, right, bottom, 20f, 20f, mlKitBoxPaint)
-            drawLabelIfNeeded(canvas, res, DetectionSource.ML_KIT, left, top)
+            drawLabelIfNeeded(canvas, res, DetectionSource.ML_KIT, left, top, bottom)
         }
         if (showFps) {
             canvas.drawText(String.format(Locale.US, "FPS=%.1f A=%.1f inference=%dms F=%d", inferenceFps, analyzerFps, inferenceTimeMs, frameTrace?.frameId ?: 0), 24f, 56f, infoPaint)
@@ -286,20 +296,42 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         detection: DetectionResult,
         source: DetectionSource,
         left: Float,
-        top: Float
+        top: Float,
+        bottom: Float
     ) {
         val label = buildLabel(detection, source) ?: return
-        val textWidth = textPaint.measureText(label)
-        val bgTop = (top - LABEL_HEIGHT_PX).coerceAtLeast(0f)
-        canvas.drawRoundRect(left, bgTop, left + textWidth + LABEL_HORIZONTAL_PADDING_PX, bgTop + LABEL_BG_HEIGHT_PX, 8f, 8f, bgPaint)
-        canvas.drawText(label, left + LABEL_TEXT_LEFT_PADDING_PX, bgTop + LABEL_BASELINE_PX, textPaint)
+        if (!left.isFinite() || !top.isFinite() || !bottom.isFinite() || width <= 20 || height <= 20) return
+        val labelPaint = TextPaint(textPaint).apply { textSize = minOf(textSize, width / 15f) }
+        val maxTextWidth = (width - LABEL_HORIZONTAL_PADDING_PX).toInt().coerceAtLeast(1)
+        val textWidth = kotlin.math.ceil(labelPaint.measureText(label).toDouble()).toInt().coerceIn(1, maxTextWidth)
+        val layout = StaticLayout.Builder.obtain(label, 0, label.length, labelPaint, textWidth)
+            .setAlignment(Layout.Alignment.ALIGN_NORMAL).setIncludePad(false)
+            .setMaxLines(4).setEllipsize(TextUtils.TruncateAt.END).build()
+        val labelWidth = textWidth + LABEL_HORIZONTAL_PADDING_PX
+        val labelHeight = layout.height + 12f
+        if (labelHeight > height) return
+        val x = left.coerceIn(0f, (width - labelWidth).coerceAtLeast(0f))
+        // Prefer outside the box; an inset fallback avoids covering the stroke at a screen edge.
+        val candidates = listOf(top - labelHeight - 6f, bottom + 6f, top + 8f) +
+            labelBounds.map { it.bottom + 4f }
+        val bounds = candidates.asSequence().filter { it >= 0f && it + labelHeight <= height }
+            .map { RectF(x, it, x + labelWidth, it + labelHeight) }
+            .firstOrNull { candidate -> labelBounds.none { RectF.intersects(candidate, it) } } ?: return
+        labelBounds.add(bounds)
+        canvas.drawRoundRect(bounds, 8f, 8f, bgPaint)
+        canvas.save()
+        canvas.translate(bounds.left + LABEL_TEXT_LEFT_PADDING_PX, bounds.top + 6f)
+        layout.draw(canvas)
+        canvas.restore()
     }
 
     private fun buildLabel(
         detection: DetectionResult,
         source: DetectionSource
     ): String? {
-        return when (debugMode) {
+        val distance = detection.estimatedDistanceMeters?.takeIf { it.isFinite() && it > 0f }
+            ?.takeIf { showDistance && source == DetectionSource.YOLO }
+        val base = when (debugMode) {
             OverlayDebugMode.NONE -> null
             OverlayDebugMode.SIMPLE -> {
                 if (source == DetectionSource.ML_KIT) {
@@ -311,6 +343,12 @@ class BoundingBoxOverlay @JvmOverloads constructor(
             }
             OverlayDebugMode.FULL -> buildFullDebugLabel(detection, source)
         }
+        if (distance == null) return base
+        val distanceText = if (distance < .05f) "0.1m 미만" else "${String.format(Locale.US, "%.1f", distance)}m"
+        val distanceLabel = "${detection.label} 약 $distanceText"
+        return if (base == null) distanceLabel +
+            (if (showConfidence) " ${String.format(Locale.US, "%.2f", detection.confidence)}" else "")
+        else distanceLabel + base.removePrefix(detection.label)
     }
 
     private fun buildFullDebugLabel(
@@ -517,9 +555,6 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         private const val DEFAULT_MAX_OVERLAY_AGE_MS = 1500L
         private const val TRANSFORM_TAG = "OverlayTransform"
         private const val WARNING_DETAIL_TAG = "GotoroWarning"
-        private const val LABEL_HEIGHT_PX = 44f
-        private const val LABEL_BG_HEIGHT_PX = 40f
-        private const val LABEL_BASELINE_PX = 30f
         private const val LABEL_HORIZONTAL_PADDING_PX = 20f
         private const val LABEL_TEXT_LEFT_PADDING_PX = 10f
     }
