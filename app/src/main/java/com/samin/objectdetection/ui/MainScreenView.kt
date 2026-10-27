@@ -28,7 +28,8 @@ class MainScreenView(
     private val cameraPreviewEnabled: Boolean = true,
     onToggleMlKitLogging: () -> Unit = {},
     onShareMlKitLog: () -> Unit = {},
-    onOpenArCore: () -> Unit = {}
+    onOpenArCore: () -> Unit = {},
+    onOpenArCoreYolo: () -> Unit = {}
 ) {
     val previewView = PreviewView(activity).apply { scaleType = PreviewView.ScaleType.FIT_CENTER }
     val overlayView = BoundingBoxOverlay(activity).apply { setDebugMode(debugMode) }
@@ -100,6 +101,10 @@ class MainScreenView(
         text = "ARCore 거리 측정"
         setOnClickListener { onOpenArCore() }
     }
+    val arCoreYoloButton = Button(activity).apply {
+        text = "YOLO + ARCore 거리 표시"
+        setOnClickListener { onOpenArCoreYolo() }
+    }
     private val measurementControls = mutableListOf<View>()
 
     fun setMeasurementLocked(locked: Boolean) {
@@ -158,13 +163,16 @@ class MainScreenView(
             addView(controlRow)
             addView(performanceRow)
             addView(performanceRecordingTextView)
-            addView(arCoreButton, LinearLayout.LayoutParams(-1, -2))
+            addView(LinearLayout(activity).apply {
+                addButton(arCoreButton); addButton(arCoreYoloButton)
+            })
             addView(mlKitRow)
             addView(mlKitRecordingTextView)
             setPadding(dp(activity, 8), dp(activity, 4), dp(activity, 8), dp(activity, 4))
         }
         measurementControls.addAll(listOf(mlKitLogButton, mlKitShareButton))
         measurementControls.add(arCoreButton)
+        measurementControls.add(arCoreYoloButton)
         val debugParams = fullWidthAt(Gravity.TOP, 20, 40, 20, 0)
         val presetParams = wrapAt(Gravity.TOP or Gravity.START, 20, 20, 20, 0)
         val settingsParams = wrapAt(Gravity.TOP or Gravity.END, 20, 12, 20, 0)

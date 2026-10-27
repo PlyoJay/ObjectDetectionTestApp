@@ -27,6 +27,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ObjectDetection">
         <meta-data android:name="com.google.ar.core" android:value="optional" />
+        <activity android:name=".arcore.yolo.ArCoreYoloExperimentActivity" android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+            android:theme="@style/Theme.ObjectDetection" />
         <activity android:name=".arcore.DepthLogListActivity" android:exported="false"
             android:theme="@style/Theme.ObjectDetection" />
         <activity

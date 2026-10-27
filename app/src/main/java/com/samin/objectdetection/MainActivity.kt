@@ -56,6 +56,7 @@ import com.samin.objectdetection.motion.ObjectMotionTracker
 import com.samin.objectdetection.pipeline.DetectionPipeline
 import com.samin.objectdetection.distance.DistanceOpticsMode
 import com.samin.objectdetection.arcore.ArCoreDepthActivity
+import com.samin.objectdetection.arcore.yolo.ArCoreYoloExperimentActivity
 import com.samin.objectdetection.policy.OverlayObjectFilter
 import com.samin.objectdetection.policy.YoloDefaultPolicyRegistry
 import com.samin.objectdetection.ui.BoundingBoxOverlay
@@ -369,7 +370,8 @@ class MainActivity : ComponentActivity() {
             cameraPreviewEnabled = appSettings.camera.previewEnabled,
             onToggleMlKitLogging = ::toggleMlKitLogging,
             onShareMlKitLog = ::shareMlKitLog,
-            onOpenArCore = ::openArCore
+            onOpenArCore = ::openArCore,
+            onOpenArCoreYolo = { openArCore(ArCoreYoloExperimentActivity::class.java) }
         )
         overlayView = screen.overlayView
         overlayView.onFrameDrawn = { trace, wallMs, elapsedNs, enabled ->
@@ -523,7 +525,9 @@ class MainActivity : ComponentActivity() {
         if (!performanceBusy) performanceLogButton.isEnabled = !busy && !active
     }
 
-    private fun openArCore() {
+    private fun openArCore() = openArCore(ArCoreDepthActivity::class.java)
+
+    private fun openArCore(target: Class<out Activity>) {
         if (destroying || arCoreTransition) return
         if (isRecording || performanceLogRecorder.isRecording || performanceJob?.isActive == true ||
             mlKitLogJob?.isActive == true || mlKitLogRecorder.status().phase in listOf(
@@ -534,6 +538,7 @@ class MainActivity : ComponentActivity() {
         }
         arCoreTransition = true
         screen.arCoreButton.isEnabled = false
+        screen.arCoreYoloButton.isEnabled = false
         val stopped = if (::cameraController.isInitialized) cameraController.stopAsync()
             else CompletableFuture.completedFuture(Unit)
         lifecycleScope.launch {
@@ -550,12 +555,17 @@ class MainActivity : ComponentActivity() {
                         MlKitDiagnosticLogRecorder.Phase.SAVING)) { "진행 중인 측정 세션을 먼저 종료하세요." }
                 overlayView.clearDetections()
                 arCoreLaunched = true
-                arCoreLauncher.launch(Intent(this@MainActivity, ArCoreDepthActivity::class.java))
+                arCoreLauncher.launch(Intent(this@MainActivity, target).apply {
+                    if (target == ArCoreYoloExperimentActivity::class.java) {
+                        putExtra(ArCoreYoloExperimentActivity.EXTRA_SETTINGS, AppSettingsCodec.encode(appSettings))
+                    }
+                })
             } catch (error: Exception) {
                 arCoreTransition = false
                 arCoreLaunched = false
                 if (!destroying) {
                     screen.arCoreButton.isEnabled = true
+                    screen.arCoreYoloButton.isEnabled = true
                     Toast.makeText(this@MainActivity, "ARCore 화면 전환 실패: ${error.message}", Toast.LENGTH_LONG).show()
                     if (drained) restartForSettings("객체 인식 복원 중…")
                 }
