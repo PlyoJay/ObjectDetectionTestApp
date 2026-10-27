@@ -27,7 +27,8 @@ class MainScreenView(
     onOpenQuickSettings: () -> Unit,
     private val cameraPreviewEnabled: Boolean = true,
     onToggleMlKitLogging: () -> Unit = {},
-    onShareMlKitLog: () -> Unit = {}
+    onShareMlKitLog: () -> Unit = {},
+    onOpenArCore: () -> Unit = {}
 ) {
     val previewView = PreviewView(activity).apply { scaleType = PreviewView.ScaleType.FIT_CENTER }
     val overlayView = BoundingBoxOverlay(activity).apply { setDebugMode(debugMode) }
@@ -95,6 +96,10 @@ class MainScreenView(
         visibility = if (cameraPreviewEnabled) View.GONE else View.VISIBLE
     }
     val root: View
+    val arCoreButton = Button(activity).apply {
+        text = "ARCore 거리 측정"
+        setOnClickListener { onOpenArCore() }
+    }
     private val measurementControls = mutableListOf<View>()
 
     fun setMeasurementLocked(locked: Boolean) {
@@ -153,11 +158,13 @@ class MainScreenView(
             addView(controlRow)
             addView(performanceRow)
             addView(performanceRecordingTextView)
+            addView(arCoreButton, LinearLayout.LayoutParams(-1, -2))
             addView(mlKitRow)
             addView(mlKitRecordingTextView)
             setPadding(dp(activity, 8), dp(activity, 4), dp(activity, 8), dp(activity, 4))
         }
         measurementControls.addAll(listOf(mlKitLogButton, mlKitShareButton))
+        measurementControls.add(arCoreButton)
         val debugParams = fullWidthAt(Gravity.TOP, 20, 40, 20, 0)
         val presetParams = wrapAt(Gravity.TOP or Gravity.START, 20, 20, 20, 0)
         val settingsParams = wrapAt(Gravity.TOP or Gravity.END, 20, 12, 20, 0)

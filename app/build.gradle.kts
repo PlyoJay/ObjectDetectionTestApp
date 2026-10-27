@@ -65,6 +65,8 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-service:2.8.4")
 
     implementation("com.google.ai.edge.litert:litert:2.1.1")
+    // AR Optional: used only by the separate depth validation Activity.
+    implementation("com.google.ar:core:1.57.0")
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
