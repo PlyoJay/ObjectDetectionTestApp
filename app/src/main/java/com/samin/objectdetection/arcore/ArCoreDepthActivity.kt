@@ -27,7 +27,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
-import androidx.core.content.FileProvider
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.widget.doAfterTextChanged
@@ -61,6 +60,12 @@ class ArCoreDepthActivity : ComponentActivity(), DisplayManager.DisplayListener 
     private lateinit var body: LinearLayout
     private lateinit var viewport: FrameLayout
     private lateinit var footerScroll: ScrollView
+    private lateinit var logFiles: DepthLogFiles
+    private lateinit var logExporter: DepthLogExporter
+    private lateinit var logStorage: TextView
+    private var exportFile: File? = null
+    private var exportJob: CompletableFuture<DepthLogExportResult>? = null
+    private var reportedExportResult: CompletableFuture<DepthLogExportResult>? = null
     private var restoredTruth = ""
     private val handler = Handler(Looper.getMainLooper())
     private val latest = AtomicReference<DepthMeasurement?>()
@@ -93,6 +98,8 @@ class ArCoreDepthActivity : ComponentActivity(), DisplayManager.DisplayListener 
         userRequestedInstall = savedInstanceState?.getBoolean("userRequestedInstall", true) ?: true
         restoredTruth = savedInstanceState?.getString("groundTruth").orEmpty()
         recorder = DepthCsvRecorder(File(filesDir, "arcore_depth"))
+        logFiles = DepthLogFiles(File(filesDir, "arcore_depth"))
+        logExporter = DepthLogExporter(logFiles, MediaStoreDepthDownloads(applicationContext.contentResolver))
         latestSaved = savedInstanceState?.getString("latestLog")?.let { name ->
             File(filesDir, "arcore_depth").resolve(File(name).name).takeIf { it.isFile }
         } ?: File(filesDir, "arcore_depth").listFiles()?.filter { it.extension == "csv" }?.maxByOrNull { it.lastModified() }
@@ -154,6 +161,8 @@ class ArCoreDepthActivity : ComponentActivity(), DisplayManager.DisplayListener 
         val footer = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(8), dp(4), dp(8), dp(8)) }
         statistics = text("현재 원본 Z: — · 최근 평균: — · 유효 샘플: 0"); footer.addView(statistics)
         recording = text("실시간 Z 표시 · 측정 시작 시 CSV 기록 · 실측값 미설정"); footer.addView(recording)
+        logStorage = text("내부 CSV 보관 · 다운로드 위치: ${DepthLogExporter.RELATIVE_PATH}", 12f)
+        footer.addView(logStorage)
         footer.addView(Switch(this).apply {
             text = "표시 안정화 (최근 5개 이동 중앙값)"; isChecked = renderer.stabilize
             setOnCheckedChangeListener { _, enabled -> renderer.stabilize = enabled; renderer.resetMeasurements(); latest.set(null) }
@@ -188,6 +197,7 @@ class ArCoreDepthActivity : ComponentActivity(), DisplayManager.DisplayListener 
             addView(button("측정 로그 공유") { shareLog() }, LinearLayout.LayoutParams(0, -2, 1f))
             addView(button("이전 화면으로 돌아가기") { finish() }, LinearLayout.LayoutParams(0, -2, 1f))
         })
+        footer.addView(button("측정 로그 목록") { startActivity(Intent(this, DepthLogListActivity::class.java)) })
         val scroll = object : ScrollView(this) {
             override fun onMeasure(w: Int, h: Int) {
                 if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) super.onMeasure(w, h)
@@ -315,6 +325,7 @@ class ArCoreDepthActivity : ComponentActivity(), DisplayManager.DisplayListener 
         session = null
         recordingRequested.set(false)
         val saved = recorder.stop()
+        saveAndExportLog(showSaved = false) // Export survives this Activity; camera close waits only for CSV drain.
         // Cleanup must survive Activity lifecycle coroutine cancellation.
         CompletableFuture.runAsync {
             try { saved.get() } finally { old?.close() }
@@ -329,7 +340,7 @@ class ArCoreDepthActivity : ComponentActivity(), DisplayManager.DisplayListener 
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
         recordingRequested.set(false)
-        recorder.stop()
+        saveAndExportLog(showSaved = false)
         val old = renderer.detach()
         session = null
         // Covers OS recreation, which does not go through finish().
@@ -367,16 +378,35 @@ class ArCoreDepthActivity : ComponentActivity(), DisplayManager.DisplayListener 
     }
 
     private fun stopRecording(showSaved: Boolean) {
+        saveAndExportLog(showSaved)
+    }
+
+    private fun saveAndExportLog(showSaved: Boolean): CompletableFuture<DepthLogExportResult?> {
         recordingRequested.set(false)
-        val file = recorder.latestFile ?: latestSaved
+        val file = recorder.latestFile ?: latestSaved.takeIf { showSaved }
         val completion = recorder.stop()
         measureButton.text = "측정 시작"
-        completion.whenComplete { _, error -> runOnUiThread {
-            if (!isDestroyed && !closing && showSaved) {
-                Toast.makeText(this, if (error != null) "CSV 저장 실패: ${error.message}" else
-                    file?.let { "저장 완료: ${it.name} (누락 ${recorder.droppedLines()}줄)" } ?: "저장할 측정 로그가 없습니다.", Toast.LENGTH_LONG).show()
+        if (file == null) {
+            if (showSaved) Toast.makeText(this, "저장할 측정 로그가 없습니다.", Toast.LENGTH_SHORT).show()
+            return completion.thenApply { null }
+        }
+        val previous = exportJob
+        val job = if (exportFile == file && previous != null && (!previous.isDone || !showSaved)) previous else {
+            exportFile = file
+            logStorage.text = "${file.name}\nCSV 기록 종료 후 다운로드 내보내기 중…"
+            logExporter.afterClosed(file, completion).also { exportJob = it }
+        }
+        job.whenComplete { result, failure -> runOnUiThread {
+            val error = result?.error ?: failure?.message
+            val message = if (error != null) "${file.name}\n저장/내보내기 실패: $error\n내부 CSV 원본은 보존됩니다." else
+                "${result!!.published!!.displayName}\n${if (result.reused) "이미 내보낸 동일 파일" else "저장 완료"}: ${result.published.relativePath}"
+            if (!isDestroyed) logStorage.text = message
+            if (reportedExportResult !== job && (error != null || showSaved || !resumed)) {
+                reportedExportResult = job
+                Toast.makeText(applicationContext, message, Toast.LENGTH_LONG).show()
             }
         } }
+        return job.thenApply { it }
     }
 
     private fun shareLog() {
@@ -384,9 +414,7 @@ class ArCoreDepthActivity : ComponentActivity(), DisplayManager.DisplayListener 
         val file = (recorder.latestFile ?: latestSaved)?.takeIf { it.isFile }
             ?: run { Toast.makeText(this, "저장된 측정 로그가 없습니다.", Toast.LENGTH_SHORT).show(); return }
         runCatching {
-            val uri = FileProvider.getUriForFile(this, "$packageName.files", file)
-            startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/csv")
-                .putExtra(Intent.EXTRA_STREAM, uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION), "ARCore Depth CSV 공유"))
+            DepthLogSharing.shareFiles(this, listOf(file), logFiles, multiple = false)
         }.onFailure { Toast.makeText(this, "공유 실패: ${it.message}", Toast.LENGTH_LONG).show() }
     }
 

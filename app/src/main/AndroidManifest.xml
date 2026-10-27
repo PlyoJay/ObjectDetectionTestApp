@@ -27,6 +27,8 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ObjectDetection">
         <meta-data android:name="com.google.ar.core" android:value="optional" />
+        <activity android:name=".arcore.DepthLogListActivity" android:exported="false"
+            android:theme="@style/Theme.ObjectDetection" />
         <activity
             android:name=".arcore.ArCoreDepthActivity"
             android:exported="false"

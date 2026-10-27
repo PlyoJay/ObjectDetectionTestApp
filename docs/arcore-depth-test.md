@@ -98,6 +98,8 @@ Activity 결과를 받으면 기존 앱의 종료·재생성 경로를 재사용
 
 ## CSV 저장과 오차 정의
 
+2026-10-27 로그 목록·다중 공유·공용 다운로드 내보내기가 추가되었다. 현재 사용 방법과 저장 완료·중복 방지 정책은 [로그 관리 확장 문서](arcore-depth-log-management.md)를 참고한다. CSV 데이터 형식과 Depth 측정 방식은 아래 설명 그대로다.
+
 앱 내부 전용 폴더 `files/arcore_depth/arcore_depth_<timestamp>_<id>.csv`에 UTF-8로 스트리밍한다. 기존 평가·ML Kit·성능 로그 폴더는 사용하지 않는다. 큐는 512줄로 제한하며 수용한 줄은 순서대로 기록하고 종료 시 drain한다. 누락 줄 수와 저장 오류는 UI에 표시한다. 공유는 사용자가 버튼을 눌렀을 때 FileProvider와 Android 공유 화면으로 진행한다.
 
 ```text

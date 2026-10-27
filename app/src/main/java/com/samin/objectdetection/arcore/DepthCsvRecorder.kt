@@ -2,6 +2,7 @@ package com.samin.objectdetection.arcore
 
 import com.samin.objectdetection.logging.OrderedLogWriter
 import java.io.File
+import java.io.BufferedWriter
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -20,7 +21,8 @@ object DepthCsv {
 }
 
 /** Independent directory and writer; streaming preserves raw readings without an in-memory session list. */
-class DepthCsvRecorder(private val directory: File) {
+class DepthCsvRecorder(private val directory: File,
+    private val openWriter: (File) -> BufferedWriter = { it.bufferedWriter(Charsets.UTF_8) }) {
     private var writer: OrderedLogWriter? = null
     private var closing: CompletableFuture<Unit>? = null
     var latestFile: File? = null
@@ -36,7 +38,8 @@ class DepthCsvRecorder(private val directory: File) {
         check(writer == null && !isClosing()) { "이전 측정 로그 저장이 끝날 때까지 기다려 주세요." }
         check(directory.isDirectory || directory.mkdirs()) { "측정 로그 폴더를 만들 수 없습니다." }
         val file = File(directory, "arcore_depth_${System.currentTimeMillis()}_${UUID.randomUUID().toString().take(8)}.csv")
-        val buffered = file.bufferedWriter(Charsets.UTF_8)
+        check(DepthLogFiles.incompleteMarker(file).createNewFile()) { "CSV 기록 상태를 저장할 수 없습니다." }
+        val buffered = openWriter(file)
         error = null
         lastDropped = 0
         writer = OrderedLogWriter(buffered, onFailure = { error = it.message ?: "CSV write failed" }).also { it.append { DepthCsv.HEADER } }
@@ -49,9 +52,19 @@ class DepthCsvRecorder(private val directory: File) {
     @Synchronized fun stop(): CompletableFuture<Unit> {
         val current = writer ?: return closing ?: CompletableFuture.completedFuture(Unit)
         writer = null
-        val completion = current.close()
+        val file = requireNotNull(latestFile)
+        val completion = current.close().thenApply {
+            val marker = DepthLogFiles.incompleteMarker(file)
+            check(!marker.exists() || marker.delete()) { "CSV 저장 완료 상태를 기록할 수 없습니다: ${file.name}" }
+            Unit
+        }
         closing = completion
-        completion.whenComplete { _, _ -> synchronized(this) { lastDropped = current.droppedLines.get() } }
+        completion.whenComplete { _, failure -> synchronized(this) {
+            if (latestFile == file) {
+                lastDropped = current.droppedLines.get()
+                if (failure != null) error = failure.cause?.message ?: failure.message ?: "CSV close failed"
+            }
+        } }
         return completion
     }
 }
