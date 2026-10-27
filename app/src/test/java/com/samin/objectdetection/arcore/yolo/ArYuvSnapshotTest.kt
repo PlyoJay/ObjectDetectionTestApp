@@ -4,6 +4,16 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class ArYuvSnapshotTest {
+    @Test fun resumedSessionCannotRefreshCachedDuplicateOrBackwardsCameraTimestamp() {
+        val sequence = ArCameraTimestampSequence()
+        assertFalse(sequence.accept(0)); assertFalse(sequence.accept(-1))
+        assertTrue(sequence.accept(100))
+        // Same Session pause/resume keeps the cursor.
+        assertFalse(sequence.accept(100)); assertFalse(sequence.accept(99))
+        assertTrue(sequence.accept(101))
+        sequence.reset() // Only a replacement native Session resets it.
+        assertTrue(sequence.accept(50))
+    }
     @Test fun neutralYuvConvertsToBlackAndWhiteAndKeepsOpaqueAlpha() {
         assertEquals(0xff000000.toInt(), uniform(16, 128, 128).toArgb().single())
         assertEquals(0xffffffff.toInt(), uniform(235, 128, 128).toArgb().single())

@@ -1,5 +1,7 @@
 # YOLO + ARCore Depth 통합 실험 모드
 
+> 후속 변경: 메인 화면 통합, schema 9 설정, 객체 내부 다중 영역/RAW Confidence 샘플링은 [메인 통합 문서](arcore-main-integration.md)를 기준으로 한다. 아래는 최초 별도 실험 화면의 구현·검증 기록이다. 현재 별도 YOLO 검증 화면도 개선된 내부 영역 sampler를 사용한다.
+
 2026-10-27 구현. 메인 화면의 **YOLO + ARCore 거리 표시** 버튼으로 별도 `ArCoreYoloExperimentActivity`에 진입한다. 기존 **ARCore 거리 측정** 화면과 CameraX 메인 모드는 유지한다. 이 화면의 숫자는 ARCore의 **카메라 광축 방향 깊이 Z(m)**이며 사선 직선거리나 지면 기반 거리 추정값과 다르다. 정확도 보정값이나 실측 결과를 생성하지 않는다.
 
 ## 1. 변경 파일

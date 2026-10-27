@@ -18,7 +18,8 @@ data class FrameTrace(
     val errorStage: String? = null,
     val error: String? = null,
     /** Java Interpreter call return/throw boundary, not an absolute native kernel timestamp. */
-    val inferenceEndedElapsedNs: Long? = null
+    val inferenceEndedElapsedNs: Long? = null,
+    val cameraBackend: String = "CAMERAX"
 ) {
     /** -1 means capture age is unknown; analyzer age must not be reported as capture latency. */
     fun captureAgeMsAt(nowElapsedNs: Long): Long =

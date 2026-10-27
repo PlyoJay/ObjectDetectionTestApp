@@ -9,19 +9,28 @@ import com.samin.objectdetection.settings.AppSettings
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
+import com.samin.objectdetection.distance.DepthInputMode
 
 data class ArYoloCapture(val image: ArYuvSnapshot, val mapping: ArImageMapping, val depth: ArDepthPlane?,
     val depthStatus: String, val frameTimestampNs: Long, val cameraTimestampNs: Long,
-    val capturedElapsedNs: Long, val capturedWallMs: Long, val epoch: Long, val tracking: String)
+    val capturedElapsedNs: Long, val capturedWallMs: Long, val epoch: Long, val tracking: String,
+    val rawDepth: ArDepthPlane? = null)
+
+interface ArFrameConsumer {
+    fun acquire(nowNs: Long): Boolean
+    fun cancelCapture()
+    fun submit(capture: ArYoloCapture)
+}
 
 class ArYoloWorker(context: Context, settings: AppSettings, private val currentEpoch: () -> Long,
-    private val onResult: (ArYoloFrame) -> Unit) {
+    private val onResult: (ArYoloFrame) -> Unit) : ArFrameConsumer {
     private val executor = Executors.newSingleThreadExecutor()
     private val submissionLock = Any()
     private val gate = ArYoloWorkGate()
     private val closed = AtomicBoolean(false)
     private val stopped = CompletableFuture<Unit>()
     private val smoother = ArObjectDepthSmoother()
+    private val sampler = ArObjectSurfaceDepthSampler()
     private var previousEpoch = Long.MIN_VALUE
     private var detector: VisionStyleYoloDetector? = null
     @Volatile private var ready = false
@@ -42,10 +51,10 @@ class ArYoloWorker(context: Context, settings: AppSettings, private val currentE
         }
     }
 
-    fun acquire(nowNs: Long): Boolean = ready && !closed.get() && gate.acquire(nowNs)
-    fun cancelCapture() { gate.release() }
+    override fun acquire(nowNs: Long): Boolean = ready && !closed.get() && gate.acquire(nowNs)
+    override fun cancelCapture() { gate.release() }
 
-    fun submit(capture: ArYoloCapture) = synchronized(submissionLock) {
+    override fun submit(capture: ArYoloCapture) = synchronized(submissionLock) {
         if (closed.get()) { gate.release(); return@synchronized }
         executor.execute {
             var raw: Bitmap? = null
@@ -68,7 +77,8 @@ class ArYoloWorker(context: Context, settings: AppSettings, private val currentE
                     val mapped = detection.copy(left = box.left, top = box.top, right = box.right, bottom = box.bottom,
                         frameTimestampMs = capture.capturedWallMs)
                     val depth = if (capture.depth != null && now >= expires) ArObjectDepth(status = "STALE_DEPTH") else
-                        ArObjectDepthSampler.sample(box, capture.mapping, capture.depth, capture.frameTimestampNs, capture.tracking, capture.depthStatus)
+                        sampler.sample(box, capture.mapping, capture.depth, null, DepthInputMode.FULL,
+                            capture.frameTimestampNs, capture.tracking, capture.depthStatus)
                     ArYoloObject(mapped, capture.mapping.viewBox(box), depth)
                 }
                 val smoothed = smoother.update(objects, capture.depth?.timestampNs, now)

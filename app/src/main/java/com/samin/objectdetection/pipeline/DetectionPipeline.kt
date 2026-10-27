@@ -22,6 +22,7 @@ import com.samin.objectdetection.distance.AnalysisCameraGeometry
 import com.samin.objectdetection.distance.DistanceSettings
 import com.samin.objectdetection.distance.GroundPlaneDistanceEstimator
 import com.samin.objectdetection.distance.ImageBounds
+import com.samin.objectdetection.distance.FrameDepthContext
 
 class DetectionPipeline(
     private val detector: ObjectDetector,
@@ -29,7 +30,8 @@ class DetectionPipeline(
     private val objectMotionTracker: ObjectMotionTracker,
     private val userLocationSnapshotProvider: () -> UserLocationSnapshot,
     private val debugRecorder: DetectionDebugRecorder? = null,
-    distanceSettings: DistanceSettings = DistanceSettings()
+    distanceSettings: DistanceSettings = DistanceSettings(),
+    private val groundDistanceEnabled: Boolean = true
 ) {
     private val distanceEstimator = GroundPlaneDistanceEstimator(distanceSettings)
     private val temporalValidator = AdaptiveTemporalValidator(
@@ -43,7 +45,8 @@ class DetectionPipeline(
         timestampMs: Long,
         rotationDegrees: Int,
         frameId: Long? = null,
-        cameraGeometry: AnalysisCameraGeometry? = null
+        cameraGeometry: AnalysisCameraGeometry? = null,
+        depthContext: FrameDepthContext? = null
     ): DetectionPipelineResult {
         val pipelineStartedAtMs = System.currentTimeMillis()
         val pipelineStartNs = SystemClock.elapsedRealtimeNanos()
@@ -74,12 +77,16 @@ class DetectionPipeline(
             val croppedResults = detector.detect(cropped)
             val detectorTimeMs = elapsedMs(detectorStartNs)
             val postprocessStartNs = SystemClock.elapsedRealtimeNanos()
-            val mappedDetections = croppedResults.map { result ->
-                val detection = mapToOriginalFrame(result, cropRect, timestampMs)
-                val geometry = cameraGeometry?.takeIf { it.width == width && it.height == height }
-                val withDistance = distanceEstimator.estimate(detection, geometry,
-                    ImageBounds(cropRect.left.toFloat(), cropRect.top.toFloat(), cropRect.right.toFloat(), cropRect.bottom.toFloat()))
-                    .applyTo(detection)
+            val distanceDetections = depthContext?.estimate(croppedResults.map { mapToOriginalFrame(it, cropRect, timestampMs) })
+            // CameraX keeps its existing one-pass restoration/distance/warning path.
+            val mappedDetections = (distanceDetections ?: croppedResults).map { result ->
+                val withDistance = if (distanceDetections != null) result else {
+                    val detection = mapToOriginalFrame(result, cropRect, timestampMs)
+                    val geometry = cameraGeometry?.takeIf { it.width == width && it.height == height }
+                    if (!groundDistanceEnabled) detection else distanceEstimator.estimate(detection, geometry,
+                        ImageBounds(cropRect.left.toFloat(), cropRect.top.toFloat(), cropRect.right.toFloat(), cropRect.bottom.toFloat()))
+                        .applyTo(detection)
+                }
                 WarningPolicy.evaluate(
                     detection = withDistance,
                     frameWidth = width,
@@ -219,6 +226,9 @@ class DetectionPipeline(
 
     private fun elapsedMs(startNs: Long): Long =
         (SystemClock.elapsedRealtimeNanos() - startNs) / 1_000_000L
+
+    /** Called only after camera/analysis drain; old coordinate histories must not cross backends. */
+    fun resetForCameraChange() { temporalValidator.reset(); objectMotionTracker.reset() }
 
     private fun createInferenceRect(width: Int, height: Int): Rect {
         val roi = FrameRoi.calculate(width, height, config.recognitionRoi, config.useCenterSquareCrop)

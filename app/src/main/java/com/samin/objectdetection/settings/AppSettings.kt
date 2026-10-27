@@ -9,8 +9,10 @@ import com.samin.objectdetection.detector.YoloModel
 import com.samin.objectdetection.mlkit.MlKitDetectionMode
 import com.samin.objectdetection.ui.OverlayDebugMode
 import com.samin.objectdetection.distance.DistanceSettings
+import com.samin.objectdetection.distance.ObjectDistanceMethod
+import com.samin.objectdetection.distance.DepthInputMode
 
-const val APP_SETTINGS_SCHEMA_VERSION = 8
+const val APP_SETTINGS_SCHEMA_VERSION = 9
 
 data class CameraSettings(
     val detectIntervalMs: Long = 0L,
@@ -82,7 +84,9 @@ data class OverlaySettings(
     // Maximum frame age for drawing (capture time, or analyzer reception when capture is unreliable).
     // Each detector has its own deadline; this setting does not change warning/output lifetimes.
     val staleTimeoutMs: Long = 1_500L,
-    val showDistance: Boolean = false
+    val showDistance: Boolean = false,
+    val distanceMethod: ObjectDistanceMethod = ObjectDistanceMethod.ARCORE_DEPTH,
+    val depthInputMode: DepthInputMode = DepthInputMode.FULL
 )
 
 data class MlKitSettings(

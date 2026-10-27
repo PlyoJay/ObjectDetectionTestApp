@@ -18,6 +18,8 @@ class ObjectMotionTracker(
     private val tracks = mutableListOf<TrackedObject>()
     private var nextTrackId = 1L
 
+    fun reset() { tracks.clear(); nextTrackId = 1L }
+
     fun update(
         detections: List<DetectionResult>,
         frameWidth: Int,

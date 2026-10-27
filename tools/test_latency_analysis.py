@@ -4,6 +4,16 @@ from analyze_performance_logs import analyze, fields
 
 
 class LatencyAnalysisTest(unittest.TestCase):
+    def test_arcore_depth_json_and_backend_fields_do_not_change_legacy_latency_metrics(self):
+        extra = ('cameraBackend=ARCORE | depthObjects=[{"label":"stop sign","confidence":0.9,'
+                 '"bbox":[1,2,3,4],"estimatedDistanceMeters":2.3,"depthMethod":"RAW",'
+                 '"depthTimestampNs":1050000000,"distanceDefinition":"CAMERA_FORWARD_Z"}]')
+        baseline = analyze(self.log())
+        enriched = analyze(self.log(extra))
+        self.assertEqual(baseline["latency"], enriched["latency"])
+        self.assertEqual(baseline["details"], enriched["details"])
+        self.assertEqual("ARCORE", fields(extra)["cameraBackend"])
+
     def log(self, frame_extra="", events=""):
         return (
             "Start Elapsed Ns: 1000000000\nDropped Log Lines: 0\n"

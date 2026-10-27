@@ -12,6 +12,8 @@ import java.io.StringWriter
 import java.util.Properties
 import com.samin.objectdetection.distance.DistanceSettings
 import com.samin.objectdetection.distance.DistanceOpticsMode
+import com.samin.objectdetection.distance.ObjectDistanceMethod
+import com.samin.objectdetection.distance.DepthInputMode
 
 class AppSettingsStore(context: Context) {
     private val preferences = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
@@ -172,6 +174,8 @@ object AppSettingsCodec {
         }
         with(value.overlay) {
             put("overlay.showDistance", showDistance)
+            put("overlay.distanceMethod", distanceMethod.name)
+            put("overlay.depthInputMode", depthInputMode.name)
             put("overlay.enabled", enabled); put("overlay.debugMode", debugMode.name)
             put("overlay.showYoloBoxes", showYoloBoxes); put("overlay.showMlKitBoxes", showMlKitBoxes)
             put("overlay.showConfidence", showConfidence); put("overlay.showFps", showFps)
@@ -276,7 +280,10 @@ object AppSettingsCodec {
                 b("overlay.enabled", d.overlay.enabled), overlayMode("overlay.debugMode", d.overlay.debugMode),
                 b("overlay.showYoloBoxes", d.overlay.showYoloBoxes), b("overlay.showMlKitBoxes", d.overlay.showMlKitBoxes),
                 b("overlay.showConfidence", d.overlay.showConfidence), b("overlay.showFps", d.overlay.showFps),
-                l("overlay.staleTimeoutMs", d.overlay.staleTimeoutMs), b("overlay.showDistance", false)
+                l("overlay.staleTimeoutMs", d.overlay.staleTimeoutMs), b("overlay.showDistance", false),
+                ObjectDistanceMethod.entries.firstOrNull { it.name == s("overlay.distanceMethod", "") }
+                    ?: if (storedVersion < 9 && b("overlay.showDistance", false)) ObjectDistanceMethod.GROUND_PLANE else ObjectDistanceMethod.ARCORE_DEPTH,
+                DepthInputMode.entries.firstOrNull { it.name == s("overlay.depthInputMode", "FULL") } ?: DepthInputMode.FULL
             ),
             distance = DistanceSettings(
                 optionalFloat("distance.cameraHeightCm"), optionalFloat("distance.downwardPitchDegrees"),

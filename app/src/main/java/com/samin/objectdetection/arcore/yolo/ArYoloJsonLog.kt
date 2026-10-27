@@ -44,6 +44,9 @@ class ArYoloJsonLog(private val directory: File) {
                     .put("rawDepthMeters", obj.depth.rawMeters?.toDouble() ?: JSONObject.NULL)
                     .put("estimatedDistanceMeters", obj.depth.meters?.toDouble() ?: JSONObject.NULL)
                     .put("depthSampleCount", obj.depth.sampleCount).put("distanceStatus", obj.depth.status)
+                    .put("depthMethod", obj.depth.method?.name ?: JSONObject.NULL)
+                    .put("sampleDepthTimestampNs", obj.depth.timestampNs ?: JSONObject.NULL)
+                    .put("depthSupportRegions", obj.depth.supportRegions)
                     .put("samplePoint", obj.depth.samplePoint?.let { JSONArray(listOf(it.x, it.y)) } ?: JSONObject.NULL)
             }))
     }

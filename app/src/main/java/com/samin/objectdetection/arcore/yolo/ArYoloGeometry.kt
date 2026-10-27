@@ -4,6 +4,8 @@ import com.samin.objectdetection.arcore.DepthPlaneSampler
 import com.samin.objectdetection.detector.DetectionResult
 import java.nio.ByteBuffer
 import kotlin.math.abs
+import com.samin.objectdetection.distance.DepthMethod
+import com.samin.objectdetection.distance.ViewportProjection
 
 data class ImagePoint(val x: Float, val y: Float)
 data class ImageBox(val left: Float, val top: Float, val right: Float, val bottom: Float) {
@@ -33,6 +35,27 @@ class ArImageMapping(val width: Int, val height: Int, viewCorners: FloatArray, d
     }
     fun view(point: ImagePoint): ImagePoint = map(view, point)
     fun depth(point: ImagePoint): ImagePoint = map(depth, point)
+    fun rawPoint(upright: ImagePoint): ImagePoint = when (rotation) {
+        0 -> upright
+        90 -> ImagePoint(upright.y, height - upright.x)
+        180 -> ImagePoint(width - upright.x, height - upright.y)
+        270 -> ImagePoint(width - upright.y, upright.x)
+        else -> error("Invalid rotation")
+    }
+    fun uprightBox(raw: ImageBox): ImageBox = when (rotation) {
+        0 -> raw
+        90 -> ImageBox(height - raw.bottom, raw.left, height - raw.top, raw.right)
+        180 -> ImageBox(width - raw.right, height - raw.bottom, width - raw.left, height - raw.top)
+        270 -> ImageBox(raw.top, width - raw.right, raw.bottom, width - raw.left)
+        else -> error("Invalid rotation")
+    }
+    fun projection(): ViewportProjection {
+        val w = if (rotation % 180 == 0) width else height
+        val h = if (rotation % 180 == 0) height else width
+        val start = view(rawPoint(ImagePoint(0f, 0f)))
+        val end = view(rawPoint(ImagePoint(w.toFloat(), h.toFloat())))
+        return ViewportProjection(end.x - start.x, end.y - start.y, start.x, start.y)
+    }
     fun bottomCenter(box: ImageBox): ImagePoint = when (rotation) {
         0 -> ImagePoint((box.left + box.right) / 2, box.bottom)
         90 -> ImagePoint(box.right, (box.top + box.bottom) / 2)
@@ -65,10 +88,14 @@ class ArImageMapping(val width: Int, val height: Int, viewCorners: FloatArray, d
 }
 
 data class ArDepthPlane(val bytes: ByteArray, val width: Int, val height: Int, val rowStride: Int,
-    val pixelStride: Int, val timestampNs: Long, val crop: ImageBox = ImageBox(0f, 0f, width.toFloat(), height.toFloat()))
+    val pixelStride: Int, val timestampNs: Long, val crop: ImageBox = ImageBox(0f, 0f, width.toFloat(), height.toFloat()),
+    val method: DepthMethod = DepthMethod.FULL, val confidence: ArDepthConfidence? = null)
+
+data class ArDepthConfidence(val values: YuvPlaneBytes, val width: Int, val height: Int, val timestampNs: Long)
 
 data class ArObjectDepth(val rawMeters: Float? = null, val meters: Float? = rawMeters,
-    val sampleCount: Int = 0, val status: String, val samplePoint: ImagePoint? = null)
+    val sampleCount: Int = 0, val status: String, val samplePoint: ImagePoint? = null,
+    val method: DepthMethod? = null, val timestampNs: Long? = null, val supportRegions: Int = 0)
 
 object ArObjectDepthSampler {
     const val MAX_DEPTH_AGE_NS = 1_000_000_000L
@@ -116,7 +143,8 @@ data class ArYoloFrame(val frameTimestampNs: Long, val cameraTimestampNs: Long, 
 
 /** A small same-label/IoU matcher confined to this experiment. Missing depth never borrows old Z. */
 class ArObjectDepthSmoother {
-    private data class Track(val label: String, val box: ImageBox, val history: List<Float>, val timestamp: Long, val seenNs: Long)
+    private data class Track(val label: String, val box: ImageBox, val history: List<Float>, val timestamp: Long, val seenNs: Long,
+        val method: DepthMethod?)
     private var tracks = emptyList<Track>()
     fun reset() { tracks = emptyList() }
     fun update(objects: List<ArYoloObject>, depthTimestamp: Long?, nowNs: Long): List<ArYoloObject> {
@@ -124,12 +152,19 @@ class ArObjectDepthSmoother {
         val next = mutableListOf<Track>()
         val result = objects.map { obj ->
             val box = ImageBox.of(obj.detection)
-            val match = previous.filter { it.label == obj.detection.label && it.box.iou(box) >= .25f }.maxByOrNull { it.box.iou(box) }
+            val candidates = previous.filter { it.label == obj.detection.label && it.method == obj.depth.method && it.box.iou(box) >= .25f }
+                .sortedByDescending { it.box.iou(box) }
+            val best = candidates.firstOrNull()
+            // Ambiguous same-class crossings start fresh rather than borrowing another object's Z.
+            val match = best?.takeIf { (candidates.size < 2 || it.box.iou(box) - candidates[1].box.iou(box) > .1f) &&
+                objects.count { other -> other.detection.label == it.label && it.box.iou(ImageBox.of(other.detection)) >= .25f } == 1 }
             if (match != null) previous.remove(match)
             val raw = obj.depth.rawMeters
-            if (raw == null || depthTimestamp == null) return@map obj
-            val history = if (match == null) listOf(raw) else if (depthTimestamp <= match.timestamp) match.history else (match.history + raw).takeLast(5)
-            next.add(Track(obj.detection.label, box, history, depthTimestamp, nowNs))
+            val timestamp = obj.depth.timestampNs ?: depthTimestamp
+            if (raw == null || obj.depth.meters == null || !raw.isFinite() || raw <= 0 || timestamp == null) return@map obj
+            val changed = match != null && timestamp > match.timestamp && abs(raw - match.history.last()) > maxOf(.5f, match.history.last() * .25f)
+            val history = if (match == null || changed) listOf(raw) else if (timestamp <= match.timestamp) match.history else (match.history + raw).takeLast(5)
+            next.add(Track(obj.detection.label, box, history, timestamp, nowNs, obj.depth.method))
             val sorted = history.sorted(); val middle = sorted.size / 2
             val median = if (sorted.size % 2 == 1) sorted[middle] else (sorted[middle - 1] + sorted[middle]) / 2
             obj.copy(depth = obj.depth.copy(meters = median))

@@ -40,7 +40,8 @@ data class PerformanceLogHeader(
     val inputTensorShape: String = "unknown",
     val inputTensorType: String = "unknown",
     val outputTensorShape: String = "unknown",
-    val outputTensorType: String = "unknown"
+    val outputTensorType: String = "unknown",
+    val cameraBackend: String = "CAMERAX"
 )
 
 data class PerformanceFrameRecord(
@@ -79,7 +80,9 @@ data class PerformanceFrameRecord(
     val mlKitPrepareNs: Long = -1L,
     val mlKitInFlight: Boolean = false,
     val roiDescription: String = "N/A",
-    val rotationDegrees: Int? = null
+    val rotationDegrees: Int? = null,
+    val cameraBackend: String = "CAMERAX",
+    val depthObjectsJson: String? = null
 )
 
 object PerformanceLogFormatter {
@@ -135,6 +138,8 @@ object PerformanceLogFormatter {
         appendLine("Output Tensor: ${header.outputTensorShape} (${header.outputTensorType})")
         appendLine("Requested Camera Resolution: ${header.requestedCameraWidth}x${header.requestedCameraHeight}")
         appendLine("Camera Resolution: ${header.cameraWidth}x${header.cameraHeight}")
+        appendLine("Camera Backend: ${header.cameraBackend}")
+        if (header.cameraBackend == "ARCORE") appendLine("ARCore: SDK-selected CPU resolution (0x0=not observed yet); camera request applies to CameraX only; accepted CPU inputs <=4Hz; camera timestamp clock unverified; analyzer close observes copied Bitmap release, not native Image close.")
         appendLine("cameraPreviewEnabled=${header.cameraPreviewEnabled}")
         appendLine("configuredDurationMs=${header.durationMinutes * 60_000L}; timerClock=elapsedRealtimeNanos; completionWindow=[start,deadline)")
         appendLine("Recognition ROI: ${header.roiDescription}; coordinateSpace=rotated_full_frame_pixels; proxyCropApplied=false; MLKit=shared_ROI")
@@ -183,6 +188,8 @@ object PerformanceLogFormatter {
             " | mlKitPrepare=${detailMs(frame.mlKitPrepareNs)}ms | mlKitInFlight=${frame.mlKitInFlight}" +
             " | ${frame.roiDescription}" +
             " | ${frame.execution?.logFields() ?: "execution=N/A"}" +
+            (if (frame.trace == null) " | cameraBackend=${frame.cameraBackend}" else "") +
+            (frame.depthObjectsJson?.let { " | depthObjects=$it" } ?: "") +
             (frame.trace?.let { " | ${formatTrace(it)}" } ?: "")
 
     fun formatTrace(trace: FrameTrace): String = with(trace) {
@@ -192,7 +199,7 @@ object PerformanceLogFormatter {
             "inferenceStartUnixMs=${inferenceStartedAtMs ?: -1L} inferenceStartElapsedNs=${inferenceStartedElapsedNs ?: -1L} " +
             "completedUnixMs=${completedAtMs ?: -1L} completedElapsedNs=${completedElapsedNs ?: -1L} analyzerToInferenceMs=$analyzerToInferenceMs " +
             "inferenceEndElapsedNs=${inferenceEndedElapsedNs ?: -1L} pipelineCompletedElapsedNs=${completedElapsedNs?.takeIf { status == "SUCCESS" } ?: -1L} " +
-            "errorStage=$errorStage error=${error?.replace('\n', ' ')?.replace('\r', ' ')}"
+            "errorStage=$errorStage error=${error?.replace('\n', ' ')?.replace('\r', ' ')} cameraBackend=$cameraBackend"
     }
 
     fun formatLatency(trace: FrameTrace, event: FrameLatencyEvent): String {

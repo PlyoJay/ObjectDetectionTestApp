@@ -26,4 +26,20 @@ class DistanceJsonTest {
         val invalid = JSONObject().putDistance(DistanceEstimate(status = "CONTACT_CLIPPED").applyTo(box))
         assertEquals("CONTACT_CLIPPED", invalid.getString("distanceEstimationStatus"))
     }
+    @Test fun arCoreRawAndFullSourcesPreserveOriginalValuesStatusTimestampsAndLegacyFields() {
+        for (method in com.samin.objectdetection.distance.DepthMethod.entries) {
+            val depth = com.samin.objectdetection.distance.ObjectDepthEstimate(2.4f, 2.3f, method, 42,
+                "INTERIOR_CONSISTENT", 100, 95, 1000, "TRACKING")
+            val json = JSONObject().put("label", box.label).putDistance(depth.applyTo(box))
+            assertEquals("ARCORE_DEPTH", json.getString("distanceEstimationMethod"))
+            assertEquals("CAMERA_FORWARD_Z", json.getString("distanceDefinition"))
+            assertEquals(method.name, json.getString("depthMethod"))
+            assertEquals(2.4, json.getDouble("rawDepthMeters"), .0001)
+            assertEquals(2.3, json.getDouble("estimatedDistanceMeters"), .0001)
+            assertEquals(95, json.getLong("depthTimestampNs")); assertEquals(42, json.getInt("depthSampleCount"))
+            assertTrue(json.isNull("distanceIntrinsics"))
+            val missing = JSONObject().putDistance(depth.copy(rawMeters = null, meters = null, status = "AMBIGUOUS_CLUSTERS").applyTo(box))
+            assertTrue(missing.isNull("estimatedDistanceMeters")); assertFalse(missing.getBoolean("distanceEstimationValid"))
+        }
+    }
 }

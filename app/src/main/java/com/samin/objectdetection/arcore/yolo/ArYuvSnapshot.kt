@@ -39,3 +39,14 @@ class ArYoloWorkGate(private val intervalNs: Long = 250_000_000L) {
     @Synchronized fun release() { busy = false }
     @Synchronized fun close() { closed = true }
 }
+
+/** Retained across pause/resume of the same Session so a cached camera frame cannot become fresh. */
+class ArCameraTimestampSequence {
+    private var last = 0L
+    fun accept(timestampNs: Long): Boolean {
+        if (timestampNs <= last) return false
+        last = timestampNs
+        return true
+    }
+    fun reset() { last = 0 }
+}

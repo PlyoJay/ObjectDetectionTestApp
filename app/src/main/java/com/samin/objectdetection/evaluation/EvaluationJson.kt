@@ -12,17 +12,33 @@ import java.util.Properties
 /** Additive keys shared by capture JSON and detection JSONL; existing parser keys stay intact. */
 internal fun JSONObject.putDistance(detection: DetectionResult): JSONObject = apply {
     val estimate = detection.distanceEstimation
+    val depth = detection.depthEstimation
     val meters = detection.estimatedDistanceMeters?.takeIf { it.isFinite() && it > 0f }
     put("estimatedDistanceMeters", meters?.toDouble() ?: JSONObject.NULL)
-    put("distanceEstimationMethod", estimate?.method ?: JSONObject.NULL)
+    put("distanceEstimationMethod", if (depth != null) "ARCORE_DEPTH" else estimate?.method ?: JSONObject.NULL)
     put("distanceEstimationValid", meters != null)
-    put("distanceEstimationStatus", estimate?.status ?: "NOT_ESTIMATED")
+    put("distanceEstimationStatus", depth?.status ?: estimate?.status ?: "NOT_ESTIMATED")
+    put("distanceSource", if (depth != null) "ARCORE_DEPTH" else if (estimate != null) "GROUND_PLANE" else JSONObject.NULL)
+    put("distanceDefinition", if (depth != null) "CAMERA_FORWARD_Z" else JSONObject.NULL)
+    put("depthMethod", depth?.method?.name ?: JSONObject.NULL)
+    put("rawDepthMeters", depth?.rawMeters?.takeIf { it.isFinite() && it > 0 }?.toDouble() ?: JSONObject.NULL)
+    put("depthSampleCount", depth?.sampleCount ?: 0)
+    put("depthFrameTimestampNs", depth?.frameTimestampNs ?: JSONObject.NULL)
+    put("depthTimestampNs", depth?.depthTimestampNs ?: JSONObject.NULL)
+    put("depthTrackingState", depth?.trackingState ?: JSONObject.NULL)
     put("distanceOpticsSource", estimate?.intrinsics?.source ?: JSONObject.NULL)
     put("distanceIntrinsics", estimate?.intrinsics?.let { k -> JSONObject()
         .put("fx", k.fx.toDouble()).put("fy", k.fy.toDouble())
         .put("cx", k.cx.toDouble()).put("cy", k.cy.toDouble())
         .put("coordinateSpace", "UPRIGHT_FULL_ANALYSIS_BUFFER") } ?: JSONObject.NULL)
 }
+
+/** Opt-in performance logging reuses the same additive object distance keys as evaluation JSONL. */
+internal fun distanceFrameJson(detections: List<DetectionResult>): String = org.json.JSONArray(detections.map { d ->
+    JSONObject().put("label", d.label).put("confidence", d.confidence.toDouble())
+        .put("bbox", org.json.JSONArray(listOf(d.left, d.top, d.right, d.bottom)))
+        .putDistance(d)
+}).toString()
 
 internal fun ModelIdentity.toJson(): JSONObject = JSONObject()
     .put("assetName", assetName)

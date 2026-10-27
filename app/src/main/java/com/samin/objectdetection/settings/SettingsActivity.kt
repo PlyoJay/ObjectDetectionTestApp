@@ -43,6 +43,8 @@ import com.samin.objectdetection.detector.ModelIdentity
 import com.samin.objectdetection.ui.OverlayDebugMode
 import com.samin.objectdetection.distance.DistanceSettings
 import com.samin.objectdetection.distance.DistanceOpticsMode
+import com.samin.objectdetection.distance.ObjectDistanceMethod
+import com.samin.objectdetection.distance.DepthInputMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -410,12 +412,15 @@ class SettingsActivity : ComponentActivity() {
         form.yoloBoxes = toggle(parent, "YOLO bbox")
         form.mlKitBoxes = toggle(parent, "ML Kit bbox")
         form.confidenceLabel = toggle(parent, "Confidence 표시")
-        form.distanceLabel = toggle(parent, "YOLO 거리 표시")
+        form.distanceLabel = toggle(parent, "객체 거리 표시")
+        form.distanceMethod = choice(parent, "거리 추정 방식 (ARCORE_DEPTH=ARCore / GROUND_PLANE=지면)", ObjectDistanceMethod.entries.map { it.name })
+        form.depthInput = choice(parent, "ARCore Depth 입력 (RAW는 confidence 적용 후 FULL 보조)", DepthInputMode.entries.map { it.name })
+        note(parent, "ARCore는 이 메인 화면에서 카메라를 사용하며 장착 높이·각도가 필요 없습니다. 최대 4Hz, 전방 깊이 Z(m)입니다. 입력 해상도는 ARCore SDK가 선택하며 CameraX 요청 해상도는 적용되지 않습니다. 미지원 시 거리 없이 CameraX 인식을 복구하며 원인을 표시합니다. FULL이 기본이며 RAW는 비교 실험용입니다. 아래 장착값은 지면 방식에서만 사용합니다.")
         form.cameraHeight = number(parent, "카메라 설치 높이 (cm)", "1..1000, 미설정은 비워 두기", true)
         form.cameraPitch = number(parent, "카메라 하향 각도 (°)", "0..89, 수평=0, 미설정은 비워 두기", true)
         form.distanceOptics = choice(parent, "거리 화각 설정", DistanceOpticsMode.entries.map { it.name })
         form.manualFov = number(parent, "수동 수직 화각 (°)", "5..150, 회전 전 전체 분석 버퍼 기준", true)
-        note(parent, "고정 설치·평탄한 지면·좌우 기울기 0°를 가정합니다. 높이와 하향 각도가 비어 있으면 거리를 표시하지 않습니다. AUTO는 실제 프레임의 Camera2 광학/크롭 정보를 검사하며 신뢰할 수 없으면 계산하지 않습니다. MANUAL은 현재 해상도·줌에서 회전 전 전체 ImageAnalysis 버퍼의 수직 화각을 실측해 입력하세요. ROI나 모델 입력 화각이 아닙니다. 설치 방향·해상도·줌 변경 후 다시 보정하세요. 거리는 경고 판단에 사용하지 않습니다.")
+        note(parent, "지면 방식 전용: 고정 설치·평탄한 지면·좌우 기울기 0°를 가정합니다. 지면 방식에서 높이와 하향 각도가 비어 있으면 거리를 표시하지 않습니다. AUTO는 실제 프레임의 Camera2 광학/크롭 정보를 검사하며 신뢰할 수 없으면 계산하지 않습니다. MANUAL은 현재 해상도·줌에서 회전 전 전체 ImageAnalysis 버퍼의 수직 화각을 실측해 입력하세요. ROI나 모델 입력 화각이 아닙니다. 설치 방향·해상도·줌 변경 후 다시 보정하세요. 거리는 경고 판단에 사용하지 않습니다.")
         form.fps = toggle(parent, "FPS 표시")
         form.overlayStale = number(parent, "Overlay Stale Timeout (ms)", "100..60000")
         note(parent, "촬영 후 박스를 표시할 수 있는 최대 시간입니다. 촬영 시각을 비교할 수 없으면 분석 수신 시각을 사용합니다. 경고·TTS·진동의 유효시간에는 영향을 주지 않습니다.")
@@ -510,6 +515,7 @@ class SettingsActivity : ComponentActivity() {
         }
         with(value.overlay) {
             form.distanceLabel.isChecked = showDistance
+            select(form.distanceMethod, distanceMethod.name); select(form.depthInput, depthInputMode.name)
             form.overlayEnabled.isChecked = enabled; select(form.debugMode, debugMode.name); form.yoloBoxes.isChecked = showYoloBoxes
             form.mlKitBoxes.isChecked = showMlKitBoxes; form.confidenceLabel.isChecked = showConfidence; form.fps.isChecked = showFps
             form.overlayStale.setText(staleTimeoutMs.toString())
@@ -564,7 +570,8 @@ class SettingsActivity : ComponentActivity() {
             warning = WarningSettings(form.cooldown.l(), form.ignoreTop.f(), form.maxGuide.i(), form.veryNearHeight.f(), form.nearHeight.f(),
                 form.midHeight.f(), form.veryNearArea.f(), form.nearArea.f(), form.midArea.f(), form.vibration.isChecked, form.beep.isChecked, form.tts.isChecked),
             overlay = OverlaySettings(form.overlayEnabled.isChecked, OverlayDebugMode.valueOf(form.debugMode.selectedItem.toString()),
-                form.yoloBoxes.isChecked, form.mlKitBoxes.isChecked, form.confidenceLabel.isChecked, form.fps.isChecked, form.overlayStale.l(), form.distanceLabel.isChecked),
+                form.yoloBoxes.isChecked, form.mlKitBoxes.isChecked, form.confidenceLabel.isChecked, form.fps.isChecked, form.overlayStale.l(), form.distanceLabel.isChecked,
+                ObjectDistanceMethod.valueOf(form.distanceMethod.selectedItem.toString()), DepthInputMode.valueOf(form.depthInput.selectedItem.toString())),
             distance = DistanceSettings(form.cameraHeight.optionalFloat(), form.cameraPitch.optionalFloat(),
                 DistanceOpticsMode.valueOf(form.distanceOptics.selectedItem.toString()), form.manualFov.optionalFloat()),
             mlKit = MlKitSettings(form.mlKitEnabled.isChecked, form.mlKitInterval.l(),
@@ -679,7 +686,10 @@ class SettingsActivity : ComponentActivity() {
         form.mlKitMode.isEnabled = form.mlKitEnabled.isChecked
         form.systemSampleInterval.isEnabled = form.systemDiagnostics.isChecked
         form.batteryDiagnostics.isEnabled = form.systemDiagnostics.isChecked
-        form.manualFov.isEnabled = form.distanceOptics.selectedItem?.toString() == "MANUAL"
+        val ground = form.distanceMethod.selectedItem?.toString() == ObjectDistanceMethod.GROUND_PLANE.name
+        listOf(form.cameraHeight, form.cameraPitch, form.distanceOptics).forEach { it.isEnabled = ground }
+        form.manualFov.isEnabled = ground && form.distanceOptics.selectedItem?.toString() == "MANUAL"
+        form.depthInput.isEnabled = !ground
         val cropEnabled = form.roiEnabled.isChecked
         if (cropEnabled) {
             form.centerCrop.isChecked = false
@@ -848,6 +858,7 @@ class SettingsActivity : ComponentActivity() {
         lateinit var overlayEnabled: Switch; lateinit var debugMode: Spinner; lateinit var yoloBoxes: Switch; lateinit var mlKitBoxes: Switch
         lateinit var confidenceLabel: Switch; lateinit var fps: Switch; lateinit var overlayStale: EditText
         lateinit var distanceLabel: Switch; lateinit var cameraHeight: EditText; lateinit var cameraPitch: EditText
+        lateinit var distanceMethod: Spinner; lateinit var depthInput: Spinner
         lateinit var distanceOptics: Spinner; lateinit var manualFov: EditText
         lateinit var mlKitEnabled: Switch; lateinit var mlKitInterval: EditText; lateinit var mlKitMode: Spinner
         lateinit var diagnostics: Switch; lateinit var debugLogging: Switch; lateinit var rawConfidence: EditText; lateinit var rawCandidates: EditText

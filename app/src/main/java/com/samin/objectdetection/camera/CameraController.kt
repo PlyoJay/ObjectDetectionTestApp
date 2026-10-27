@@ -40,7 +40,9 @@ data class CameraFrameTiming(
     val cameraToBitmapNs: Long = -1L,
     val rotationNs: Long = -1L,
     val latency: FrameLatencyRecorder? = null,
-    val distanceGeometry: AnalysisCameraGeometry? = null
+    val distanceGeometry: AnalysisCameraGeometry? = null,
+    val depthContext: com.samin.objectdetection.distance.FrameDepthContext? = null,
+    val cameraBackend: String = "CAMERAX"
 ) {
     val cameraToAnalyzerMs: Long get() = if (captureTimestampReliable) (analyzerReceivedMs - frameTimestampMs).coerceAtLeast(0L) else -1L
     val bitmapConversionMs: Long get() =
@@ -57,8 +59,9 @@ class CameraController(
     private val targetHeight: Int = TARGET_HEIGHT,
     private val cameraPreviewEnabled: Boolean = true,
     private val listener: Listener,
-    private val distanceMetadataEnabled: Boolean = false
-) : AutoCloseable {
+    private val distanceMetadataEnabled: Boolean = false,
+    private val frameIdProvider: (() -> Long)? = null
+) : AutoCloseable, CameraBackend {
 
     interface Listener {
         fun onAnalyzerStarted(timing: CameraFrameTiming): FrameLatencyRecorder? = null
@@ -83,7 +86,7 @@ class CameraController(
     private val stopped = CompletableFuture<Unit>()
     private val distanceGeometry = Camera2DistanceGeometry()
 
-    fun start() {
+    override fun start() {
         val providerFuture = ProcessCameraProvider.getInstance(context)
         providerFuture.addListener({
             if (closed) return@addListener
@@ -121,7 +124,7 @@ class CameraController(
             val cameraNs = imageProxy.imageInfo.timestamp
             val reliable = realtimeTimestamps && cameraNs > 0 && cameraNs <= receivedNs
             val frameTimestampMs = if (reliable) analyzerReceivedMs - (receivedNs - cameraNs) / 1_000_000L else analyzerReceivedMs
-            val frameId = ++sequence
+            val frameId = frameIdProvider?.invoke() ?: ++sequence
             var timing = CameraFrameTiming(frameTimestampMs, analyzerReceivedMs, analyzerReceivedMs,
                 analyzerReceivedMs, frameId, cameraNs, receivedNs, reliable,
                 frameWidth = if (imageProxy.imageInfo.rotationDegrees % 180 == 0) imageProxy.width else imageProxy.height,
@@ -217,7 +220,7 @@ class CameraController(
     }
 
     /** Called on main for unbind; completion is delivered only after the analyzer really exits. */
-    fun stopAsync(): CompletableFuture<Unit> {
+    override fun stopAsync(): CompletableFuture<Unit> {
         if (closed) return stopped
         closed = true
         runCatching { provider?.unbindAll() }.onFailure { Log.e(TAG, "camera unbind failed", it) }

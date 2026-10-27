@@ -1,5 +1,7 @@
 # ARCore Depth 거리 측정 테스트
 
+> 메인 화면의 선택적 YOLO 거리 표시는 [메인 통합 문서](arcore-main-integration.md)를 참조한다. 이 문서의 별도 중앙 거리 측정/CSV 기능은 유지한다.
+
 ## 범위와 변경 파일
 
 기존 객체 인식과 독립적인 AR Optional 실험 화면이다. 메인 화면의 **ARCore 거리 측정** 버튼으로 진입한다. CameraX 파이프라인, YOLO 모델·후처리, ML Kit, 지면 거리 추정, 경고 및 성능 계산 코드는 변경하지 않았다. 메인 화면의 진입/복귀 수명 관리와 버튼만 연결했다. 서버, Cloud Anchors, Geospatial, 유료 클라우드 API는 사용하지 않는다.

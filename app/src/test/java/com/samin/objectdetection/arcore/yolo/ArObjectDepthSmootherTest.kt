@@ -12,9 +12,9 @@ class ArObjectDepthSmootherTest {
     @Test fun sameLabelObjectsMatchByBoxOverlapEvenWhenDetectionOrderChanges() {
         val smoother = ArObjectDepthSmoother()
         smoother.update(listOf(obj(10f, 1f), obj(60f, 9f)), 1, 1)
-        val next = smoother.update(listOf(obj(60f, 10f), obj(10f, 2f)), 2, 2)
-        assertEquals(9.5f, next[0].depth.meters!!, 0f); assertEquals(1.5f, next[1].depth.meters!!, 0f)
-        assertEquals(2f, next[1].depth.rawMeters!!, 0f)
+        val next = smoother.update(listOf(obj(60f, 10f), obj(10f, 1.2f)), 2, 2)
+        assertEquals(9.5f, next[0].depth.meters!!, 0f); assertEquals(1.1f, next[1].depth.meters!!, .0001f)
+        assertEquals(1.2f, next[1].depth.rawMeters!!, 0f)
     }
     @Test fun absentDepthNeverBorrowsHistoryAndNextValidSampleStartsAgain() {
         val smoother = ArObjectDepthSmoother()
@@ -36,5 +36,18 @@ class ArObjectDepthSmootherTest {
         assertEquals(8f, result.depth.meters!!, 0f); assertEquals(10f, result.depth.rawMeters!!, 0f)
         smoother.reset()
         assertEquals(20f, smoother.update(listOf(obj(10f, 20f)), 11, 11).single().depth.meters!!, 0f)
+    }
+    @Test fun abruptDepthChangeAndInputSourceSwitchStartNewHistoryWithoutDisplayLag() {
+        val smoother = ArObjectDepthSmoother()
+        repeat(5) { smoother.update(listOf(obj(10f, 2f)), it.toLong() + 1, it.toLong() + 1) }
+        assertEquals(4f, smoother.update(listOf(obj(10f, 4f)), 6, 6).single().depth.meters!!, 0f)
+        val raw = obj(10f, 4.2f).let { it.copy(depth = it.depth.copy(method = com.samin.objectdetection.distance.DepthMethod.RAW, timestampNs = 7)) }
+        assertEquals(4.2f, smoother.update(listOf(raw), null, 7).single().depth.meters!!, 0f)
+    }
+    @Test fun ambiguousSameClassOverlappingBoxesDoNotBorrowEitherTrackHistory() {
+        val smoother = ArObjectDepthSmoother()
+        smoother.update(listOf(obj(10f, 2f), obj(20f, 4f)), 1, 1)
+        val result = smoother.update(listOf(obj(14f, 2.2f), obj(16f, 4.2f)), 2, 2)
+        assertEquals(2.2f, result[0].depth.meters!!, 0f); assertEquals(4.2f, result[1].depth.meters!!, 0f)
     }
 }
