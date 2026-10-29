@@ -31,6 +31,19 @@ import android.view.accessibility.AccessibilityNodeInfo
 
 /** Preserves applied settings/presets; the preview integration test also starts real inference. */
 class SettingsActivityTest {
+    @Test fun depthAnalysisAndManualTruthAreOptionalAndPersistWithExistingSettings() {
+        seed(AppSettings()); launch(); openCategory("디버그 및 고급 설정")
+        field("Depth 분석 표시 (기본 OFF)").perform(scrollTo()).check(matches(not(isChecked())))
+        field("Depth 분석 표시 (기본 OFF)").perform(click())
+        field("실측 대상 클래스").perform(scrollTo(), replaceText("person"), closeSoftKeyboard())
+        field("실측 전방 Z (m)").perform(scrollTo(), replaceText("2"), closeSoftKeyboard())
+        recreate(); onView(withText("적용 및 저장")).perform(click())
+        val value = loadHealthy()
+        assertTrue(value.debug.depthAnalysisEnabled)
+        assertEquals(2f, value.debug.depthGroundTruthMeters!!, 0f)
+        assertEquals("person", value.debug.depthGroundTruthLabel)
+        assertFalse(value.overlay.showDistance)
+    }
     @Test fun arCoreDistanceNeedsNoMountValuesAndRawSelectionSurvivesDraftAndApply() {
         seed(AppSettings()); launch(); openCategory("디버그 및 고급 설정")
         field("객체 거리 표시").perform(scrollTo(), click())

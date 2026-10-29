@@ -1,5 +1,7 @@
 # 메인 화면 YOLO + ARCore Depth 통합
 
+> 2026-10-28 정확도 후속 보완: 직접 픽셀 좌표 스냅샷·객체/외곽 비교·시간 필터·분석 설정/schema 10은 [거리 오차 분석 문서](arcore-depth-accuracy-analysis-20261028.md)를 참조한다. 아래는 최초 메인 통합 기록이다.
+
 2026-10-27. 설정 → **디버그 및 고급 설정 → Overlay / Display → 객체 거리 표시**에서 ON/OFF하고 거리 추정 방식을 고른다. 신규 설정의 기본값은 **OFF**, 방식은 **ARCORE_DEPTH**, Depth 입력은 **FULL**이다. 적용하면 기존 안전한 runtime 종료·재생성 경로로 같은 MainActivity의 카메라를 다시 준비한다. 별도 Activity 진입은 필요 없다.
 
 기존 장착 높이·각도가 필요한 **GROUND_PLANE** 방식, ARCore 중앙 거리 측정 화면/CSV 목록, 별도 YOLO+ARCore 검증 화면은 보존한다. 두 검증 화면의 진입 버튼은 메인 **고급 ARCore 검증 도구** 안으로 이동했다. 모델/학습 파일, confidence/NMS 기준, 위험도·ProximityLevel·경고 출력 기준은 수정하지 않았다.

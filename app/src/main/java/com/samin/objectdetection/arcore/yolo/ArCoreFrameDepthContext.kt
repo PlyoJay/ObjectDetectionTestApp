@@ -8,7 +8,8 @@ import com.samin.objectdetection.distance.ObjectDepthEstimate
 /** A single copied camera/depth pair. No native ARCore/Image object survives acquisition. */
 class ArCoreFrameDepthContext(capture: ArYoloCapture, private val mode: DepthInputMode,
     private val sampler: ArObjectSurfaceDepthSampler, private val smoother: ArObjectDepthSmoother,
-    private val nowNs: () -> Long, private val currentEpoch: () -> Long) : FrameDepthContext {
+    private val nowNs: () -> Long, private val currentEpoch: () -> Long,
+    private val diagnostics: Boolean = false, private val groundTruth: com.samin.objectdetection.distance.DepthGroundTruth? = null) : FrameDepthContext {
     // UI/ML Kit validity callbacks must not retain the copied YUV camera planes.
     private val mapping = capture.mapping
     private val full = capture.depth
@@ -18,6 +19,7 @@ class ArCoreFrameDepthContext(capture: ArYoloCapture, private val mode: DepthInp
     private val epoch = capture.epoch
     private val tracking = capture.tracking
     private val depthStatus = capture.depthStatus
+    private val rawStatus = capture.rawDepthStatus
     override val projection = mapping.projection()
     override fun isCurrent(): Boolean = epoch == currentEpoch()
     override fun estimate(detections: List<DetectionResult>): List<DetectionResult> {
@@ -25,15 +27,20 @@ class ArCoreFrameDepthContext(capture: ArYoloCapture, private val mode: DepthInp
         val objects = detections.map { detection ->
             val rawBox = mapping.rawBox(ImageBox.of(detection))
             var depth = if (!isCurrent()) ArObjectDepth(status = "COORDINATES_INVALIDATED") else
-                sampler.sample(rawBox, mapping, full, raw, mode, frameNs, tracking, depthStatus)
+                sampler.sample(rawBox, mapping, full, raw, mode, frameNs, tracking, depthStatus, diagnostics, rawStatus)
             val timestamp = depth.timestampNs
             if (timestamp != null && now >= expiration(timestamp)) depth = depth.copy(meters = null, status = "STALE_DEPTH")
             ArYoloObject(detection, mapping.viewBox(rawBox), depth)
         }
         return smoother.update(objects, null, now).map { obj ->
             val d = obj.depth
+            val truthMatches = groundTruth?.let { target -> detections.count { it.label.equals(target.objectLabel, true) } } ?: 0
+            val truth = groundTruth?.takeIf { diagnostics && truthMatches == 1 && it.objectLabel.equals(obj.detection.label, true) }
             ObjectDepthEstimate(d.rawMeters, d.meters, d.method, d.sampleCount, d.status,
-                frameNs, d.timestampNs, d.timestampNs?.let(::expiration) ?: capturedNs, tracking).applyTo(obj.detection)
+                frameNs, d.timestampNs, d.timestampNs?.let(::expiration) ?: capturedNs, tracking,
+                d.analysis, d.filterStatus, d.filterLagMs,
+                d.timestampNs?.let { ((now - capturedNs + frameNs - it) / 1_000_000).coerceAtLeast(0) }, d.trackId,
+                truth?.meters, if (truth != null) "UNIQUE_TARGET" else if (groundTruth != null && truthMatches > 1) "AMBIGUOUS_TARGET" else "NOT_SET").applyTo(obj.detection)
         }
     }
 

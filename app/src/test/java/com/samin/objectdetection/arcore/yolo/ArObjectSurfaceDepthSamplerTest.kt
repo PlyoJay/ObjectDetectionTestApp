@@ -14,11 +14,12 @@ class ArObjectSurfaceDepthSamplerTest {
     private val frameNs = 10_000_000_000L
     private val sampler = ArObjectSurfaceDepthSampler()
     private fun plane(method: DepthMethod = DepthMethod.FULL, confidence: Int = 255,
-        timestamp: Long = frameNs, value: (Int, Int) -> Int): ArDepthPlane {
+        timestamp: Long = frameNs, background: Int? = 9000, value: (Int, Int) -> Int): ArDepthPlane {
         val bytes = ByteBuffer.allocate(100 * 408).order(ByteOrder.LITTLE_ENDIAN)
         val confidenceBytes = ByteArray(100 * 205)
         for (y in 0..99) for (x in 0..99) {
-            bytes.putShort(y * 408 + x * 4, value(x, y).toShort())
+            val mm = if (background != null && (x !in 10..89 || y !in 10..89)) background else value(x, y)
+            bytes.putShort(y * 408 + x * 4, mm.toShort())
             confidenceBytes[y * 205 + x * 2] = confidence.toByte()
         }
         return ArDepthPlane(bytes.array(), 100, 100, 408, 4, timestamp, method = method,
@@ -48,7 +49,7 @@ class ArObjectSurfaceDepthSamplerTest {
         assertNull(sample(plane { _, _ -> 0 }).meters)
     }
     @Test fun unsigned16BitAndPaddedDepthAndConfidenceStridesAreReadCorrectly() {
-        val value = sample(plane { _, _ -> 2000 }, plane(DepthMethod.RAW) { _, _ -> 40000 }, DepthInputMode.RAW_WITH_FULL_FALLBACK)
+        val value = sample(plane { _, _ -> 40000 }, plane(DepthMethod.RAW) { _, _ -> 40000 }, DepthInputMode.RAW_WITH_FULL_FALLBACK)
         assertEquals(40f, value.meters!!, 0f); assertEquals(DepthMethod.RAW, value.method)
     }
     @Test fun rawConfidenceFiltersLowPixelsAndFallsBackToSameFrameFullWithSourceRecorded() {
@@ -57,7 +58,7 @@ class ArObjectSurfaceDepthSamplerTest {
         val fallback = sample(full, raw, DepthInputMode.RAW_WITH_FULL_FALLBACK)
         assertEquals(4f, fallback.meters!!, 0f); assertEquals(DepthMethod.FULL, fallback.method)
         assertTrue(fallback.status.contains("RAW_FALLBACK:INSUFFICIENT_DEPTH"))
-        val accepted = sample(full, plane(DepthMethod.RAW, 128) { _, _ -> 2500 }, DepthInputMode.RAW_WITH_FULL_FALLBACK)
+        val accepted = sample(plane { _, _ -> 2500 }, plane(DepthMethod.RAW, 128) { _, _ -> 2500 }, DepthInputMode.RAW_WITH_FULL_FALLBACK)
         assertEquals(2.5f, accepted.meters!!, 0f); assertEquals(DepthMethod.RAW, accepted.method)
     }
     @Test fun mismatchedRawConfidenceTimestampResolutionOrLayoutNeverUsesRaw() {
@@ -97,5 +98,29 @@ class ArObjectSurfaceDepthSamplerTest {
                 DepthInputMode.FULL, frameNs, "TRACKING")
             assertEquals(5f, value.meters!!, 0f)
         }
+    }
+    @Test fun coherentBackgroundAloneIsNotEvidenceForAnObjectSurface() {
+        val result = sample(plane(background = null) { _, _ -> 6000 })
+        assertNull(result.meters); assertEquals("NO_OBJECT_BACKGROUND_SEPARATION", result.status)
+    }
+    @Test fun centralObjectCanBeChosenEvenWhenInteriorBackgroundIsTheLargestCluster() {
+        val result = sample(plane { x, y -> if (x in 33..66 && y in 26..73) 2000 else 9000 })
+        assertEquals(2f, result.meters!!, 0f)
+        assertTrue(result.analysis!!.full!!.clusters.any { it.meters == 9f && it.backgroundFraction > .9f })
+    }
+    @Test fun fullRawDisagreementAbstainsAndPreservesBothIndependentMeasurements() {
+        val result = sample(plane { _, _ -> 5000 }, plane(DepthMethod.RAW) { _, _ -> 2000 }, DepthInputMode.RAW_WITH_FULL_FALLBACK)
+        assertNull(result.meters); assertEquals("DEPTH_SOURCE_DISAGREEMENT", result.status)
+        assertEquals(5f, result.analysis!!.full!!.meters!!, 0f); assertEquals(2f, result.analysis.raw!!.meters!!, 0f)
+    }
+    @Test fun debugComparisonDoesNotChangeFullSelectionAndReportsInvalidSamplesAndConfidenceDistribution() {
+        val full = plane { _, _ -> 3000 }; val raw = plane(DepthMethod.RAW, 127) { _, _ -> 1000 }
+        val normal = sample(full, raw)
+        val debug = sampler.sample(box, mapping, full, raw, DepthInputMode.FULL, frameNs, "TRACKING", diagnostics = true)
+        assertEquals(normal.meters, debug.meters)
+        assertTrue(debug.analysis!!.points.isNotEmpty()); assertTrue(debug.analysis.raw!!.lowConfidenceCount > 0)
+        assertEquals(127, debug.analysis.raw!!.confidenceMin!!)
+        assertTrue(debug.analysis.raw.confidenceHistogram[1] > 0)
+        assertTrue(normal.analysis!!.points.isEmpty())
     }
 }

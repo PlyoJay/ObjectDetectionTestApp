@@ -14,7 +14,7 @@ import com.samin.objectdetection.distance.DepthInputMode
 data class ArYoloCapture(val image: ArYuvSnapshot, val mapping: ArImageMapping, val depth: ArDepthPlane?,
     val depthStatus: String, val frameTimestampNs: Long, val cameraTimestampNs: Long,
     val capturedElapsedNs: Long, val capturedWallMs: Long, val epoch: Long, val tracking: String,
-    val rawDepth: ArDepthPlane? = null)
+    val rawDepth: ArDepthPlane? = null, val rawDepthStatus: String = "DEPTH_NOT_READY")
 
 interface ArFrameConsumer {
     fun acquire(nowNs: Long): Boolean

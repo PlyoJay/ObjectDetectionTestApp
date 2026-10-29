@@ -59,6 +59,9 @@ class BoundingBoxOverlay @JvmOverloads constructor(
     private var showMlKitBoxes = true
     private var showConfidence = false
     private var showDistance = false
+    private var depthAnalysisEnabled = false
+    fun setDepthAnalysisEnabled(value: Boolean) { depthAnalysisEnabled = value; postInvalidateOnAnimation() }
+    private val depthPointPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
     private val labelBounds = mutableListOf<RectF>()
     private var showFps = false
     private var staleTimeoutMs = DEFAULT_MAX_OVERLAY_AGE_MS
@@ -275,6 +278,17 @@ class BoundingBoxOverlay @JvmOverloads constructor(
             }
 
             canvas.drawRoundRect(left, top, right, bottom, 20f, 20f, boxPaint)
+            if (depthAnalysisEnabled) res.depthEstimation?.analysis?.points?.forEach { p ->
+                depthPointPaint.color = when {
+                    !p.valid -> Color.RED
+                    p.role == "SELECTED" -> Color.GREEN
+                    p.role == "BACKGROUND" -> Color.CYAN
+                    else -> Color.YELLOW
+                }
+                val x = p.viewX?.times(width) ?: (transform.offsetX + p.x * transform.scale)
+                val y = p.viewY?.times(height) ?: (transform.offsetY + p.y * transform.scaleY)
+                if (x in 0f..width.toFloat() && y in 0f..height.toFloat()) canvas.drawCircle(x, y, 4f, depthPointPaint)
+            }
             drawLabelIfNeeded(canvas, res, DetectionSource.YOLO, left, top, bottom)
         }
 
@@ -315,7 +329,7 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         val textWidth = kotlin.math.ceil(labelPaint.measureText(label).toDouble()).toInt().coerceIn(1, maxTextWidth)
         val layout = StaticLayout.Builder.obtain(label, 0, label.length, labelPaint, textWidth)
             .setAlignment(Layout.Alignment.ALIGN_NORMAL).setIncludePad(false)
-            .setMaxLines(4).setEllipsize(TextUtils.TruncateAt.END).build()
+            .setMaxLines(if (depthAnalysisEnabled && detection.depthEstimation != null) 8 else 4).setEllipsize(TextUtils.TruncateAt.END).build()
         val labelWidth = textWidth + LABEL_HORIZONTAL_PADDING_PX
         val labelHeight = layout.height + 12f
         if (labelHeight > height) return
@@ -353,12 +367,24 @@ class BoundingBoxOverlay @JvmOverloads constructor(
             }
             OverlayDebugMode.FULL -> buildFullDebugLabel(detection, source)
         }
-        if (distance == null) return base
+        fun debugSuffix(label: String?): String? {
+            val d = detection.depthEstimation
+            if (!depthAnalysisEnabled || source != DetectionSource.YOLO || d == null) return label
+            fun meters(value: Float?) = value?.let { String.format(Locale.US, "%.2f", it) } ?: "null"
+            val a = d.analysis
+            return (label?.substringBefore('\n') ?: detection.label) + "\n${d.method ?: "NONE"} n=${d.sampleCount} raw=${meters(d.rawMeters)} Z=${meters(d.meters)}" +
+                "\n${d.status} / ${d.filterStatus}" +
+                "\nFULL=${meters(a?.full?.meters)} RAW=${meters(a?.raw?.meters)} ${a?.selectionReason.orEmpty()}" +
+                (a?.maxMappingErrorPixels?.let { "\nmapΔ=${String.format(Locale.US, "%.3f", it)}px" } ?: "") +
+                (d.groundTruthMeters?.let { " GT=${meters(it)}m" } ?: "") +
+                (label?.takeIf { it.contains('\n') }?.let { "\n" + it.substringAfter('\n') } ?: "")
+        }
+        if (distance == null) return debugSuffix(base)
         val distanceText = if (distance < .05f) "0.1m 미만" else "${String.format(Locale.US, "%.1f", distance)}m"
         val distanceLabel = "${detection.label} 약 $distanceText"
-        return if (base == null) distanceLabel +
+        return debugSuffix(if (base == null) distanceLabel +
             (if (showConfidence) " ${String.format(Locale.US, "%.2f", detection.confidence)}" else "")
-        else distanceLabel + base.removePrefix(detection.label)
+        else distanceLabel + base.removePrefix(detection.label))
     }
 
     private fun buildFullDebugLabel(

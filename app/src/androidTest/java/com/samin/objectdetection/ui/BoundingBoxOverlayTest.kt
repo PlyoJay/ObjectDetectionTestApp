@@ -16,6 +16,28 @@ import java.util.concurrent.TimeUnit
 
 /** Canvas pixels and real View callbacks; no camera, model, warning output or settings writes. */
 class BoundingBoxOverlayTest {
+    @Test fun depthAnalysisPointsAndReasonsAreOptInAndUseTheExistingProjection() = instrumentation.runOnMainSync {
+        val view = overlay()
+        val depth = com.samin.objectdetection.distance.ObjectDepthEstimate(2.3f, null,
+            com.samin.objectdetection.distance.DepthMethod.FULL, 12, "NO_OBJECT_BACKGROUND_SEPARATION", 100, 100,
+            SystemClock.elapsedRealtimeNanos() + 1_000_000_000, "TRACKING",
+            analysis = com.samin.objectdetection.distance.DepthAnalysis(null, null, "FULL_REQUESTED", listOf(
+                com.samin.objectdetection.distance.DepthSamplePoint(40f, 50f, "SELECTED", true, 2.3f),
+                com.samin.objectdetection.distance.DepthSamplePoint(60f, 50f, "CORE", false, null))))
+        val detection = depth.applyTo(box.single())
+        val method = view.javaClass.getDeclaredMethod("buildLabel", DetectionResult::class.java,
+            com.samin.objectdetection.model.DetectionSource::class.java).apply { isAccessible = true }
+        try {
+            view.updateDetections(listOf(detection), 200, 200, 1, 1, trace(1))
+            assertNull(method.invoke(view, detection, com.samin.objectdetection.model.DetectionSource.YOLO))
+            view.setDepthAnalysisEnabled(true)
+            assertTrue((method.invoke(view, detection, com.samin.objectdetection.model.DetectionSource.YOLO) as String).contains("NO_OBJECT_BACKGROUND_SEPARATION"))
+            val rendered = render(view)
+            try { assertEquals(Color.GREEN, rendered.getPixel(40, 50)); assertEquals(Color.RED, rendered.getPixel(60, 50)) }
+            finally { rendered.recycle() }
+            view.setDrawingEnabled(false); assertFalse(hasPixels(view))
+        } finally { view.clearDetections() }
+    }
     @Test fun arCoreViewportProjectionIsSharedByYoloAndMlKitWithoutFitCenterCroppingAgain() = instrumentation.runOnMainSync {
         val view = overlay()
         try {

@@ -8,6 +8,20 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class DistanceJsonTest {
+    @Test fun manualTruthErrorsAndFilterMetadataAreAdditiveAndNeverSynthesizedWithoutTruth() {
+        val depth = com.samin.objectdetection.distance.ObjectDepthEstimate(2.4f, 2.2f,
+            com.samin.objectdetection.distance.DepthMethod.FULL, 42, "INTERIOR_CONSISTENT", 100, 95, 1000, "TRACKING",
+            groundTruthMeters = 2f, groundTruthStatus = "UNIQUE_TARGET", filterStatus = "MEDIAN", updateDelayMs = 250)
+        val json = JSONObject().putDistance(depth.applyTo(box))
+        assertEquals(.4, json.getDouble("absoluteErrorMeters"), .0001)
+        assertEquals(20.0, json.getDouble("relativeErrorPercent"), .001)
+        assertEquals(.2, json.getDouble("filteredAbsoluteErrorMeters"), .0001)
+        assertEquals("CAMERA_FORWARD_Z", json.getString("groundTruthDefinition"))
+        assertEquals("bollard", json.getString("objectLabel"))
+        val absent = JSONObject().putDistance(depth.copy(groundTruthMeters = null).applyTo(box))
+        assertTrue(absent.isNull("absoluteErrorMeters")); assertTrue(absent.isNull("groundTruthMeters"))
+        assertTrue(JSONObject().putDistance(depth.copy(groundTruthMeters = Float.MIN_VALUE).applyTo(box)).isNull("relativeErrorPercent"))
+    }
     private val box = DetectionResult("bollard", .9f, 1f, 2f, 3f, 4f)
     @Test fun distanceKeysAreAdditiveAndInvalidOrMissingDistanceUsesJsonNull() {
         val estimate = DistanceEstimate(2.3f, status = "VALID", intrinsics = CameraIntrinsics(800f, 800f, 320f, 240f, "MANUAL_FOV"))

@@ -25,7 +25,8 @@ data class ArYoloStatus(val tracking: String = "WAITING", val depth: String = "D
 class ArYoloRenderer(private val worker: ArFrameConsumer, private val epoch: AtomicLong,
     private val onInvalidated: () -> Unit, private val onError: (Exception) -> Unit,
     private val depthInputMode: DepthInputMode = DepthInputMode.FULL,
-    private val drawCameraBackground: Boolean = true) : GLSurfaceView.Renderer {
+    private val drawCameraBackground: Boolean = true,
+    private val depthAnalysisEnabled: Boolean = false) : GLSurfaceView.Renderer {
     private val lock = Any()
     private var session: Session? = null
     private var active = false
@@ -102,6 +103,7 @@ class ArYoloRenderer(private val worker: ArFrameConsumer, private val epoch: Ato
         require(mapping.valid()) { "Invalid ARCore coordinate mapping" }
         var depth: ArDepthPlane? = null
         var raw: ArDepthPlane? = null
+        var rawStatus = "RAW_NOT_READY"
         var depthStatus = if (tracking == TrackingState.TRACKING.name) "DEPTH_NOT_READY" else "TRACKING_PAUSED"
         if (tracking == TrackingState.TRACKING.name) {
             try {
@@ -114,7 +116,7 @@ class ArYoloRenderer(private val worker: ArFrameConsumer, private val epoch: Ato
                 }
             } catch (_: NotYetAvailableException) { /* YOLO still runs without depth. */ }
             catch (_: Exception) { depthStatus = "DEPTH_ACQUISITION_ERROR" }
-            if (depthInputMode == DepthInputMode.RAW_WITH_FULL_FALLBACK) {
+            if (depthInputMode == DepthInputMode.RAW_WITH_FULL_FALLBACK || depthAnalysisEnabled) {
                 try {
                     frame.acquireRawDepthImage16Bits().use { rawImage ->
                         frame.acquireRawDepthConfidenceImage().use { confidenceImage ->
@@ -127,16 +129,31 @@ class ArYoloRenderer(private val worker: ArFrameConsumer, private val epoch: Ato
                                         minOf(crop.right, confidenceCrop.right).toFloat(), minOf(crop.bottom, confidenceCrop.bottom).toFloat()),
                                     DepthMethod.RAW, ArDepthConfidence(YuvPlaneBytes(copy(c.buffer), c.rowStride, c.pixelStride),
                                         confidenceImage.width, confidenceImage.height, confidenceImage.timestamp))
-                            }
+                                rawStatus = "RAW_AVAILABLE"
+                            } else rawStatus = "RAW_CONFIDENCE_MISMATCH"
                         }
                     }
-                } catch (_: NotYetAvailableException) { /* Same-frame FULL copy remains available. */ }
-                catch (_: Exception) { /* Invalid/missing RAW pair is not passed to the worker. */ }
+                } catch (_: NotYetAvailableException) { rawStatus = "RAW_NOT_READY" }
+                catch (_: Exception) { rawStatus = "RAW_ACQUISITION_ERROR" }
             }
         }
+        // Freeze exact API conversions now, never invoke Frame again after background inference.
+        val pixelMaps = mutableMapOf<Pair<Int, Int>, DepthPixelCoordinates>()
+        fun freeze(plane: ArDepthPlane?): ArDepthPlane? = plane?.let {
+            runCatching {
+                val key = it.width to it.height
+                val crop = image.cropRect
+                val coordinates = pixelMaps.getOrPut(key) { DepthCoordinateSnapshot.freeze(frame, it.width, it.height,
+                    mapping, width, height, depthAnalysisEnabled, ImageBox(crop.left.toFloat(), crop.top.toFloat(), crop.right.toFloat(), crop.bottom.toFloat())) }
+                it.copy(coordinates = coordinates)
+            }.getOrElse { depthStatus = "COORDINATE_MAPPING_ERROR"; null }
+        }
+        depth = freeze(depth)
+        val hadRaw = raw != null; raw = freeze(raw)
+        if (hadRaw && raw == null) rawStatus = "COORDINATE_MAPPING_ERROR"
         status = ArYoloStatus(tracking, depthStatus, "CAMERA_IMAGE_READY", depth?.width ?: 0, depth?.height ?: 0, nowNs, image.width, image.height)
         ArYoloCapture(yuv, mapping, depth, depthStatus, frame.timestamp, image.timestamp, nowNs,
-            System.currentTimeMillis(), capturedEpoch, tracking, raw)
+            System.currentTimeMillis(), capturedEpoch, tracking, raw, rawStatus)
     }
 
     companion object {

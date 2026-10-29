@@ -206,6 +206,9 @@ object AppSettingsCodec {
             put("debug.debugSaveOnDetection", debugSaveOnDetection)
             put("debug.legacyDebugImageEnabled", legacyDebugImageEnabled)
             put("debug.enableMlKitDiagnostics", enableMlKitDiagnostics)
+            put("debug.depthAnalysisEnabled", depthAnalysisEnabled)
+            depthGroundTruthMeters?.let { put("debug.depthGroundTruthMeters", it) }
+            put("debug.depthGroundTruthLabel", depthGroundTruthLabel)
         }
         return StringWriter().also { p.store(it, "ObjectDetection AppSettings") }.toString()
     }
@@ -309,7 +312,8 @@ object AppSettingsCodec {
                 l("debug.debugSaveIntervalMs", d.debug.debugSaveIntervalMs),
                 b("debug.debugSaveOnDetection", d.debug.debugSaveOnDetection),
                 b("debug.legacyDebugImageEnabled", d.debug.legacyDebugImageEnabled),
-                b("debug.enableMlKitDiagnostics", d.debug.enableMlKitDiagnostics)
+                b("debug.enableMlKitDiagnostics", d.debug.enableMlKitDiagnostics),
+                b("debug.depthAnalysisEnabled", false), optionalFloat("debug.depthGroundTruthMeters"), s("debug.depthGroundTruthLabel", "")
             )
         )
         // Only an unchanged v1 DEFAULT can be identified safely as the former default.

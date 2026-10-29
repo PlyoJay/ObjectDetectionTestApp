@@ -19,7 +19,8 @@ class ArCoreFrameDepthContextTest {
     private val elapsed = 20_000_000_000L
     private fun capture(view: FloatArray = identity, tracking: String = "TRACKING"): ArYoloCapture {
         val bytes = ByteBuffer.allocate(100 * 60 * 2).order(ByteOrder.LITTLE_ENDIAN)
-        repeat(6000) { bytes.putShort(it * 2, 2350.toShort()) }
+        for (y in 0 until 60) for (x in 0 until 100) bytes.putShort((y * 100 + x) * 2,
+            (if (x in 20..79 && y in 12..47) 2350 else 9000).toShort())
         val yuv = ArYuvSnapshot(100, 60, YuvPlaneBytes(ByteArray(6000), 100, 1),
             YuvPlaneBytes(ByteArray(1500), 50, 1), YuvPlaneBytes(ByteArray(1500), 50, 1))
         return ArYoloCapture(yuv, ArImageMapping(100, 60, view, identity),
@@ -74,5 +75,15 @@ class ArCoreFrameDepthContextTest {
             val result = context.estimate(detections).single()
             assertEquals("car", result.label); assertNull(result.estimatedDistanceMeters); assertNull(result.distanceEstimation)
         }
+    }
+    @Test fun manualTruthOnlyAttachesToOneUnambiguousTargetAndUsesRawZErrors() {
+        val source = capture(); val truth = com.samin.objectdetection.distance.DepthGroundTruth(2f, "person")
+        fun context() = ArCoreFrameDepthContext(source, DepthInputMode.FULL, ArObjectSurfaceDepthSampler(), ArObjectDepthSmoother(), { elapsed }, { 3 }, true, truth)
+        val box = DetectionResult("person", .9f, 20f, 12f, 80f, 48f)
+        val value = context().estimate(listOf(box)).single().depthEstimation!!
+        assertEquals(2f, value.groundTruthMeters!!, 0f); assertEquals(.35f, value.absoluteErrorMeters!!, .0001f)
+        assertEquals(17.5f, value.relativeErrorPercent!!, .001f)
+        val ambiguous = context().estimate(listOf(box, box.copy(left = 21f)))
+        ambiguous.forEach { assertNull(it.depthEstimation!!.groundTruthMeters); assertEquals("AMBIGUOUS_TARGET", it.depthEstimation.groundTruthStatus) }
     }
 }

@@ -14,7 +14,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 /** Feeds the existing main analyzer callback. Owns no detector or alternative warning pipeline. */
 class ArCorePipelineWorker(intervalMs: Long, private val mode: DepthInputMode,
     private val nextFrameId: () -> Long, private val currentEpoch: () -> Long,
-    private val listener: CameraController.Listener) : ArFrameConsumer {
+    private val listener: CameraController.Listener, private val diagnostics: Boolean = false,
+    private val groundTruth: com.samin.objectdetection.distance.DepthGroundTruth? = null) : ArFrameConsumer {
     private val executor = Executors.newSingleThreadExecutor()
     private val gate = ArYoloWorkGate(maxOf(250L, intervalMs) * 1_000_000)
     private val lock = Any()
@@ -53,7 +54,7 @@ class ArCorePipelineWorker(intervalMs: Long, private val mode: DepthInputMode,
                 upright = raw.rotate(capture.mapping.rotation.toFloat())
                 val rotated = SystemClock.elapsedRealtimeNanos()
                 val context = ArCoreFrameDepthContext(capture, mode, sampler, smoother,
-                    SystemClock::elapsedRealtimeNanos, currentEpoch)
+                    SystemClock::elapsedRealtimeNanos, currentEpoch, diagnostics, groundTruth)
                 value = value.copy(bitmapConversionEndMs = System.currentTimeMillis(),
                     bitmapConversionDurationMs = (rotated - started) / 1_000_000,
                     cameraToBitmapNs = converted - started, rotationNs = rotated - converted,

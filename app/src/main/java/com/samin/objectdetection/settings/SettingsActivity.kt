@@ -451,6 +451,19 @@ class SettingsActivity : ComponentActivity() {
         note(parent, "후보별 로그와 PNG 저장은 성능에 영향을 줄 수 있습니다.")
         form.diagnostics = toggle(parent, "Enable Detector Diagnostics")
         form.mlKitDiagnostics = toggle(parent, "ML Kit Diagnostics")
+        form.depthAnalysis = toggle(parent, "Depth 분석 표시 (기본 OFF)")
+        form.depthTruthLabel = EditText(this).apply {
+            hint = "실측 대상 클래스 (예: person, bollard)"; contentDescription = "실측 대상 클래스"
+            inputType = InputType.TYPE_CLASS_TEXT; parent.addView(this, match())
+        }
+        form.depthTruth = number(parent, "실측 전방 Z (m)", "비우면 오차 계산 안 함", true)
+        parent.addView(LinearLayout(this).apply {
+            for (meters in listOf(1, 2, 3, 5)) addView(Button(this@SettingsActivity).apply {
+                text = "${meters}m"; setOnClickListener { form.depthTruth.setText(meters.toString()) }
+            }, LinearLayout.LayoutParams(0, -2, 1f))
+        })
+        note(parent, "분석 ON + 메인 ARCore 모드에서 실제 샘플 지점과 FULL/RAW·실패 사유를 표시합니다. 추가 변환·RAW 취득 비용이 있습니다. 실측 Z는 렌즈 기준 광축 방향이며 사선 거리가 아닙니다. 대상 클래스가 화면에 정확히 하나 탐지된 프레임에만 실측값을 연결합니다. 캡처/녹화/성능 로그를 직접 시작해야 파일에 기록됩니다. 버튼은 기준값 입력이며 측정 결과를 만들지 않습니다.")
+        note(parent, "실측값은 자동 갱신되지 않습니다. 정지한 구간에서만 비교하고 실제 거리가 바뀌면 다시 입력하거나 비워 주세요. 표본 색: 녹색=선택, 노랑=후보, 파랑=외곽 배경, 빨강=무효입니다.")
         note(parent, "기본 OFF. ON을 적용 및 저장한 뒤 파일 기록을 시작하세요. 기록 시작 후 카메라 화면으로 돌아가 테스트하고, 이곳에서 중지·공유합니다. Logcat 출력은 유지하며 이미지 저장·주기·timeout은 변경하지 않습니다.")
         MlKitLogControls(this, parent, { applied }, { currentScreen == Category.DEBUG.name })
         form.debugLogging = toggle(parent, "Debug Detection Logging")
@@ -539,6 +552,9 @@ class SettingsActivity : ComponentActivity() {
         with(value.debug) {
             form.diagnostics.isChecked = enableDetectorDiagnostics; form.debugLogging.isChecked = debugDetectionLogging
             form.mlKitDiagnostics.isChecked = enableMlKitDiagnostics
+            form.depthAnalysis.isChecked = depthAnalysisEnabled
+            form.depthTruth.setText(depthGroundTruthMeters?.toString().orEmpty())
+            form.depthTruthLabel.setText(depthGroundTruthLabel)
             form.rawConfidence.setText(diagnosticRawConfidenceThreshold.toString()); form.rawCandidates.setText(diagnosticMaxRawCandidates.toString())
             form.saveInput.isChecked = debugSaveInferenceInput; form.saveInterval.setText(debugSaveIntervalMs.toString())
             form.saveOnDetection.isChecked = debugSaveOnDetection; form.legacyDebugImage.isChecked = legacyDebugImageEnabled
@@ -579,7 +595,8 @@ class SettingsActivity : ComponentActivity() {
             performanceLog = PerformanceLogSettings(form.systemDiagnostics.isChecked, form.systemSampleInterval.l(), form.batteryDiagnostics.isChecked, form.testDuration.selectedItem.toString().toInt()),
             debug = DebugSettings(form.diagnostics.isChecked, form.debugLogging.isChecked, form.rawConfidence.f(), form.rawCandidates.i(),
                 form.saveInput.isChecked, form.saveInterval.l(), form.saveOnDetection.isChecked, form.legacyDebugImage.isChecked,
-                form.mlKitDiagnostics.isChecked)
+                form.mlKitDiagnostics.isChecked, form.depthAnalysis.isChecked,
+                form.depthTruth.optionalFloat(), form.depthTruthLabel.text.toString().trim())
         )
     }
 
@@ -863,6 +880,7 @@ class SettingsActivity : ComponentActivity() {
         lateinit var mlKitEnabled: Switch; lateinit var mlKitInterval: EditText; lateinit var mlKitMode: Spinner
         lateinit var diagnostics: Switch; lateinit var debugLogging: Switch; lateinit var rawConfidence: EditText; lateinit var rawCandidates: EditText
         lateinit var mlKitDiagnostics: Switch
+        lateinit var depthAnalysis: Switch; lateinit var depthTruth: EditText; lateinit var depthTruthLabel: EditText
         lateinit var saveInput: Switch; lateinit var saveInterval: EditText; lateinit var saveOnDetection: Switch; lateinit var legacyDebugImage: Switch
     }
 

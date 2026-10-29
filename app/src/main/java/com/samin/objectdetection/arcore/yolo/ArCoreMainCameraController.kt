@@ -25,11 +25,13 @@ class ArCoreMainCameraController(private val activity: ComponentActivity, settin
     private val onInvalidated: () -> Unit, private val onStatus: (String) -> Unit,
     private val onUnavailable: (String) -> Unit) : CameraBackend, DefaultLifecycleObserver, DisplayManager.DisplayListener {
     private val epoch = AtomicLong()
-    private val worker = ArCorePipelineWorker(settings.camera.detectIntervalMs, settings.overlay.depthInputMode, nextFrameId, epoch::get, listener)
+    private val worker = ArCorePipelineWorker(settings.camera.detectIntervalMs, settings.overlay.depthInputMode, nextFrameId, epoch::get, listener,
+        settings.debug.depthAnalysisEnabled, settings.debug.depthGroundTruthMeters?.let {
+            com.samin.objectdetection.distance.DepthGroundTruth(it, settings.debug.depthGroundTruthLabel.trim()) })
     private val handler = Handler(Looper.getMainLooper())
     private val renderer = ArYoloRenderer(worker, epoch, onInvalidated, { error ->
         activity.runOnUiThread { fail("ARCore 카메라 오류: ${error.message ?: error.javaClass.simpleName}") }
-    }, settings.overlay.depthInputMode, settings.camera.previewEnabled)
+    }, settings.overlay.depthInputMode, settings.camera.previewEnabled, settings.debug.depthAnalysisEnabled)
     val surface = GLSurfaceView(activity).apply {
         setEGLContextClientVersion(2); preserveEGLContextOnPause = true
         setRenderer(renderer); renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY; onPause()

@@ -416,6 +416,7 @@ class MainActivity : ComponentActivity() {
             staleTimeoutMs = if (appSettings.cameraBackendMode() == CameraBackendMode.ARCORE) minOf(1000, appSettings.overlay.staleTimeoutMs) else appSettings.overlay.staleTimeoutMs,
             showDistance = appSettings.overlay.showDistance
         )
+        overlayView.setDepthAnalysisEnabled(appSettings.debug.depthAnalysisEnabled)
         if (detectionConfig.debugDetectionLogging) overlayView.diagnosticLog = detectionDebugRecorder::record
         overlayView.mlKitDiagnostics = mlKitDiagnostics
         setContentView(screen.root)

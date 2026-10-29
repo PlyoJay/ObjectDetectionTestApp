@@ -65,6 +65,11 @@ class PerformanceLogSessionTest {
         session.start()
         try {
             assertTrue(sampled.await(5, TimeUnit.SECONDS))
+            // cpuFrequency() signals before the asynchronous diagnostic record is published.
+            // This test checks preview-off recording, not a stop-vs-sampler scheduling race.
+            val publishDeadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5)
+            while (!output.toString().contains("SYSTEM |") && System.nanoTime() < publishDeadline) Thread.sleep(5)
+            assertTrue("diagnostic record was not published", output.toString().contains("SYSTEM |"))
             now = 2_000_000_000L
             metrics.recordFrameReceived(now)
             metrics.recordFrameAnalyzed()
