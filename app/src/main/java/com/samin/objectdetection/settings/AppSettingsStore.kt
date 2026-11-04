@@ -6,6 +6,8 @@ import com.samin.objectdetection.camera.YoloResizeMode
 import com.samin.objectdetection.camera.RecognitionRoi
 import com.samin.objectdetection.ui.OverlayDebugMode
 import com.samin.objectdetection.detector.YoloModel
+import com.samin.objectdetection.detector.ModelConfig
+import com.samin.objectdetection.detector.YoloClassOptions
 import com.samin.objectdetection.mlkit.MlKitDetectionMode
 import java.io.StringReader
 import java.io.StringWriter
@@ -145,6 +147,10 @@ object AppSettingsCodec {
             put("yolo.nmsThreshold", nmsThreshold); put("yolo.interpreterThreadCount", interpreterThreadCount)
             put("yolo.maxCandidates", maxCandidates)
             put("yolo.useXnnpack", useXnnpack)
+            classOptions.forEach { (label, options) ->
+                put("yolo.class.$label.enabled", options.enabled)
+                options.confidenceThreshold?.let { put("yolo.class.$label.confidenceThreshold", it) }
+            }
         }
         with(value.filters) {
             put("filters.geometryFilterEnabled", geometryFilterEnabled); put("filters.sizeFilterMode", sizeFilterMode.name)
@@ -220,6 +226,8 @@ object AppSettingsCodec {
             if (storedVersion < 2) defaults.copy(yolo = defaults.yolo.copy(resizeMode = YoloResizeMode.STRETCH))
             else defaults
         }
+        // Missing model names in historical presets used the 640 export. Explicit selections survive.
+        val defaultModel = if (storedVersion < 11) YoloModel.YOLO_640 else d.yolo.model
         fun s(key: String, default: String) = p.getProperty(key)?.trim()?.takeIf(String::isNotEmpty) ?: default
         fun i(key: String, default: Int) = s(key, default.toString()).toIntOrNull() ?: default
         fun l(key: String, default: Long) = s(key, default.toString()).toLongOrNull() ?: default
@@ -251,7 +259,12 @@ object AppSettingsCodec {
             yolo = YoloSettings(resize("yolo.resizeMode", d.yolo.resizeMode), f("yolo.confidenceThreshold", d.yolo.confidenceThreshold),
                 f("yolo.nmsThreshold", d.yolo.nmsThreshold), i("yolo.interpreterThreadCount", d.yolo.interpreterThreadCount),
                 i("yolo.maxCandidates", d.yolo.maxCandidates), b("yolo.useXnnpack", d.yolo.useXnnpack),
-                YoloModel.entries.firstOrNull { it.name == s("yolo.model", d.yolo.model.name) } ?: d.yolo.model),
+                YoloModel.entries.firstOrNull { it.name == s("yolo.model", defaultModel.name) } ?: defaultModel,
+                ModelConfig.CLASS_LABELS.mapNotNull { label ->
+                    val key = "yolo.class.$label"
+                    val options = YoloClassOptions(b("$key.enabled", true), optionalFloat("$key.confidenceThreshold"))
+                    if (options == YoloClassOptions()) null else label to options
+                }.toMap()),
             filters = FilterSettings(
                 b("filters.geometryFilterEnabled", d.filters.geometryFilterEnabled), sizeMode("filters.sizeFilterMode", d.filters.sizeFilterMode),
                 f("filters.minBoxAreaRatio", d.filters.minBoxAreaRatio), f("filters.minBoxWidthRatio", d.filters.minBoxWidthRatio),
@@ -318,7 +331,7 @@ object AppSettingsCodec {
         )
         // Only an unchanged v1 DEFAULT can be identified safely as the former default.
         // Explicit STRETCH presets and every customized configuration retain their resize mode.
-        val legacyDefault = d.copy(yolo = d.yolo.copy(resizeMode = YoloResizeMode.STRETCH))
+        val legacyDefault = d.copy(yolo = d.yolo.copy(model = decoded.yolo.model, resizeMode = YoloResizeMode.STRETCH))
         return if (storedVersion < 2 && decoded == legacyDefault) {
             decoded.copy(yolo = decoded.yolo.copy(resizeMode = YoloResizeMode.LETTERBOX))
         } else decoded

@@ -23,6 +23,19 @@ class DistanceJsonTest {
         assertTrue(JSONObject().putDistance(depth.copy(groundTruthMeters = Float.MIN_VALUE).applyTo(box)).isNull("relativeErrorPercent"))
     }
     private val box = DetectionResult("bollard", .9f, 1f, 2f, 3f, 4f)
+    @Test fun cardboardBoxPreservesExistingDepthValuesInDetectionLogs() {
+        val cardboard = box.copy(label = "cardboard_box")
+        val depth = com.samin.objectdetection.distance.ObjectDepthEstimate(2.4f, 2.3f,
+            com.samin.objectdetection.distance.DepthMethod.FULL, 42, "INTERIOR_CONSISTENT", 100, 95, 1000, "TRACKING")
+        val result = depth.applyTo(cardboard)
+        val json = JSONObject().put("label", result.label).putDistance(result)
+        assertEquals("cardboard_box", json.getString("objectLabel"))
+        assertEquals("cardboard_box", json.getString("label"))
+        assertEquals(2.3, json.getDouble("estimatedDistanceMeters"), .0001)
+        assertEquals("ARCORE_DEPTH", json.getString("distanceEstimationMethod"))
+        assertEquals(cardboard.left, result.left, 0f)
+        assertEquals(cardboard.confidence, result.confidence, 0f)
+    }
     @Test fun distanceKeysAreAdditiveAndInvalidOrMissingDistanceUsesJsonNull() {
         val estimate = DistanceEstimate(2.3f, status = "VALID", intrinsics = CameraIntrinsics(800f, 800f, 320f, 240f, "MANUAL_FOV"))
         val json = JSONObject().put("label", box.label).putDistance(estimate.applyTo(box))

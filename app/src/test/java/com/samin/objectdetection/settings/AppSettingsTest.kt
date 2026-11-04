@@ -73,7 +73,8 @@ class AppSettingsTest {
     }
 
     @Test fun oldAppliedAndCustomPresetSchemasDefaultTo640AndPreserveEveryOtherField() {
-        val original = AppSettings(presetName = "OLD CUSTOM", yolo = YoloSettings(confidenceThreshold = .37f, nmsThreshold = .51f),
+        val original = AppSettings(presetName = "OLD CUSTOM", yolo = YoloSettings(confidenceThreshold = .37f, nmsThreshold = .51f,
+            model = com.samin.objectdetection.detector.YoloModel.YOLO_640),
             camera = CameraSettings(recognitionRoi = com.samin.objectdetection.camera.RecognitionRoi.PRESET))
         for (version in 2..5) {
             val old = AppSettingsCodec.encode(original).lineSequence().filterNot { it.startsWith("yolo.model=") }
@@ -146,15 +147,15 @@ class AppSettingsTest {
     }
 
     @Test
-    fun defaultsRemainValidAndMapToLegacyConfigDefaults() {
+    fun defaultsRemainValidAndOnlyModelDimensionsChangeFromLegacyConfigDefaults() {
         val settings = AppSettings()
         assertTrue(settings.validationErrors().isEmpty())
         val config = settings.toDetectionConfig()
-        assertEquals(DetectionConfig(), config)
+        assertEquals(DetectionConfig(inputSize = 512), config)
         assertEquals(0.20f, config.confidenceThreshold)
         assertEquals(0.45f, config.nmsThreshold)
         assertEquals(YoloResizeMode.LETTERBOX, config.yoloResizeMode)
-        assertEquals(640, config.inputSize)
+        assertEquals(512, config.inputSize)
         assertFalse(config.useCenterSquareCrop)
         assertEquals(SizeFilterMode.DISABLED, config.sizeFilterMode)
         assertTrue(config.enableMlKitDetection)
@@ -219,8 +220,8 @@ class AppSettingsTest {
     fun fieldTestLetterboxExposesYoloWithoutOptionalFilters() {
         val settings = requireNotNull(SettingsPresets.byName(SettingsPresets.FIELD_TEST_LETTERBOX))
         val config = settings.toDetectionConfig()
-        assertEquals(DetectionConfig.fieldTest(YoloResizeMode.LETTERBOX), config)
-        assertEquals(640, config.inputSize)
+        assertEquals(DetectionConfig.fieldTest(YoloResizeMode.LETTERBOX).copy(inputSize = 512, inputHeight = 512), config)
+        assertEquals(512, config.inputSize)
         assertEquals(0L, config.detectIntervalMs)
         assertFalse(config.useCenterSquareCrop)
         assertFalse(config.bollardGeometryFilterEnabled)

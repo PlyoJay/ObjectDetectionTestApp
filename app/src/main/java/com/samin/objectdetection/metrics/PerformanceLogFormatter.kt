@@ -41,7 +41,8 @@ data class PerformanceLogHeader(
     val inputTensorType: String = "unknown",
     val outputTensorShape: String = "unknown",
     val outputTensorType: String = "unknown",
-    val cameraBackend: String = "CAMERAX"
+    val cameraBackend: String = "CAMERAX",
+    val modelClassCount: Int? = null
 )
 
 data class PerformanceFrameRecord(
@@ -129,6 +130,7 @@ object PerformanceLogFormatter {
         appendLine()
         appendLine("Model: ${header.modelName}")
         appendLine("Model SHA256: ${header.modelSha256}")
+        appendLine("Model Classes: ${header.modelClassCount ?: "N/A"}")
         appendLine("Detector: ${header.detectorName}")
         appendLine("App Version: ${header.appVersion}")
         appendLine("Preset: ${header.presetName}")

@@ -339,7 +339,8 @@ class MainActivity : ComponentActivity() {
                 confidenceThreshold = detectionConfig.confidenceThreshold, nmsThreshold = detectionConfig.nmsThreshold,
                 sizeFilterMode = detectionConfig.sizeFilterMode, resizeMode = detectionConfig.yoloResizeMode,
                 interpreterThreadCount = detectionConfig.interpreterThreadCount, maxCandidates = detectionConfig.maxCandidates,
-                debugRecorder = detectionDebugRecorder, useXnnpack = detectionConfig.useXnnpack
+                debugRecorder = detectionDebugRecorder, useXnnpack = detectionConfig.useXnnpack,
+                classOptions = appSettings.yolo.classOptions
             ).apply { enableDiagnostics = detectionConfig.enableDetectorDiagnostics }
         }
         return try { create() } catch (error: Exception) {
@@ -1273,6 +1274,7 @@ class MainActivity : ComponentActivity() {
             presetName = appSettings.presetName,
             settingsSchemaVersion = appSettings.schemaVersion,
             modelSha256 = model.sha256,
+            modelClassCount = model.classCount,
             requestedCameraWidth = appSettings.camera.requestedWidth,
             requestedCameraHeight = appSettings.camera.requestedHeight,
             appVersion = runCatching { packageManager.getPackageInfo(packageName, 0).versionName }.getOrNull() ?: "unknown",

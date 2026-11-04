@@ -9,3 +9,4 @@ stop sign
 bench
 cat
 dog
+cardboard_box

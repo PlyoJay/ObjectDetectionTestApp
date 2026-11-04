@@ -45,6 +45,7 @@ class ArCoreYoloOverlay(context: Context) : View(context) {
                 "person" -> Color.rgb(255, 105, 180)
                 "cat" -> Color.rgb(186, 104, 200)
                 "dog" -> Color.rgb(38, 198, 218)
+                "cardboard_box" -> Color.rgb(212, 163, 115)
                 else -> Color.rgb(0, 191, 255)
             }
             canvas.drawRoundRect(left, top, right, bottom, 16f, 16f, boxPaint)

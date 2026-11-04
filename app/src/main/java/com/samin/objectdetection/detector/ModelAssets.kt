@@ -9,7 +9,7 @@ import java.security.MessageDigest
 
 /** Shared asset access for inference and the read-only settings screen. */
 object ModelAssets {
-    /** The shared labels asset contains all 11 verified IDs; the 640 export has only IDs 0..8. */
+    /** Shared labels contain all 12 verified IDs; each version keeps its own class order. */
     fun labels(context: Context, modelName: String): List<String> {
         val assetLabels = context.assets.open(ModelConfig.LABEL_ASSET_NAME).bufferedReader().useLines {
             it.map(String::trim).filter(String::isNotEmpty).toList()

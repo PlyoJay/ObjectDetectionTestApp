@@ -27,6 +27,7 @@ class PerformanceLogFormatterTest {
                 presetName = "FIELD TEST - LETTERBOX",
                 settingsSchemaVersion = 3,
                 modelSha256 = "abc123",
+                modelClassCount = 12,
                 requestedCameraWidth = 1920,
                 requestedCameraHeight = 1080,
                 appVersion = "1.2.3",
@@ -49,6 +50,7 @@ class PerformanceLogFormatterTest {
         assertTrue(text.contains("ML Kit Enabled: false"))
         assertTrue(text.contains("Preset: FIELD TEST - LETTERBOX"))
         assertTrue(text.contains("Model SHA256: abc123"))
+        assertTrue(text.contains("Model Classes: 12"))
         assertTrue(text.contains("Requested Camera Resolution: 1920x1080"))
         assertTrue(text.contains("yolo.maxCandidates=100"))
         assertTrue(text.contains("Session ID: test-session"))

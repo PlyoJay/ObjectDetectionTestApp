@@ -44,7 +44,8 @@ class ArYoloWorker(context: Context, settings: AppSettings, private val currentE
                 detector = VisionStyleYoloDetector(app, settings.yolo.model.assetName,
                     settings.yolo.confidenceThreshold, settings.yolo.nmsThreshold,
                     settings.filters.sizeFilterMode, settings.yolo.resizeMode, settings.yolo.interpreterThreadCount,
-                    settings.yolo.maxCandidates, useXnnpack = settings.yolo.useXnnpack)
+                    settings.yolo.maxCandidates, useXnnpack = settings.yolo.useXnnpack,
+                    classOptions = settings.yolo.classOptions)
                 ready = !closed.get()
                 status = "YOLO waiting · ${settings.yolo.model.classLabels.size} classes"
             } catch (error: Exception) { status = "YOLO 초기화 실패: ${error.message}" }

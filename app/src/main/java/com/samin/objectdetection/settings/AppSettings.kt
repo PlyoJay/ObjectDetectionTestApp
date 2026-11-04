@@ -6,13 +6,15 @@ import com.samin.objectdetection.camera.YoloResizeMode
 import com.samin.objectdetection.camera.RecognitionRoi
 import com.samin.objectdetection.metrics.PerformanceTestWindow
 import com.samin.objectdetection.detector.YoloModel
+import com.samin.objectdetection.detector.ModelConfig
+import com.samin.objectdetection.detector.YoloClassOptions
 import com.samin.objectdetection.mlkit.MlKitDetectionMode
 import com.samin.objectdetection.ui.OverlayDebugMode
 import com.samin.objectdetection.distance.DistanceSettings
 import com.samin.objectdetection.distance.ObjectDistanceMethod
 import com.samin.objectdetection.distance.DepthInputMode
 
-const val APP_SETTINGS_SCHEMA_VERSION = 10
+const val APP_SETTINGS_SCHEMA_VERSION = 11
 
 data class CameraSettings(
     val detectIntervalMs: Long = 0L,
@@ -30,7 +32,8 @@ data class YoloSettings(
     val interpreterThreadCount: Int = 4,
     val maxCandidates: Int = 100,
     val useXnnpack: Boolean = true,
-    val model: YoloModel = YoloModel.YOLO_640
+    val model: YoloModel = YoloModel.YOLO_512,
+    val classOptions: Map<String, YoloClassOptions> = emptyMap()
 )
 
 data class FilterSettings(
@@ -150,6 +153,11 @@ data class AppSettings(
         if (yolo.nmsThreshold !in 0f..1f) add("NMS Threshold는 0~1이어야 합니다.")
         if (yolo.interpreterThreadCount !in 1..16) add("Interpreter Thread Count는 1~16이어야 합니다.")
         if (yolo.maxCandidates !in 1..10_000) add("Max Candidates는 1~10000이어야 합니다.")
+        yolo.classOptions.forEach { (label, options) ->
+            if (label !in ModelConfig.CLASS_LABELS) add("지원하지 않는 클래스 설정: $label")
+            if (options.confidenceThreshold?.let { !it.isFinite() || it !in 0f..1f } == true)
+                add("$label Confidence Threshold는 0~1이어야 합니다.")
+        }
         listOf(filters.minBoxAreaRatio, filters.minBoxWidthRatio, filters.minBoxHeightRatio,
             filters.bollardMinAreaRatio, filters.temporalImmediateConfidence,
             filters.temporalConfirmationConfidence, filters.temporalMatchIouThreshold).forEach {

@@ -38,6 +38,8 @@ import com.samin.objectdetection.camera.YoloResizeMode
 import com.samin.objectdetection.camera.RecognitionRoi
 import com.samin.objectdetection.detector.ModelAssets
 import com.samin.objectdetection.detector.YoloModel
+import com.samin.objectdetection.detector.ModelConfig
+import com.samin.objectdetection.detector.YoloClassOptions
 import com.samin.objectdetection.mlkit.MlKitDetectionMode
 import com.samin.objectdetection.detector.ModelIdentity
 import com.samin.objectdetection.ui.OverlayDebugMode
@@ -350,13 +352,19 @@ class SettingsActivity : ComponentActivity() {
     private fun buildYoloSection(parent: LinearLayout) {
         section(parent, "YOLO")
         form.model = choice(parent, "모델 선택", YoloModel.entries.map { it.displayName })
-        note(parent, "512 모델은 기존 9종에 cat(9), dog(10)을 추가한 11종입니다. cat/dog은 표시·통계에만 포함하며 경고·음성은 비활성화합니다. 640 모델은 기존 9종입니다.")
+        note(parent, "v2 512 모델은 12종(cardboard_box=11), v1 512 모델은 11종, 640 모델은 기존 9종입니다. cat/dog/cardboard_box는 표시·통계·거리 대상이며 경고·음성은 비활성화합니다. 기존에 저장한 모델 선택은 유지됩니다.")
         form.confidence = floatSlider(parent, "Confidence Threshold", 0f, 1f)
         form.nms = floatSlider(parent, "NMS Threshold", 0f, 1f)
         form.threads = number(parent, "Interpreter Thread Count", "1..16")
         form.xnnpack = toggle(parent, "XNNPACK 사용")
         note(parent, "CPU 추론 최적화 기능입니다. 기기에 따라 OFF가 더 빠를 수 있으며, 변경 시 YOLO 모델이 다시 초기화됩니다. ON/OFF는 요청 설정이며 실제 위임 여부는 성능 로그와 네이티브 로그로 확인하세요.")
         form.maxCandidates = number(parent, "Max Candidates", "1..10000")
+        section(parent, "클래스별 탐지 설정")
+        note(parent, "클래스 Confidence가 비어 있으면 공통 Confidence Threshold를 사용합니다. OFF는 해당 클래스의 탐지·표시·기록을 제외합니다. 선택 모델이 지원하지 않는 항목은 비활성화되며 값은 보존됩니다. 기존 경고용 Confidence 기준은 별도로 유지됩니다.")
+        ModelConfig.CLASS_LABELS.forEachIndexed { id, label ->
+            form.classEnabled[label] = toggle(parent, "$id: $label 탐지")
+            form.classConfidence[label] = number(parent, "$label Confidence", "공통 기준 사용 (빈 값) / 0..1", decimal = true)
+        }
     }
 
     private fun buildFilterSection(parent: LinearLayout) {
@@ -504,6 +512,11 @@ class SettingsActivity : ComponentActivity() {
             form.confidence.setText(confidenceThreshold.toString()); form.nms.setText(nmsThreshold.toString())
             form.threads.setText(interpreterThreadCount.toString()); form.maxCandidates.setText(maxCandidates.toString())
             form.xnnpack.isChecked = useXnnpack
+            ModelConfig.CLASS_LABELS.forEach { label ->
+                val options = classOptions[label] ?: YoloClassOptions()
+                form.classEnabled.getValue(label).isChecked = options.enabled
+                form.classConfidence.getValue(label).setText(options.confidenceThreshold?.toString().orEmpty())
+            }
             select(form.sizeMode, value.filters.sizeFilterMode.name)
         }
         with(value.filters) {
@@ -577,7 +590,12 @@ class SettingsActivity : ComponentActivity() {
             camera = CameraSettings(form.detectInterval.l(), form.centerCrop.isChecked, resolution[0].toInt(), resolution[1].toInt(), form.cameraPreview.isChecked,
                 RecognitionRoi(form.roiEnabled.isChecked, form.roiTop.f() / 100f, form.roiBottom.f() / 100f,
                     form.roiLeft.f() / 100f, form.roiRight.f() / 100f, form.roiShow.isChecked)),
-            yolo = YoloSettings(YoloResizeMode.valueOf(form.resizeMode.selectedItem.toString()), form.confidence.f(), form.nms.f(), form.threads.i(), form.maxCandidates.i(), form.xnnpack.isChecked, selectedModel()),
+            yolo = YoloSettings(YoloResizeMode.valueOf(form.resizeMode.selectedItem.toString()), form.confidence.f(), form.nms.f(), form.threads.i(), form.maxCandidates.i(), form.xnnpack.isChecked, selectedModel(),
+                ModelConfig.CLASS_LABELS.mapNotNull { label ->
+                    val options = YoloClassOptions(form.classEnabled.getValue(label).isChecked,
+                        form.classConfidence.getValue(label).optionalFloat())
+                    if (options == YoloClassOptions()) null else label to options
+                }.toMap()),
             filters = FilterSettings(form.geometry.isChecked, SizeFilterMode.valueOf(form.sizeMode.selectedItem.toString()),
                 form.minArea.f(), form.minWidth.f(), form.minHeight.f(), form.bollardMinArea.f(), form.bollardMaxAspect.f(),
                 form.temporal.isChecked, form.temporalImmediate.f(), form.temporalConfirmation.f(), form.temporalIou.f()),
@@ -695,6 +713,11 @@ class SettingsActivity : ComponentActivity() {
     private fun updateDependentState() {
         if (!::form.isInitialized) return
         updateModelInfo()
+        val supportedLabels = selectedModel().classLabels
+        form.classEnabled.forEach { (label, toggle) ->
+            toggle.isEnabled = label in supportedLabels
+            form.classConfidence.getValue(label).isEnabled = label in supportedLabels && toggle.isChecked
+        }
         val sizeEnabled = form.sizeMode.selectedItem?.toString() != SizeFilterMode.DISABLED.name
         listOf(form.minArea, form.minWidth, form.minHeight).forEach { it.isEnabled = sizeEnabled }
         val temporalEnabled = form.temporal.isChecked
@@ -853,6 +876,8 @@ class SettingsActivity : ComponentActivity() {
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 
     private inner class Form(val container: ViewGroup) {
+        val classEnabled = mutableMapOf<String, Switch>()
+        val classConfidence = mutableMapOf<String, EditText>()
         lateinit var model: Spinner
         lateinit var cameraPreview: Switch
         lateinit var xnnpack: Switch

@@ -10,20 +10,28 @@ import com.samin.objectdetection.motion.ObjectMotionTracker
 import com.samin.objectdetection.pipeline.DetectionPipeline
 import org.junit.Assert.*
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.junit.runners.Parameterized
 import org.tensorflow.lite.Interpreter
 import java.nio.ByteBuffer
 
 /** Synthetic tensor scores exercise the production parser/pipeline; no accuracy claim about weights. */
-class ElevenClassDetectorTest {
+@RunWith(Parameterized::class)
+class ElevenClassDetectorTest(private val model: YoloModel) {
+    companion object {
+        @JvmStatic @Parameterized.Parameters(name = "{0}")
+        fun models() = listOf(arrayOf(YoloModel.YOLO_512_V1), arrayOf(YoloModel.YOLO_512))
+    }
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
     private val expectedLabels = listOf("bollard", "person", "bicycle", "car", "motorcycle",
-        "bus", "truck", "stop sign", "bench", "cat", "dog")
+        "bus", "truck", "stop sign", "bench", "cat", "dog") +
+        if (model == YoloModel.YOLO_512) listOf("cardboard_box") else emptyList()
 
     private fun field(detector: VisionStyleYoloDetector, name: String): Any =
         detector.javaClass.getDeclaredField(name).apply { isAccessible = true }.get(detector)!!
 
-    private fun detector(mode: YoloResizeMode) = VisionStyleYoloDetector(context,
-        YoloModel.YOLO_512.assetName, .2f, .45f, SizeFilterMode.DISABLED, mode)
+    private fun detector(mode: YoloResizeMode, options: Map<String, YoloClassOptions> = emptyMap()) = VisionStyleYoloDetector(context,
+        model.assetName, .2f, .45f, SizeFilterMode.DISABLED, mode, classOptions = options)
 
     private fun clearOutput(detector: VisionStyleYoloDetector): ByteBuffer =
         (field(detector, "outputBuffer") as ByteBuffer).also { buffer ->
@@ -48,7 +56,7 @@ class ElevenClassDetectorTest {
                 System.currentTimeMillis(), SystemClock.elapsedRealtimeNanos(), SystemClock.elapsedRealtimeNanos(),
                 0L, 0L, 0L) as List<DetectionResult>
 
-    @Test fun allElevenClassesKeepExactScoresAndRoiBoxesWithClassAwareNmsInBothResizeModes() {
+    @Test fun allClassesKeepExactScoresAndRoiBoxesWithClassAwareNmsInBothResizeModes() {
         val source = Bitmap.createBitmap(721, 1281, Bitmap.Config.ARGB_8888)
         try {
             for (mode in YoloResizeMode.entries) {
@@ -56,15 +64,15 @@ class ElevenClassDetectorTest {
                 try {
                     val identity = detector.modelIdentity()
                     assertEquals("[1, 3, 512, 512]", identity.inputShape)
-                    assertEquals("[1, 15, 5376]", identity.outputShape)
-                    assertEquals(11, identity.classCount)
+                    assertEquals("[1, ${4 + expectedLabels.size}, 5376]", identity.outputShape)
+                    assertEquals(expectedLabels.size, identity.classCount)
                     assertEquals(expectedLabels, ModelAssets.labels(context, identity.assetName))
                     val interpreter = field(detector, "interpreter") as Interpreter
                     assertThrows(IllegalArgumentException::class.java) {
                         ModelAssets.validate(interpreter, identity.assetName, 9)
                     }
                     val output = clearOutput(detector)
-                    assertEquals(15 * 5376 * 4, output.capacity())
+                    assertEquals((4 + expectedLabels.size) * 5376 * 4, output.capacity())
                     val roi = FrameRoi.calculate(source.width, source.height, RecognitionRoi.PRESET, false)
                     val transform = YoloResizeTransform.calculate(mode, roi.width, roi.height, 512, 512)
                     val left = (roi.width * .2f * transform.scaleX + transform.padLeft) / 512
@@ -99,9 +107,9 @@ class ElevenClassDetectorTest {
                     assertEquals(expectedLabels, result.overlayDetections.map { it.label })
                     assertEquals(expectedLabels.take(9), result.warningDetections.map { it.label })
                     assertTrue(result.ignoredLabels.isEmpty())
-                    assertEquals(22, detector.frameDiagnostics()!!.nmsInputCount)
-                    assertEquals(11, detector.frameDiagnostics()!!.nmsOutputCount)
-                    result.overlayDetections.filter { it.label in listOf("cat", "dog") }.forEach {
+                    assertEquals(2 * expectedLabels.size, detector.frameDiagnostics()!!.nmsInputCount)
+                    assertEquals(expectedLabels.size, detector.frameDiagnostics()!!.nmsOutputCount)
+                    result.overlayDetections.drop(9).forEach {
                         assertFalse(it.warningFeedback.shouldNotify)
                     }
                     val metrics = DetectionMetricsCollector()
@@ -142,5 +150,23 @@ class ElevenClassDetectorTest {
             assertEquals(75f, clipped.bottom, .0001f)
             assertEquals(3, detector.frameDiagnostics()!!.invalidBoxCount)
         } finally { detector.close() }
+    }
+
+    @Test fun lastClassUsesItsOwnThresholdAndCanBeDisabledBeforeNms() {
+        val label = expectedLabels.last()
+        val classId = expectedLabels.lastIndex
+        for (enabled in listOf(true, false)) {
+            val detector = detector(YoloResizeMode.LETTERBOX, mapOf(label to YoloClassOptions(enabled, .1f)))
+            try {
+                val output = clearOutput(detector)
+                box(output, 0, classId, .1f, .5f, .5f, .2f, .2f)
+                box(output, 1, classId, .099f, .8f, .5f, .2f, .2f)
+                box(output, 2, 0, .199f, .2f, .5f, .2f, .2f)
+                val results = parse(detector, output,
+                    YoloResizeTransform.calculate(YoloResizeMode.LETTERBOX, 100, 100, 512, 512))
+                assertEquals(if (enabled) listOf(label) else emptyList<String>(), results.map { it.label })
+                if (enabled) assertEquals(.1f, results.single().confidence, 0f)
+            } finally { detector.close() }
+        }
     }
 }

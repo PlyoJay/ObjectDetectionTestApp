@@ -34,7 +34,8 @@ class VisionStyleYoloDetector(
     private val maxCandidates: Int = 100,
     private val debugRecorder: DetectionDebugRecorder? = null,
     // Diagnostic A/B only. Production callers retain XNNPACK ON.
-    useXnnpack: Boolean = true
+    useXnnpack: Boolean = true,
+    classOptions: Map<String, YoloClassOptions> = emptyMap()
 ) : ObjectDetector {
 
     private val interpreter: Interpreter
@@ -78,6 +79,7 @@ class VisionStyleYoloDetector(
     }.getOrElse { cause ->
         throw IllegalStateException("Failed to load labels asset: ${ModelConfig.LABEL_ASSET_NAME}", cause)
     }
+    private val classFilter = YoloClassFilter(labels, confidenceThreshold, classOptions)
 
     var enableDiagnostics: Boolean = false
 
@@ -412,10 +414,11 @@ class VisionStyleYoloDetector(
                 for (j in DIAGNOSTIC_THRESHOLDS.indices) if (bestScore >= DIAGNOSTIC_THRESHOLDS[j]) aboveThreshold[j]++
             }
 
+            val threshold = if (bestClassId >= 0) classFilter.threshold(bestClassId) else confidenceThreshold
             debugFrame?.raw(i, bestClassId, labels.getOrElse(bestClassId) { "none" }, bestScore,
-                outputData[0][i], outputData[1][i], outputData[2][i], outputData[3][i], confidenceThreshold)
+                outputData[0][i], outputData[1][i], outputData[2][i], outputData[3][i], threshold)
 
-            if (bestClassId < 0 || bestScore < confidenceThreshold) continue
+            if (!classFilter.accepts(bestClassId, bestScore)) continue
             confidencePassedCount++
 
             val cx = outputData[0][i]

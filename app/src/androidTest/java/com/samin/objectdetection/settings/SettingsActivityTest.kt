@@ -134,7 +134,8 @@ class SettingsActivityTest {
     }
 
     @Test fun schemaFivePresetsAndFailedModelApplyRestoreEntirePreviousConfiguration() {
-        val previous = AppSettings(presetName = "OLD MODEL", yolo = YoloSettings(confidenceThreshold = .31f))
+        val previous = AppSettings(presetName = "OLD MODEL", yolo = YoloSettings(confidenceThreshold = .31f,
+            model = com.samin.objectdetection.detector.YoloModel.YOLO_640))
         val old = AppSettingsCodec.encode(previous).lineSequence().filterNot { it.startsWith("yolo.model=") }
             .joinToString("\n").replace("schemaVersion=$APP_SETTINGS_SCHEMA_VERSION", "schemaVersion=5")
         preferences.edit().putString("applied_settings", old).putString("custom_preset.OLD MODEL", old)
@@ -149,6 +150,28 @@ class SettingsActivityTest {
         assertEquals(previous, store.loadApplied())
         assertEquals(previous, store.loadCustomPreset("OLD MODEL"))
         assertNull(store.restorePreviousApplied())
+    }
+
+    @Test fun cardboardOptionsSurviveModelSwitchRecreationApplyAndPreset() {
+        seed(AppSettings()); launch(); openCategory("YOLO 모델 및 추론")
+        field("11: cardboard_box 탐지").perform(scrollTo()).check(matches(isChecked()))
+        field("cardboard_box Confidence").perform(scrollTo(), replaceText("0.35"), closeSoftKeyboard())
+        field("11: cardboard_box 탐지").perform(scrollTo(), click())
+        field("cardboard_box Confidence").check(matches(not(isEnabled())))
+        field("모델 선택").perform(scrollTo(), click())
+        onData(`is`(com.samin.objectdetection.detector.YoloModel.YOLO_512_V1.displayName)).perform(click())
+        field("11: cardboard_box 탐지").perform(scrollTo()).check(matches(not(isEnabled())))
+        recreate()
+        field("모델 선택").perform(scrollTo(), click())
+        onData(`is`(com.samin.objectdetection.detector.YoloModel.YOLO_512.displayName)).perform(click())
+        field("11: cardboard_box 탐지").perform(scrollTo()).check(matches(isEnabled())).check(matches(not(isChecked())))
+        field("cardboard_box Confidence").check(matches(withText("0.35")))
+        onView(withText("적용 및 저장")).perform(click()); awaitEditorFinished()
+        val saved = loadHealthy()
+        assertEquals(com.samin.objectdetection.detector.YoloClassOptions(false, .35f), saved.yolo.classOptions["cardboard_box"])
+        val store = AppSettingsStore(context)
+        store.saveCustomPreset("CARDBOARD OPTIONS", saved)
+        assertEquals(saved.yolo, store.loadCustomPreset("CARDBOARD OPTIONS")!!.yolo)
     }
 
     @Test fun roiPresetValidationAndDurationStayInTheirCategoriesAndPersist() {

@@ -24,7 +24,7 @@ object ObjectTuningPolicyRegistry {
     )
 
     private val policies = buildList {
-        listOf("cat", "dog").forEach { label ->
+        (ModelConfig.CLASS_LABELS - ModelConfig.LEGACY_CLASS_LABELS.toSet()).forEach { label ->
             add(ObjectTuningPolicy(
                 label = label,
                 minConfidence = DetectionConfig.DEFAULT_CONFIDENCE_THRESHOLD,
@@ -34,7 +34,7 @@ object ObjectTuningPolicyRegistry {
                 enableVoice = false,
                 priority = ObjectPriority.LOW,
                 category = RiskObjectCategory.UNKNOWN,
-                note = "신규 동물 클래스는 탐지·표시·통계만 지원하며 경고·음성 안내에서 제외"
+                note = "추가 클래스는 탐지·표시·통계·거리만 지원하며 경고·음성 안내에서 제외"
             ))
         }
         add(

@@ -133,7 +133,8 @@ class BoundingBoxOverlayTest {
     }
     @Test fun animalBoxesUseTheirColorsAndLabelsWhileExistingColorsStayTheSame() = instrumentation.runOnMainSync {
         for ((label, expectedColor) in listOf("cat" to Color.rgb(186, 104, 200),
-            "dog" to Color.rgb(38, 198, 218), "bollard" to Color.rgb(0, 191, 255),
+            "dog" to Color.rgb(38, 198, 218), "cardboard_box" to Color.rgb(212, 163, 115),
+            "bollard" to Color.rgb(0, 191, 255),
             "person" to Color.rgb(255, 105, 180))) {
             val view = overlay().apply { setDebugMode(OverlayDebugMode.SIMPLE) }
             val detection = box.single().copy(label = label, confidence = .9f)
