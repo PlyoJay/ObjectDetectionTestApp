@@ -1,0 +1,9 @@
+test_actual_models_match_verified_names_and_static_float_tensor_contracts (test_yolo_model_contract.YoloModelContractTest.test_actual_models_match_verified_names_and_static_float_tensor_contracts) ... INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+ok
+test_v1_backup_is_the_exact_previous_eleven_class_model (test_yolo_model_contract.YoloModelContractTest.test_v1_backup_is_the_exact_previous_eleven_class_model) ... ok
+test_v2_graph_emits_normalized_xywh_and_twelve_sigmoid_scores_without_nms (test_yolo_model_contract.YoloModelContractTest.test_v2_graph_emits_normalized_xywh_and_twelve_sigmoid_scores_without_nms) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 1.778s
+
+OK
