@@ -6,6 +6,7 @@ import android.os.SystemClock
 import android.util.Log
 import com.samin.objectdetection.camera.DetectionConfig
 import com.samin.objectdetection.camera.FrameRoi
+import com.samin.objectdetection.camera.FrameBitmapBuffer
 import com.samin.objectdetection.detector.DetectionResult
 import com.samin.objectdetection.detector.DetectionStageCounts
 import com.samin.objectdetection.detector.ObjectDetector
@@ -25,19 +26,23 @@ class DetectionPipeline(
     private val objectMotionTracker: ObjectMotionTracker,
     private val userLocationSnapshotProvider: () -> UserLocationSnapshot,
     private val debugRecorder: DetectionDebugRecorder? = null
-) {
+) : AutoCloseable {
+    private val cropBuffer = FrameBitmapBuffer()
+    private var closed = false
     private val temporalValidator = AdaptiveTemporalValidator(
         immediateConfidence = config.temporalImmediateConfidence,
         confirmationConfidence = config.temporalConfirmationConfidence,
         matchIouThreshold = config.temporalMatchIouThreshold
     )
 
+    @Synchronized
     fun process(
         bitmap: Bitmap,
         timestampMs: Long,
         rotationDegrees: Int,
         frameId: Long? = null
     ): DetectionPipelineResult {
+        check(!closed) { "Detection pipeline is closed" }
         val pipelineStartedAtMs = System.currentTimeMillis()
         val pipelineStartNs = SystemClock.elapsedRealtimeNanos()
         val width = bitmap.width
@@ -52,15 +57,9 @@ class DetectionPipeline(
             "confidenceThreshold=${config.confidenceThreshold} nmsThreshold=${config.nmsThreshold} " +
             "geometryEnabled=${config.bollardGeometryFilterEnabled} sizeFilter=${config.sizeFilterMode} temporalEnabled=${config.adaptiveTemporalEnabled}")
         debugFrame?.line("[FRAME_INPUT] frame=${debugFrame.id} ${debugFrame.sourceDescription}")
-        var cropped: Bitmap? = null
-
         try {
             val cropStartNs = SystemClock.elapsedRealtimeNanos()
-            cropped = if (cropRect.isFullFrame(width, height)) {
-                bitmap
-            } else {
-                Bitmap.createBitmap(bitmap, cropRect.left, cropRect.top, cropRect.width(), cropRect.height())
-            }
+            val cropped = cropBuffer.crop(bitmap, cropRect)
             val cropTimeMs = elapsedMs(cropStartNs)
             val inferenceStartedAtMs = System.currentTimeMillis()
             val detectorStartNs = SystemClock.elapsedRealtimeNanos()
@@ -200,10 +199,15 @@ class DetectionPipeline(
         } finally {
             detector.setDebugFrame(null)
             debugFrame?.let { debugRecorder?.finish(it) }
-            if (cropped != null && cropped !== bitmap && !cropped.isRecycled) {
-                cropped.recycle()
-            }
         }
+    }
+
+    /** Owns crop storage only; the caller retains detector/source ownership. Serializes with process. */
+    @Synchronized
+    override fun close() {
+        if (closed) return
+        closed = true
+        cropBuffer.close()
     }
 
     private fun elapsedMs(startNs: Long): Long =

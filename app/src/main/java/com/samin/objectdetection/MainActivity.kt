@@ -602,7 +602,10 @@ class MainActivity : ComponentActivity() {
             val resourcesClosed = runCatching {
                 closeMlKitAfterCaptureDrain()
                 withContext(Dispatchers.IO) { mlKitLogRecorder.sourceEnded(sessionId).get() }
-                withContext(Dispatchers.IO) { detector.close() }
+                withContext(Dispatchers.IO) {
+                    detectionPipeline.close()
+                    detector.close()
+                }
             }.onFailure { Log.e(TAG, "settings apply: resource shutdown failed", it) }.isSuccess
             if (!resourcesClosed) {
                 if (!isDestroyed) {
@@ -1718,7 +1721,10 @@ class MainActivity : ComponentActivity() {
                 .onFailure { Log.e(TAG, "analyzer shutdown failed; interpreter retained", it) }.isSuccess
             closeMlKitAfterCaptureDrain()
             MlKitDiagnosticLogs.peek()?.sourceEnded(sessionId)
-            if (analyzerStopped && ::detector.isInitialized) withContext(Dispatchers.IO) { detector.close() }
+            if (analyzerStopped) withContext(Dispatchers.IO) {
+                if (::detectionPipeline.isInitialized) detectionPipeline.close()
+                if (::detector.isInitialized) detector.close()
+            }
             if (::userLocationTracker.isInitialized) userLocationTracker.stop()
             if (::warningOutputController.isInitialized) warningOutputController.release()
             if (::vibrationWarningPlayer.isInitialized) vibrationWarningPlayer.release()

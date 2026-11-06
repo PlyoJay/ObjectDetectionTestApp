@@ -1,0 +1,8 @@
+Unit tests: 40 suites; {'tests': 210, 'failures': 0, 'errors': 0, 'skipped': 0}
+Initial SM-S921N run: 33 tests, 32 passed; 1 CameraPreviewRuntimeTest failed with no frames while keyguard/screen off.
+Keyguard-visible test flags and screen wake did not unblock camera; retries also failed with no frames.
+After user manually unlocked device: CameraPreviewRuntimeTest passed (1 test), including OFF/ON/OFF, identity reuse, active callback drain and close recycling.
+Final unique instrumented tests passed: 33 = initial 32 + unlocked CameraX 1. Not a single all-green 33-test rerun.
+Lint: {'Warning': 196}; no Error/Fatal.
+Initial build: nullable ColorSpace compile error; fixed with checked local colorSpace/fallback. Full build then successful in 2m 30s; final test harness build successful in 36s.
+No long-run FPS, thermal or GC benchmark performed.

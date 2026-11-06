@@ -9,8 +9,10 @@ import androidx.camera.core.ImageProxy
 
 class BitmapConversionException(cause: Throwable) : RuntimeException("Camera bitmap conversion failed", cause)
 
-fun ImageProxy.toBitmapSafe(enableDiagnostics: Boolean = false,
+internal fun ImageProxy.toBitmapSafe(rotationBuffer: FrameBitmapBuffer, enableDiagnostics: Boolean = false,
     onTiming: ((cameraToBitmapNs: Long, rotationNs: Long) -> Unit)? = null): Bitmap? {
+    var converted: Bitmap? = null
+    var returnedSource = false
     return try {
         if (enableDiagnostics) {
             Log.d(
@@ -25,15 +27,15 @@ fun ImageProxy.toBitmapSafe(enableDiagnostics: Boolean = false,
         // The previous raw plane copy assumed RGBA and a fully padded last row.
         val conversionStartNs = SystemClock.elapsedRealtimeNanos()
         val bitmap = trace("CameraX.toBitmap") { toBitmap() }
+        converted = bitmap
         val cameraToBitmapNs = SystemClock.elapsedRealtimeNanos() - conversionStartNs
 
         val rotationDegrees = imageInfo.rotationDegrees
         val rotationStartNs = SystemClock.elapsedRealtimeNanos()
         val result = if (rotationDegrees != 0) {
-            trace("CameraX.rotate") { bitmap.rotate(rotationDegrees.toFloat()) }.also { rotated ->
-                if (rotated !== bitmap && !bitmap.isRecycled) {
-                    bitmap.recycle()
-                }
+            trace("CameraX.rotate") { rotationBuffer.rotate(bitmap, rotationDegrees) }.also {
+                bitmap.recycle()
+                converted = null
             }
         } else {
             bitmap
@@ -41,11 +43,16 @@ fun ImageProxy.toBitmapSafe(enableDiagnostics: Boolean = false,
         onTiming?.invoke(cameraToBitmapNs, if (rotationDegrees != 0)
             SystemClock.elapsedRealtimeNanos() - rotationStartNs else 0L)
         if (enableDiagnostics) Log.d("ImageProxyExt", "[CAMERA_BITMAP] rotated=${result.width}x${result.height} config=${result.config}")
+        returnedSource = result === bitmap
         result
 
     } catch (e: Exception) {
         Log.e("ImageProxyExt", "Camera bitmap conversion failed format=$format size=${width}x$height", e)
         throw BitmapConversionException(e)
+    } finally {
+        // Zero rotation transfers the one-shot CameraX Bitmap to the frame callback; rotated
+        // output belongs to rotationBuffer. Failed conversion/timing callbacks retain neither source.
+        if (!returnedSource) converted?.let { if (!it.isRecycled) it.recycle() }
     }
 }
 

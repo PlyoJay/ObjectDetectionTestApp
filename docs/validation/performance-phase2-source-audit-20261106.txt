@@ -1,0 +1,3 @@
+PASS: MainActivity differs only in resource-close wiring; phase-1 log gates unchanged.
+PASS: pipeline detection, class/box mapping, filters, motion/warning policy and timing field code unchanged after crop.
+PASS: model/settings/YOLO/threads/XNNPACK/interval/warning/metrics source unchanged.

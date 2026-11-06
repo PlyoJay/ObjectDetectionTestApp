@@ -6,6 +6,7 @@ import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.util.Log
 import android.view.ViewGroup
+import android.view.WindowManager
 import androidx.camera.view.PreviewView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
@@ -27,6 +28,7 @@ class CameraPreviewRuntimeTest {
         val original = preferences.all.toMap()
         var controller: CameraController? = null
         var scenario: ActivityScenario<SettingsActivity>? = null
+        var unblockFrame: CountDownLatch? = null
         try {
             // The host settings Activity must not advance a user's pending rollback marker.
             preferences.edit().clear().commit()
@@ -36,7 +38,15 @@ class CameraPreviewRuntimeTest {
                 val frames = CountDownLatch(3)
                 val failure = AtomicReference<Throwable?>()
                 val size = AtomicReference<Pair<Int, Int>>()
+                val retained = AtomicReference<Bitmap>()
+                val finishFrame = CountDownLatch(1)
+                unblockFrame = finishFrame
                 scenario.onActivity { activity ->
+                    // CameraX follows visibility/lifecycle. Keep only this test Activity visible
+                    // over keyguard and awake; do not dismiss authentication or change app settings.
+                    activity.setShowWhenLocked(true)
+                    activity.setTurnScreenOn(true)
+                    activity.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                     val preview = PreviewView(activity)
                     activity.setContentView(preview, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
                     controller = CameraController(context, activity, preview, 0, false,
@@ -47,12 +57,16 @@ class CameraPreviewRuntimeTest {
                             override fun onCameraError(error: Throwable) { failure.set(error); repeat(3) { frames.countDown() } }
                             override fun onFrameError(error: Throwable, timing: CameraFrameTiming?) { failure.set(error); repeat(3) { frames.countDown() } }
                             override fun onFrame(bitmap: Bitmap, timing: CameraFrameTiming, rotationDegrees: Int) {
+                                assertFalse(bitmap.isRecycled)
+                                val previous = retained.getAndSet(bitmap)
+                                if (rotationDegrees != 0 && previous != null) assertSame(previous, bitmap)
                                 assertTrue(timing.analysisWidth > 0 && timing.analysisHeight > 0)
                                 assertEquals(bitmap.width, timing.frameWidth)
                                 assertEquals(bitmap.height, timing.frameHeight)
                                 assertEquals("CAMERAX", timing.cameraBackend)
                                 size.set(timing.analysisWidth to timing.analysisHeight)
                                 frames.countDown()
+                                if (frames.count == 0L) assertTrue(finishFrame.await(10, TimeUnit.SECONDS))
                             }
                         }).also { it.start() }
                 }
@@ -62,7 +76,11 @@ class CameraPreviewRuntimeTest {
                 sizes.add(size.get())
                 var stopped: CompletableFuture<Unit>? = null
                 scenario.onActivity { stopped = controller!!.stopAsync() }
+                assertFalse("Stop must wait for the active frame reader", stopped!!.isDone)
+                assertFalse(checkNotNull(retained.get()).isRecycled)
+                finishFrame.countDown()
                 stopped!!.get(10, TimeUnit.SECONDS)
+                assertTrue("Stopped controller must release its final frame", checkNotNull(retained.get()).isRecycled)
                 controller = null
                 Log.i("CameraPreviewRuntimeTest", "preview=$previewEnabled requested=1280x720 actualAnalysis=${size.get()} " +
                     "exactRequestSelected=${size.get() == (1280 to 720)}")
@@ -70,6 +88,7 @@ class CameraPreviewRuntimeTest {
             assertEquals("Negotiated analysis dimensions changed between modes", sizes[0], sizes[1])
             assertEquals(sizes[1], sizes[2])
         } finally {
+            unblockFrame?.countDown()
             var stopped: CompletableFuture<Unit>? = null
             scenario?.onActivity { stopped = controller?.stopAsync() }
             stopped?.get(10, TimeUnit.SECONDS)

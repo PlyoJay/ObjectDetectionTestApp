@@ -64,6 +64,7 @@ class CameraController(
         fun onAnalyzerStarted(timing: CameraFrameTiming): FrameLatencyRecorder? = null
         fun onFrameReceived(frameTimestampMs: Long, analyzerReceivedMs: Long)
         fun onFrameSkipped(reason: SkipReason, skippedFrameCount: Long)
+        /** Borrowed pixels: finish reading/copying before return; never retain or recycle bitmap. */
         fun onFrame(bitmap: Bitmap, timing: CameraFrameTiming, rotationDegrees: Int)
         fun onCameraStarted()
         fun onResolutionSelected(width: Int, height: Int) {}
@@ -74,6 +75,7 @@ class CameraController(
     enum class SkipReason { INTERVAL, BITMAP_CONVERSION }
 
     private val analyzerExecutor = Executors.newSingleThreadExecutor()
+    private val rotationBuffer = FrameBitmapBuffer()
     private var provider: ProcessCameraProvider? = null
     private var lastDetectionStartTimeMs = 0L
     private var skippedFrameCount = 0L
@@ -150,7 +152,7 @@ class CameraController(
                 val conversionStartNs = SystemClock.elapsedRealtimeNanos()
                 var cameraToBitmapNs = -1L
                 var rotationNs = -1L
-                val bitmap = imageProxy.toBitmapSafe(enableDiagnostics && logInputShape) { conversion, rotation ->
+                val bitmap = imageProxy.toBitmapSafe(rotationBuffer, enableDiagnostics && logInputShape) { conversion, rotation ->
                     cameraToBitmapNs = conversion
                     rotationNs = rotation
                 }
@@ -173,7 +175,7 @@ class CameraController(
                     )
                     outcome = "DELIVERED"
                 } finally {
-                    if (!bitmap.isRecycled) {
+                    if (!rotationBuffer.owns(bitmap) && !bitmap.isRecycled) {
                         bitmap.recycle()
                     }
                 }
@@ -224,7 +226,11 @@ class CameraController(
         runCatching { provider?.unbindAll() }.onFailure { Log.e(TAG, "camera unbind failed", it) }
         provider = null
         shutdownAnalyzer(analyzerExecutor).whenComplete { _, error ->
-            if (error == null) stopped.complete(Unit) else stopped.completeExceptionally(error)
+            if (error != null) stopped.completeExceptionally(error)
+            else try {
+                rotationBuffer.close()
+                stopped.complete(Unit)
+            } catch (closeError: Throwable) { stopped.completeExceptionally(closeError) }
         }
         return stopped
     }

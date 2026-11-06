@@ -1,0 +1,8 @@
+--------- beginning of system
+I/ActivityTaskManager( 1698): START u0 {act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10008000 xflg=0x4 cmp=com.samin.objectdetection/.settings.SettingsActivity} with LAUNCH_MULTIPLE from uid 10626 (com.samin.objectdetection) (BAL_ALLOW_PERMISSION) result code=0
+--------- beginning of main
+I/ActivityTaskManager( 1698): Displayed com.samin.objectdetection/.settings.SettingsActivity for user 0: +365ms
+D/Camera2CameraImpl(31847): {Camera@e40d8ad[id=0]} Use case androidx.camera.core.ImageAnalysis-0395df44-c9ea-42eb-ac10-5218fb349cdc220414054 ACTIVE
+I/CameraController(31847): [CAMERA_USE_CASES] cameraPreviewEnabled=false imageAnalysis=true requested=1280x720 actual=1280x720 analysisCrop=Rect(0, 0 - 1280, 720) previewResolution=null previewCrop=null
+I/ActivityTaskManager( 1698): START u0 {act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 xflg=0x4 cmp=com.samin.objectdetection.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity} with LAUNCH_MULTIPLE from uid 10626 (com.samin.objectdetection) (BAL_ALLOW_PERMISSION) result code=0
+I/ActivityTaskManager( 1698): Displayed com.samin.objectdetection.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity for user 0: +224ms
