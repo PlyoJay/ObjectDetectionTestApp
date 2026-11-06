@@ -42,8 +42,7 @@ data class DetectionResult(
     val isIgnored: Boolean = false,
     val warningFeedback: WarningFeedback = WarningFeedback.NONE,
     val estimatedDistanceMeters: Float? = null,
-    val distanceEstimation: DistanceEstimate? = null,
-    val depthEstimation: com.samin.objectdetection.distance.ObjectDepthEstimate? = null
+    val distanceEstimation: DistanceEstimate? = null
 )
 
 interface ObjectDetector {

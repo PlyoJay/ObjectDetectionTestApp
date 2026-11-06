@@ -1,0 +1,9 @@
+Unit tests: 210; failures: 0; errors: 0; skipped: 0
+Tracked TFLite blobs compared against HEAD:
+app/src/main/assets/best.tflite unchanged=True SHA256=32A44BC7432EF2D7CA5DE802DD8E714A26568AEA16566BAD3FD7FCD2B85BCEE2
+app/src/main/assets/best_512.tflite unchanged=True SHA256=591509278B3A1FE114A0084D4841B948A93B637C22005B7BECF06309CB906667
+app/src/main/assets/best_512_v1_11class.tflite unchanged=True SHA256=CC189262FD705E7D0B48246EBE42F868FF9B7370D97A0A6D7A7F756F16D4BAD1
+app/src/main/assets/best_float32.tflite unchanged=True SHA256=4B3C92517EB040EB40788EFD3018CC004680345EC87D7050C14DB965931AD8B8
+Runtime source/build file and merged manifest ARCore scan:
+No matches
+adb devices -l: no connected devices; instrumentation tests were compiled, not executed.

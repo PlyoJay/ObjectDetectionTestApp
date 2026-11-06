@@ -1,0 +1,8 @@
+Starting a Gradle Daemon, 1 busy Daemon could not be reused, use --status for details
+
+> Task :app:dependencyInsight
+No dependencies matching given input were found in configuration ':app:debugRuntimeClasspath'
+
+BUILD SUCCESSFUL in 39s
+1 actionable task: 1 executed
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.4.1/userguide/configuration_cache_enabling.html

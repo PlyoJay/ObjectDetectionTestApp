@@ -54,14 +54,6 @@ import com.samin.objectdetection.mlkit.MlKitDiagnosticLogs
 import com.samin.objectdetection.mlkit.MlKitDiagnosticLogRecorder
 import com.samin.objectdetection.motion.ObjectMotionTracker
 import com.samin.objectdetection.pipeline.DetectionPipeline
-import com.samin.objectdetection.distance.DistanceOpticsMode
-import com.samin.objectdetection.arcore.ArCoreDepthActivity
-import com.samin.objectdetection.arcore.yolo.ArCoreYoloExperimentActivity
-import com.samin.objectdetection.arcore.yolo.ArCoreMainCameraController
-import com.samin.objectdetection.camera.CameraBackend
-import com.samin.objectdetection.camera.CameraBackendMode
-import com.samin.objectdetection.camera.cameraBackendMode
-import com.samin.objectdetection.evaluation.distanceFrameJson
 import com.samin.objectdetection.policy.OverlayObjectFilter
 import com.samin.objectdetection.policy.YoloDefaultPolicyRegistry
 import com.samin.objectdetection.ui.BoundingBoxOverlay
@@ -113,10 +105,8 @@ class MainActivity : ComponentActivity() {
     private val performanceLogButton get() = screen.performanceLogButton
     private val performanceRecordingTextView get() = screen.performanceRecordingTextView
 
-    private lateinit var cameraController: CameraBackend
+    private lateinit var cameraController: CameraController
     private val cameraFrameSequence = java.util.concurrent.atomic.AtomicLong()
-    private var arCoreFallbackReason: String? = null
-    private var fallingBack = false
     private lateinit var detector: ObjectDetector
     private lateinit var mlKitDetector: MlKitObjectDetector
     private lateinit var evaluationDataRecorder: EvaluationDataRecorder
@@ -168,18 +158,6 @@ class MainActivity : ComponentActivity() {
     @Volatile private var actualAnalysisHeight = 0
     @Volatile private var previewOffStatus = "카메라 시작 대기 중"
     @Volatile private var lastFrameCompletionNs = 0L
-    private var arCoreTransition = false
-    private var arCoreLaunched = false
-    private val arCoreLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        arCoreTransition = false
-        arCoreLaunched = false
-        if (!destroying && ::detector.isInitialized) {
-            // A new CameraController starts frame IDs at one. Recreate the existing runtime
-            // through its drain path so overlays/trace sessions do not reject or reuse old IDs.
-            restartForSettings("객체 인식 복원 중…")
-        }
-    }
-
     private val settingsLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK && result.data?.getBooleanExtra(SettingsActivity.EXTRA_APPLIED, false) == true) {
             restartForSettings()
@@ -241,8 +219,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        arCoreLaunched = savedInstanceState?.getBoolean("arCoreLaunched", false) ?: false
-        arCoreTransition = arCoreLaunched
 
         settingsStore = AppSettingsStore(this)
         appSettings = settingsStore.loadApplied()
@@ -304,9 +280,7 @@ class MainActivity : ComponentActivity() {
                 staleTrackTimeoutMs = detectionConfig.motionStaleTrackTimeoutMs
             ),
             userLocationSnapshotProvider = { userLocationTracker.currentSnapshot },
-            debugRecorder = detectionDebugRecorder,
-            distanceSettings = appSettings.distance,
-            groundDistanceEnabled = appSettings.cameraBackendMode() != CameraBackendMode.ARCORE
+            debugRecorder = detectionDebugRecorder
         )
         vibrationWarningPlayer = VibrationWarningPlayer(this)
         beepWarningPlayer = BeepWarningPlayer()
@@ -379,9 +353,7 @@ class MainActivity : ComponentActivity() {
             onOpenQuickSettings = ::openQuickSettings,
             cameraPreviewEnabled = appSettings.camera.previewEnabled,
             onToggleMlKitLogging = ::toggleMlKitLogging,
-            onShareMlKitLog = ::shareMlKitLog,
-            onOpenArCore = ::openArCore,
-            onOpenArCoreYolo = { openArCore(ArCoreYoloExperimentActivity::class.java) }
+            onShareMlKitLog = ::shareMlKitLog
         )
         overlayView = screen.overlayView
         overlayView.onFrameDrawn = { trace, wallMs, elapsedNs, enabled ->
@@ -414,10 +386,8 @@ class MainActivity : ComponentActivity() {
             showMlKitBoxes = appSettings.overlay.showMlKitBoxes,
             showConfidence = appSettings.overlay.showConfidence,
             showFps = appSettings.overlay.showFps,
-            staleTimeoutMs = if (appSettings.cameraBackendMode() == CameraBackendMode.ARCORE) minOf(1000, appSettings.overlay.staleTimeoutMs) else appSettings.overlay.staleTimeoutMs,
-            showDistance = appSettings.overlay.showDistance
+            staleTimeoutMs = appSettings.overlay.staleTimeoutMs
         )
-        overlayView.setDepthAnalysisEnabled(appSettings.debug.depthAnalysisEnabled)
         if (detectionConfig.debugDetectionLogging) overlayView.diagnosticLog = detectionDebugRecorder::record
         overlayView.mlKitDiagnostics = mlKitDiagnostics
         setContentView(screen.root)
@@ -534,59 +504,6 @@ class MainActivity : ComponentActivity() {
             refreshMlKitLogFiles()
         }
         if (!performanceBusy) performanceLogButton.isEnabled = !busy && !active
-    }
-
-    private fun openArCore() = openArCore(ArCoreDepthActivity::class.java)
-
-    private fun openArCore(target: Class<out Activity>) {
-        if (destroying || arCoreTransition) return
-        if (isRecording || performanceLogRecorder.isRecording || performanceJob?.isActive == true ||
-            mlKitLogJob?.isActive == true || mlKitLogRecorder.status().phase in listOf(
-                MlKitDiagnosticLogRecorder.Phase.STARTING, MlKitDiagnosticLogRecorder.Phase.RECORDING,
-                MlKitDiagnosticLogRecorder.Phase.SAVING)) {
-            Toast.makeText(this, "기존 녹화·성능·ML Kit 로그 측정을 종료한 뒤 ARCore를 실행하세요.", Toast.LENGTH_LONG).show()
-            return
-        }
-        arCoreTransition = true
-        screen.arCoreButton.isEnabled = false
-        screen.arCoreYoloButton.isEnabled = false
-        val stopped = if (::cameraController.isInitialized) cameraController.stopAsync()
-            else CompletableFuture.completedFuture(Unit)
-        lifecycleScope.launch {
-            var drained = false
-            try {
-                withContext(Dispatchers.IO) { stopped.get() }
-                drained = true
-                // No new analyzer input now. Let existing ML Kit bitmap leases finish too.
-                captureWork.coroutineContext[Job]?.children?.toList()?.joinAll()
-                if (destroying || isFinishing) return@launch
-                check(!isRecording && !performanceLogRecorder.isRecording && performanceJob?.isActive != true &&
-                    mlKitLogJob?.isActive != true && mlKitLogRecorder.status().phase !in listOf(
-                        MlKitDiagnosticLogRecorder.Phase.STARTING, MlKitDiagnosticLogRecorder.Phase.RECORDING,
-                        MlKitDiagnosticLogRecorder.Phase.SAVING)) { "진행 중인 측정 세션을 먼저 종료하세요." }
-                overlayView.clearDetections()
-                arCoreLaunched = true
-                arCoreLauncher.launch(Intent(this@MainActivity, target).apply {
-                    if (target == ArCoreYoloExperimentActivity::class.java) {
-                        putExtra(ArCoreYoloExperimentActivity.EXTRA_SETTINGS, AppSettingsCodec.encode(appSettings))
-                    }
-                })
-            } catch (error: Exception) {
-                arCoreTransition = false
-                arCoreLaunched = false
-                if (!destroying) {
-                    screen.arCoreButton.isEnabled = true
-                    screen.arCoreYoloButton.isEnabled = true
-                    Toast.makeText(this@MainActivity, "ARCore 화면 전환 실패: ${error.message}", Toast.LENGTH_LONG).show()
-                    if (drained) restartForSettings("객체 인식 복원 중…")
-                }
-            }
-        }
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        outState.putBoolean("arCoreLaunched", arCoreLaunched)
-        super.onSaveInstanceState(outState)
     }
 
     private fun openSettings() {
@@ -712,7 +629,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun checkPermissionAndStart() {
-        if (arCoreTransition) return
         val permissions = mutableListOf<String>()
         if (!hasCameraPermission()) {
             permissions.add(Manifest.permission.CAMERA)
@@ -757,7 +673,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun startCamera() {
-        if (arCoreTransition || destroying) return
+        if (destroying) return
         frameRates.start(SystemClock.elapsedRealtimeNanos())
         val listener = object : CameraController.Listener {
                 override fun onAnalyzerStarted(timing: CameraFrameTiming): FrameLatencyRecorder? =
@@ -787,6 +703,11 @@ class MainActivity : ComponentActivity() {
                     screen.updatePreviewStatus(previewOffStatus)
                 }
 
+                override fun onResolutionSelected(width: Int, height: Int) {
+                    actualAnalysisWidth = width
+                    actualAnalysisHeight = height
+                }
+
                 override fun onCameraError(error: Throwable) {
                     Log.e(TAG, "startCamera error", error)
                     debugTextView.text = "카메라 시작 실패: ${error.message}"
@@ -799,47 +720,18 @@ class MainActivity : ComponentActivity() {
                     else Log.e(TAG, "analyze error", error)
                 }
             }
-        cameraController = if (appSettings.cameraBackendMode() == CameraBackendMode.ARCORE && arCoreFallbackReason == null) {
-            ArCoreMainCameraController(this, appSettings, cameraFrameSequence::incrementAndGet, listener,
-                screen::attachArCoreSurface, {
-                    runOnUiThread { if (!destroying) overlayView.clearDetections() }
-                }, { message -> if (!destroying) screen.updateCameraBackendStatus(message) }, ::fallbackFromArCore)
-        } else {
-            screen.restoreCameraXPreview()
-            screen.updateCameraBackendStatus(arCoreFallbackReason?.let { "거리 표시 불가: $it\nCameraX 객체 인식 실행 · ARCore 재시도는 설정 적용 후 가능" }.orEmpty())
-            CameraController(this, this, screen.previewView, detectionConfig.detectIntervalMs, detectionConfig.enableDetectorDiagnostics,
-                appSettings.camera.requestedWidth, appSettings.camera.requestedHeight, appSettings.camera.previewEnabled, listener,
-                distanceMetadataEnabled = appSettings.cameraBackendMode() != CameraBackendMode.ARCORE && appSettings.distance.cameraHeightCm != null &&
-                    appSettings.distance.downwardPitchDegrees != null && appSettings.distance.opticsMode == DistanceOpticsMode.AUTO,
-                frameIdProvider = cameraFrameSequence::incrementAndGet)
-        }
+        cameraController = CameraController(this, this, screen.previewView,
+            detectionConfig.detectIntervalMs, detectionConfig.enableDetectorDiagnostics,
+            appSettings.camera.requestedWidth, appSettings.camera.requestedHeight,
+            appSettings.camera.previewEnabled, listener,
+            frameIdProvider = cameraFrameSequence::incrementAndGet)
         cameraController.start()
     }
 
-    private fun fallbackFromArCore(reason: String) {
-        if (destroying || arCoreTransition || fallingBack) return
-        Log.w(TAG, "[CAMERA_BACKEND_FALLBACK] ARCORE->CAMERAX reason=$reason")
-        fallingBack = true; arCoreFallbackReason = reason
-        val old = cameraController
-        val stopped = old.stopAsync()
-        overlayView.clearDetections()
-        lifecycleScope.launch {
-            try {
-                withContext(Dispatchers.IO) { stopped.get() }
-                captureWork.coroutineContext[Job]?.children?.toList()?.joinAll()
-                if (destroying || arCoreTransition || cameraController !== old) return@launch
-                detectionPipeline.resetForCameraChange()
-                startCamera()
-            } catch (error: Exception) {
-                screen.updateCameraBackendStatus("ARCore 종료 실패: ${error.message}\n카메라 복구를 위해 앱을 다시 실행하세요.")
-            } finally { fallingBack = false }
-        }
-    }
-
     private fun processBitmap(bitmap: Bitmap, frameTiming: CameraFrameTiming, rotationDegrees: Int) {
-        if (destroying || frameTiming.depthContext?.isCurrent() == false) return
-        actualAnalysisWidth = bitmap.width
-        actualAnalysisHeight = bitmap.height
+        if (destroying) return
+        actualAnalysisWidth = frameTiming.analysisWidth
+        actualAnalysisHeight = frameTiming.analysisHeight
         val start = System.currentTimeMillis()
         val frameReceivedTimeMs = frameTiming.frameTimestampMs
         metricsCollector.recordFrameAnalyzed()
@@ -849,13 +741,12 @@ class MainActivity : ComponentActivity() {
 
         // Both detectors receive the same ROI in the already rotated full-frame coordinate space.
         val mlKitPrepareStartNs = SystemClock.elapsedRealtimeNanos()
-        maybeRunMlKitDetection(bitmap, bitmap.width, bitmap.height, frameTrace(frameTiming), frameTiming.latency, frameTiming.depthContext)
+        maybeRunMlKitDetection(bitmap, bitmap.width, bitmap.height, frameTrace(frameTiming), frameTiming.latency)
         val mlKitPrepareNs = SystemClock.elapsedRealtimeNanos() - mlKitPrepareStartNs
         val mlKitInFlight = isMlKitProcessing.get()
 
-        val pipelineResult = detectionPipeline.process(bitmap, frameReceivedTimeMs, rotationDegrees, frameTiming.frameId,
-            frameTiming.distanceGeometry, frameTiming.depthContext)
-        if (destroying || frameTiming.depthContext?.isCurrent() == false) return
+        val pipelineResult = detectionPipeline.process(bitmap, frameReceivedTimeMs, rotationDegrees, frameTiming.frameId)
+        if (destroying) return
         val completedNs = SystemClock.elapsedRealtimeNanos()
         val completedAtMs = System.currentTimeMillis()
         previewOffStatus = "객체 인식 실행 중"
@@ -1073,7 +964,6 @@ class MainActivity : ComponentActivity() {
                     roiDescription = "frame=${width}x$height roi=[${cropRect.left},${cropRect.top},${cropRect.right},${cropRect.bottom}]",
                     rotationDegrees = rotationDegrees,
                     cameraBackend = frameTiming.cameraBackend,
-                    depthObjectsJson = if (frameTiming.depthContext != null) distanceFrameJson(mapped) else null,
                     totalProcessingMs = if (frameTiming.analyzerReceivedElapsedNs > 0L)
                         (completedNs - frameTiming.analyzerReceivedElapsedNs).coerceAtLeast(0L) / 1_000_000L else -1L
                 )
@@ -1081,10 +971,9 @@ class MainActivity : ComponentActivity() {
             performanceSummary?.let(performanceLogRecorder::recordSummary)
         }
         if (appSettings.camera.previewEnabled) postLatestDetectionUiUpdate {
-            if (frameTiming.depthContext?.isCurrent() == false) return@postLatestDetectionUiUpdate
             overlayView.updateRecognitionRegion(width, height,
                 FrameRoi(cropRect.left, cropRect.top, cropRect.right, cropRect.bottom),
-                detectionConfig.recognitionRoi.showRegion, frameTiming.depthContext?.projection)
+                detectionConfig.recognitionRoi.showRegion)
             logDetectionTiming(DETECTION_TIMING_TAG) {
                 val overlayUpdateTimeMs = System.currentTimeMillis()
                 val resultAgeMs = trace.captureAgeMsAt(SystemClock.elapsedRealtimeNanos())
@@ -1095,7 +984,7 @@ class MainActivity : ComponentActivity() {
                     "emptyReason=${buildEmptyOverlayReason(mapped, visibleMapped, warningDetections, overlayDetections)}"
             }
             overlayView.updateDetections(overlayDetections, width, height, inferenceTime, currentFps,
-                trace, rates.analyzerFps, rates.inferenceFps, frameTiming.depthContext?.projection)
+                trace, rates.analyzerFps, rates.inferenceFps)
             if (
                 detectionConfig.overlayDebugMode == OverlayDebugMode.NONE ||
                 feedbackMessage == null ||
@@ -1255,15 +1144,14 @@ class MainActivity : ComponentActivity() {
         val startedAtMs = System.currentTimeMillis()
         val startedElapsedNs = SystemClock.elapsedRealtimeNanos()
         val model = checkNotNull(detector.modelIdentity()) { "Loaded YOLO tensor metadata is required for performance logging" }
-        val arCoreCamera = ::cameraController.isInitialized && cameraController is ArCoreMainCameraController
         val header = PerformanceLogHeader(
             startedAtMs = startedAtMs,
             modelName = model.assetName,
             detectorName = DETECTOR_TYPE,
             inputWidth = model.inputWidth,
             inputHeight = model.inputHeight,
-            cameraWidth = actualAnalysisWidth.takeIf { it > 0 } ?: if (arCoreCamera) 0 else appSettings.camera.requestedWidth,
-            cameraHeight = actualAnalysisHeight.takeIf { it > 0 } ?: if (arCoreCamera) 0 else appSettings.camera.requestedHeight,
+            cameraWidth = actualAnalysisWidth.takeIf { it > 0 } ?: 0,
+            cameraHeight = actualAnalysisHeight.takeIf { it > 0 } ?: 0,
             resizeMode = detectionConfig.yoloResizeMode,
             yoloThreads = detectionConfig.interpreterThreadCount,
             mlKitEnabled = detectionConfig.enableMlKitDetection,
@@ -1289,7 +1177,7 @@ class MainActivity : ComponentActivity() {
             execution = detector.executionInfo(),
             inputTensorShape = model.inputShape, inputTensorType = model.inputType,
             outputTensorShape = model.outputShape, outputTensorType = model.outputType,
-            cameraBackend = if (arCoreCamera) "ARCORE" else if (::cameraController.isInitialized) "CAMERAX" else "NOT_STARTED"
+            cameraBackend = if (::cameraController.isInitialized) "CAMERAX" else "NOT_STARTED"
         )
         performanceLogButton.isEnabled = false
         screen.setMeasurementLocked(true)
@@ -1636,7 +1524,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun maybeRunMlKitDetection(bitmap: Bitmap, frameWidth: Int, frameHeight: Int, sourceTrace: FrameTrace,
-        latency: FrameLatencyRecorder? = null, depthContext: com.samin.objectdetection.distance.FrameDepthContext? = null) {
+        latency: FrameLatencyRecorder? = null) {
         if (!detectionConfig.enableMlKitDetection) {
             mlKitDiagnostics?.skipped(sourceTrace.frameId, "DISABLED", isMlKitProcessing.get())
             return
@@ -1714,7 +1602,7 @@ class MainActivity : ComponentActivity() {
                             "reason=${if (appSettings.camera.previewEnabled) "QUEUED" else "PREVIEW_OFF"}"
                     }
                     if (appSettings.camera.previewEnabled) mlKitUiUpdates.submit {
-                        if (destroying || depthContext?.isCurrent() == false) {
+                        if (destroying) {
                             mlKitDiagnostics?.event(sourceTrace.frameId, "UI_SKIP") { "reason=DESTROYING" }
                             return@submit
                         }
@@ -1723,7 +1611,7 @@ class MainActivity : ComponentActivity() {
                             results,
                             frameWidth,
                             frameHeight,
-                            mlTrace, depthContext?.projection
+                            mlTrace
                         )
                     }
 

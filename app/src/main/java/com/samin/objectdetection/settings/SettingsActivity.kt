@@ -43,10 +43,6 @@ import com.samin.objectdetection.detector.YoloClassOptions
 import com.samin.objectdetection.mlkit.MlKitDetectionMode
 import com.samin.objectdetection.detector.ModelIdentity
 import com.samin.objectdetection.ui.OverlayDebugMode
-import com.samin.objectdetection.distance.DistanceSettings
-import com.samin.objectdetection.distance.DistanceOpticsMode
-import com.samin.objectdetection.distance.ObjectDistanceMethod
-import com.samin.objectdetection.distance.DepthInputMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -420,15 +416,7 @@ class SettingsActivity : ComponentActivity() {
         form.yoloBoxes = toggle(parent, "YOLO bbox")
         form.mlKitBoxes = toggle(parent, "ML Kit bbox")
         form.confidenceLabel = toggle(parent, "Confidence 표시")
-        form.distanceLabel = toggle(parent, "객체 거리 표시")
-        form.distanceMethod = choice(parent, "거리 추정 방식 (ARCORE_DEPTH=ARCore / GROUND_PLANE=지면)", ObjectDistanceMethod.entries.map { it.name })
-        form.depthInput = choice(parent, "ARCore Depth 입력 (RAW는 confidence 적용 후 FULL 보조)", DepthInputMode.entries.map { it.name })
-        note(parent, "ARCore는 이 메인 화면에서 카메라를 사용하며 장착 높이·각도가 필요 없습니다. 최대 4Hz, 전방 깊이 Z(m)입니다. 입력 해상도는 ARCore SDK가 선택하며 CameraX 요청 해상도는 적용되지 않습니다. 미지원 시 거리 없이 CameraX 인식을 복구하며 원인을 표시합니다. FULL이 기본이며 RAW는 비교 실험용입니다. 아래 장착값은 지면 방식에서만 사용합니다.")
-        form.cameraHeight = number(parent, "카메라 설치 높이 (cm)", "1..1000, 미설정은 비워 두기", true)
-        form.cameraPitch = number(parent, "카메라 하향 각도 (°)", "0..89, 수평=0, 미설정은 비워 두기", true)
-        form.distanceOptics = choice(parent, "거리 화각 설정", DistanceOpticsMode.entries.map { it.name })
-        form.manualFov = number(parent, "수동 수직 화각 (°)", "5..150, 회전 전 전체 분석 버퍼 기준", true)
-        note(parent, "지면 방식 전용: 고정 설치·평탄한 지면·좌우 기울기 0°를 가정합니다. 지면 방식에서 높이와 하향 각도가 비어 있으면 거리를 표시하지 않습니다. AUTO는 실제 프레임의 Camera2 광학/크롭 정보를 검사하며 신뢰할 수 없으면 계산하지 않습니다. MANUAL은 현재 해상도·줌에서 회전 전 전체 ImageAnalysis 버퍼의 수직 화각을 실측해 입력하세요. ROI나 모델 입력 화각이 아닙니다. 설치 방향·해상도·줌 변경 후 다시 보정하세요. 거리는 경고 판단에 사용하지 않습니다.")
+        note(parent, "거리 측정 미지원 — 센서 연결 전에는 객체 종류·위치·Confidence만 표시합니다.")
         form.fps = toggle(parent, "FPS 표시")
         form.overlayStale = number(parent, "Overlay Stale Timeout (ms)", "100..60000")
         note(parent, "촬영 후 박스를 표시할 수 있는 최대 시간입니다. 촬영 시각을 비교할 수 없으면 분석 수신 시각을 사용합니다. 경고·TTS·진동의 유효시간에는 영향을 주지 않습니다.")
@@ -459,19 +447,6 @@ class SettingsActivity : ComponentActivity() {
         note(parent, "후보별 로그와 PNG 저장은 성능에 영향을 줄 수 있습니다.")
         form.diagnostics = toggle(parent, "Enable Detector Diagnostics")
         form.mlKitDiagnostics = toggle(parent, "ML Kit Diagnostics")
-        form.depthAnalysis = toggle(parent, "Depth 분석 표시 (기본 OFF)")
-        form.depthTruthLabel = EditText(this).apply {
-            hint = "실측 대상 클래스 (예: person, bollard)"; contentDescription = "실측 대상 클래스"
-            inputType = InputType.TYPE_CLASS_TEXT; parent.addView(this, match())
-        }
-        form.depthTruth = number(parent, "실측 전방 Z (m)", "비우면 오차 계산 안 함", true)
-        parent.addView(LinearLayout(this).apply {
-            for (meters in listOf(1, 2, 3, 5)) addView(Button(this@SettingsActivity).apply {
-                text = "${meters}m"; setOnClickListener { form.depthTruth.setText(meters.toString()) }
-            }, LinearLayout.LayoutParams(0, -2, 1f))
-        })
-        note(parent, "분석 ON + 메인 ARCore 모드에서 실제 샘플 지점과 FULL/RAW·실패 사유를 표시합니다. 추가 변환·RAW 취득 비용이 있습니다. 실측 Z는 렌즈 기준 광축 방향이며 사선 거리가 아닙니다. 대상 클래스가 화면에 정확히 하나 탐지된 프레임에만 실측값을 연결합니다. 캡처/녹화/성능 로그를 직접 시작해야 파일에 기록됩니다. 버튼은 기준값 입력이며 측정 결과를 만들지 않습니다.")
-        note(parent, "실측값은 자동 갱신되지 않습니다. 정지한 구간에서만 비교하고 실제 거리가 바뀌면 다시 입력하거나 비워 주세요. 표본 색: 녹색=선택, 노랑=후보, 파랑=외곽 배경, 빨강=무효입니다.")
         note(parent, "기본 OFF. ON을 적용 및 저장한 뒤 파일 기록을 시작하세요. 기록 시작 후 카메라 화면으로 돌아가 테스트하고, 이곳에서 중지·공유합니다. Logcat 출력은 유지하며 이미지 저장·주기·timeout은 변경하지 않습니다.")
         MlKitLogControls(this, parent, { applied }, { currentScreen == Category.DEBUG.name })
         form.debugLogging = toggle(parent, "Debug Detection Logging")
@@ -540,17 +515,9 @@ class SettingsActivity : ComponentActivity() {
             form.vibration.isChecked = enableActualVibration; form.beep.isChecked = enableActualBeep; form.tts.isChecked = enableActualTts
         }
         with(value.overlay) {
-            form.distanceLabel.isChecked = showDistance
-            select(form.distanceMethod, distanceMethod.name); select(form.depthInput, depthInputMode.name)
             form.overlayEnabled.isChecked = enabled; select(form.debugMode, debugMode.name); form.yoloBoxes.isChecked = showYoloBoxes
             form.mlKitBoxes.isChecked = showMlKitBoxes; form.confidenceLabel.isChecked = showConfidence; form.fps.isChecked = showFps
             form.overlayStale.setText(staleTimeoutMs.toString())
-        }
-        with(value.distance) {
-            form.cameraHeight.setText(cameraHeightCm?.toString().orEmpty())
-            form.cameraPitch.setText(downwardPitchDegrees?.toString().orEmpty())
-            select(form.distanceOptics, opticsMode.name)
-            form.manualFov.setText(manualVerticalFovDegrees?.toString().orEmpty())
         }
         with(value.mlKit) {
             form.mlKitEnabled.isChecked = enabled; form.mlKitInterval.setText(detectionIntervalMs.toString())
@@ -565,9 +532,6 @@ class SettingsActivity : ComponentActivity() {
         with(value.debug) {
             form.diagnostics.isChecked = enableDetectorDiagnostics; form.debugLogging.isChecked = debugDetectionLogging
             form.mlKitDiagnostics.isChecked = enableMlKitDiagnostics
-            form.depthAnalysis.isChecked = depthAnalysisEnabled
-            form.depthTruth.setText(depthGroundTruthMeters?.toString().orEmpty())
-            form.depthTruthLabel.setText(depthGroundTruthLabel)
             form.rawConfidence.setText(diagnosticRawConfidenceThreshold.toString()); form.rawCandidates.setText(diagnosticMaxRawCandidates.toString())
             form.saveInput.isChecked = debugSaveInferenceInput; form.saveInterval.setText(debugSaveIntervalMs.toString())
             form.saveOnDetection.isChecked = debugSaveOnDetection; form.legacyDebugImage.isChecked = legacyDebugImageEnabled
@@ -604,17 +568,14 @@ class SettingsActivity : ComponentActivity() {
             warning = WarningSettings(form.cooldown.l(), form.ignoreTop.f(), form.maxGuide.i(), form.veryNearHeight.f(), form.nearHeight.f(),
                 form.midHeight.f(), form.veryNearArea.f(), form.nearArea.f(), form.midArea.f(), form.vibration.isChecked, form.beep.isChecked, form.tts.isChecked),
             overlay = OverlaySettings(form.overlayEnabled.isChecked, OverlayDebugMode.valueOf(form.debugMode.selectedItem.toString()),
-                form.yoloBoxes.isChecked, form.mlKitBoxes.isChecked, form.confidenceLabel.isChecked, form.fps.isChecked, form.overlayStale.l(), form.distanceLabel.isChecked,
-                ObjectDistanceMethod.valueOf(form.distanceMethod.selectedItem.toString()), DepthInputMode.valueOf(form.depthInput.selectedItem.toString())),
-            distance = DistanceSettings(form.cameraHeight.optionalFloat(), form.cameraPitch.optionalFloat(),
-                DistanceOpticsMode.valueOf(form.distanceOptics.selectedItem.toString()), form.manualFov.optionalFloat()),
+                form.yoloBoxes.isChecked, form.mlKitBoxes.isChecked, form.confidenceLabel.isChecked, form.fps.isChecked, form.overlayStale.l()),
+            distance = editing.distance,
             mlKit = MlKitSettings(form.mlKitEnabled.isChecked, form.mlKitInterval.l(),
                 MlKitDetectionMode.valueOf(form.mlKitMode.selectedItem.toString())),
             performanceLog = PerformanceLogSettings(form.systemDiagnostics.isChecked, form.systemSampleInterval.l(), form.batteryDiagnostics.isChecked, form.testDuration.selectedItem.toString().toInt()),
             debug = DebugSettings(form.diagnostics.isChecked, form.debugLogging.isChecked, form.rawConfidence.f(), form.rawCandidates.i(),
                 form.saveInput.isChecked, form.saveInterval.l(), form.saveOnDetection.isChecked, form.legacyDebugImage.isChecked,
-                form.mlKitDiagnostics.isChecked, form.depthAnalysis.isChecked,
-                form.depthTruth.optionalFloat(), form.depthTruthLabel.text.toString().trim())
+                form.mlKitDiagnostics.isChecked)
         )
     }
 
@@ -726,10 +687,6 @@ class SettingsActivity : ComponentActivity() {
         form.mlKitMode.isEnabled = form.mlKitEnabled.isChecked
         form.systemSampleInterval.isEnabled = form.systemDiagnostics.isChecked
         form.batteryDiagnostics.isEnabled = form.systemDiagnostics.isChecked
-        val ground = form.distanceMethod.selectedItem?.toString() == ObjectDistanceMethod.GROUND_PLANE.name
-        listOf(form.cameraHeight, form.cameraPitch, form.distanceOptics).forEach { it.isEnabled = ground }
-        form.manualFov.isEnabled = ground && form.distanceOptics.selectedItem?.toString() == "MANUAL"
-        form.depthInput.isEnabled = !ground
         val cropEnabled = form.roiEnabled.isChecked
         if (cropEnabled) {
             form.centerCrop.isChecked = false
@@ -899,13 +856,9 @@ class SettingsActivity : ComponentActivity() {
         lateinit var vibration: Switch; lateinit var beep: Switch; lateinit var tts: Switch
         lateinit var overlayEnabled: Switch; lateinit var debugMode: Spinner; lateinit var yoloBoxes: Switch; lateinit var mlKitBoxes: Switch
         lateinit var confidenceLabel: Switch; lateinit var fps: Switch; lateinit var overlayStale: EditText
-        lateinit var distanceLabel: Switch; lateinit var cameraHeight: EditText; lateinit var cameraPitch: EditText
-        lateinit var distanceMethod: Spinner; lateinit var depthInput: Spinner
-        lateinit var distanceOptics: Spinner; lateinit var manualFov: EditText
         lateinit var mlKitEnabled: Switch; lateinit var mlKitInterval: EditText; lateinit var mlKitMode: Spinner
         lateinit var diagnostics: Switch; lateinit var debugLogging: Switch; lateinit var rawConfidence: EditText; lateinit var rawCandidates: EditText
         lateinit var mlKitDiagnostics: Switch
-        lateinit var depthAnalysis: Switch; lateinit var depthTruth: EditText; lateinit var depthTruthLabel: EditText
         lateinit var saveInput: Switch; lateinit var saveInterval: EditText; lateinit var saveOnDetection: Switch; lateinit var legacyDebugImage: Switch
     }
 

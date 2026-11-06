@@ -40,27 +40,18 @@ class CameraPreviewRuntimeTest {
                     val preview = PreviewView(activity)
                     activity.setContentView(preview, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
                     controller = CameraController(context, activity, preview, 0, false,
-                        cameraPreviewEnabled = previewEnabled, distanceMetadataEnabled = true, listener = object : CameraController.Listener {
+                        cameraPreviewEnabled = previewEnabled, listener = object : CameraController.Listener {
                             override fun onFrameReceived(frameTimestampMs: Long, analyzerReceivedMs: Long) = Unit
                             override fun onFrameSkipped(reason: CameraController.SkipReason, skippedFrameCount: Long) = Unit
                             override fun onCameraStarted() = Unit
                             override fun onCameraError(error: Throwable) { failure.set(error); repeat(3) { frames.countDown() } }
                             override fun onFrameError(error: Throwable, timing: CameraFrameTiming?) { failure.set(error); repeat(3) { frames.countDown() } }
                             override fun onFrame(bitmap: Bitmap, timing: CameraFrameTiming, rotationDegrees: Int) {
-                                val geometry = requireNotNull(timing.distanceGeometry)
-                                assertTrue(geometry.automaticIntrinsics != null || !geometry.automaticUnavailableReason.isNullOrBlank())
-                                assertEquals(bitmap.width, geometry.width)
-                                assertEquals(bitmap.height, geometry.height)
-                                val k = requireNotNull(geometry.intrinsics(com.samin.objectdetection.distance.DistanceSettings(
-                                    150f, 10f, com.samin.objectdetection.distance.DistanceOpticsMode.MANUAL, 60f)))
-                                val bottom = k.cy + k.fy * .1f
-                                val estimate = com.samin.objectdetection.distance.GroundPlaneDistanceEstimator(
-                                    com.samin.objectdetection.distance.DistanceSettings(150f, 10f,
-                                        com.samin.objectdetection.distance.DistanceOpticsMode.MANUAL, 60f)).estimate(
-                                    com.samin.objectdetection.detector.DetectionResult("person", .9f, k.cx - 10, k.cy - 10,
-                                        k.cx + 10, bottom), geometry)
-                                assertNotNull("Distance analysis must continue when preview=$previewEnabled", estimate.meters)
-                                size.set(bitmap.width to bitmap.height)
+                                assertTrue(timing.analysisWidth > 0 && timing.analysisHeight > 0)
+                                assertEquals(bitmap.width, timing.frameWidth)
+                                assertEquals(bitmap.height, timing.frameHeight)
+                                assertEquals("CAMERAX", timing.cameraBackend)
+                                size.set(timing.analysisWidth to timing.analysisHeight)
                                 frames.countDown()
                             }
                         }).also { it.start() }
@@ -73,7 +64,8 @@ class CameraPreviewRuntimeTest {
                 scenario.onActivity { stopped = controller!!.stopAsync() }
                 stopped!!.get(10, TimeUnit.SECONDS)
                 controller = null
-                Log.i("CameraPreviewRuntimeTest", "preview=$previewEnabled actualRotatedAnalysis=${size.get()}")
+                Log.i("CameraPreviewRuntimeTest", "preview=$previewEnabled requested=1280x720 actualAnalysis=${size.get()} " +
+                    "exactRequestSelected=${size.get() == (1280 to 720)}")
             }
             assertEquals("Negotiated analysis dimensions changed between modes", sizes[0], sizes[1])
             assertEquals(sizes[1], sizes[2])

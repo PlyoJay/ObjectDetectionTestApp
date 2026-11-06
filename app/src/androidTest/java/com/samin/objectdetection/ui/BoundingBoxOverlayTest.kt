@@ -16,90 +16,27 @@ import java.util.concurrent.TimeUnit
 
 /** Canvas pixels and real View callbacks; no camera, model, warning output or settings writes. */
 class BoundingBoxOverlayTest {
-    @Test fun depthAnalysisPointsAndReasonsAreOptInAndUseTheExistingProjection() = instrumentation.runOnMainSync {
+    @Test fun labelsKeepConfidenceAndIgnoreAnyLegacyDistancePayload() = instrumentation.runOnMainSync {
         val view = overlay()
-        val depth = com.samin.objectdetection.distance.ObjectDepthEstimate(2.3f, null,
-            com.samin.objectdetection.distance.DepthMethod.FULL, 12, "NO_OBJECT_BACKGROUND_SEPARATION", 100, 100,
-            SystemClock.elapsedRealtimeNanos() + 1_000_000_000, "TRACKING",
-            analysis = com.samin.objectdetection.distance.DepthAnalysis(null, null, "FULL_REQUESTED", listOf(
-                com.samin.objectdetection.distance.DepthSamplePoint(40f, 50f, "SELECTED", true, 2.3f),
-                com.samin.objectdetection.distance.DepthSamplePoint(60f, 50f, "CORE", false, null))))
-        val detection = depth.applyTo(box.single())
         val method = view.javaClass.getDeclaredMethod("buildLabel", DetectionResult::class.java,
             com.samin.objectdetection.model.DetectionSource::class.java).apply { isAccessible = true }
         try {
-            view.updateDetections(listOf(detection), 200, 200, 1, 1, trace(1))
-            assertNull(method.invoke(view, detection, com.samin.objectdetection.model.DetectionSource.YOLO))
-            view.setDepthAnalysisEnabled(true)
-            assertTrue((method.invoke(view, detection, com.samin.objectdetection.model.DetectionSource.YOLO) as String).contains("NO_OBJECT_BACKGROUND_SEPARATION"))
-            val rendered = render(view)
-            try { assertEquals(Color.GREEN, rendered.getPixel(40, 50)); assertEquals(Color.RED, rendered.getPixel(60, 50)) }
-            finally { rendered.recycle() }
-            view.setDrawingEnabled(false); assertFalse(hasPixels(view))
-        } finally { view.clearDetections() }
-    }
-    @Test fun arCoreViewportProjectionIsSharedByYoloAndMlKitWithoutFitCenterCroppingAgain() = instrumentation.runOnMainSync {
-        val view = overlay()
-        try {
-            val projection = com.samin.objectdetection.distance.ViewportProjection(1.5f, 1f, -.25f, 0f)
-            view.updateDetections(box, 200, 200, 1, 1, trace(1), projection = projection)
-            var rendered = render(view)
-            try {
-                assertEquals(Color.rgb(0, 191, 255), rendered.getPixel(70, 50))
-                assertEquals(Color.TRANSPARENT, rendered.getPixel(20, 50))
-            } finally { rendered.recycle() }
-            view.updateMlKitDetections(box, 200, 200, trace(1), projection)
-            rendered = render(view)
-            try { assertEquals(Color.YELLOW, rendered.getPixel(70, 50)) } finally { rendered.recycle() }
-        } finally { view.clearDetections() }
-    }
-    @Test fun arCoreDistanceDeadlineRemovesOnlyExpiredNumberAndOverlayOffStillSuppressesEverything() = instrumentation.runOnMainSync {
-        val view = overlay()
-        val now = SystemClock.elapsedRealtimeNanos()
-        val depth = com.samin.objectdetection.distance.ObjectDepthEstimate(2.3f, 2.3f,
-            com.samin.objectdetection.distance.DepthMethod.FULL, 25, "INTERIOR_CONSISTENT", 100, 100, now - 1, "TRACKING")
-        try {
-            view.configure(true, true, false, false, false, 1000, true)
+            view.configure(true, true, false, true, false, 1500)
             view.setDebugMode(OverlayDebugMode.SIMPLE)
-            val d = depth.applyTo(box.single())
-            val method = view.javaClass.getDeclaredMethod("buildLabel", DetectionResult::class.java,
-                com.samin.objectdetection.model.DetectionSource::class.java).apply { isAccessible = true }
-            val label = method.invoke(view, d, com.samin.objectdetection.model.DetectionSource.YOLO) as String
-            assertFalse(label.contains("2.3m")); assertTrue(label.startsWith("box"))
-            view.updateDetections(listOf(d), 200, 200, 1, 1, trace(1))
-            assertTrue(hasPixels(view)); view.setDrawingEnabled(false); assertFalse(hasPixels(view))
-        } finally { view.clearDetections() }
-    }
-    @Test fun distanceLabelWorksInNoneModePreservesConfidenceAndExcludesMlKit() = instrumentation.runOnMainSync {
-        val view = overlay()
-        val detection = box.single().copy(label = "bollard", confidence = .9f, estimatedDistanceMeters = 2.3f)
-        val method = view.javaClass.getDeclaredMethod("buildLabel", DetectionResult::class.java,
-            com.samin.objectdetection.model.DetectionSource::class.java).apply { isAccessible = true }
-        fun label(source: com.samin.objectdetection.model.DetectionSource = com.samin.objectdetection.model.DetectionSource.YOLO) =
-            method.invoke(view, detection, source) as String?
-        try {
-            assertNull(label())
-            view.configure(true, true, true, true, false, 1500, showDistance = true)
-            assertEquals("bollard 약 2.3m 0.90", label())
-            assertNull(label(com.samin.objectdetection.model.DetectionSource.ML_KIT))
-            view.setDebugMode(OverlayDebugMode.SIMPLE)
-            val oldLabel = "bollard ${detection.riskLevel} 0.90"
-            assertEquals("bollard 약 2.3m ${detection.riskLevel} 0.90", label())
-            view.configure(true, true, true, true, false, 1500, showDistance = false)
-            assertEquals(oldLabel, label())
-            view.setDebugMode(OverlayDebugMode.NONE)
-            view.configure(true, true, true, false, false, 1500, showDistance = true)
-            for (invalid in listOf(null, 0f, -1f, Float.NaN, Float.POSITIVE_INFINITY)) {
-                assertNull(method.invoke(view, detection.copy(estimatedDistanceMeters = invalid), com.samin.objectdetection.model.DetectionSource.YOLO))
+            for ((index, distance) in listOf(null, 0f, -1f, Float.NaN, Float.POSITIVE_INFINITY, 2.3f).withIndex()) {
+                val detection = box.single().copy(label = "cardboard_box", confidence = .9f, estimatedDistanceMeters = distance)
+                val label = method.invoke(view, detection, com.samin.objectdetection.model.DetectionSource.YOLO) as String
+                assertEquals("cardboard_box ${detection.riskLevel} 0.90", label)
+                view.updateDetections(listOf(detection), 200, 200, 1, 1, trace(index.toLong() + 1))
+                assertTrue(hasPixels(view))
             }
         } finally { view.clearDetections() }
     }
-
-    @Test fun distancePayloadExpiresWithBoxAndVisibilityTogglesRequireFreshFrame() = instrumentation.runOnMainSync {
+    @Test fun boxExpiresWithoutDistanceAndVisibilityTogglesRequireFreshFrame() = instrumentation.runOnMainSync {
         val view = overlay()
         val withDistance = box.map { it.copy(estimatedDistanceMeters = 2.3f) }
         try {
-            view.configure(true, true, false, false, false, 1500, showDistance = true)
+            view.configure(true, true, false, false, false, 1500)
             view.updateDetections(withDistance, 200, 200, 1, 1, trace(1))
             assertTrue(hasPixels(view))
             view.updateDetections(withDistance, 200, 200, 1, 1, trace(2, 1600))
@@ -111,15 +48,15 @@ class BoundingBoxOverlayTest {
             assertFalse(hasPixels(view))
             view.updateDetections(withDistance, 200, 200, 1, 1, trace(4))
             assertTrue(hasPixels(view))
-            view.configure(true, false, false, false, false, 1500, showDistance = true)
+            view.configure(true, false, false, false, false, 1500)
             assertFalse(hasPixels(view))
         } finally { view.clearDetections() }
     }
 
-    @Test fun longDistanceLabelsStayInsideScreenAndAvoidEachOther() = instrumentation.runOnMainSync {
+    @Test fun longLabelsStayInsideScreenAndAvoidEachOther() = instrumentation.runOnMainSync {
         val view = overlay()
         try {
-            view.configure(true, true, false, true, false, 1500, showDistance = true)
+            view.configure(true, true, false, true, false, 1500)
             val boxes = listOf(DetectionResult("very long bollard label", .9f, 160f, 1f, 199f, 65f, estimatedDistanceMeters = 123.4f),
                 DetectionResult("person", .9f, 150f, 2f, 199f, 65f, estimatedDistanceMeters = 2.3f))
             view.updateDetections(boxes, 200, 200, 1, 1, trace(1))

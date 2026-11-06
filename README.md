@@ -8,8 +8,17 @@ Existing saved model selections are preserved; select **YOLO11s v2 · 12클래�
 YOLO settings to enable the new model on an existing 640 configuration.
 The exact previous 11-class model is selectable as `best_512_v1_11class.tflite`;
 `best.tflite` retains its nine-class contract. Class enable/disable and optional
-confidence overrides are in YOLO settings. Cat/dog/cardboard_box are displayed,
-counted and eligible for ARCore depth without enabling warning outputs.
+confidence overrides are in YOLO settings. Cat/dog/cardboard_box are displayed
+and counted without enabling warning outputs.
+
+CameraX is the only camera source. The pipeline retains ROI, Letterbox, YOLO,
+postprocessing and Overlay, with ML Kit using the same camera frames and ROI.
+Distance display is unavailable until external sensors are integrated; missing
+distances are logged as null. TinyF channel contracts are defined without UART
+implementation or automatic association to detection boxes.
+See [CameraX restoration report](docs/camerax-restoration-20261106.md) for removed
+features, verification results and device checks. Earlier ARCore reports remain
+historical records.
 See [v2 twelve-class migration and validation](docs/yolo-v2-twelve-class-migration-20261103.md),
 [eleven-class migration and validation](docs/yolo-eleven-class-migration-20261026.md)
 and the historical [nine-class migration](docs/yolo11s-nine-class-migration.md).

@@ -31,68 +31,6 @@ import android.view.accessibility.AccessibilityNodeInfo
 
 /** Preserves applied settings/presets; the preview integration test also starts real inference. */
 class SettingsActivityTest {
-    @Test fun depthAnalysisAndManualTruthAreOptionalAndPersistWithExistingSettings() {
-        seed(AppSettings()); launch(); openCategory("디버그 및 고급 설정")
-        field("Depth 분석 표시 (기본 OFF)").perform(scrollTo()).check(matches(not(isChecked())))
-        field("Depth 분석 표시 (기본 OFF)").perform(click())
-        field("실측 대상 클래스").perform(scrollTo(), replaceText("person"), closeSoftKeyboard())
-        field("실측 전방 Z (m)").perform(scrollTo(), replaceText("2"), closeSoftKeyboard())
-        recreate(); onView(withText("적용 및 저장")).perform(click())
-        val value = loadHealthy()
-        assertTrue(value.debug.depthAnalysisEnabled)
-        assertEquals(2f, value.debug.depthGroundTruthMeters!!, 0f)
-        assertEquals("person", value.debug.depthGroundTruthLabel)
-        assertFalse(value.overlay.showDistance)
-    }
-    @Test fun arCoreDistanceNeedsNoMountValuesAndRawSelectionSurvivesDraftAndApply() {
-        seed(AppSettings()); launch(); openCategory("디버그 및 고급 설정")
-        field("객체 거리 표시").perform(scrollTo(), click())
-        field("거리 추정 방식 (ARCORE_DEPTH=ARCore / GROUND_PLANE=지면)").check(matches(withSpinnerText("ARCORE_DEPTH")))
-        field("카메라 설치 높이 (cm)").perform(scrollTo()).check(matches(not(isEnabled())))
-        field("카메라 하향 각도 (°)").perform(scrollTo()).check(matches(not(isEnabled())))
-        field("ARCore Depth 입력 (RAW는 confidence 적용 후 FULL 보조)").perform(scrollTo(), click())
-        onData(`is`("RAW_WITH_FULL_FALLBACK")).perform(click())
-        recreate()
-        field("ARCore Depth 입력 (RAW는 confidence 적용 후 FULL 보조)").check(matches(withSpinnerText("RAW_WITH_FULL_FALLBACK")))
-        onView(withText("적용 및 저장")).perform(click())
-        val saved = loadHealthy()
-        assertTrue(saved.overlay.showDistance)
-        assertEquals(com.samin.objectdetection.distance.ObjectDistanceMethod.ARCORE_DEPTH, saved.overlay.distanceMethod)
-        assertEquals(com.samin.objectdetection.distance.DepthInputMode.RAW_WITH_FULL_FALLBACK, saved.overlay.depthInputMode)
-        assertNull(saved.distance.cameraHeightCm); assertNull(saved.distance.downwardPitchDegrees)
-    }
-    @Test fun distanceCalibrationValidatesPersistsAcrossRecreationAndRoundTripsCustomPreset() {
-        seed(AppSettings())
-        launch()
-        openCategory("디버그 및 고급 설정")
-        field("객체 거리 표시").perform(scrollTo(), click())
-        field("거리 추정 방식 (ARCORE_DEPTH=ARCore / GROUND_PLANE=지면)").perform(scrollTo(), click())
-        onData(`is`("GROUND_PLANE")).perform(click())
-        field("카메라 설치 높이 (cm)").perform(scrollTo(), replaceText("0"), closeSoftKeyboard())
-        field("카메라 하향 각도 (°)").perform(scrollTo(), replaceText("12.3"), closeSoftKeyboard())
-        onView(withText("적용 및 저장")).perform(click())
-        onView(withText("설정값 확인")).check(matches(isDisplayed()))
-        onView(withText("확인")).perform(click())
-        field("카메라 설치 높이 (cm)").perform(scrollTo(), replaceText("153.5"), closeSoftKeyboard())
-        field("거리 화각 설정").perform(scrollTo(), click())
-        onData(`is`("MANUAL")).perform(click())
-        field("수동 수직 화각 (°)").perform(scrollTo(), replaceText("60"), closeSoftKeyboard())
-        recreate()
-        field("카메라 설치 높이 (cm)").perform(scrollTo()).check(matches(withText("153.5")))
-        field("수동 수직 화각 (°)").perform(scrollTo()).check(matches(withText("60")))
-        onView(withText("적용 및 저장")).perform(click())
-        val saved = loadHealthy()
-        assertTrue(saved.overlay.showDistance)
-        assertEquals(com.samin.objectdetection.distance.DistanceSettings(153.5f, 12.3f,
-            com.samin.objectdetection.distance.DistanceOpticsMode.MANUAL, 60f), saved.distance)
-        assertEquals(AppSettings().toDetectionConfig(), saved.toDetectionConfig())
-        val store = AppSettingsStore(context)
-        store.saveCustomPreset("DISTANCE TEST", saved)
-        assertEquals(saved.distance, AppSettingsStore(context).loadCustomPreset("DISTANCE TEST")!!.distance)
-        launch(); openCategory("디버그 및 고급 설정")
-        field("객체 거리 표시").perform(scrollTo()).check(matches(isChecked()))
-        field("카메라 하향 각도 (°)").perform(scrollTo()).check(matches(withText("12.3")))
-    }
     @Test fun mlKitModeDraftApplyAndPresetPersistWithoutChangingIntervalRoiOrYolo() {
         val original = AppSettings()
         seed(original)
@@ -794,9 +732,7 @@ class SettingsActivityTest {
                 "Enable Detector Diagnostics", "ML Kit Diagnostics", "Debug Detection Logging", "Diagnostic Raw Confidence Threshold",
                 "Diagnostic Max Raw Candidates", "Debug Save Inference Input", "Debug Save Interval (ms)",
                 "Debug Save On Detection", "기존 호환 Debug Image", "Overlay", "Overlay Debug Mode", "YOLO bbox",
-                "ML Kit bbox", "Confidence 표시", "객체 거리 표시", "거리 추정 방식 (ARCORE_DEPTH=ARCore / GROUND_PLANE=지면)",
-                "ARCore Depth 입력 (RAW는 confidence 적용 후 FULL 보조)", "카메라 설치 높이 (cm)", "카메라 하향 각도 (°)",
-                "거리 화각 설정", "수동 수직 화각 (°)", "FPS 표시", "Overlay Stale Timeout (ms)"
+                "ML Kit bbox", "Confidence 표시", "FPS 표시", "Overlay Stale Timeout (ms)"
             )
         )
     }

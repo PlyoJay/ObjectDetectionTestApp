@@ -9,7 +9,7 @@ class DistanceSettingsTest {
     @Test fun settingsAndCustomPresetsRoundTripWithoutAlteringDetectorOrWarnings() {
         for (preset in SettingsPresets.builtInNames) for (mode in DistanceOpticsMode.entries) {
             val base = SettingsPresets.byName(preset)!!
-            val selected = base.copy(presetName = "CUSTOM DISTANCE", overlay = base.overlay.copy(showDistance = true),
+            val selected = base.copy(presetName = "CUSTOM DISTANCE",
                 distance = DistanceSettings(153.5f, 12.3f, mode, 61.5f))
             val decoded = AppSettingsCodec.decode(AppSettingsCodec.encode(selected))
             assertEquals(selected, decoded)
@@ -22,13 +22,11 @@ class DistanceSettingsTest {
     @Test fun everyOlderSchemaLeavesDistanceOffAndMountingUncalibrated() {
         for (version in 1..7) {
             val decoded = AppSettingsCodec.decode("schemaVersion=$version\npresetName=MY PRESET\nyolo.confidenceThreshold=0.37\ncamera.previewEnabled=false")
-            assertFalse(decoded.overlay.showDistance)
             assertEquals(DistanceSettings(), decoded.distance)
             assertEquals("MY PRESET", decoded.presetName)
             assertEquals(.37f, decoded.yolo.confidenceThreshold)
             assertFalse(decoded.camera.previewEnabled)
         }
-        assertTrue(AppSettings(overlay = OverlaySettings(showDistance = true)).validationErrors().isEmpty())
     }
 
     @Test fun calibrationRangesAndNonfiniteValuesAreRejected() {

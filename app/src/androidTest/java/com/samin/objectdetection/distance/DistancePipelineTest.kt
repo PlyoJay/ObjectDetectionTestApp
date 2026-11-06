@@ -17,17 +17,14 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class DistancePipelineTest {
-    @Test fun realRotationAndPipelineRestorationKeepDistanceAndWarningsAcrossBothModelsRoiAndResizeModes() {
+    @Test fun rotationsRoiAndModelClassesRestoreBoxesWithoutProducingDistance() {
         val raw = Bitmap.createBitmap(1280, 720, Bitmap.Config.ARGB_8888)
-        val mount = DistanceSettings(150f, 0f)
         try {
             for (rotation in listOf(0, 90, 180, 270)) {
                 val bitmap = raw.rotate(rotation.toFloat())
                 try {
-                    val geometry = AnalysisCameraGeometry(1280, 720, rotation,
-                        automaticIntrinsics = CameraIntrinsics(600f, 600f, 640f, 360f, "SYNTHETIC"))
-                    val k = geometry.intrinsics(mount)!!
-                    val desired = DetectionResult("bollard", .9f, k.cx - 20, k.cy - 30, k.cx + 20, k.cy + 120)
+                    val desired = DetectionResult("person", .95f, bitmap.width * .4f, bitmap.height * .4f,
+                        bitmap.width * .6f, bitmap.height * .6f)
                     for (model in YoloModel.entries) for (resize in YoloResizeMode.entries) for (roiMode in 0..2) {
                         val config = DetectionConfig(inputSize = model.inputSize, yoloResizeMode = resize,
                             recognitionRoi = RecognitionRoi.PRESET.copy(enabled = roiMode == 1),
@@ -39,46 +36,41 @@ class DistancePipelineTest {
                         val detector = object : ObjectDetector {
                             override fun detect(bitmap: Bitmap): List<DetectionResult> {
                                 assertEquals(roi.width, bitmap.width); assertEquals(roi.height, bitmap.height)
-                                return model.classLabels.map { label -> desired.copy(label = label,
+                                return model.classLabels.map { desired.copy(label = it,
                                     left = x(desired.left), top = y(desired.top), right = x(desired.right), bottom = y(desired.bottom)) }
                             }
                             override fun close() = Unit
                         }
-                        fun pipeline(settings: DistanceSettings) = DetectionPipeline(detector, config, ObjectMotionTracker(),
-                            { UserLocationSnapshot() }, distanceSettings = settings)
-                        val calibrated = pipeline(mount).process(bitmap, 1234, rotation, 1, geometry)
-                        val baseline = pipeline(DistanceSettings()).process(bitmap, 1234, rotation, 1, geometry)
-                        assertEquals(model.classLabels.size, calibrated.mappedDetections.size)
-                        for (detection in calibrated.mappedDetections) {
+                        val pipeline = DetectionPipeline(detector, config, ObjectMotionTracker(), { UserLocationSnapshot() })
+                        val result = pipeline.process(bitmap, 1234, rotation, 1)
+                        assertEquals(model.classLabels, result.mappedDetections.map { it.label })
+                        for (detection in result.mappedDetections) {
+                            assertEquals(desired.left, detection.left, .001f)
                             assertEquals(desired.bottom, detection.bottom, .001f)
-                            assertEquals(7.5f, detection.estimatedDistanceMeters!!, .001f)
+                            assertEquals(.95f, detection.confidence)
+                            assertNull(detection.estimatedDistanceMeters)
+                            assertNull(detection.distanceEstimation)
                         }
-                        fun strip(d: DetectionResult) = d.copy(estimatedDistanceMeters = null, distanceEstimation = null)
-                        assertEquals(baseline.overlayDetections.map(::strip), calibrated.overlayDetections.map(::strip))
-                        assertEquals(baseline.warningDetections.map(::strip), calibrated.warningDetections.map(::strip))
-                        assertEquals(baseline.stageCounts, calibrated.stageCounts)
+                        assertTrue(result.overlayDetections.isNotEmpty())
                     }
                 } finally { if (bitmap !== raw) bitmap.recycle() }
             }
         } finally { raw.recycle() }
     }
 
-    @Test fun clippedOrUncalibratedDistanceDoesNotRemoveAnOtherwiseValidDetection() {
+    @Test fun missingDistanceDoesNotSuppressBoxOrExistingVisualWarning() {
         val bitmap = Bitmap.createBitmap(1280, 720, Bitmap.Config.ARGB_8888)
         val detector = object : ObjectDetector {
-            override fun detect(bitmap: Bitmap) = listOf(DetectionResult("person", .95f, 500f, 400f, 700f, 720f))
+            override fun detect(bitmap: Bitmap) = listOf(DetectionResult("person", .95f, 400f, 200f, 850f, 710f))
             override fun close() = Unit
         }
         try {
-            val geometry = AnalysisCameraGeometry(1280, 720, 0, automaticIntrinsics = CameraIntrinsics(600f, 600f, 640f, 360f, "TEST"))
-            val pipeline = DetectionPipeline(detector, DetectionConfig(bollardGeometryFilterEnabled = false),
-                ObjectMotionTracker(), { UserLocationSnapshot() }, distanceSettings = DistanceSettings(150f, 0f))
-            val result = pipeline.process(bitmap, 1234, 0, 1, geometry)
-            assertEquals("CONTACT_CLIPPED", result.mappedDetections.single().distanceEstimation!!.status)
+            val result = DetectionPipeline(detector, DetectionConfig(bollardGeometryFilterEnabled = false),
+                ObjectMotionTracker(), { UserLocationSnapshot() }).process(bitmap, 1234, 0, 1)
             assertEquals(1, result.overlayDetections.size)
             assertNull(result.overlayDetections.single().estimatedDistanceMeters)
-            val mismatched = pipeline.process(bitmap, 1235, 0, 2, geometry.copy(bufferWidth = 720, bufferHeight = 1280))
-            assertNull(mismatched.mappedDetections.single().estimatedDistanceMeters)
+            assertTrue(result.warningDetections.isNotEmpty())
+            assertTrue(result.mappedDetections.single().warningFeedback.shouldNotify)
         } finally { bitmap.recycle() }
     }
 }

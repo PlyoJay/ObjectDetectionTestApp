@@ -27,13 +27,10 @@ class MainScreenView(
     onOpenQuickSettings: () -> Unit,
     private val cameraPreviewEnabled: Boolean = true,
     onToggleMlKitLogging: () -> Unit = {},
-    onShareMlKitLog: () -> Unit = {},
-    onOpenArCore: () -> Unit = {},
-    onOpenArCoreYolo: () -> Unit = {}
+    onShareMlKitLog: () -> Unit = {}
 ) {
     val previewView = PreviewView(activity).apply { scaleType = PreviewView.ScaleType.FIT_CENTER }
     private val viewport: FrameLayout
-    private var arSurface: View? = null
     val overlayView = BoundingBoxOverlay(activity).apply { setDebugMode(debugMode) }
     val debugTextView = TextView(activity).apply {
         text = "대기 중"
@@ -82,9 +79,6 @@ class MainScreenView(
         setTextColor(Color.DKGRAY)
         setPadding(12, 0, 12, 4)
     }
-    val cameraBackendStatus = TextView(activity).apply {
-        textSize = 12f; setTextColor(Color.DKGRAY); setPadding(12, 4, 12, 4); visibility = View.GONE
-    }
     val presetTextView = TextView(activity).apply {
         visibility = if (cameraPreviewEnabled) View.VISIBLE else View.GONE
         text = "Preset: $presetName" + (if (outputTestMode) "  •  TEST OUTPUT" else "") + "\n$modelDescription"
@@ -102,14 +96,6 @@ class MainScreenView(
         visibility = if (cameraPreviewEnabled) View.GONE else View.VISIBLE
     }
     val root: View
-    val arCoreButton = Button(activity).apply {
-        text = "ARCore 거리 측정"
-        setOnClickListener { onOpenArCore() }
-    }
-    val arCoreYoloButton = Button(activity).apply {
-        text = "YOLO + ARCore 거리 표시"
-        setOnClickListener { onOpenArCoreYolo() }
-    }
     private val measurementControls = mutableListOf<View>()
 
     fun setMeasurementLocked(locked: Boolean) {
@@ -168,24 +154,11 @@ class MainScreenView(
             addView(controlRow)
             addView(performanceRow)
             addView(performanceRecordingTextView)
-            val advanced = LinearLayout(activity).apply {
-                addButton(arCoreButton); addButton(arCoreYoloButton)
-                visibility = View.GONE
-            }
-            addView(Button(activity).apply {
-                text = "고급 ARCore 검증 도구"; textSize = 12f
-                setOnClickListener { advanced.visibility = if (advanced.visibility == View.GONE) View.VISIBLE else View.GONE }
-                measurementControls.add(this)
-            })
-            addView(advanced)
-            addView(cameraBackendStatus)
             addView(mlKitRow)
             addView(mlKitRecordingTextView)
             setPadding(dp(activity, 8), dp(activity, 4), dp(activity, 8), dp(activity, 4))
         }
         measurementControls.addAll(listOf(mlKitLogButton, mlKitShareButton))
-        measurementControls.add(arCoreButton)
-        measurementControls.add(arCoreYoloButton)
         val debugParams = fullWidthAt(Gravity.TOP, 20, 40, 20, 0)
         val presetParams = wrapAt(Gravity.TOP or Gravity.START, 20, 20, 20, 0)
         val settingsParams = wrapAt(Gravity.TOP or Gravity.END, 20, 12, 20, 0)
@@ -237,23 +210,6 @@ class MainScreenView(
         if (cameraPreviewEnabled) return
         val message = "화면 표시 OFF — $status"
         if (previewStatusTextView.text.toString() != message) previewStatusTextView.text = message
-    }
-
-    fun attachArCoreSurface(surface: View) {
-        arSurface?.let(viewport::removeView)
-        arSurface = surface
-        viewport.addView(surface, 0, FrameLayout.LayoutParams(-1, -1))
-        previewView.visibility = View.GONE
-    }
-
-    fun restoreCameraXPreview() {
-        arSurface?.let(viewport::removeView); arSurface = null
-        previewView.visibility = if (cameraPreviewEnabled) View.VISIBLE else View.GONE
-    }
-
-    fun updateCameraBackendStatus(message: String) {
-        cameraBackendStatus.text = message
-        cameraBackendStatus.visibility = if (message.isEmpty()) View.GONE else View.VISIBLE
     }
 
     private fun fullWidthAt(gravity: Int, left: Int, top: Int, right: Int, bottom: Int) =

@@ -14,8 +14,6 @@ import java.io.StringWriter
 import java.util.Properties
 import com.samin.objectdetection.distance.DistanceSettings
 import com.samin.objectdetection.distance.DistanceOpticsMode
-import com.samin.objectdetection.distance.ObjectDistanceMethod
-import com.samin.objectdetection.distance.DepthInputMode
 
 class AppSettingsStore(context: Context) {
     private val preferences = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
@@ -179,9 +177,6 @@ object AppSettingsCodec {
             put("warning.enableActualBeep", enableActualBeep); put("warning.enableActualTts", enableActualTts)
         }
         with(value.overlay) {
-            put("overlay.showDistance", showDistance)
-            put("overlay.distanceMethod", distanceMethod.name)
-            put("overlay.depthInputMode", depthInputMode.name)
             put("overlay.enabled", enabled); put("overlay.debugMode", debugMode.name)
             put("overlay.showYoloBoxes", showYoloBoxes); put("overlay.showMlKitBoxes", showMlKitBoxes)
             put("overlay.showConfidence", showConfidence); put("overlay.showFps", showFps)
@@ -212,9 +207,6 @@ object AppSettingsCodec {
             put("debug.debugSaveOnDetection", debugSaveOnDetection)
             put("debug.legacyDebugImageEnabled", legacyDebugImageEnabled)
             put("debug.enableMlKitDiagnostics", enableMlKitDiagnostics)
-            put("debug.depthAnalysisEnabled", depthAnalysisEnabled)
-            depthGroundTruthMeters?.let { put("debug.depthGroundTruthMeters", it) }
-            put("debug.depthGroundTruthLabel", depthGroundTruthLabel)
         }
         return StringWriter().also { p.store(it, "ObjectDetection AppSettings") }.toString()
     }
@@ -296,10 +288,7 @@ object AppSettingsCodec {
                 b("overlay.enabled", d.overlay.enabled), overlayMode("overlay.debugMode", d.overlay.debugMode),
                 b("overlay.showYoloBoxes", d.overlay.showYoloBoxes), b("overlay.showMlKitBoxes", d.overlay.showMlKitBoxes),
                 b("overlay.showConfidence", d.overlay.showConfidence), b("overlay.showFps", d.overlay.showFps),
-                l("overlay.staleTimeoutMs", d.overlay.staleTimeoutMs), b("overlay.showDistance", false),
-                ObjectDistanceMethod.entries.firstOrNull { it.name == s("overlay.distanceMethod", "") }
-                    ?: if (storedVersion < 9 && b("overlay.showDistance", false)) ObjectDistanceMethod.GROUND_PLANE else ObjectDistanceMethod.ARCORE_DEPTH,
-                DepthInputMode.entries.firstOrNull { it.name == s("overlay.depthInputMode", "FULL") } ?: DepthInputMode.FULL
+                l("overlay.staleTimeoutMs", d.overlay.staleTimeoutMs)
             ),
             distance = DistanceSettings(
                 optionalFloat("distance.cameraHeightCm"), optionalFloat("distance.downwardPitchDegrees"),
@@ -325,8 +314,7 @@ object AppSettingsCodec {
                 l("debug.debugSaveIntervalMs", d.debug.debugSaveIntervalMs),
                 b("debug.debugSaveOnDetection", d.debug.debugSaveOnDetection),
                 b("debug.legacyDebugImageEnabled", d.debug.legacyDebugImageEnabled),
-                b("debug.enableMlKitDiagnostics", d.debug.enableMlKitDiagnostics),
-                b("debug.depthAnalysisEnabled", false), optionalFloat("debug.depthGroundTruthMeters"), s("debug.depthGroundTruthLabel", "")
+                b("debug.enableMlKitDiagnostics", d.debug.enableMlKitDiagnostics)
             )
         )
         // Only an unchanged v1 DEFAULT can be identified safely as the former default.

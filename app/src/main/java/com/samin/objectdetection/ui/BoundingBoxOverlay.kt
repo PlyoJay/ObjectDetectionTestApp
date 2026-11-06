@@ -22,7 +22,6 @@ import android.os.SystemClock
 import com.samin.objectdetection.metrics.FrameTrace
 import com.samin.objectdetection.camera.FrameRoi
 import com.samin.objectdetection.mlkit.MlKitDiagnostics
-import com.samin.objectdetection.distance.ViewportProjection
 
 class BoundingBoxOverlay @JvmOverloads constructor(
     context: Context,
@@ -42,26 +41,18 @@ class BoundingBoxOverlay @JvmOverloads constructor(
     private var recognitionRegion: FrameRoi? = null
     private var recognitionWidth = 1
     private var recognitionHeight = 1
-    private var recognitionProjection: ViewportProjection? = null
-    private var yoloProjection: ViewportProjection? = null
-    private var mlKitProjection: ViewportProjection? = null
     private val regionPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.GREEN; style = Paint.Style.STROKE; strokeWidth = 3f
     }
 
-    fun updateRecognitionRegion(frameWidth: Int, frameHeight: Int, roi: FrameRoi, show: Boolean, projection: ViewportProjection? = null) {
+    fun updateRecognitionRegion(frameWidth: Int, frameHeight: Int, roi: FrameRoi, show: Boolean) {
         recognitionWidth = frameWidth; recognitionHeight = frameHeight
-        recognitionProjection = projection
         recognitionRegion = roi.takeIf { show }
         postInvalidateOnAnimation()
     }
     private var showYoloBoxes = true
     private var showMlKitBoxes = true
     private var showConfidence = false
-    private var showDistance = false
-    private var depthAnalysisEnabled = false
-    fun setDepthAnalysisEnabled(value: Boolean) { depthAnalysisEnabled = value; postInvalidateOnAnimation() }
-    private val depthPointPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
     private val labelBounds = mutableListOf<RectF>()
     private var showFps = false
     private var staleTimeoutMs = DEFAULT_MAX_OVERLAY_AGE_MS
@@ -118,15 +109,13 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         fps: Int,
         trace: FrameTrace,
         analyzerFps: Double = fps.toDouble(),
-        inferenceFps: Double = fps.toDouble(),
-        projection: ViewportProjection? = null
+        inferenceFps: Double = fps.toDouble()
     ) {
         val nowNs = SystemClock.elapsedRealtimeNanos()
         val previous = yoloState.frame
         val decision = yoloState.update(detections, frameWidth, frameHeight, trace, nowNs)
         logUpdate(DetectionSource.YOLO, trace, nowNs, decision)
         if (decision == OverlayFrameState.Update.OUT_OF_ORDER) return
-        yoloProjection = projection
         if (previous != null && previous.trace.frameId != drawnFrameId) {
             diagnosticLog?.invoke("[OVERLAY_SKIPPED] source=YOLO frame=${previous.trace.frameId} reason=REPLACED_BEFORE_DRAW")
         }
@@ -144,8 +133,7 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         detections: List<DetectionResult>,
         frameWidth: Int,
         frameHeight: Int,
-        trace: FrameTrace,
-        projection: ViewportProjection? = null
+        trace: FrameTrace
     ) {
         val nowNs = SystemClock.elapsedRealtimeNanos()
         val decision = mlKitState.update(detections, frameWidth, frameHeight, trace, nowNs)
@@ -158,7 +146,6 @@ class BoundingBoxOverlay @JvmOverloads constructor(
                 "visibility=$visibility shown=$isShown attached=$isAttachedToWindow windowVisibility=$windowVisibility"
         }
         if (decision == OverlayFrameState.Update.OUT_OF_ORDER) return
-        mlKitProjection = projection
         if (debugMode == OverlayDebugMode.FULL) logDetectionDetails(detections, DetectionSource.ML_KIT)
         expireAndSchedule(mlKitState, DetectionSource.ML_KIT, clearMlKitRunnable)
         postInvalidateOnAnimation()
@@ -186,14 +173,12 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         showMlKitBoxes: Boolean,
         showConfidence: Boolean,
         showFps: Boolean,
-        staleTimeoutMs: Long,
-        showDistance: Boolean = false
+        staleTimeoutMs: Long
     ) {
         this.enabled = enabled
         this.showYoloBoxes = showYoloBoxes
         this.showMlKitBoxes = showMlKitBoxes
         this.showConfidence = showConfidence
-        this.showDistance = showDistance
         this.showFps = showFps
         this.staleTimeoutMs = staleTimeoutMs.coerceIn(100L, 60_000L)
         configureStates()
@@ -205,7 +190,7 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         labelBounds.clear()
         // Recognition guide is independent of bbox visibility and detector result expiry.
         recognitionRegion?.let { roi ->
-            val transform = calculateFitCenterTransform(recognitionWidth, recognitionHeight, width, height, recognitionProjection)
+            val transform = calculateFitCenterTransform(recognitionWidth, recognitionHeight, width, height)
             canvas.drawRect(transform.offsetX + roi.left * transform.scale, transform.offsetY + roi.top * transform.scaleY,
                 transform.offsetX + roi.right * transform.scale, transform.offsetY + roi.bottom * transform.scaleY, regionPaint)
         }
@@ -229,8 +214,8 @@ class BoundingBoxOverlay @JvmOverloads constructor(
 
         val yoloFrame = yoloState.frame
         val mlKitFrame = mlKitState.frame
-        val transform = calculateFitCenterTransform(yoloFrame?.width ?: 1, yoloFrame?.height ?: 1, width, height, yoloProjection)
-        val mlKitTransform = calculateFitCenterTransform(mlKitFrame?.width ?: 1, mlKitFrame?.height ?: 1, width, height, mlKitProjection)
+        val transform = calculateFitCenterTransform(yoloFrame?.width ?: 1, yoloFrame?.height ?: 1, width, height)
+        val mlKitTransform = calculateFitCenterTransform(mlKitFrame?.width ?: 1, mlKitFrame?.height ?: 1, width, height)
         val freshDetections = yoloFrame?.value.orEmpty()
         val freshMlKitDetections = mlKitFrame?.value.orEmpty()
         if (yoloFrame != null && loggedYoloDraw != yoloFrame.trace.frameId) {
@@ -279,17 +264,6 @@ class BoundingBoxOverlay @JvmOverloads constructor(
             }
 
             canvas.drawRoundRect(left, top, right, bottom, 20f, 20f, boxPaint)
-            if (depthAnalysisEnabled) res.depthEstimation?.analysis?.points?.forEach { p ->
-                depthPointPaint.color = when {
-                    !p.valid -> Color.RED
-                    p.role == "SELECTED" -> Color.GREEN
-                    p.role == "BACKGROUND" -> Color.CYAN
-                    else -> Color.YELLOW
-                }
-                val x = p.viewX?.times(width) ?: (transform.offsetX + p.x * transform.scale)
-                val y = p.viewY?.times(height) ?: (transform.offsetY + p.y * transform.scaleY)
-                if (x in 0f..width.toFloat() && y in 0f..height.toFloat()) canvas.drawCircle(x, y, 4f, depthPointPaint)
-            }
             drawLabelIfNeeded(canvas, res, DetectionSource.YOLO, left, top, bottom)
         }
 
@@ -330,7 +304,7 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         val textWidth = kotlin.math.ceil(labelPaint.measureText(label).toDouble()).toInt().coerceIn(1, maxTextWidth)
         val layout = StaticLayout.Builder.obtain(label, 0, label.length, labelPaint, textWidth)
             .setAlignment(Layout.Alignment.ALIGN_NORMAL).setIncludePad(false)
-            .setMaxLines(if (depthAnalysisEnabled && detection.depthEstimation != null) 8 else 4).setEllipsize(TextUtils.TruncateAt.END).build()
+            .setMaxLines(4).setEllipsize(TextUtils.TruncateAt.END).build()
         val labelWidth = textWidth + LABEL_HORIZONTAL_PADDING_PX
         val labelHeight = layout.height + 12f
         if (labelHeight > height) return
@@ -353,9 +327,6 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         detection: DetectionResult,
         source: DetectionSource
     ): String? {
-        val distance = detection.estimatedDistanceMeters?.takeIf { it.isFinite() && it > 0f }
-            ?.takeIf { showDistance && source == DetectionSource.YOLO }
-            ?.takeIf { detection.depthEstimation?.isFresh(SystemClock.elapsedRealtimeNanos()) != false }
         val base = when (debugMode) {
             OverlayDebugMode.NONE -> null
             OverlayDebugMode.SIMPLE -> {
@@ -368,24 +339,7 @@ class BoundingBoxOverlay @JvmOverloads constructor(
             }
             OverlayDebugMode.FULL -> buildFullDebugLabel(detection, source)
         }
-        fun debugSuffix(label: String?): String? {
-            val d = detection.depthEstimation
-            if (!depthAnalysisEnabled || source != DetectionSource.YOLO || d == null) return label
-            fun meters(value: Float?) = value?.let { String.format(Locale.US, "%.2f", it) } ?: "null"
-            val a = d.analysis
-            return (label?.substringBefore('\n') ?: detection.label) + "\n${d.method ?: "NONE"} n=${d.sampleCount} raw=${meters(d.rawMeters)} Z=${meters(d.meters)}" +
-                "\n${d.status} / ${d.filterStatus}" +
-                "\nFULL=${meters(a?.full?.meters)} RAW=${meters(a?.raw?.meters)} ${a?.selectionReason.orEmpty()}" +
-                (a?.maxMappingErrorPixels?.let { "\nmapΔ=${String.format(Locale.US, "%.3f", it)}px" } ?: "") +
-                (d.groundTruthMeters?.let { " GT=${meters(it)}m" } ?: "") +
-                (label?.takeIf { it.contains('\n') }?.let { "\n" + it.substringAfter('\n') } ?: "")
-        }
-        if (distance == null) return debugSuffix(base)
-        val distanceText = if (distance < .05f) "0.1m 미만" else "${String.format(Locale.US, "%.1f", distance)}m"
-        val distanceLabel = "${detection.label} 약 $distanceText"
-        return debugSuffix(if (base == null) distanceLabel +
-            (if (showConfidence) " ${String.format(Locale.US, "%.2f", detection.confidence)}" else "")
-        else distanceLabel + base.removePrefix(detection.label))
+        return base
     }
 
     private fun buildFullDebugLabel(
@@ -444,13 +398,8 @@ class BoundingBoxOverlay @JvmOverloads constructor(
         frameWidth: Int,
         frameHeight: Int,
         viewWidth: Int,
-        viewHeight: Int,
-        projection: ViewportProjection? = null
+        viewHeight: Int
     ): PreviewTransform {
-        if (projection != null) return PreviewTransform(
-            projection.scaleX * viewWidth / frameWidth.coerceAtLeast(1), projection.offsetX * viewWidth,
-            projection.offsetY * viewHeight, projection.scaleX * viewWidth, projection.scaleY * viewHeight,
-            projection.scaleY * viewHeight / frameHeight.coerceAtLeast(1))
         val safeFrameWidth = frameWidth.coerceAtLeast(1)
         val safeFrameHeight = frameHeight.coerceAtLeast(1)
         val safeViewWidth = viewWidth.coerceAtLeast(1)
@@ -510,7 +459,7 @@ class BoundingBoxOverlay @JvmOverloads constructor(
 
     private fun clearYoloIfStale() {
         expireAndSchedule(yoloState, DetectionSource.YOLO, clearYoloRunnable)
-        postInvalidateOnAnimation() // A Depth deadline may precede the BBox deadline.
+        postInvalidateOnAnimation()
     }
 
     private fun clearMlKitIfStale(): Unit = expireAndSchedule(mlKitState, DetectionSource.ML_KIT, clearMlKitRunnable)
@@ -531,10 +480,7 @@ class BoundingBoxOverlay @JvmOverloads constructor(
             postInvalidateOnAnimation()
         }
         state.remainingDelayMs(nowNs)?.let { boxDelay ->
-            val depthDelay = if (source == DetectionSource.YOLO) state.frame?.value.orEmpty().mapNotNull { it.depthEstimation }
-                .filter { it.meters != null && it.expiresElapsedNs > nowNs }
-                .minOfOrNull { (it.expiresElapsedNs - nowNs + 999_999) / 1_000_000 } else null
-            postDelayed(timer, minOf(boxDelay, depthDelay ?: boxDelay).coerceAtLeast(1L))
+            postDelayed(timer, boxDelay.coerceAtLeast(1L))
         }
     }
 
@@ -565,7 +511,6 @@ class BoundingBoxOverlay @JvmOverloads constructor(
     fun clearDetections() {
         mlKitState.frame?.let { frame -> mlKitDiagnostics?.event(frame.trace.frameId, "OVERLAY_CLEARED") { "reason=RESET" } }
         recognitionRegion = null
-        recognitionProjection = null; yoloProjection = null; mlKitProjection = null
         removeCallbacks(clearYoloRunnable)
         removeCallbacks(clearMlKitRunnable)
         val nowNs = SystemClock.elapsedRealtimeNanos()

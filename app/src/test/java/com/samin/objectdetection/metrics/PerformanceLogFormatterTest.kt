@@ -84,7 +84,7 @@ class PerformanceLogFormatterTest {
                 warningDetectionCount = 1,
                 fps = 8, analyzerFps = 12.5, inferenceFps = 8.25,
                 trace = FrameTrace("test-session", 42, 1000, 0, false, 1000, 100,
-                    completedAtMs = 1100, completedElapsedNs = 200, cameraBackend = "ARCORE"),
+                    completedAtMs = 1100, completedElapsedNs = 200, cameraBackend = "CAMERAX"),
                 totalProcessingMs = 117,
                 cameraToBitmapNs = 1_125_000, rotationNs = 0, rotationDegrees = 90,
                 inputBufferMs = 10, getPixelsNs = 300_000, rgbWriteNs = 1_900_000,
@@ -106,7 +106,7 @@ class PerformanceLogFormatterTest {
         assertTrue(!Regex("\\brotation=").containsMatchIn(text))
         val keys = Regex("(?:^|[ |])(\\w+)=").findAll(text).map { it.groupValues[1] }.toList()
         assertTrue(keys.size == keys.distinct().size)
-        assertTrue(text.contains("cameraBackend=ARCORE"))
+        assertTrue(text.contains("cameraBackend=CAMERAX"))
         assertTrue(text.contains("inputBuffer=10ms | getPixels=0.300ms | rgbWrite=1.900ms"))
         assertTrue(text.contains("nativeInvoke=85.100ms"))
         assertTrue(text.contains("mlKitPrepare=0.025ms | mlKitInFlight=true"))

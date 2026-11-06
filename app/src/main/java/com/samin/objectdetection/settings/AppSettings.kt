@@ -11,10 +11,8 @@ import com.samin.objectdetection.detector.YoloClassOptions
 import com.samin.objectdetection.mlkit.MlKitDetectionMode
 import com.samin.objectdetection.ui.OverlayDebugMode
 import com.samin.objectdetection.distance.DistanceSettings
-import com.samin.objectdetection.distance.ObjectDistanceMethod
-import com.samin.objectdetection.distance.DepthInputMode
 
-const val APP_SETTINGS_SCHEMA_VERSION = 11
+const val APP_SETTINGS_SCHEMA_VERSION = 12
 
 data class CameraSettings(
     val detectIntervalMs: Long = 0L,
@@ -86,10 +84,7 @@ data class OverlaySettings(
     val showFps: Boolean = false,
     // Maximum frame age for drawing (capture time, or analyzer reception when capture is unreliable).
     // Each detector has its own deadline; this setting does not change warning/output lifetimes.
-    val staleTimeoutMs: Long = 1_500L,
-    val showDistance: Boolean = false,
-    val distanceMethod: ObjectDistanceMethod = ObjectDistanceMethod.ARCORE_DEPTH,
-    val depthInputMode: DepthInputMode = DepthInputMode.FULL
+    val staleTimeoutMs: Long = 1_500L
 )
 
 data class MlKitSettings(
@@ -107,10 +102,7 @@ data class DebugSettings(
     val debugSaveIntervalMs: Long = 2_000L,
     val debugSaveOnDetection: Boolean = false,
     val legacyDebugImageEnabled: Boolean = false,
-    val enableMlKitDiagnostics: Boolean = false,
-    val depthAnalysisEnabled: Boolean = false,
-    val depthGroundTruthMeters: Float? = null,
-    val depthGroundTruthLabel: String = ""
+    val enableMlKitDiagnostics: Boolean = false
 )
 
 /** Independent of detector debug/PNG settings; active only during Performance Log recording. */
@@ -133,14 +125,11 @@ data class AppSettings(
     val mlKit: MlKitSettings = MlKitSettings(),
     val debug: DebugSettings = DebugSettings(),
     val performanceLog: PerformanceLogSettings = PerformanceLogSettings(),
+    // Preserve historical non-AR calibration in presets only; the camera pipeline does not use it.
     val distance: DistanceSettings = DistanceSettings()
 ) {
     fun validationErrors(): List<String> = buildList {
         addAll(distance.validationErrors())
-        if (debug.depthGroundTruthMeters != null && (!debug.depthGroundTruthMeters.isFinite() || debug.depthGroundTruthMeters <= 0 ||
-                debug.depthGroundTruthLabel.isBlank())) add("실측 Z는 0보다 큰 유한한 값과 대상 클래스가 필요합니다.")
-        if (debug.depthGroundTruthMeters != null && debug.depthGroundTruthLabel.trim().lowercase() !in yolo.model.classLabels)
-            add("실측 대상 클래스는 선택한 YOLO 모델의 클래스 이름을 입력하세요.")
         addAll(camera.recognitionRoi.validationErrors())
         if (performanceLog.durationMinutes !in PerformanceTestWindow.ALLOWED_MINUTES) add("성능 측정 시간은 3분, 5분, 10분 중 선택하세요.")
         if (camera.recognitionRoi.enabled && camera.useCenterSquareCrop) add("영역 크롭과 중앙 정방형 ROI는 동시에 사용할 수 없습니다.")
