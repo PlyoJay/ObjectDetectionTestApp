@@ -293,7 +293,8 @@ class MainActivity : ComponentActivity() {
             warningCooldownManager = warningCooldownManager,
             enableActualVibration = { appSettings.warning.enableActualVibration },
             enableActualBeep = { appSettings.warning.enableActualBeep },
-            enableActualTts = { appSettings.warning.enableActualTts }
+            enableActualTts = { appSettings.warning.enableActualTts },
+            enableDiagnostics = detectionConfig.enableDetectorDiagnostics
         )
         logWarningPolicyOverlayMismatch()
 
@@ -812,21 +813,23 @@ class MainActivity : ComponentActivity() {
         val beepExecuted = outputResult.beepExecuted
         val ttsExecuted = outputResult.ttsExecuted
         val ttsSkippedReason = outputResult.skippedReason
-        Log.d(
-            VIBRATION_OUTPUT_TAG,
-            "label=${selectedCandidate?.label ?: "none"} vibration=${selectedCandidate?.feedback?.vibrationLevel ?: FeedbackLevel.NONE} " +
-                "executed=$vibrationExecuted cooldown=$selectedCooldownPassed enabled=${appSettings.warning.enableActualVibration}"
-        )
-        Log.d(
-            BEEP_OUTPUT_TAG,
-            "label=${selectedCandidate?.label ?: "none"} beep=${selectedCandidate?.feedback?.beepLevel ?: FeedbackLevel.NONE} " +
-                "executed=$beepExecuted cooldown=$selectedCooldownPassed enabled=${appSettings.warning.enableActualBeep}"
-        )
-        Log.d(
-            TTS_OUTPUT_TAG,
-            "label=${selectedCandidate?.label ?: "none"} voice=${selectedCandidate?.feedback?.voiceLevel ?: FeedbackLevel.NONE} " +
-                "executed=$ttsExecuted skippedReason=${ttsSkippedReason ?: "none"} cooldown=$selectedCooldownPassed enabled=${appSettings.warning.enableActualTts}"
-        )
+        if (detectionConfig.enableDetectorDiagnostics) {
+            Log.d(
+                VIBRATION_OUTPUT_TAG,
+                "label=${selectedCandidate?.label ?: "none"} vibration=${selectedCandidate?.feedback?.vibrationLevel ?: FeedbackLevel.NONE} " +
+                    "executed=$vibrationExecuted cooldown=$selectedCooldownPassed enabled=${appSettings.warning.enableActualVibration}"
+            )
+            Log.d(
+                BEEP_OUTPUT_TAG,
+                "label=${selectedCandidate?.label ?: "none"} beep=${selectedCandidate?.feedback?.beepLevel ?: FeedbackLevel.NONE} " +
+                    "executed=$beepExecuted cooldown=$selectedCooldownPassed enabled=${appSettings.warning.enableActualBeep}"
+            )
+            Log.d(
+                TTS_OUTPUT_TAG,
+                "label=${selectedCandidate?.label ?: "none"} voice=${selectedCandidate?.feedback?.voiceLevel ?: FeedbackLevel.NONE} " +
+                    "executed=$ttsExecuted skippedReason=${ttsSkippedReason ?: "none"} cooldown=$selectedCooldownPassed enabled=${appSettings.warning.enableActualTts}"
+            )
+        }
         val crowdCooldownPassed = selectedCandidate?.warningKey == crowdDecision.warningKey && selectedCooldownPassed
         logCrowdDecision(crowdDecision, crowdCooldownPassed)
         logSelectedWarningCandidate(selectedCandidate, selectedCooldownPassed, vibrationExecuted, beepExecuted, ttsExecuted)
@@ -857,7 +860,7 @@ class MainActivity : ComponentActivity() {
             overlayDetections.firstOrNull { it.label == candidate.label }?.riskObjectCategory
         }
         metricsCollector.recordWarning(feedbackRiskLevel)
-        Log.d(
+        if (detectionConfig.enableDetectorDiagnostics) Log.d(
             WARNING_FEEDBACK_TAG,
                 "selectedCandidate label=$feedbackLabel priority=$feedbackPriority proximityLevel=$feedbackProximityLevel " +
                 "riskLevel=$feedbackRiskLevel message=$feedbackMessage beepLevel=$feedbackBeepLevel " +
@@ -1404,6 +1407,7 @@ class MainActivity : ComponentActivity() {
         beepExecuted: Boolean,
         ttsExecuted: Boolean
     ) {
+        if (!detectionConfig.enableDetectorDiagnostics) return
         if (candidate == null) {
             Log.d(WARNING_SELECTED_TAG, "[WarningSelected] none")
             return
@@ -1440,6 +1444,7 @@ class MainActivity : ComponentActivity() {
         ttsExecuted: Boolean,
         ttsSkippedReason: String?
     ) {
+        if (!detectionConfig.enableDetectorDiagnostics) return
         if (candidate == null) {
             Log.d(WARNING_OUTPUT_TAG, "[WarningOutput] none")
             return
@@ -1472,6 +1477,7 @@ class MainActivity : ComponentActivity() {
         crowdDecision: CrowdDecision,
         cooldownPassed: Boolean
     ) {
+        if (!detectionConfig.enableDetectorDiagnostics) return
         Log.d(
             CROWD_DECISION_TAG,
             "[CrowdDecision] " +

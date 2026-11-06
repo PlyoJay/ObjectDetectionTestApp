@@ -98,6 +98,46 @@ class DetectorPreprocessingRegressionTest {
         } finally { detector.close(); source.recycle() }
     }
 
+    @Test fun diagnosticsTogglePreservesRawTensorBoxesAndCaptureCoordinates() {
+        val source = context.assets.open("self_test/known.png").use { requireNotNull(BitmapFactory.decodeStream(it)) }
+        try {
+            for (model in YoloModel.entries) {
+                val detector = VisionStyleYoloDetector(context, model.assetName,
+                    confidenceThreshold = 0.2f, nmsThreshold = 0.45f)
+                try {
+                    fun output(): ByteArray = (field(detector, "outputBuffer") as ByteBuffer).duplicate()
+                        .apply { rewind() }.let { buffer -> ByteArray(buffer.remaining()).also { buffer.get(it) } }
+                    val expected = detector.detect(source).map { it.copy(frameTimestampMs = 0) }
+                    assertTrue("Positive image for $model", expected.isNotEmpty())
+                    val raw = output()
+                    val baseline = checkNotNull(detector.frameDiagnostics())
+                    assertNotNull(baseline.rawCoordinateMin)
+                    assertNotNull(baseline.rawCoordinateMax)
+                    for (diagnostics in listOf(true, false)) {
+                        detector.enableDiagnostics = diagnostics
+                        val actual = detector.detect(source).map { it.copy(frameTimestampMs = 0) }
+                        val stats = checkNotNull(detector.frameDiagnostics())
+                        assertEquals("Detections $model diagnostics=$diagnostics", expected, actual)
+                        assertArrayEquals("Raw tensor $model diagnostics=$diagnostics", raw, output())
+                        assertEquals(baseline.rawCoordinateMin, stats.rawCoordinateMin)
+                        assertEquals(baseline.rawCoordinateMax, stats.rawCoordinateMax)
+                        assertEquals(baseline.confidencePassedCount, stats.confidencePassedCount)
+                        assertEquals(baseline.nmsInputCount, stats.nmsInputCount)
+                        assertEquals(baseline.nmsOutputCount, stats.nmsOutputCount)
+                        assertEquals(diagnostics, stats.rawTopConfidences.isNotEmpty())
+                        if (diagnostics) {
+                            assertTrue(stats.inputDiagnosticsTimeNs > 0)
+                            assertTrue(stats.outputDiagnosticsTimeNs > 0)
+                        } else {
+                            assertEquals(0L, stats.inputDiagnosticsTimeNs)
+                            assertEquals(0L, stats.outputDiagnosticsTimeNs)
+                        }
+                    }
+                } finally { detector.close() }
+            }
+        } finally { source.recycle() }
+    }
+
     @Test fun xnnpackOnOffPositiveImageMatchesWithinToleranceWithoutChangingDefault() {
         val source = context.assets.open("self_test/known.png").use { requireNotNull(BitmapFactory.decodeStream(it)) }
         val directories = listOf(true, false).map { File(context.filesDir, "golden/xnnpack_positive_$it") }

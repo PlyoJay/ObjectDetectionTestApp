@@ -1,0 +1,5 @@
+PASS MainActivity.kt: original string literals identical; executable source differs only by intended diagnostic gates/wiring
+PASS warning/output/WarningOutputController.kt: original string literals identical; executable source differs only by intended diagnostic gates/wiring
+PASS detector/VisionStyleYoloDetector.kt: original string literals identical; executable source differs only by intended diagnostic gates/wiring
+PASS: only 3 intended production files changed; model/settings/camera/policy/metrics/player implementations unchanged
+PASS: rawCoordinateMin/Max accumulation, class/score/bbox/NMS and warning arbitration/runOutput/cooldown source unchanged apart from intended gates

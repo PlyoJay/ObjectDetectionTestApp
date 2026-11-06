@@ -409,7 +409,7 @@ class VisionStyleYoloDetector(
             }
 
             rawConfidences?.add(bestScore)
-            maxClassScore = maxOf(maxClassScore, bestScore)
+            if (diagnoseTensorThisFrame) maxClassScore = maxOf(maxClassScore, bestScore)
             if (aboveThreshold != null) {
                 for (j in DIAGNOSTIC_THRESHOLDS.indices) if (bestScore >= DIAGNOSTIC_THRESHOLDS[j]) aboveThreshold[j]++
             }
@@ -430,10 +430,9 @@ class VisionStyleYoloDetector(
                 debugFrame?.line("[INVALID_RAW_BOX] candidate=$i xywh=[$cx,$cy,$w,$h]")
                 continue
             }
-            val rawMin = minOf(cx, cy, w, h)
-            val rawMax = maxOf(cx, cy, w, h)
-
             if (enableDiagnostics) {
+                val rawMin = minOf(cx, cy, w, h)
+                val rawMax = maxOf(cx, cy, w, h)
                 Log.d(
                     BBOX_DEBUG_TAG,
                     "candidate=$i rawConfidence=$bestScore rawBox=[$cx,$cy,$w,$h] rawMin=$rawMin rawMax=$rawMax"

@@ -1,0 +1,8 @@
+JVM: 40 suites, {'tests': 210, 'failures': 0, 'errors': 0, 'skipped': 0}
+Instrumentation: 16 passed, 0 failed; OK (16 tests); SM-S921N
+Lint: {'Warning': 195}
+Build: assembleDebug, testDebugUnitTest, assembleDebugAndroidTest, lintDebug; BUILD SUCCESSFUL in 2m 18s
+com.samin.objectdetection.warning.WarningCandidateSelectorCrowdTest: tests=4 failures=0 errors=0
+com.samin.objectdetection.warning.WarningCooldownManagerTest: tests=2 failures=0 errors=0
+com.samin.objectdetection.warning.WarningPolicyCrowdDecisionTest: tests=4 failures=0 errors=0
+com.samin.objectdetection.warning.WarningPolicyVehicleScenarioTest: tests=5 failures=0 errors=0

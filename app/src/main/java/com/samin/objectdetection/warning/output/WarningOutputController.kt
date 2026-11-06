@@ -22,7 +22,8 @@ class WarningOutputController(
     private val warningCooldownManager: WarningCooldownManager,
     private val enableActualVibration: () -> Boolean,
     private val enableActualBeep: () -> Boolean,
-    private val enableActualTts: () -> Boolean
+    private val enableActualTts: () -> Boolean,
+    private val enableDiagnostics: Boolean = false
 ) {
     private val lock = Any()
     private var isOutputPlaying = false
@@ -310,6 +311,7 @@ class WarningOutputController(
         cooldownAllowed: Boolean,
         result: OutputSubmissionResult
     ) {
+        if (!enableDiagnostics) return
         Log.d(
             TAG,
             "[WarningOutput]\n" +
