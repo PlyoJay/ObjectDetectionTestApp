@@ -1,0 +1,7 @@
+PASS: Interpreter call, timing brackets, execution errors/info unchanged.
+PASS: phases 1/2 camera/pipeline/MainActivity/settings/warning source unchanged.
+best.tflite sha256=32a44bc7432ef2d7ca5de802dd8e714a26568aea16566bad3fd7fcd2b85bcee2; matches HEAD
+best_512.tflite sha256=591509278b3a1fe114a0084d4841b948a93b637c22005b7becf06309cb906667; matches HEAD
+best_512_v1_11class.tflite sha256=cc189262fd705e7d0b48246ebe42f868ff9b7370d97a0a6d7a7f756f16d4bad1; matches HEAD
+PASS: restoring only cached area range and deferred debug threshold reproduces baseline detector source (ignoring whitespace).
+Concurrent staged deletion of best_float32.tflite observed after task start; left untouched. No git index/commit/push operations performed by this task.

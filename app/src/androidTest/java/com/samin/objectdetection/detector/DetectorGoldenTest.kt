@@ -33,7 +33,7 @@ class DetectorGoldenTest {
         } finally { d.close(); good.recycle() }
     }
 
-    @Test fun actualBestModelReceivesRgbInItsTensorLayoutAndFiniteNineClassOutput() {
+    @Test fun actualBestModelReceivesRgbInItsTensorLayoutAndFiniteTwelveClassOutput() {
         val bitmap = Bitmap.createBitmap(640,640,Bitmap.Config.ARGB_8888).apply { eraseColor(Color.RED) }
         val dir = File(context.filesDir,"golden/color_contract")
         val d = detector()
@@ -43,27 +43,27 @@ class DetectorGoldenTest {
             val shapeJson = report.getJSONObject("input").getJSONArray("shape")
             val shape = RgbTensorShape.from(IntArray(shapeJson.length()) { shapeJson.getInt(it) })
             assertEquals(shape.layout.name, report.getJSONObject("preprocessing").getString("layout"))
-            assertEquals(640, shape.width)
-            assertEquals(640, shape.height)
+            assertEquals(512, shape.width)
+            assertEquals(512, shape.height)
             val bytes = ByteBuffer.wrap(File(dir,"input.bin").readBytes()).order(ByteOrder.nativeOrder())
             if (shape.layout == RgbTensorLayout.NCHW) {
-                repeat(640*640) { assertEquals(1f,bytes.float,0f) }
-                repeat(2*640*640) { assertEquals(0f,bytes.float,0f) }
+                repeat(512*512) { assertEquals(1f,bytes.float,0f) }
+                repeat(2*512*512) { assertEquals(0f,bytes.float,0f) }
             } else {
-                repeat(640*640) {
+                repeat(512*512) {
                     assertEquals(1f,bytes.float,0f)
                     assertEquals(0f,bytes.float,0f)
                     assertEquals(0f,bytes.float,0f)
                 }
             }
             val outputJson = report.getJSONObject("output").getJSONArray("shape")
-            val outputShape = YoloOutputShape.from(IntArray(outputJson.length()) { outputJson.getInt(it) }, 9)
-            assertEquals(13, outputShape.channels)
-            assertEquals(8400, outputShape.candidates)
-            assertEquals(9, d.modelIdentity().classCount)
+            val outputShape = YoloOutputShape.from(IntArray(outputJson.length()) { outputJson.getInt(it) }, 12)
+            assertEquals(16, outputShape.channels)
+            assertEquals(5376, outputShape.candidates)
+            assertEquals(12, d.modelIdentity().classCount)
             assertEquals(ModelAssets.sha256(context), d.modelIdentity().sha256)
             assertEquals(0,report.getJSONObject("output").getInt("nonFinite"))
-            assertEquals(8400,report.getJSONObject("raw").getInt("candidateCount"))
+            assertEquals(5376,report.getJSONObject("raw").getInt("candidateCount"))
         } finally { d.close(); bitmap.recycle() }
     }
 
@@ -94,18 +94,18 @@ class DetectorGoldenTest {
             d.runSelfTest(bitmap,"portrait_red_letterbox_control",dir)
             val report = JSONObject(File(dir,"report.json").readText())
             val p = report.getJSONObject("preprocessing")
-            assertEquals(480,p.getInt("scaledWidth")); assertEquals(640,p.getInt("scaledHeight"))
-            assertEquals(80,p.getInt("padLeft")); assertEquals(80,p.getInt("padRight"))
+            assertEquals(384,p.getInt("scaledWidth")); assertEquals(512,p.getInt("scaledHeight"))
+            assertEquals(64,p.getInt("padLeft")); assertEquals(64,p.getInt("padRight"))
             assertEquals(0,p.getInt("padTop")); assertEquals(0,p.getInt("padBottom"))
             val bytes = ByteBuffer.wrap(File(dir,"input.bin").readBytes()).order(ByteOrder.nativeOrder())
             val nchw = p.getString("layout") == RgbTensorLayout.NCHW.name
             fun offset(channel: Int, x: Int): Int {
-                val pixel = 320 * 640 + x
-                return (if (nchw) channel * 640 * 640 + pixel else pixel * 3 + channel) * 4
+                val pixel = 256 * 512 + x
+                return (if (nchw) channel * 512 * 512 + pixel else pixel * 3 + channel) * 4
             }
             for (channel in 0..2) {
                 assertEquals(114/255f,bytes.getFloat(offset(channel, 40)),0f)
-                assertEquals(if (channel == 0) 1f else 0f,bytes.getFloat(offset(channel, 320)),0f)
+                assertEquals(if (channel == 0) 1f else 0f,bytes.getFloat(offset(channel, 256)),0f)
             }
         } finally { d.close(); bitmap.recycle() }
     }

@@ -12,7 +12,7 @@ import com.samin.objectdetection.mlkit.MlKitDetectionMode
 import com.samin.objectdetection.ui.OverlayDebugMode
 import com.samin.objectdetection.distance.DistanceSettings
 
-const val APP_SETTINGS_SCHEMA_VERSION = 12
+const val APP_SETTINGS_SCHEMA_VERSION = 13
 
 data class CameraSettings(
     val detectIntervalMs: Long = 0L,

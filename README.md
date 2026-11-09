@@ -2,14 +2,14 @@
 
 The app includes test-only capture and recording controls on the camera screen.
 
-The app supports the bundled YOLO11s v2 export: `best_512.tflite` has 12 classes
-(existing IDs 0–10 unchanged, cardboard_box=11). New installs default to v2.
-Existing saved model selections are preserved; select **YOLO11s v2 · 12클래스** in
-YOLO settings to enable the new model on an existing 640 configuration.
-The exact previous 11-class model is selectable as `best_512_v1_11class.tflite`;
-`best.tflite` retains its nine-class contract. Class enable/disable and optional
-confidence overrides are in YOLO settings. Cat/dog/cardboard_box are displayed
-and counted without enabling warning outputs.
+The app bundles two 512-input, 12-class models: **YOLO11s · 기준 모델**
+(`best_512.tflite`, the unchanged default) and **YOLO11n · 경량 모델**
+(`yolo11n_512.tflite`). Select either in YOLO settings. Both use the same class
+IDs (cardboard_box=11), class enable/disable settings and confidence overrides.
+Retired 640/11-class selections, missing selections and unknown model names
+recover to YOLO11s while preserving other settings and custom presets.
+Cat/dog/cardboard_box are displayed and counted without enabling warning outputs.
+See [two-model registration and validation](docs/yolo-two-model-cleanup-20261109.md).
 
 CameraX is the only camera source. The pipeline retains ROI, Letterbox, YOLO,
 postprocessing and Overlay, with ML Kit using the same camera frames and ROI.

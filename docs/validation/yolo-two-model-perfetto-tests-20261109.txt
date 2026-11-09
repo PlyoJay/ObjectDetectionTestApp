@@ -1,0 +1,14 @@
+test_clock_mapping_uses_snapshots (test_yolo_measurement.MeasurementTests.test_clock_mapping_uses_snapshots) ... ok
+test_completion_window_is_half_open_and_excludes_errors (test_yolo_measurement.MeasurementTests.test_completion_window_is_half_open_and_excludes_errors) ... ok
+test_loss_checks_service_and_importer (test_yolo_measurement.MeasurementTests.test_loss_checks_service_and_importer) ... ok
+test_loss_does_not_count_preexisting_kernel_overruns (test_yolo_measurement.MeasurementTests.test_loss_does_not_count_preexisting_kernel_overruns) ... ok
+test_missing_trace_processor_stays_na (test_yolo_measurement.MeasurementTests.test_missing_trace_processor_stays_na) ... ok
+test_report_rejects_historical_nine_class_model (test_yolo_measurement.MeasurementTests.test_report_rejects_historical_nine_class_model) ... ok
+test_slice_join_requires_a_unique_enclosing_interval (test_yolo_measurement.MeasurementTests.test_slice_join_requires_a_unique_enclosing_interval) ... ok
+test_wall_and_elapsed_are_independent (test_yolo_measurement.MeasurementTests.test_wall_and_elapsed_are_independent) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.138s
+
+OK
+Wrote C:\Users\SAMIN\AppData\Local\Packages\sandbox.{cf80302c-ce9d-4bde-9735-27ad53eeb7a6}\AC\Temp\tmpq2p0txo3\analysis.json

@@ -1,0 +1,37 @@
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+{
+  "layout": "NCHW",
+  "input": {
+    "shape": [
+      1,
+      3,
+      512,
+      512
+    ],
+    "dtype": "float32",
+    "scale": 0.0,
+    "zeroPoint": 0,
+    "min": 0.027450980618596077,
+    "max": 1.0,
+    "mean": 0.521679593312553,
+    "nonFinite": 0,
+    "sha256": "2d88861eb8203c4f6359eac5d24fda17a3daa19fecf1081d32a0688c1c1f8e40",
+    "channelMeansRGB": [
+      0.5488570217795115,
+      0.5308672397736416,
+      0.4853145183845058
+    ]
+  },
+  "raw": {
+    "candidateCount": 5376,
+    "maxClassScore": 0.9348796010017395,
+    "candidateAbove0.01": 10,
+    "candidateAbove0.05": 10,
+    "candidateAbove0.1": 10,
+    "candidateAbove0.2": 10,
+    "confidencePassed": 10,
+    "detections": 1
+  },
+  "comparison": null,
+  "directory": "build\\yolo-validation\\yolo11s"
+}

@@ -26,7 +26,7 @@ class ModelSelectionDetectorTest {
         val source = Bitmap.createBitmap(511, 733, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.RED) }
         val positive = context.assets.open("self_test/known.png").use { requireNotNull(BitmapFactory.decodeStream(it)) }
         try {
-            for (model in listOf(YoloModel.YOLO_640, YoloModel.YOLO_512_V1, YoloModel.YOLO_512, YoloModel.YOLO_640)) {
+            for (model in listOf(YoloModel.YOLO_512, YoloModel.YOLO_11N_512, YoloModel.YOLO_512)) {
                 for (mode in YoloResizeMode.entries) {
                     val detector = VisionStyleYoloDetector(context, model.assetName, .2f, .45f,
                         sizeFilterMode = SizeFilterMode.DISABLED, resizeMode = mode)
@@ -41,7 +41,7 @@ class ModelSelectionDetectorTest {
                             model.assetName, model.classLabels.size)
                         assertEquals(4 + model.classLabels.size, contract.output.channels)
                         assertEquals(identity, ModelAssets.inspect(context, model, threads = 4, useXnnpack = true))
-                        assertEquals(if (model == YoloModel.YOLO_640) 8400 else 5376, contract.output.candidates)
+                        assertEquals(5376, contract.output.candidates)
                         val buffer = field(detector, "inputBuffer") as ByteBuffer
                         val bitmap = field(detector, "reusableInputBitmap") as Bitmap
                         val output = field(detector, "outputBuffer") as ByteBuffer
@@ -134,14 +134,14 @@ class ModelSelectionDetectorTest {
         assertTrue(error.message!!.contains("app/src/main/assets/"))
     }
 
-    @Test fun mislabeledInputResolutionIsRejectedWithActualShape() {
+    @Test fun mislabeledClassCountIsRejectedWithActualShape() {
         org.tensorflow.lite.Interpreter(ModelAssets.load(context)).use { interpreter ->
             val error = assertThrows(IllegalArgumentException::class.java) {
                 ModelAssets.validate(interpreter, YoloModel.YOLO_512.assetName, 9)
             }
             assertTrue(error.message!!.contains("best_512.tflite"))
             assertTrue(error.message!!.contains("512×512"))
-            assertTrue(error.message!!.contains("[1, 3, 640, 640]"))
+            assertTrue(error.message!!.contains("[1, 16, 5376]"))
         }
     }
 }

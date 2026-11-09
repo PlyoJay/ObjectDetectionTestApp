@@ -20,12 +20,12 @@ import java.nio.ByteBuffer
 class ElevenClassDetectorTest(private val model: YoloModel) {
     companion object {
         @JvmStatic @Parameterized.Parameters(name = "{0}")
-        fun models() = listOf(arrayOf(YoloModel.YOLO_512_V1), arrayOf(YoloModel.YOLO_512))
+        fun models() = YoloModel.entries.map { arrayOf(it) }
     }
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
     private val expectedLabels = listOf("bollard", "person", "bicycle", "car", "motorcycle",
         "bus", "truck", "stop sign", "bench", "cat", "dog") +
-        if (model == YoloModel.YOLO_512) listOf("cardboard_box") else emptyList()
+        listOf("cardboard_box")
 
     private fun field(detector: VisionStyleYoloDetector, name: String): Any =
         detector.javaClass.getDeclaredField(name).apply { isAccessible = true }.get(detector)!!

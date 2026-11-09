@@ -2,6 +2,7 @@ package com.samin.objectdetection.detector
 
 import android.content.Context
 import org.tensorflow.lite.Interpreter
+import org.tensorflow.lite.DataType
 import java.io.FileInputStream
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
@@ -9,7 +10,7 @@ import java.security.MessageDigest
 
 /** Shared asset access for inference and the read-only settings screen. */
 object ModelAssets {
-    /** Shared labels contain all 12 verified IDs; each version keeps its own class order. */
+    /** Both registered exports use the same 12 verified class IDs. */
     fun labels(context: Context, modelName: String): List<String> {
         val assetLabels = context.assets.open(ModelConfig.LABEL_ASSET_NAME).bufferedReader().useLines {
             it.map(String::trim).filter(String::isNotEmpty).toList()
@@ -45,9 +46,14 @@ object ModelAssets {
         }
         val rgb = RgbTensorShape.from(input.shape())
         YoloModel.entries.firstOrNull { it.assetName == modelName }?.let { selected ->
-            require(rgb.width == selected.inputSize && rgb.height == selected.inputSize) {
-                "$modelName: 선택 모델은 ${selected.inputSize}×${selected.inputSize} 입력이어야 합니다. " +
-                    "실제 입력=${input.shape().contentToString()}"
+            require(input.shape().contentEquals(intArrayOf(1, 3, selected.inputSize, selected.inputSize)) &&
+                input.dataType() == DataType.FLOAT32 && output.dataType() == DataType.FLOAT32 &&
+                classes == selected.classLabels.size &&
+                output.shape().contentEquals(intArrayOf(1, 4 + selected.classLabels.size, 5376))) {
+                "$modelName: 등록 모델 계약 불일치: FLOAT32 NCHW ${selected.inputSize}×${selected.inputSize}, " +
+                    "${selected.classLabels.size} classes, output=[1, 16, 5376]. " +
+                    "실제 input=${input.shape().contentToString()} ${input.dataType()} " +
+                    "output=${output.shape().contentToString()} ${output.dataType()} classes=$classes"
             }
         }
         fun codec(tensor: org.tensorflow.lite.Tensor) = tensor.quantizationParams().let {

@@ -218,8 +218,9 @@ object AppSettingsCodec {
             if (storedVersion < 2) defaults.copy(yolo = defaults.yolo.copy(resizeMode = YoloResizeMode.STRETCH))
             else defaults
         }
-        // Missing model names in historical presets used the 640 export. Explicit selections survive.
-        val defaultModel = if (storedVersion < 11) YoloModel.YOLO_640 else d.yolo.model
+        // Retired/unknown/missing selections recover to the bundled YOLO11s baseline.
+        // Decode is shared by applied settings, rollback backups, drafts and custom presets.
+        val defaultModel = d.yolo.model
         fun s(key: String, default: String) = p.getProperty(key)?.trim()?.takeIf(String::isNotEmpty) ?: default
         fun i(key: String, default: Int) = s(key, default.toString()).toIntOrNull() ?: default
         fun l(key: String, default: Long) = s(key, default.toString()).toLongOrNull() ?: default

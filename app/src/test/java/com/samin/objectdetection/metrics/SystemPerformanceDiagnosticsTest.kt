@@ -152,7 +152,7 @@ class SystemPerformanceDiagnosticsTest {
     }
 
     companion object {
-        fun header(enabled: Boolean = false) = PerformanceLogHeader(0, "best.tflite", "Detector", 640, 640,
+        fun header(enabled: Boolean = false) = PerformanceLogHeader(0, "best_512.tflite", "Detector", 640, 640,
             1280, 720, com.samin.objectdetection.camera.YoloResizeMode.LETTERBOX, 4, false, false, false, 0.2f, 0.45f,
             sessionId = "test-session", startedElapsedNs = 0, systemDiagnosticsEnabled = enabled)
     }

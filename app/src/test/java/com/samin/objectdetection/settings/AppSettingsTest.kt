@@ -60,8 +60,8 @@ class AppSettingsTest {
     @Test fun modelSelectionRoundTripsWithoutChangingPresetsThresholdsOrRoi() {
         val original = SettingsPresets.fieldTest(YoloResizeMode.LETTERBOX).copy(
             presetName = "MY MODEL TEST", camera = CameraSettings(recognitionRoi = com.samin.objectdetection.camera.RecognitionRoi.PRESET))
-        for (model in listOf(com.samin.objectdetection.detector.YoloModel.YOLO_640,
-            com.samin.objectdetection.detector.YoloModel.YOLO_512, com.samin.objectdetection.detector.YoloModel.YOLO_640)) {
+        for (model in listOf(com.samin.objectdetection.detector.YoloModel.YOLO_512,
+            com.samin.objectdetection.detector.YoloModel.YOLO_11N_512, com.samin.objectdetection.detector.YoloModel.YOLO_512)) {
             val selected = original.copy(yolo = original.yolo.copy(model = model))
             val restored = AppSettingsCodec.decode(AppSettingsCodec.encode(selected))
             assertEquals(selected, restored)
@@ -72,16 +72,16 @@ class AppSettingsTest {
         }
     }
 
-    @Test fun oldAppliedAndCustomPresetSchemasDefaultTo640AndPreserveEveryOtherField() {
+    @Test fun oldAppliedAndCustomPresetSchemasDefaultToBaselineAndPreserveEveryOtherField() {
         val original = AppSettings(presetName = "OLD CUSTOM", yolo = YoloSettings(confidenceThreshold = .37f, nmsThreshold = .51f,
-            model = com.samin.objectdetection.detector.YoloModel.YOLO_640),
+            model = com.samin.objectdetection.detector.YoloModel.YOLO_512),
             camera = CameraSettings(recognitionRoi = com.samin.objectdetection.camera.RecognitionRoi.PRESET))
         for (version in 2..5) {
             val old = AppSettingsCodec.encode(original).lineSequence().filterNot { it.startsWith("yolo.model=") }
                 .joinToString("\n").replace("schemaVersion=$APP_SETTINGS_SCHEMA_VERSION", "schemaVersion=$version")
             assertEquals(original, AppSettingsCodec.decode(old))
         }
-        assertEquals(com.samin.objectdetection.detector.YoloModel.YOLO_640,
+        assertEquals(com.samin.objectdetection.detector.YoloModel.YOLO_512,
             AppSettingsCodec.decode("schemaVersion=6\nyolo.model=UNKNOWN").yolo.model)
     }
 

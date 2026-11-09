@@ -142,13 +142,13 @@ def run(args):
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--model",type=Path,default=Path("app/src/main/assets/best.tflite"))
+    p.add_argument("--model",type=Path,default=Path("app/src/main/assets/best_512.tflite"))
     source = p.add_mutually_exclusive_group(required=True)
     source.add_argument("--image",type=Path); source.add_argument("--tensor",type=Path)
     p.add_argument("--android-report",type=Path); p.add_argument("--android-output",type=Path)
     p.add_argument("--directory",type=Path,required=True)
     p.add_argument("--simulate-old-layout",action="store_true")
-    p.add_argument("--classes",type=int,default=1)
+    p.add_argument("--classes",type=int,default=12)
     p.add_argument("--conf",type=float,default=0.2); p.add_argument("--iou",type=float,default=0.45)
     p.add_argument("--max-candidates",type=int,default=100)
     p.add_argument("--min-detections",type=int,default=0)

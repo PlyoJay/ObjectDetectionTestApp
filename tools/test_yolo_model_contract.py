@@ -14,18 +14,19 @@ import tflite
 
 
 ASSETS = Path(__file__).resolve().parents[1] / "app/src/main/assets"
-LEGACY = ["bollard", "person", "bicycle", "car", "motorcycle", "bus", "truck", "stop sign", "bench"]
-V1 = LEGACY + ["cat", "dog"]
-CURRENT = V1 + ["cardboard_box"]
+CURRENT = ["bollard", "person", "bicycle", "car", "motorcycle", "bus", "truck", "stop sign", "bench",
+           "cat", "dog", "cardboard_box"]
+MODELS = {
+    "best_512.tflite": "591509278b3a1fe114a0084d4841b948a93b637c22005b7becf06309cb906667",
+    "yolo11n_512.tflite": "fa8f25724210a15c4259c82cbf8d87a4169d0ab7f1bb644a6620173aa52bae32",
+}
 
 
 class YoloModelContractTest(unittest.TestCase):
     def test_actual_models_match_verified_names_and_static_float_tensor_contracts(self):
         self.assertEqual(CURRENT, ASSETS.joinpath("labels.txt").read_text(encoding="utf-8").splitlines())
-        for filename, size, candidates, labels in (
-            ("best.tflite", 640, 8400, LEGACY),
-            ("best_512_v1_11class.tflite", 512, 5376, V1), ("best_512.tflite", 512, 5376, CURRENT)
-        ):
+        for filename in MODELS:
+            size, candidates, labels = 512, 5376, CURRENT
             with self.subTest(model=filename):
                 path = ASSETS / filename
                 with zipfile.ZipFile(path) as archive:
@@ -50,12 +51,18 @@ class YoloModelContractTest(unittest.TestCase):
                 self.assertTrue(np.isfinite(output).all())
                 self.assertTrue(((output[:, 4:, :] >= 0) & (output[:, 4:, :] <= 1)).all())
 
-    def test_v1_backup_is_the_exact_previous_eleven_class_model(self):
-        self.assertEqual("cc189262fd705e7d0b48246ebe42f868ff9b7370d97a0a6d7a7f756f16d4bad1",
-                         hashlib.sha256(ASSETS.joinpath("best_512_v1_11class.tflite").read_bytes()).hexdigest())
+    def test_only_two_verified_models_remain_and_baseline_is_unchanged(self):
+        self.assertEqual(set(MODELS), {p.name for p in ASSETS.glob("*.tflite")})
+        for filename, digest in MODELS.items():
+            self.assertEqual(digest, hashlib.sha256(ASSETS.joinpath(filename).read_bytes()).hexdigest())
 
-    def test_v2_graph_emits_normalized_xywh_and_twelve_sigmoid_scores_without_nms(self):
-        model = tflite.Model.GetRootAsModel(ASSETS.joinpath("best_512.tflite").read_bytes(), 0)
+    def test_both_graphs_emit_normalized_xywh_and_twelve_sigmoid_scores_without_nms(self):
+        for filename in MODELS:
+            with self.subTest(model=filename):
+                self.check_graph(filename)
+
+    def check_graph(self, filename):
+        model = tflite.Model.GetRootAsModel(ASSETS.joinpath(filename).read_bytes(), 0)
         self.assertEqual(1, model.SubgraphsLength())
         graph = model.Subgraphs(0)
         ops = [graph.Operators(i) for i in range(graph.OperatorsLength())]
@@ -66,6 +73,18 @@ class YoloModelContractTest(unittest.TestCase):
         self.assertNotIn(tflite.BuiltinOperator.NON_MAX_SUPPRESSION_V5, codes)
         self.assertTrue(all(not model.OperatorCodes(op.OpcodeIndex()).CustomCode() for op in ops))
         producers = {int(index): op for op in ops for index in op.OutputsAsNumpy()}
+        # RGB /255 belongs to the app. The graph only transposes NCHW -> NHWC,
+        # pads spatially, then convolves; no graph-side input rescale/channel swap.
+        transpose, pad, conv = ops[:3]
+        self.assertEqual(tflite.BuiltinOperator.TRANSPOSE, code(transpose))
+        self.assertEqual(int(graph.Inputs(0)), int(transpose.Inputs(0)))
+        permutation = graph.Tensors(int(transpose.Inputs(1)))
+        self.assertEqual([0, 2, 3, 1], np.frombuffer(
+            model.Buffers(permutation.Buffer()).DataAsNumpy().tobytes(), dtype=np.int32).tolist())
+        self.assertEqual(tflite.BuiltinOperator.PAD, code(pad))
+        self.assertEqual(int(transpose.Outputs(0)), int(pad.Inputs(0)))
+        self.assertEqual(tflite.BuiltinOperator.CONV_2D, code(conv))
+        self.assertEqual(int(pad.Outputs(0)), int(conv.Inputs(0)))
         concat = producers[int(graph.Outputs(0))]
         self.assertEqual(tflite.BuiltinOperator.CONCATENATION, code(concat))
         xywh, scores = [int(i) for i in concat.InputsAsNumpy()]

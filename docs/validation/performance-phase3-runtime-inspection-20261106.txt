@@ -1,0 +1,10 @@
+Bundled artifact: litert-2.1.1.aar
+SHA256: 31837e6893a106ae75cdb8a379b694c1ba231578bcfe1cfdb439822fdba44531
+Inspected classes.jar with Android Studio JBR javap -c -p.
+NativeInterpreterWrapper.run(Object[], Map): input shape check, allocateTensorsIfNeeded, input setTo, native run, requested output copyTo.
+allocateTensorsIfNeeded returns immediately when isMemoryAllocated is already true.
+TensorImpl input Buffer uses writeDirectBuffer JNI when isDirect and native byte order; this alone does not prove external zero-copy aliasing.
+TensorImpl output ByteBuffer copyTo uses destination.put(native tensor buffer).
+The app already reuses direct buffers, input Object[] and output Map. No new run()/containers/shape resize per frame were added.
+Output native view API exists but cannot be held across inference or close; no production output ownership changes made.
+Full bytecode inspection scratch is under build/phase3-runtime-inspection (not application code).

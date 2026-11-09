@@ -80,6 +80,13 @@ class VisionStyleYoloDetector(
         throw IllegalStateException("Failed to load labels asset: ${ModelConfig.LABEL_ASSET_NAME}", cause)
     }
     private val classFilter = YoloClassFilter(labels, confidenceThreshold, classOptions)
+    // This policy is immutable for the detector's lifetime; avoid rebuilding a Float range
+    // (or dispatching on the mode) for every confidence-passing candidate.
+    private val detectorAreaRange = when (sizeFilterMode) {
+        SizeFilterMode.DISABLED -> null
+        SizeFilterMode.RELAXED -> RELAXED_MIN_AREA_RATIO..RELAXED_MAX_AREA_RATIO
+        SizeFilterMode.NORMAL -> NORMAL_MIN_AREA_RATIO..NORMAL_MAX_AREA_RATIO
+    }
 
     var enableDiagnostics: Boolean = false
 
@@ -414,9 +421,11 @@ class VisionStyleYoloDetector(
                 for (j in DIAGNOSTIC_THRESHOLDS.indices) if (bestScore >= DIAGNOSTIC_THRESHOLDS[j]) aboveThreshold[j]++
             }
 
-            val threshold = if (bestClassId >= 0) classFilter.threshold(bestClassId) else confidenceThreshold
-            debugFrame?.raw(i, bestClassId, labels.getOrElse(bestClassId) { "none" }, bestScore,
-                outputData[0][i], outputData[1][i], outputData[2][i], outputData[3][i], threshold)
+            debugFrame?.let { frame ->
+                val threshold = if (bestClassId >= 0) classFilter.threshold(bestClassId) else confidenceThreshold
+                frame.raw(i, bestClassId, labels.getOrElse(bestClassId) { "none" }, bestScore,
+                    outputData[0][i], outputData[1][i], outputData[2][i], outputData[3][i], threshold)
+            }
 
             if (!classFilter.accepts(bestClassId, bestScore)) continue
             confidencePassedCount++
@@ -469,11 +478,6 @@ class VisionStyleYoloDetector(
                 (right - left) * (bottom - top) / (sourceWidth.toFloat() * sourceHeight)
             }
             val label = labels.getOrElse(bestClassId) { "class_$bestClassId" }
-            val detectorAreaRange = when (sizeFilterMode) {
-                SizeFilterMode.DISABLED -> null
-                SizeFilterMode.RELAXED -> RELAXED_MIN_AREA_RATIO..RELAXED_MAX_AREA_RATIO
-                SizeFilterMode.NORMAL -> NORMAL_MIN_AREA_RATIO..NORMAL_MAX_AREA_RATIO
-            }
             if (detectorAreaRange != null && area !in detectorAreaRange) {
                 detectorAreaRejectedCount++
                 diagnosticBox?.let { debugFrame?.filtered(it, "SIZE_DETECTOR", "roi_pixels") }

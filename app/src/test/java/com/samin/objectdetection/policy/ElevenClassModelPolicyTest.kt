@@ -17,9 +17,9 @@ class ElevenClassModelPolicyTest {
         "bus", "truck", "stop sign", "bench", "cat", "dog")
 
     @Test fun everyClassIdIsExplicitAndUnknownModelOrderIsRejected() {
-        assertEquals(expected, ModelConfig.V1_CLASS_LABELS)
-        expected.forEachIndexed { id, label -> assertEquals(label, YoloModel.YOLO_512_V1.classLabels[id]) }
-        assertEquals(expected.take(9), YoloModel.YOLO_640.classLabels)
+        assertEquals(expected, ModelConfig.CLASS_LABELS.take(11))
+        for (model in YoloModel.entries) expected.forEachIndexed { id, label -> assertEquals(label, model.classLabels[id]) }
+        assertEquals(expected.take(9), ModelConfig.WARNING_CLASS_LABELS)
         assertThrows(IllegalArgumentException::class.java) { ModelConfig.labelsFor("unverified.tflite") }
     }
 

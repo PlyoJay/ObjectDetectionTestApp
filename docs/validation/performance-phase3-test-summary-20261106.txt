@@ -1,0 +1,7 @@
+JVM: 40 suites; {'tests': 210, 'failures': 0, 'errors': 0, 'skipped': 0}
+Python: 32 tests passed (existing log/latency plus 5 new phase-3 tests).
+Android initial: 35 tests, 34 passed, CameraX failed while screen/keyguard were off/locked.
+After user unlock: CameraX passed; final 35 unique tests passed (34 + 1 rerun).
+Lint warnings: 196; Error/Fatal=0.
+Build: BUILD SUCCESSFUL in 2m 56s.
+No long-run, camera FPS, thermal or GC improvement benchmark performed.

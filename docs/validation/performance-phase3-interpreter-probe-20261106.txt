@@ -1,0 +1,4 @@
+--------- beginning of main
+11-06 17:34:39.552  8827  8846 I YoloPhase3Probe: [OWNED_BUFFER_CALL] model=best.tflite samples=3 wallAvgMs=551.7712763333334 nativeAvgMs=551.262539 wallMinusNativeAvgMs=0.5087373333333333 scope=isolated_call_no_camera notAnOptimizationAB=true
+11-06 17:34:43.318  8827  8846 I YoloPhase3Probe: [OWNED_BUFFER_CALL] model=best_512.tflite samples=3 wallAvgMs=351.972539 nativeAvgMs=351.67727866666667 wallMinusNativeAvgMs=0.2952603333333333 scope=isolated_call_no_camera notAnOptimizationAB=true
+11-06 17:34:47.060  8827  8846 I YoloPhase3Probe: [OWNED_BUFFER_CALL] model=best_512_v1_11class.tflite samples=3 wallAvgMs=351.660104 nativeAvgMs=351.358424 wallMinusNativeAvgMs=0.30168 scope=isolated_call_no_camera notAnOptimizationAB=true

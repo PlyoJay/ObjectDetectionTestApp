@@ -31,6 +31,41 @@ import android.view.accessibility.AccessibilityNodeInfo
 
 /** Preserves applied settings/presets; the preview integration test also starts real inference. */
 class SettingsActivityTest {
+    @Test fun retiredModelsRecoverInAppliedSettingsPresetsAndBothRollbackPaths() {
+        val expected = AppSettings(presetName = "RETIRED MODEL",
+            yolo = YoloSettings(confidenceThreshold = .31f, interpreterThreadCount = 2, useXnnpack = false),
+            camera = CameraSettings(previewEnabled = false))
+        val next = expected.copy(yolo = expected.yolo.copy(model = com.samin.objectdetection.detector.YoloModel.YOLO_11N_512))
+        val store = AppSettingsStore(context)
+        for (version in listOf(5, 12, APP_SETTINGS_SCHEMA_VERSION)) for (retired in listOf("YOLO_640", "YOLO_512_V1")) {
+            val encoded = AppSettingsCodec.encode(expected).replace("yolo.model=YOLO_512", "yolo.model=$retired")
+                .replace("schemaVersion=$APP_SETTINGS_SCHEMA_VERSION", "schemaVersion=$version")
+            preferences.edit().clear().putString("applied_settings", encoded)
+                .putString("custom_preset.RETIRED MODEL", encoded)
+                .putStringSet("custom_preset_names", setOf("RETIRED MODEL")).commit()
+            assertEquals(expected, store.loadApplied())
+            assertEquals(expected, store.loadCustomPreset("RETIRED MODEL"))
+            assertEquals(setOf("RETIRED MODEL"), store.customPresetNames().toSet())
+            store.saveApplied(next)
+            assertEquals(next, store.loadApplied())
+            assertEquals(expected, store.restorePreviousApplied())
+            // A pre-upgrade backup may still contain the retired enum name.
+            preferences.edit().putString("applied_settings", AppSettingsCodec.encode(next))
+                .putString("backup_settings", encoded).putString("apply_state", "pending").commit()
+            assertEquals(expected, store.restorePreviousApplied())
+            preferences.edit().putString("applied_settings", AppSettingsCodec.encode(next))
+                .putString("backup_settings", encoded).putString("apply_state", "attempting").commit()
+            assertEquals(expected, store.loadApplied())
+            assertFalse(preferences.contains("apply_state"))
+            assertFalse(preferences.contains("backup_settings"))
+            assertEquals(expected, store.loadApplied())
+            assertEquals(expected, store.loadCustomPreset("RETIRED MODEL"))
+            store.resetApplied()
+            assertEquals(AppSettings(), store.loadApplied())
+            store.markAppliedHealthy()
+        }
+    }
+
     @Test fun mlKitModeDraftApplyAndPresetPersistWithoutChangingIntervalRoiOrYolo() {
         val original = AppSettings()
         seed(original)
@@ -54,7 +89,7 @@ class SettingsActivityTest {
     @Test fun modelChoiceSurvivesDraftRecreationApplyReopenAndCustomPreset() {
         launch()
         openCategory("YOLO 모델 및 추론")
-        val model = com.samin.objectdetection.detector.YoloModel.YOLO_512
+        val model = com.samin.objectdetection.detector.YoloModel.YOLO_11N_512
         field("모델 선택").perform(scrollTo(), click())
         onData(`is`(model.displayName)).perform(click())
         recreate()
@@ -73,7 +108,7 @@ class SettingsActivityTest {
 
     @Test fun schemaFivePresetsAndFailedModelApplyRestoreEntirePreviousConfiguration() {
         val previous = AppSettings(presetName = "OLD MODEL", yolo = YoloSettings(confidenceThreshold = .31f,
-            model = com.samin.objectdetection.detector.YoloModel.YOLO_640))
+            model = com.samin.objectdetection.detector.YoloModel.YOLO_512))
         val old = AppSettingsCodec.encode(previous).lineSequence().filterNot { it.startsWith("yolo.model=") }
             .joinToString("\n").replace("schemaVersion=$APP_SETTINGS_SCHEMA_VERSION", "schemaVersion=5")
         preferences.edit().putString("applied_settings", old).putString("custom_preset.OLD MODEL", old)
@@ -81,7 +116,7 @@ class SettingsActivityTest {
         val store = AppSettingsStore(context)
         assertEquals(previous, store.loadApplied())
         assertEquals(previous, store.loadCustomPreset("OLD MODEL"))
-        val next = previous.copy(yolo = previous.yolo.copy(model = com.samin.objectdetection.detector.YoloModel.YOLO_512))
+        val next = previous.copy(yolo = previous.yolo.copy(model = com.samin.objectdetection.detector.YoloModel.YOLO_11N_512))
         store.saveApplied(next)
         assertEquals(next, store.loadApplied())
         assertEquals(previous, store.restorePreviousApplied())
@@ -97,8 +132,8 @@ class SettingsActivityTest {
         field("11: cardboard_box 탐지").perform(scrollTo(), click())
         field("cardboard_box Confidence").check(matches(not(isEnabled())))
         field("모델 선택").perform(scrollTo(), click())
-        onData(`is`(com.samin.objectdetection.detector.YoloModel.YOLO_512_V1.displayName)).perform(click())
-        field("11: cardboard_box 탐지").perform(scrollTo()).check(matches(not(isEnabled())))
+        onData(`is`(com.samin.objectdetection.detector.YoloModel.YOLO_11N_512.displayName)).perform(click())
+        field("11: cardboard_box 탐지").perform(scrollTo()).check(matches(isEnabled())).check(matches(not(isChecked())))
         recreate()
         field("모델 선택").perform(scrollTo(), click())
         onData(`is`(com.samin.objectdetection.detector.YoloModel.YOLO_512.displayName)).perform(click())

@@ -34,19 +34,20 @@ class DetectorPreprocessingRegressionTest {
                 val source = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
                 val pattern = IntArray(width * height) { 0xff000000.toInt() or (it * 7919 and 0xffffff) }
                 source.setPixels(pattern, 0, width, 0, 0, width, height)
-                val referenceBitmap = Bitmap.createBitmap(640, 640, Bitmap.Config.ARGB_8888)
+                val size = detector.modelIdentity().inputWidth
+                val referenceBitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
                 try {
                     // Frozen pre-change Canvas sampling, independent of detector's exported input.
-                    val transform = YoloResizeTransform.calculate(YoloResizeMode.LETTERBOX, width, height, 640, 640)
+                    val transform = YoloResizeTransform.calculate(YoloResizeMode.LETTERBOX, width, height, size, size)
                     Canvas(referenceBitmap).apply {
                         drawColor(Color.rgb(114, 114, 114))
                         drawBitmap(source, null, RectF(transform.padLeft.toFloat(), transform.padTop.toFloat(),
                             (transform.padLeft + transform.scaledWidth).toFloat(),
                             (transform.padTop + transform.scaledHeight).toFloat()), Paint(Paint.FILTER_BITMAP_FLAG))
                     }
-                    val pixels = IntArray(640 * 640)
-                    referenceBitmap.getPixels(pixels, 0, 640, 0, 0, 640, 640)
-                    val reference = ByteBuffer.allocate(640 * 640 * 12).order(ByteOrder.nativeOrder())
+                    val pixels = IntArray(size * size)
+                    referenceBitmap.getPixels(pixels, 0, size, 0, 0, size, size)
+                    val reference = ByteBuffer.allocate(size * size * 12).order(ByteOrder.nativeOrder())
                     RgbTensorWriter.fill(reference, pixels, RgbTensorLayout.NCHW, TensorValueCodec(DataType.FLOAT32))
                     detector.detect(source)
                     val actual = (field(detector, "inputBuffer") as ByteBuffer).duplicate().apply { rewind() }

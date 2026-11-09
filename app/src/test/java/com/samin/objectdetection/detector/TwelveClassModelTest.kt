@@ -18,14 +18,15 @@ class TwelveClassModelTest {
     @Test fun mappingPreservesEveryPreviousIdAndNewInstallDefaultsToV2() {
         assertEquals(expected, ModelConfig.CLASS_LABELS)
         assertEquals(expected, YoloModel.YOLO_512.classLabels)
-        assertEquals(expected.take(11), YoloModel.YOLO_512_V1.classLabels)
-        assertEquals(expected.take(9), YoloModel.YOLO_640.classLabels)
+        assertEquals(expected, YoloModel.YOLO_11N_512.classLabels)
+        assertEquals(2, YoloModel.entries.size)
+        assertEquals(YoloModel.YOLO_512.assetName, ModelConfig.MODEL_ASSET_NAME)
         assertEquals(YoloModel.YOLO_512, AppSettings().yolo.model)
         for (model in YoloModel.entries) {
             val settings = AppSettings(yolo = YoloSettings(model = model))
             assertEquals(settings, AppSettingsCodec.decode(AppSettingsCodec.encode(settings)))
         }
-        assertEquals(YoloModel.YOLO_640, AppSettingsCodec.decode("schemaVersion=10").yolo.model)
+        assertEquals(YoloModel.YOLO_512, AppSettingsCodec.decode("schemaVersion=10").yolo.model)
         assertEquals(YoloModel.YOLO_512, AppSettingsCodec.decode("schemaVersion=10\nyolo.model=YOLO_512").yolo.model)
     }
 
@@ -63,7 +64,7 @@ class TwelveClassModelTest {
         for (value in listOf(Float.NaN, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY)) assertFalse(filter.accepts(11, value))
         assertFalse(filter.accepts(-1, 1f)); assertFalse(filter.accepts(12, 1f))
         assertFalse(YoloClassFilter(expected, .2f, mapOf("cardboard_box" to YoloClassOptions(false))).accepts(11, 1f))
-        val oldModel = settings.copy(yolo = settings.yolo.copy(model = YoloModel.YOLO_640))
+        val oldModel = settings.copy(yolo = settings.yolo.copy(model = YoloModel.YOLO_11N_512))
         assertEquals(options, AppSettingsCodec.decode(AppSettingsCodec.encode(oldModel)).yolo.classOptions)
         for (value in listOf(-.1f, 1.1f, Float.NaN, Float.POSITIVE_INFINITY)) {
             assertFalse(settings.copy(yolo = settings.yolo.copy(classOptions = mapOf("dog" to YoloClassOptions(true, value))))

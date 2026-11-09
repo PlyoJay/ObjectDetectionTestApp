@@ -55,7 +55,7 @@ class SystemPerformanceDiagnosticsInstrumentedTest {
                     val collector = DetectionMetricsCollector()
                     val startNs = SystemClock.elapsedRealtimeNanos(); val startWall = System.currentTimeMillis()
                     val id = "diagnostics-validation-$trial-$enabled"
-                    val header = PerformanceLogHeader(startWall, "best.tflite", "VisionStyleYoloDetector", 640, 640,
+                    val header = PerformanceLogHeader(startWall, "best_512.tflite", "VisionStyleYoloDetector", 640, 640,
                         1080, 1440, YoloResizeMode.LETTERBOX, 4, false, false, false, 0.2f, 0.45f,
                         sessionId = id, startedElapsedNs = startNs, systemDiagnosticsEnabled = enabled)
                     runBlocking { recorder.start(header) }

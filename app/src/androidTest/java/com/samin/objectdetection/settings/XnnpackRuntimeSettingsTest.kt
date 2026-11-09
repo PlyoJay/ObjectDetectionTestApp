@@ -63,10 +63,10 @@ class XnnpackRuntimeSettingsTest {
             scenario = ActivityScenario.launch(MainActivity::class.java)
             await("initial camera inference") { resumedMain()?.let { (field(it, "detector") as VisionStyleYoloDetector).executionInfo().lastInference == "SUCCESS" } == true }
             val sessionIds = mutableSetOf<String>()
-            for ((model, threads, enabled) in listOf(Triple(YoloModel.YOLO_640, 4, true),
-                Triple(YoloModel.YOLO_512, 4, true), Triple(YoloModel.YOLO_640, 4, true),
-                Triple(YoloModel.YOLO_640, 4, false), Triple(YoloModel.YOLO_640, 2, false),
-                Triple(YoloModel.YOLO_640, 2, true), Triple(YoloModel.YOLO_640, 4, true))) {
+            for ((model, threads, enabled) in listOf(Triple(YoloModel.YOLO_512, 4, true),
+                Triple(YoloModel.YOLO_11N_512, 4, true), Triple(YoloModel.YOLO_512, 4, true),
+                Triple(YoloModel.YOLO_512, 4, false), Triple(YoloModel.YOLO_512, 2, false),
+                Triple(YoloModel.YOLO_512, 2, true), Triple(YoloModel.YOLO_512, 4, true))) {
                 var activity = requireNotNull(resumedMain())
                 val before = field(activity, "appSettings") as AppSettings
                 if (before.yolo.interpreterThreadCount != threads || before.yolo.useXnnpack != enabled || before.yolo.model != model) {
@@ -77,8 +77,8 @@ class XnnpackRuntimeSettingsTest {
                     // same saved-settings restart callback directly while camera inference runs.
                     AppSettingsStore(context).saveApplied(before.copy(yolo = before.yolo.copy(
                         interpreterThreadCount = threads, useXnnpack = enabled, model = model),
-                        camera = before.camera.copy(previewEnabled = model != YoloModel.YOLO_512,
-                            recognitionRoi = if (model == YoloModel.YOLO_512) com.samin.objectdetection.camera.RecognitionRoi.PRESET
+                        camera = before.camera.copy(previewEnabled = model != YoloModel.YOLO_11N_512,
+                            recognitionRoi = if (model == YoloModel.YOLO_11N_512) com.samin.objectdetection.camera.RecognitionRoi.PRESET
                                 else com.samin.objectdetection.camera.RecognitionRoi()),
                         performanceLog = PerformanceLogSettings(systemDiagnosticsEnabled = true, batteryDiagnosticsEnabled = true, sampleIntervalMs = 1000)))
                     call(activity, "restartForSettings")
@@ -130,7 +130,7 @@ class XnnpackRuntimeSettingsTest {
                 assertTrue(text.contains("Input Size: ${model.inputSize}x${model.inputSize}"))
                 assertTrue(text.contains("Input Tensor: ${detector.modelIdentity().inputShape}"))
                 assertTrue(text.contains("Output Tensor: ${detector.modelIdentity().outputShape}"))
-                if (model == YoloModel.YOLO_512) {
+                if (model == YoloModel.YOLO_11N_512) {
                     assertTrue(text.contains("cameraPreviewEnabled=false"))
                     assertTrue(text.contains("EDGE_CROP"))
                     assertTrue(text.contains("SYSTEM"))

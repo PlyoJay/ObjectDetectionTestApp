@@ -47,7 +47,7 @@ class BatteryDiagnosticsInstrumentedTest {
         for ((index, enabled) in listOf(true, false, true).withIndex()) {
             val recorder = PerformanceLogRecorder(context)
             val now = SystemClock.elapsedRealtimeNanos()
-            val header = PerformanceLogHeader(System.currentTimeMillis(), "best.tflite", "battery-api-validation",
+            val header = PerformanceLogHeader(System.currentTimeMillis(), "best_512.tflite", "battery-api-validation",
                 640, 640, 1280, 720, YoloResizeMode.LETTERBOX, 4, false, false, false, 0.2f, 0.45f,
                 sessionId = "battery-media-$index", startedElapsedNs = now,
                 systemDiagnosticsEnabled = true, batteryDiagnosticsEnabled = enabled)

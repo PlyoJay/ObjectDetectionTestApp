@@ -1,0 +1,132 @@
+[
+  {
+    "class": "com.samin.objectdetection.detector.ModelSelectionDetectorTest",
+    "name": "mislabeledClassCountIsRejectedWithActualShape",
+    "failed": false
+  },
+  {
+    "class": "com.samin.objectdetection.detector.ModelSelectionDetectorTest",
+    "name": "missingAssetHasActionableError",
+    "failed": false
+  },
+  {
+    "class": "com.samin.objectdetection.detector.ModelSelectionDetectorTest",
+    "name": "syntheticBoxesExerciseActualParserNmsAndRoiRestorationForBothModelsAndModes",
+    "failed": false
+  },
+  {
+    "class": "com.samin.objectdetection.detector.ModelSelectionDetectorTest",
+    "name": "bothModelsRunAndReuseTensorSizedStorageWithExactLetterboxAndStretchPixels",
+    "failed": false
+  },
+  {
+    "class": "com.samin.objectdetection.detector.ElevenClassDetectorTest",
+    "name": "allClassesKeepExactScoresAndRoiBoxesWithClassAwareNmsInBothResizeModes[YOLO_512]",
+    "failed": false
+  },
+  {
+    "class": "com.samin.objectdetection.detector.ElevenClassDetectorTest",
+    "name": "lastClassUsesItsOwnThresholdAndCanBeDisabledBeforeNms[YOLO_512]",
+    "failed": false
+  },
+  {
+    "class": "com.samin.objectdetection.detector.ElevenClassDetectorTest",
+    "name": "animalScoresUseUnchangedConfidenceThresholdClippingAndInvalidBoxRules[YOLO_512]",
+    "failed": false
+  },
+  {
+    "class": "com.samin.objectdetection.detector.ElevenClassDetectorTest",
+    "name": "allClassesKeepExactScoresAndRoiBoxesWithClassAwareNmsInBothResizeModes[YOLO_11N_512]",
+    "failed": false
+  },
+  {
+    "class": "com.samin.objectdetection.detector.ElevenClassDetectorTest",
+    "name": "lastClassUsesItsOwnThresholdAndCanBeDisabledBeforeNms[YOLO_11N_512]",
+    "failed": false
+  },
+  {
+    "class": "com.samin.objectdetection.detector.ElevenClassDetectorTest",
+    "name": "animalScoresUseUnchangedConfidenceThresholdClippingAndInvalidBoxRules[YOLO_11N_512]",
+    "failed": false
+  },
+  {
+    "class": "com.samin.objectdetection.detector.DetectorGoldenTest",
+    "name": "failedInputIsReportedAndNextFrameCanRecover",
+    "failed": false
+  },
+  {
+    "class": "com.samin.objectdetection.detector.DetectorGoldenTest",
+    "name": "knownPositiveImageRunsWithoutCameraX",
+    "failed": false
+  },
+  {
+    "class": "com.samin.objectdetection.detector.DetectorGoldenTest",
+    "name": "portraitLetterboxUsesActualDimensionsAndRgb114Padding",
+    "failed": false
+  },
+  {
+    "class": "com.samin.objectdetection.detector.DetectorGoldenTest",
+    "name": "actualBestModelReceivesRgbInItsTensorLayoutAndFiniteTwelveClassOutput",
+    "failed": false
+  },
+  {
+    "class": "com.samin.objectdetection.detector.DetectorCpuOptimizationTest",
+    "name": "cpuTwoAndFourThreadsMatchOriginalInputRawOutputAndDetections",
+    "failed": false
+  },
+  {
+    "class": "com.samin.objectdetection.detector.DetectorCpuOptimizationTest",
+    "name": "repeatedThreadSettingChangesCanCreateRunAndCloseIndependentDetectors",
+    "failed": false
+  },
+  {
+    "class": "com.samin.objectdetection.detector.DetectorPreprocessingRegressionTest",
+    "name": "diagnosticsTogglePreservesRawTensorBoxesAndCaptureCoordinates",
+    "failed": false
+  },
+  {
+    "class": "com.samin.objectdetection.detector.DetectorPreprocessingRegressionTest",
+    "name": "repeatedPositiveImageKeepsRawOutputAndDetectionsAndReportsStageTimings",
+    "failed": false
+  },
+  {
+    "class": "com.samin.objectdetection.detector.DetectorPreprocessingRegressionTest",
+    "name": "xnnpackOnOffPositiveImageMatchesWithinToleranceWithoutChangingDefault",
+    "failed": false
+  },
+  {
+    "class": "com.samin.objectdetection.detector.DetectorPreprocessingRegressionTest",
+    "name": "independentLetterboxReferenceMatchesAcrossShapeChangesAndReusesStorage",
+    "failed": false
+  },
+  {
+    "class": "com.samin.objectdetection.detector.InterpreterExecutionRegressionTest",
+    "name": "cachedAreaPolicyKeepsLegacyBoundaryDecisionsAndCandidateOrder",
+    "failed": false
+  },
+  {
+    "class": "com.samin.objectdetection.detector.InterpreterExecutionRegressionTest",
+    "name": "ownedOutputsMatchImmediateNativeViewsAcrossChangingInputsAndModels",
+    "failed": false
+  },
+  {
+    "class": "com.samin.objectdetection.settings.SettingsActivityTest",
+    "name": "modelChoiceSurvivesDraftRecreationApplyReopenAndCustomPreset",
+    "failed": true
+  },
+  {
+    "class": "com.samin.objectdetection.settings.SettingsActivityTest",
+    "name": "schemaFivePresetsAndFailedModelApplyRestoreEntirePreviousConfiguration",
+    "failed": false
+  },
+  {
+    "class": "com.samin.objectdetection.settings.SettingsActivityTest",
+    "name": "cardboardOptionsSurviveModelSwitchRecreationApplyAndPreset",
+    "failed": true
+  },
+  {
+    "class": "com.samin.objectdetection.settings.SettingsActivityTest",
+    "name": "retiredModelsRecoverInAppliedSettingsPresetsAndBothRollbackPaths",
+    "failed": false
+  }
+]

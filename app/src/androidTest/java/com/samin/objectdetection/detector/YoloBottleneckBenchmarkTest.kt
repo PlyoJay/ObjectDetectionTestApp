@@ -3,6 +3,7 @@ package com.samin.objectdetection.detector
 import android.os.SystemClock
 import android.os.Process
 import android.graphics.BitmapFactory
+import android.graphics.Bitmap
 import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.*
@@ -106,8 +107,11 @@ class YoloBottleneckBenchmarkTest {
                 Interpreter(ModelAssets.load(context), Interpreter.Options().setNumThreads(4)
                     .setUseXNNPACK(xnnpack)).use { interpreter ->
                     val shape = RgbTensorShape.from(interpreter.getInputTensor(0).shape())
-                    assertEquals(shape.width, bitmap.width); assertEquals(shape.height, bitmap.height)
+                    val resized = Bitmap.createScaledBitmap(bitmap, shape.width, shape.height, true)
                     val pixels = IntArray(shape.width * shape.height)
+                    try { resized.getPixels(pixels, 0, shape.width, 0, 0, shape.width, shape.height) }
+                    finally { if (resized !== bitmap) resized.recycle() }
+                    val imagePixels = pixels.copyOf()
                     val input = ByteBuffer.allocateDirect(interpreter.getInputTensor(0).numBytes()).order(ByteOrder.nativeOrder())
                     val outputBytes = interpreter.getOutputTensor(0).numBytes()
                     val original = ByteBuffer.allocateDirect(outputBytes).order(ByteOrder.nativeOrder())
@@ -117,7 +121,7 @@ class YoloBottleneckBenchmarkTest {
                     val expected = ByteArray(outputBytes); val actual = ByteArray(outputBytes)
                     val times = Array(2) { mutableListOf<Long>() }
                     repeat(14) { round ->
-                        bitmap.getPixels(pixels, 0, shape.width, 0, 0, shape.width, shape.height)
+                        imagePixels.copyInto(pixels)
                         // Alternate real image and color control to expose stale buffer positions/data.
                         if (round % 2 == 1) pixels.fill(0xff724020.toInt())
                         RgbTensorWriter.fill(input, pixels, shape.layout, TensorValueCodec(DataType.FLOAT32))

@@ -24,7 +24,7 @@ object ObjectTuningPolicyRegistry {
     )
 
     private val policies = buildList {
-        (ModelConfig.CLASS_LABELS - ModelConfig.LEGACY_CLASS_LABELS.toSet()).forEach { label ->
+        (ModelConfig.CLASS_LABELS - ModelConfig.WARNING_CLASS_LABELS.toSet()).forEach { label ->
             add(ObjectTuningPolicy(
                 label = label,
                 minConfidence = DetectionConfig.DEFAULT_CONFIDENCE_THRESHOLD,

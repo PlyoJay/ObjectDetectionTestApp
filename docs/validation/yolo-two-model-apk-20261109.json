@@ -1,0 +1,23 @@
+{
+  "apk": "app\\build\\outputs\\apk\\debug\\app-debug.apk",
+  "yoloModels": [
+    {
+      "asset": "assets/best_512.tflite",
+      "bytes": 37931072,
+      "sha256": "591509278b3a1fe114a0084d4841b948a93b637c22005b7becf06309cb906667",
+      "compression": 0
+    },
+    {
+      "asset": "assets/yolo11n_512.tflite",
+      "bytes": 10599278,
+      "sha256": "fa8f25724210a15c4259c82cbf8d87a4169d0ab7f1bb644a6620173aa52bae32",
+      "compression": 0
+    }
+  ],
+  "dependencyModels": [
+    "assets/mlkit_odt_default_classifier/labeler_with_validation.tflite",
+    "assets/mlkit_odt_localizer/localizer_with_validation.tflite"
+  ],
+  "onlyExpectedYoloModels": true,
+  "uncompressed": true
+}
