@@ -1,0 +1,102 @@
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:generateDebugBuildConfig
+> Task :app:generateDebugResources
+> Task :app:packageDebugResources
+> Task :app:processDebugNavigationResources
+> Task :app:javaPreCompileDebug
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:parseDebugLocalResources
+> Task :app:mergeDebugAssets
+> Task :app:generateDebugRFile
+> Task :app:compressDebugAssets
+> Task :app:generateDebugGlobalSynthetics
+> Task :app:checkDebugDuplicateClasses
+> Task :app:desugarDebugFileDependencies
+> Task :app:compileDebugKotlin
+> Task :app:mergeExtDexDebug
+
+> Task :app:compileDebugKotlin
+w: file:///D:/develop/Projects/TestProjects/ObjectDetection/app/src/main/java/com/samin/objectdetection/camera/ImageProxyExt.kt:28:22 'fun <T> trace(sectionName: String, block: () -> T): T' is deprecated. Use androidx.tracing.Trace instead.
+w: file:///D:/develop/Projects/TestProjects/ObjectDetection/app/src/main/java/com/samin/objectdetection/camera/ImageProxyExt.kt:35:13 'fun <T> trace(sectionName: String, block: () -> T): T' is deprecated. Use androidx.tracing.Trace instead.
+w: file:///D:/develop/Projects/TestProjects/ObjectDetection/app/src/main/java/com/samin/objectdetection/detector/VisionStyleYoloDetector.kt:208:30 'fun <T> trace(sectionName: String, block: () -> T): T' is deprecated. Use androidx.tracing.Trace instead.
+w: file:///D:/develop/Projects/TestProjects/ObjectDetection/app/src/main/java/com/samin/objectdetection/detector/VisionStyleYoloDetector.kt:285:17 'fun <T> trace(sectionName: String, block: () -> T): T' is deprecated. Use androidx.tracing.Trace instead.
+w: file:///D:/develop/Projects/TestProjects/ObjectDetection/app/src/main/java/com/samin/objectdetection/detector/VisionStyleYoloDetector.kt:344:9 'fun <T> trace(sectionName: String, block: () -> T): T' is deprecated. Use androidx.tracing.Trace instead.
+w: file:///D:/develop/Projects/TestProjects/ObjectDetection/app/src/main/java/com/samin/objectdetection/detector/VisionStyleYoloDetector.kt:347:9 'fun <T> trace(sectionName: String, block: () -> T): T' is deprecated. Use androidx.tracing.Trace instead.
+w: file:///D:/develop/Projects/TestProjects/ObjectDetection/app/src/main/java/com/samin/objectdetection/mlkit/MlKitObjectDetector.kt:39:25 'fun <T> trace(sectionName: String, block: () -> T): T' is deprecated. Use androidx.tracing.Trace instead.
+
+> Task :app:compileDebugJavaWithJavac
+> Task :app:processDebugJavaRes
+> Task :app:mergeLibDexDebug
+> Task :app:checkDebugAarMetadata
+> Task :app:mapDebugSourceSetPaths
+> Task :app:compileDebugNavigationResources
+> Task :app:mergeDebugJavaResource
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug
+> Task :app:mergeDebugResources
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
+> Task :app:mergeDebugJniLibFolders
+> Task :app:processDebugManifestForPackage
+> Task :app:mergeDebugNativeLibs
+> Task :app:stripDebugDebugSymbols
+> Task :app:validateSigningDebug
+> Task :app:writeDebugAppMetadata
+> Task :app:writeDebugSigningConfigVersions
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileDebugUnitTest
+> Task :app:preDebugAndroidTestBuild SKIPPED
+> Task :app:extractProguardFiles
+> Task :app:processDebugResources
+> Task :app:generateDebugLintReportModel
+> Task :app:dexBuilderDebug
+> Task :app:bundleDebugClassesToRuntimeJar
+> Task :app:mergeProjectDexDebug
+> Task :app:bundleDebugClassesToCompileJar
+> Task :app:packageDebug
+> Task :app:createDebugApkListingFileRedirect
+> Task :app:assembleDebug
+> Task :app:generateDebugAndroidTestLintModel
+> Task :app:generateDebugUnitTestLintModel
+> Task :app:compileDebugUnitTestKotlin
+> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:processDebugUnitTestJavaRes
+> Task :app:lintAnalyzeDebug
+> Task :app:testDebugUnitTest
+> Task :app:lintAnalyzeDebugAndroidTest
+> Task :app:lintAnalyzeDebugUnitTest
+> Task :app:processDebugAndroidTestManifest
+> Task :app:generateDebugAndroidTestBuildConfig
+> Task :app:generateDebugAndroidTestResources
+> Task :app:packageDebugAndroidTestResources
+> Task :app:processDebugAndroidTestNavigationResources
+> Task :app:parseDebugAndroidTestLocalResources
+> Task :app:generateDebugAndroidTestRFile
+
+> Task :app:compileDebugAndroidTestKotlin FAILED
+e: file:///D:/develop/Projects/TestProjects/ObjectDetection/app/src/androidTest/java/com/samin/objectdetection/settings/SettingsActivityTest.kt:75:16 Unresolved reference 'is'.
+e: file:///D:/develop/Projects/TestProjects/ObjectDetection/app/src/androidTest/java/com/samin/objectdetection/settings/SettingsActivityTest.kt:93:16 Unresolved reference 'is'.
+e: file:///D:/develop/Projects/TestProjects/ObjectDetection/app/src/androidTest/java/com/samin/objectdetection/settings/SettingsActivityTest.kt:134:16 Unresolved reference 'is'.
+e: file:///D:/develop/Projects/TestProjects/ObjectDetection/app/src/androidTest/java/com/samin/objectdetection/settings/SettingsActivityTest.kt:138:16 Unresolved reference 'is'.
+e: file:///D:/develop/Projects/TestProjects/ObjectDetection/app/src/androidTest/java/com/samin/objectdetection/settings/SettingsActivityTest.kt:167:16 Unresolved reference 'is'.
+e: file:///D:/develop/Projects/TestProjects/ObjectDetection/app/src/androidTest/java/com/samin/objectdetection/settings/SettingsActivityTest.kt:702:91 Unresolved reference 'is'.
+e: file:///D:/develop/Projects/TestProjects/ObjectDetection/app/src/androidTest/java/com/samin/objectdetection/settings/SettingsActivityTest.kt:729:60 Unresolved reference 'is'.
+e: file:///D:/develop/Projects/TestProjects/ObjectDetection/app/src/androidTest/java/com/samin/objectdetection/settings/SettingsActivityTest.kt:734:16 Unresolved reference 'is'.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugAndroidTestKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+59 actionable tasks: 59 executed
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 3m 11s

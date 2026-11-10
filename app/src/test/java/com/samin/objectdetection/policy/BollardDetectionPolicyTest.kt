@@ -5,7 +5,6 @@ import com.samin.objectdetection.detector.DetectionResult
 import com.samin.objectdetection.warning.WarningPolicy
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class BollardDetectionPolicyTest {

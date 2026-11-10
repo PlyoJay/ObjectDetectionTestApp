@@ -1,0 +1,19 @@
+{
+  "path": "app/src/androidTest/java/com/samin/objectdetection/settings/SettingsActivityTest.kt",
+  "baselineCommit": "ab00e47",
+  "fileUnchangedBeforeFix": true,
+  "baselineExpectedCount": 77,
+  "baselineCategoryCount": 5,
+  "baselineFieldCount": 72,
+  "conclusion": "Baseline assertion fails independently of app runtime: 77 != 72. Fix only the stale count; retain full view-tag equality and per-control reachability assertions.",
+  "overlayCase": {
+    "testFileUnchangedBeforeFix": true,
+    "productionOverlayUnchanged": true,
+    "test": "longLabelsStayInsideScreenAndAvoidEachOther",
+    "cause": "overlay() selects OverlayDebugMode.NONE, whose buildLabel returns null. Label-layout test must select SIMPLE before asserting two label bounds.",
+    "fix": "Set SIMPLE in this test only; preserve count/bounds/non-overlap assertions and production behavior."
+  },
+  "additionalMissingPerClassFields": 24,
+  "finalExpectedFields": 96,
+  "finalFix": "Extend fixture with enable/confidence for each of the 12 literal class labels; assert 96 and retain full equality and per-field reachability checks."
+}

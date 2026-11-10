@@ -1,0 +1,107 @@
+INSTRUMENTATION_STATUS: class=com.samin.objectdetection.settings.SettingsActivityTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stream=
+com.samin.objectdetection.settings.SettingsActivityTest:
+INSTRUMENTATION_STATUS: test=everyExistingControlIsReachableInItsCategory
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.samin.objectdetection.settings.SettingsActivityTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stack=java.lang.AssertionError: expected:<[Adaptive Temporal, Bollard Max Width/Height, Bollard Min Area Ratio, Center Square ROI (OFF = Full Frame), Confidence Threshold, Confidence 표시, Debug Detection Logging, Debug Save Inference Input, Debug Save Interval (ms), Debug Save On Detection, Detect Interval (ms), Detection Interval (ms), Diagnostic Max Raw Candidates, Diagnostic Raw Confidence Threshold, Enable Detector Diagnostics, FPS 표시, Geometry Filter, Ignore Top Ratio, Interpreter Thread Count, ML Kit Detection, ML Kit Detector Mode, ML Kit Diagnostics, ML Kit bbox, Max Candidates, Max Guide Object Count, Max History Size, Max Match Distance Ratio, Mid Area Ratio, Mid Height Ratio, Min Absolute Area Change, Min Absolute Height Change, Min Box Area Ratio, Min Box Height Ratio, Min Box Width Ratio, Min History Size, Min Relative Area Change, Min Relative Height Change, Min Sample Interval (ms), NMS Threshold, Near Area Ratio, Near Height Ratio, Overlay, Overlay Debug Mode, Overlay Stale Timeout (ms), Preview 인식 영역 표시, Resize Mode, Sample Interval (ms), Size Filter Mode, Stale Track Timeout (ms), System Performance Diagnostics, Temporal Confirmation Confidence, Temporal Immediate Confidence, Temporal Match IoU, Very Near Area Ratio, Very Near Height Ratio, Warning Cooldown (ms), XNNPACK 사용, YOLO bbox, 기존 호환 Debug Image, 모델 선택, 배터리·발열 진단, 상단 크롭 (%), 실제 Beep, 실제 TTS, 실제 진동, 오른쪽 크롭 (%), 왼쪽 크롭 (%), 요청 Camera Resolution, 인식 영역 크롭 사용, 카메라 화면 표시 (Preview), 테스트 시간 (분), 하단 크롭 (%)]> but was:<[0: bollard 탐지, 10: dog 탐지, 11: cardboard_box 탐지, 1: person 탐지, 2: bicycle 탐지, 3: car 탐지, 4: motorcycle 탐지, 5: bus 탐지, 6: truck 탐지, 7: stop sign 탐지, 8: bench 탐지, 9: cat 탐지, Adaptive Temporal, Bollard Max Width/Height, Bollard Min Area Ratio, Center Square ROI (OFF = Full Frame), Confidence Threshold, Confidence 표시, Debug Detection Logging, Debug Save Inference Input, Debug Save Interval (ms), Debug Save On Detection, Detect Interval (ms), Detection Interval (ms), Diagnostic Max Raw Candidates, Diagnostic Raw Confidence Threshold, Enable Detector Diagnostics, FPS 표시, Geometry Filter, Ignore Top Ratio, Interpreter Thread Count, ML Kit Detection, ML Kit Detector Mode, ML Kit Diagnostics, ML Kit bbox, Max Candidates, Max Guide Object Count, Max History Size, Max Match Distance Ratio, Mid Area Ratio, Mid Height Ratio, Min Absolute Area Change, Min Absolute Height Change, Min Box Area Ratio, Min Box Height Ratio, Min Box Width Ratio, Min History Size, Min Relative Area Change, Min Relative Height Change, Min Sample Interval (ms), NMS Threshold, Near Area Ratio, Near Height Ratio, Overlay, Overlay Debug Mode, Overlay Stale Timeout (ms), Preview 인식 영역 표시, Resize Mode, Sample Interval (ms), Size Filter Mode, Stale Track Timeout (ms), System Performance Diagnostics, Temporal Confirmation Confidence, Temporal Immediate Confidence, Temporal Match IoU, Very Near Area Ratio, Very Near Height Ratio, Warning Cooldown (ms), XNNPACK 사용, YOLO bbox, bench Confidence, bicycle Confidence, bollard Confidence, bus Confidence, car Confidence, cardboard_box Confidence, cat Confidence, dog Confidence, motorcycle Confidence, person Confidence, stop sign Confidence, truck Confidence, 기존 호환 Debug Image, 모델 선택, 배터리·발열 진단, 상단 크롭 (%), 실제 Beep, 실제 TTS, 실제 진동, 오른쪽 크롭 (%), 왼쪽 크롭 (%), 요청 Camera Resolution, 인식 영역 크롭 사용, 카메라 화면 표시 (Preview), 테스트 시간 (분), 하단 크롭 (%)]>
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotEquals(Assert.java:835)
+	at org.junit.Assert.assertEquals(Assert.java:120)
+	at org.junit.Assert.assertEquals(Assert.java:146)
+	at com.samin.objectdetection.settings.SettingsActivityTest.everyExistingControlIsReachableInItsCategory$lambda$33(SettingsActivityTest.kt:418)
+	at com.samin.objectdetection.settings.SettingsActivityTest$$ExternalSyntheticLambda4.perform(D8$$SyntheticClass:0)
+	at androidx.test.core.app.ActivityScenario.lambda$onActivity$2$androidx-test-core-app-ActivityScenario(ActivityScenario.java:794)
+	at androidx.test.core.app.ActivityScenario$$ExternalSyntheticLambda2.run(D8$$SyntheticClass:0)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:520)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:328)
+	at android.app.Instrumentation$SyncRunnable.run(Instrumentation.java:2703)
+	at android.os.Handler.handleCallback(Handler.java:1070)
+	at android.os.Handler.dispatchMessage(Handler.java:125)
+	at android.os.Looper.dispatchMessage(Looper.java:358)
+	at android.os.Looper.loopOnce(Looper.java:288)
+	at android.os.Looper.loop(Looper.java:392)
+	at android.app.ActivityThread.main(ActivityThread.java:10346)
+	at java.lang.reflect.Method.invoke(Native Method)
+	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:638)
+	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:972)
+
+INSTRUMENTATION_STATUS: stream=
+Error in everyExistingControlIsReachableInItsCategory(com.samin.objectdetection.settings.SettingsActivityTest):
+java.lang.AssertionError: expected:<[Adaptive Temporal, Bollard Max Width/Height, Bollard Min Area Ratio, Center Square ROI (OFF = Full Frame), Confidence Threshold, Confidence 표시, Debug Detection Logging, Debug Save Inference Input, Debug Save Interval (ms), Debug Save On Detection, Detect Interval (ms), Detection Interval (ms), Diagnostic Max Raw Candidates, Diagnostic Raw Confidence Threshold, Enable Detector Diagnostics, FPS 표시, Geometry Filter, Ignore Top Ratio, Interpreter Thread Count, ML Kit Detection, ML Kit Detector Mode, ML Kit Diagnostics, ML Kit bbox, Max Candidates, Max Guide Object Count, Max History Size, Max Match Distance Ratio, Mid Area Ratio, Mid Height Ratio, Min Absolute Area Change, Min Absolute Height Change, Min Box Area Ratio, Min Box Height Ratio, Min Box Width Ratio, Min History Size, Min Relative Area Change, Min Relative Height Change, Min Sample Interval (ms), NMS Threshold, Near Area Ratio, Near Height Ratio, Overlay, Overlay Debug Mode, Overlay Stale Timeout (ms), Preview 인식 영역 표시, Resize Mode, Sample Interval (ms), Size Filter Mode, Stale Track Timeout (ms), System Performance Diagnostics, Temporal Confirmation Confidence, Temporal Immediate Confidence, Temporal Match IoU, Very Near Area Ratio, Very Near Height Ratio, Warning Cooldown (ms), XNNPACK 사용, YOLO bbox, 기존 호환 Debug Image, 모델 선택, 배터리·발열 진단, 상단 크롭 (%), 실제 Beep, 실제 TTS, 실제 진동, 오른쪽 크롭 (%), 왼쪽 크롭 (%), 요청 Camera Resolution, 인식 영역 크롭 사용, 카메라 화면 표시 (Preview), 테스트 시간 (분), 하단 크롭 (%)]> but was:<[0: bollard 탐지, 10: dog 탐지, 11: cardboard_box 탐지, 1: person 탐지, 2: bicycle 탐지, 3: car 탐지, 4: motorcycle 탐지, 5: bus 탐지, 6: truck 탐지, 7: stop sign 탐지, 8: bench 탐지, 9: cat 탐지, Adaptive Temporal, Bollard Max Width/Height, Bollard Min Area Ratio, Center Square ROI (OFF = Full Frame), Confidence Threshold, Confidence 표시, Debug Detection Logging, Debug Save Inference Input, Debug Save Interval (ms), Debug Save On Detection, Detect Interval (ms), Detection Interval (ms), Diagnostic Max Raw Candidates, Diagnostic Raw Confidence Threshold, Enable Detector Diagnostics, FPS 표시, Geometry Filter, Ignore Top Ratio, Interpreter Thread Count, ML Kit Detection, ML Kit Detector Mode, ML Kit Diagnostics, ML Kit bbox, Max Candidates, Max Guide Object Count, Max History Size, Max Match Distance Ratio, Mid Area Ratio, Mid Height Ratio, Min Absolute Area Change, Min Absolute Height Change, Min Box Area Ratio, Min Box Height Ratio, Min Box Width Ratio, Min History Size, Min Relative Area Change, Min Relative Height Change, Min Sample Interval (ms), NMS Threshold, Near Area Ratio, Near Height Ratio, Overlay, Overlay Debug Mode, Overlay Stale Timeout (ms), Preview 인식 영역 표시, Resize Mode, Sample Interval (ms), Size Filter Mode, Stale Track Timeout (ms), System Performance Diagnostics, Temporal Confirmation Confidence, Temporal Immediate Confidence, Temporal Match IoU, Very Near Area Ratio, Very Near Height Ratio, Warning Cooldown (ms), XNNPACK 사용, YOLO bbox, bench Confidence, bicycle Confidence, bollard Confidence, bus Confidence, car Confidence, cardboard_box Confidence, cat Confidence, dog Confidence, motorcycle Confidence, person Confidence, stop sign Confidence, truck Confidence, 기존 호환 Debug Image, 모델 선택, 배터리·발열 진단, 상단 크롭 (%), 실제 Beep, 실제 TTS, 실제 진동, 오른쪽 크롭 (%), 왼쪽 크롭 (%), 요청 Camera Resolution, 인식 영역 크롭 사용, 카메라 화면 표시 (Preview), 테스트 시간 (분), 하단 크롭 (%)]>
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotEquals(Assert.java:835)
+	at org.junit.Assert.assertEquals(Assert.java:120)
+	at org.junit.Assert.assertEquals(Assert.java:146)
+	at com.samin.objectdetection.settings.SettingsActivityTest.everyExistingControlIsReachableInItsCategory$lambda$33(SettingsActivityTest.kt:418)
+	at com.samin.objectdetection.settings.SettingsActivityTest$$ExternalSyntheticLambda4.perform(D8$$SyntheticClass:0)
+	at androidx.test.core.app.ActivityScenario.lambda$onActivity$2$androidx-test-core-app-ActivityScenario(ActivityScenario.java:794)
+	at androidx.test.core.app.ActivityScenario$$ExternalSyntheticLambda2.run(D8$$SyntheticClass:0)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:520)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:328)
+	at android.app.Instrumentation$SyncRunnable.run(Instrumentation.java:2703)
+	at android.os.Handler.handleCallback(Handler.java:1070)
+	at android.os.Handler.dispatchMessage(Handler.java:125)
+	at android.os.Looper.dispatchMessage(Looper.java:358)
+	at android.os.Looper.loopOnce(Looper.java:288)
+	at android.os.Looper.loop(Looper.java:392)
+	at android.app.ActivityThread.main(ActivityThread.java:10346)
+	at java.lang.reflect.Method.invoke(Native Method)
+	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:638)
+	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:972)
+
+INSTRUMENTATION_STATUS: test=everyExistingControlIsReachableInItsCategory
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_STATUS: class=com.samin.objectdetection.ui.BoundingBoxOverlayTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stream=
+com.samin.objectdetection.ui.BoundingBoxOverlayTest:
+INSTRUMENTATION_STATUS: test=longLabelsStayInsideScreenAndAvoidEachOther
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.samin.objectdetection.ui.BoundingBoxOverlayTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=longLabelsStayInsideScreenAndAvoidEachOther
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_RESULT: stream=
+
+Time: 2.804
+There was 1 failure:
+1) everyExistingControlIsReachableInItsCategory(com.samin.objectdetection.settings.SettingsActivityTest)
+java.lang.AssertionError: expected:<[Adaptive Temporal, Bollard Max Width/Height, Bollard Min Area Ratio, Center Square ROI (OFF = Full Frame), Confidence Threshold, Confidence 표시, Debug Detection Logging, Debug Save Inference Input, Debug Save Interval (ms), Debug Save On Detection, Detect Interval (ms), Detection Interval (ms), Diagnostic Max Raw Candidates, Diagnostic Raw Confidence Threshold, Enable Detector Diagnostics, FPS 표시, Geometry Filter, Ignore Top Ratio, Interpreter Thread Count, ML Kit Detection, ML Kit Detector Mode, ML Kit Diagnostics, ML Kit bbox, Max Candidates, Max Guide Object Count, Max History Size, Max Match Distance Ratio, Mid Area Ratio, Mid Height Ratio, Min Absolute Area Change, Min Absolute Height Change, Min Box Area Ratio, Min Box Height Ratio, Min Box Width Ratio, Min History Size, Min Relative Area Change, Min Relative Height Change, Min Sample Interval (ms), NMS Threshold, Near Area Ratio, Near Height Ratio, Overlay, Overlay Debug Mode, Overlay Stale Timeout (ms), Preview 인식 영역 표시, Resize Mode, Sample Interval (ms), Size Filter Mode, Stale Track Timeout (ms), System Performance Diagnostics, Temporal Confirmation Confidence, Temporal Immediate Confidence, Temporal Match IoU, Very Near Area Ratio, Very Near Height Ratio, Warning Cooldown (ms), XNNPACK 사용, YOLO bbox, 기존 호환 Debug Image, 모델 선택, 배터리·발열 진단, 상단 크롭 (%), 실제 Beep, 실제 TTS, 실제 진동, 오른쪽 크롭 (%), 왼쪽 크롭 (%), 요청 Camera Resolution, 인식 영역 크롭 사용, 카메라 화면 표시 (Preview), 테스트 시간 (분), 하단 크롭 (%)]> but was:<[0: bollard 탐지, 10: dog 탐지, 11: cardboard_box 탐지, 1: person 탐지, 2: bicycle 탐지, 3: car 탐지, 4: motorcycle 탐지, 5: bus 탐지, 6: truck 탐지, 7: stop sign 탐지, 8: bench 탐지, 9: cat 탐지, Adaptive Temporal, Bollard Max Width/Height, Bollard Min Area Ratio, Center Square ROI (OFF = Full Frame), Confidence Threshold, Confidence 표시, Debug Detection Logging, Debug Save Inference Input, Debug Save Interval (ms), Debug Save On Detection, Detect Interval (ms), Detection Interval (ms), Diagnostic Max Raw Candidates, Diagnostic Raw Confidence Threshold, Enable Detector Diagnostics, FPS 표시, Geometry Filter, Ignore Top Ratio, Interpreter Thread Count, ML Kit Detection, ML Kit Detector Mode, ML Kit Diagnostics, ML Kit bbox, Max Candidates, Max Guide Object Count, Max History Size, Max Match Distance Ratio, Mid Area Ratio, Mid Height Ratio, Min Absolute Area Change, Min Absolute Height Change, Min Box Area Ratio, Min Box Height Ratio, Min Box Width Ratio, Min History Size, Min Relative Area Change, Min Relative Height Change, Min Sample Interval (ms), NMS Threshold, Near Area Ratio, Near Height Ratio, Overlay, Overlay Debug Mode, Overlay Stale Timeout (ms), Preview 인식 영역 표시, Resize Mode, Sample Interval (ms), Size Filter Mode, Stale Track Timeout (ms), System Performance Diagnostics, Temporal Confirmation Confidence, Temporal Immediate Confidence, Temporal Match IoU, Very Near Area Ratio, Very Near Height Ratio, Warning Cooldown (ms), XNNPACK 사용, YOLO bbox, bench Confidence, bicycle Confidence, bollard Confidence, bus Confidence, car Confidence, cardboard_box Confidence, cat Confidence, dog Confidence, motorcycle Confidence, person Confidence, stop sign Confidence, truck Confidence, 기존 호환 Debug Image, 모델 선택, 배터리·발열 진단, 상단 크롭 (%), 실제 Beep, 실제 TTS, 실제 진동, 오른쪽 크롭 (%), 왼쪽 크롭 (%), 요청 Camera Resolution, 인식 영역 크롭 사용, 카메라 화면 표시 (Preview), 테스트 시간 (분), 하단 크롭 (%)]>
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotEquals(Assert.java:835)
+	at org.junit.Assert.assertEquals(Assert.java:120)
+	at org.junit.Assert.assertEquals(Assert.java:146)
+	at com.samin.objectdetection.settings.SettingsActivityTest.everyExistingControlIsReachableInItsCategory$lambda$33(SettingsActivityTest.kt:418)
+	at com.samin.objectdetection.settings.SettingsActivityTest$$ExternalSyntheticLambda4.perform(D8$$SyntheticClass:0)
+	at androidx.test.core.app.ActivityScenario.lambda$onActivity$2$androidx-test-core-app-ActivityScenario(ActivityScenario.java:794)
+	at androidx.test.core.app.ActivityScenario$$ExternalSyntheticLambda2.run(D8$$SyntheticClass:0)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:520)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:328)
+	at android.app.Instrumentation$SyncRunnable.run(Instrumentation.java:2703)
+	at android.os.Handler.handleCallback(Handler.java:1070)
+	at android.os.Handler.dispatchMessage(Handler.java:125)
+	at android.os.Looper.dispatchMessage(Looper.java:358)
+	at android.os.Looper.loopOnce(Looper.java:288)
+	at android.os.Looper.loop(Looper.java:392)
+	at android.app.ActivityThread.main(ActivityThread.java:10346)
+	at java.lang.reflect.Method.invoke(Native Method)
+	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:638)
+	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:972)
+
+FAILURES!!!
+Tests run: 2,  Failures: 1
+
+
+INSTRUMENTATION_CODE: -1

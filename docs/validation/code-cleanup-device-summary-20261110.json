@@ -1,0 +1,387 @@
+{
+  "device": "SM-S921N",
+  "attempts": [
+    {
+      "log": "code-cleanup-final-device-ui-20261110.txt",
+      "cases": 25,
+      "statusCounts": {
+        "0": 24,
+        "-2": 1
+      }
+    },
+    {
+      "log": "code-cleanup-final-device-core-20261110.txt",
+      "cases": 61,
+      "statusCounts": {
+        "0": 60,
+        "-2": 1
+      }
+    },
+    {
+      "log": "code-cleanup-final-device-retry-20261110.txt",
+      "cases": 2,
+      "statusCounts": {
+        "-2": 1,
+        "0": 1
+      }
+    },
+    {
+      "log": "code-cleanup-final-device-complete-20261110.txt",
+      "cases": 2,
+      "statusCounts": {
+        "0": 2
+      }
+    }
+  ],
+  "uniqueFinalCases": 86,
+  "finalStatusCounts": {
+    "0": 86
+  },
+  "singleFullSuiteRun": false,
+  "cases": {
+    "com.samin.objectdetection.camera.CameraPreviewRuntimeTest#analysisDeliversFramesWithAndWithoutPreviewAcrossRestart": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-ui-20261110.txt"
+    },
+    "com.samin.objectdetection.settings.SettingsActivityTest#schemaThreeAppliedAndCustomSettingsMigratePreviewOnAndKeepOtherValues": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-ui-20261110.txt"
+    },
+    "com.samin.objectdetection.settings.SettingsActivityTest#modelChoiceSurvivesDraftRecreationApplyReopenAndCustomPreset": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-ui-20261110.txt"
+    },
+    "com.samin.objectdetection.settings.SettingsActivityTest#schemaFivePresetsAndFailedModelApplyRestoreEntirePreviousConfiguration": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-ui-20261110.txt"
+    },
+    "com.samin.objectdetection.settings.SettingsActivityTest#categoryScrollIsRetainedAcrossNavigationAndRecreation": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-ui-20261110.txt"
+    },
+    "com.samin.objectdetection.settings.SettingsActivityTest#mlKitModeDraftApplyAndPresetPersistWithoutChangingIntervalRoiOrYolo": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-ui-20261110.txt"
+    },
+    "com.samin.objectdetection.settings.SettingsActivityTest#builtInAndNamedPresetsStillApplyWithoutChangingOtherValues": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-ui-20261110.txt"
+    },
+    "com.samin.objectdetection.settings.SettingsActivityTest#cardboardOptionsSurviveModelSwitchRecreationApplyAndPreset": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-ui-20261110.txt"
+    },
+    "com.samin.objectdetection.settings.SettingsActivityTest#previewSwitchSurvivesRecreationApplyReopenAndCustomPresetWithoutChangingOverlay": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-ui-20261110.txt"
+    },
+    "com.samin.objectdetection.settings.SettingsActivityTest#previewVisibilitySuppressesDebugAndBoxesWhileKeepingRecordingAndLogControls": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-ui-20261110.txt"
+    },
+    "com.samin.objectdetection.settings.SettingsActivityTest#customPresetSaveRenameDeleteAndResetKeepTheirExistingMeaning": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-ui-20261110.txt"
+    },
+    "com.samin.objectdetection.settings.SettingsActivityTest#everyExistingControlIsReachableInItsCategory": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-complete-20261110.txt"
+    },
+    "com.samin.objectdetection.settings.SettingsActivityTest#retiredModelsRecoverInAppliedSettingsPresetsAndBothRollbackPaths": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-ui-20261110.txt"
+    },
+    "com.samin.objectdetection.settings.SettingsActivityTest#schemaTwoAndCustomPresetsDefaultXnnpackOnWithoutLosingExistingValues": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-ui-20261110.txt"
+    },
+    "com.samin.objectdetection.settings.SettingsActivityTest#incompleteDraftSurvivesRecreationAndCancelDoesNotSave": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-ui-20261110.txt"
+    },
+    "com.samin.objectdetection.settings.SettingsActivityTest#roiPresetValidationAndDurationStayInTheirCategoriesAndPersist": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-ui-20261110.txt"
+    },
+    "com.samin.objectdetection.settings.SettingsActivityTest#diagnosticsAndIntervalSurviveNavigationRecreationApplyAndReopen": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-ui-20261110.txt"
+    },
+    "com.samin.objectdetection.settings.SettingsActivityTest#legacyMigrationPreservesCustomPresetAndRecreationDoesNotAdvanceRollback": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-ui-20261110.txt"
+    },
+    "com.samin.objectdetection.settings.SettingsActivityTest#previewModesKeepRealInferenceDiagnosticsAndPerformanceLogSettingsLock": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-ui-20261110.txt"
+    },
+    "com.samin.objectdetection.settings.SettingsActivityTest#xnnpackSwitchPersistsOffOnAndThreadSettingsAcrossEditorAndStoreRecreation": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-ui-20261110.txt"
+    },
+    "com.samin.objectdetection.settings.SettingsActivityTest#browsingFocusingAndRevertingAnEditDoNotWriteSettings": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-ui-20261110.txt"
+    },
+    "com.samin.objectdetection.settings.XnnpackRuntimeSettingsTest#cameraDrainAndInterpreterClosePrecedeOnOffOnRecreationAndNewLogSessions": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-ui-20261110.txt"
+    },
+    "com.samin.objectdetection.mlkit.MlKitModeChangeLifecycleTest#cancelledSdkTaskDrainsLeaseBeforeModeRecreation": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-ui-20261110.txt"
+    },
+    "com.samin.objectdetection.mlkit.MlKitModeChangeLifecycleTest#failureDrainsLeaseBeforeModeRecreation": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-ui-20261110.txt"
+    },
+    "com.samin.objectdetection.mlkit.MlKitModeChangeLifecycleTest#successDrainsLeaseBeforeModeRecreation": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-ui-20261110.txt"
+    },
+    "com.samin.objectdetection.detector.ModelSelectionDetectorTest#mislabeledClassCountIsRejectedWithActualShape": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.detector.ModelSelectionDetectorTest#missingAssetHasActionableError": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.detector.ModelSelectionDetectorTest#syntheticBoxesExerciseActualParserNmsAndRoiRestorationForBothModelsAndModes": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.detector.ModelSelectionDetectorTest#bothModelsRunAndReuseTensorSizedStorageWithExactLetterboxAndStretchPixels": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.detector.InterpreterExecutionRegressionTest#cachedAreaPolicyKeepsLegacyBoundaryDecisionsAndCandidateOrder": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.detector.InterpreterExecutionRegressionTest#ownedOutputsMatchImmediateNativeViewsAcrossChangingInputsAndModels": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.detector.DetectorCpuOptimizationTest#cpuTwoAndFourThreadsMatchOriginalInputRawOutputAndDetections": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.detector.DetectorCpuOptimizationTest#repeatedThreadSettingChangesCanCreateRunAndCloseIndependentDetectors": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.detector.DetectorPreprocessingRegressionTest#diagnosticsTogglePreservesRawTensorBoxesAndCaptureCoordinates": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.detector.DetectorPreprocessingRegressionTest#repeatedPositiveImageKeepsRawOutputAndDetectionsAndReportsStageTimings": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.detector.DetectorPreprocessingRegressionTest#xnnpackOnOffPositiveImageMatchesWithinToleranceWithoutChangingDefault": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.detector.DetectorPreprocessingRegressionTest#independentLetterboxReferenceMatchesAcrossShapeChangesAndReusesStorage": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.detector.ElevenClassDetectorTest#allClassesKeepExactScoresAndRoiBoxesWithClassAwareNmsInBothResizeModes[YOLO_512]": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.detector.ElevenClassDetectorTest#lastClassUsesItsOwnThresholdAndCanBeDisabledBeforeNms[YOLO_512]": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.detector.ElevenClassDetectorTest#animalScoresUseUnchangedConfidenceThresholdClippingAndInvalidBoxRules[YOLO_512]": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.detector.ElevenClassDetectorTest#allClassesKeepExactScoresAndRoiBoxesWithClassAwareNmsInBothResizeModes[YOLO_11N_512]": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.detector.ElevenClassDetectorTest#lastClassUsesItsOwnThresholdAndCanBeDisabledBeforeNms[YOLO_11N_512]": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.detector.ElevenClassDetectorTest#animalScoresUseUnchangedConfidenceThresholdClippingAndInvalidBoxRules[YOLO_11N_512]": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.detector.DetectorGoldenTest#failedInputIsReportedAndNextFrameCanRecover": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.detector.DetectorGoldenTest#knownPositiveImageRunsWithoutCameraX": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.detector.DetectorGoldenTest#portraitLetterboxUsesActualDimensionsAndRgb114Padding": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.detector.DetectorGoldenTest#actualBestModelReceivesRgbInItsTensorLayoutAndFiniteTwelveClassOutput": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.camera.FrameBitmapBufferTest#quarterTurnsAndCropsMatchPlatformPixelsIncludingAlphaDensityAndOddSizes": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.camera.FrameBitmapBufferTest#invalidRequestAndNonArgbFallbackPreserveOwnershipAndRecovery": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.camera.FrameBitmapBufferTest#conversionTransfersZeroRotationButRecyclesRotatedAndFailedSources": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.camera.FrameBitmapBufferTest#reusesStorageAndClearsOldPixelsThenReleasesOnShapeChangeAndClose": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.camera.FrameBitmapBufferTest#mlKitLeaseAndCaptureCopySurviveNextFrameAndRotationBufferClose": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.camera.ReusableRoiPipelineTest#everyRotationAndRoiKeepsTensorOutputAndRestoredBoxesEqualToLegacyBitmaps": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.camera.ReusableRoiPipelineTest#cropIsReusedAfterDetectorErrorAndCloseWaitsForReader": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.camera.RecognitionRoiInstrumentedTest#realBitmapRotationThenSinglePipelineCropRestoresBoxesOnEveryQuarterTurn": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.camera.RecognitionRoiInstrumentedTest#regionGuideUsesFullFrameFitCenterEvenWhenBboxesAreDisabled": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.distance.DistancePipelineTest#rotationsRoiAndModelClassesRestoreBoxesWithoutProducingDistance": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.distance.DistancePipelineTest#missingDistanceDoesNotSuppressBoxOrExistingVisualWarning": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.mlkit.MlKitInputBufferTest#concurrentAcquireCannotOverwriteLeasedPixelsAndCloseDefersRecycle": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.mlkit.MlKitInputBufferTest#filteringDoesNotReadPixelsOutsideRoi": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.mlkit.MlKitInputBufferTest#pixelsMatchLegacyCropAndFilteredResizeForEveryRotationAndRoi": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.mlkit.MlKitInputBufferTest#invalidRoiDoesNotStrandBufferAndIdleCloseIsIdempotent": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.mlkit.MlKitInputBufferTest#reusesIdentityAndFullyOverwritesPreviousPixelsIncludingAlpha": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.mlkit.MlKitInputBufferTest#exactSizeInputIsOwnedAndUnaffectedBySourceMutationOrRecycle": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.metrics.SystemPerformanceDiagnosticsInstrumentedTest#publicApisAndRestrictedFrequencyAccessCollectSafelyAndStop": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.metrics.SystemPerformanceDiagnosticsInstrumentedTest#realYoloDiagnosticsOffOnComparisonAndMediaStoreStopDrain": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.metrics.BatteryDiagnosticsInstrumentedTest#mediaStoreOnOffOnPreservesLegacySummariesAndFinalBatteryEndpoint": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.metrics.BatteryDiagnosticsInstrumentedTest#realBatterySamplesAndRepeatedStopCleanUpWithoutDuplicateHeadroomQueries": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.metrics.BatteryDiagnosticsInstrumentedTest#fixedImageYoloResultsStayIdenticalWithBatteryOnOffOn": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.evaluation.RecordingLogTest#startHandshakeRetainsFramesAndKeepsTimelineEventsOutOfLegacyDetectionFile": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.evaluation.EvaluationSnapshotFactoryTest#captureSurvivesFrameReuseWhileRecordingBorrowsTheCurrentFrame": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.ui.BoundingBoxOverlayTest#boxExpiresWithoutDistanceAndVisibilityTogglesRequireFreshFrame": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.ui.BoundingBoxOverlayTest#longLabelsStayInsideScreenAndAvoidEachOther": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-complete-20261110.txt"
+    },
+    "com.samin.objectdetection.ui.BoundingBoxOverlayTest#mlKitYellowBoxesRequireBothVisibilityGatesAndFreshResultAfterReenable": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.ui.BoundingBoxOverlayTest#labelsKeepConfidenceAndIgnoreAnyLegacyDistancePayload": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.ui.BoundingBoxOverlayTest#delayedMainThreadCannotDrawExpiredFrameEvenBeforeTimerRuns": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.ui.BoundingBoxOverlayTest#togglesAndTimeoutChangesNeverReviveOldPayload": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.ui.BoundingBoxOverlayTest#mlKitPortraitRoiBoxUsesUprightFullFrameFitCenterCoordinates": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.ui.BoundingBoxOverlayTest#animalBoxesUseTheirColorsAndLabelsWhileExistingColorsStayTheSame": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.ui.BoundingBoxOverlayTest#mlKitMultipleObjectsDrawAndNextSuccessfulEmptyResultClearsPreviousBoxes": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.ui.BoundingBoxOverlayTest#freshDrawsAndContinuouslyArrivingStaleResultsDoNotDraw": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.ui.BoundingBoxOverlayTest#attachedTimerExpiresWithoutFurtherResultsAndRecreationClearsOldView": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.ui.BoundingBoxOverlayTest#mlKitSuccessfulButStaleResultIsRejectedBeforeAnyYellowBoxDraw": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.ui.BoundingBoxOverlayTest#detectorDimensionsAndExpirationAreIndependent": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.warning.output.WarningDiagnosticsTest#activityHelpersSuppressOffAndKeepDiagnosticPayloadIncludingNone": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    },
+    "com.samin.objectdetection.warning.output.WarningDiagnosticsTest#controllerDiagnosticsDoNotChangeSubmitArbitrationOrCooldown": {
+      "status": 0,
+      "evidence": "code-cleanup-final-device-core-20261110.txt"
+    }
+  }
+}

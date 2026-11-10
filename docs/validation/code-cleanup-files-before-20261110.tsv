@@ -1,0 +1,495 @@
+path	classification	reason	bytes	sha256
+.github/workflows/android.yml	유지	Tracked input/history; no proven safe deletion	445	9536213a675d7e2549b58e92fbb3689a65296f30700154ecf7ecda52baa39a56
+.gitignore	유지	Tracked input/history; no proven safe deletion	277	78456ffe5cb62ba26c66484cb1e23c187a0cedd7be1c0cf8bc61aaac2f1809fd
+.guardian-work/InspectGuardianDb.java	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	2017	8f501656f5f344119289eeb8004a409f8086132311955b713386c6a93426a24b
+.guardian-work/baseline-regression.txt	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	4648	35ecca7c8134b0c5973b049b1f71b3f5858d170a57630692607e1bba337860ec
+.guardian-work/baseline/DATABASE/20260825_tb_guardian_status.sql	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	401	3db2c0b8f296bd73a530ddf1eb2eb6ee519de85d250fc1d1a8dffb52cd16bc8d
+.guardian-work/baseline/src/main/java/pas/registUser/service/impl/RegistUserMapper.xml	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	5287	deb741a4b8701ddc549c36f3660c6c873a8c9866c33ec17b31c71781bede11d3
+.guardian-work/baseline/src/main/java/pas/registUser/service/impl/RegistUserServiceImpl.java	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	10328	256c75694cd3e9fc4df06309ea803a97b756fd75fc0b6140c86f7f218e13783d
+.guardian-work/baseline/src/main/webapp/WEB-INF/jsp/setting/guardianInfoEdit.jsp	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	19194	546d9c07298d1243b06299adbeb3a3208256dfc9fd22b7963fad7ee7820d3b02
+.guardian-work/baseline/src/main/webapp/resources/css/style.css	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	46646	a8ebdc62e34aa403f3c1654896647b6ab67532b0ced2906a45574d0d4884aa82
+.guardian-work/before-battery-revert/DATABASE/20260903_guardian_notification.sql	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	2414	dda34f2d47bb5fe13431fff6886c7997811121c465a2fdcfbdaffedfbd2e5a56
+.guardian-work/before-battery-revert/DATABASE/20260903_guardian_notification_report.md	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	8117	b2f6b57e75242dd19642e4c40eecd6b3a2361c02c2b08d077b7f707f56069541
+.guardian-work/before-battery-revert/src/main/java/pas/settings/service/impl/SettingsMapper.java	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	2844	6554109093b74f8f219e947ae8ea34062328c6df101aa13188879dbdb5fc4a49
+.guardian-work/before-battery-revert/src/main/java/pas/settings/service/impl/SettingsMapper.xml	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	8499	dd189f8a695d146b73640242a56b10d04a8a01324c052c929406b6c66d4765f7
+.guardian-work/before-battery-revert/src/main/java/pas/settings/service/impl/SettingsServiceImpl.java	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	13701	ad0f4db9f74d6377fdc833d7cf97f01dc9fe2889253f540a3acdf90aedc94554
+.guardian-work/before-battery-revert/src/main/webapp/WEB-INF/jsp/setting/guardianNotificationSetting.jsp	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	5067	6a969f01479973ceead2f05a211e60b7b92e9624ecfd2c779d94490816d4df73
+.guardian-work/before-battery-revert/src/test/java/pas/settings/service/impl/GuardianNotificationMapperIntegrationTest.java	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	6387	acb60c37e25b36fea3fbd0db20f44eeabba42d17358ed7ce6c8bccfbe05a39be
+.guardian-work/before-battery-revert/src/test/java/pas/settings/service/impl/GuardianNotificationServiceTest.java	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	5034	cc33f6f7958ee44bb1c90a705b127f2554eaf3af0396a1989745d69b27939234
+.guardian-work/before-battery-revert/src/test/java/pas/settings/web/GuardianNotificationSettingTest.java	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	2348	9524f88ba71215c2d23495132819616973e7f9ba6a9fcd1330bed69fff5163b3
+.guardian-work/before/src/main/java/pas/registUser/service/impl/RegistUserMapper.java	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	2264	eeea6d0a3bdc15e739b422c0c4164d48da57353503b8bd2ed9429e90d3439f44
+.guardian-work/before/src/main/java/pas/registUser/service/impl/RegistUserMapper.xml	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	5287	deb741a4b8701ddc549c36f3660c6c873a8c9866c33ec17b31c71781bede11d3
+.guardian-work/before/src/main/java/pas/registUser/service/impl/RegistUserServiceImpl.java	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	10328	256c75694cd3e9fc4df06309ea803a97b756fd75fc0b6140c86f7f218e13783d
+.guardian-work/before/src/main/java/pas/settings/service/SettingsSerivce.java	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	1770	0aaaaef95df17751f9e5acca75e3b8abee5abfb75fd5d9aaeb04d460fef2b689
+.guardian-work/before/src/main/java/pas/settings/service/impl/SettingsMapper.java	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	2751	5c63e026694d41f99065a8423c5d19bd8a0aa65fe94f73f2e77f7b4df4d67ed6
+.guardian-work/before/src/main/java/pas/settings/service/impl/SettingsMapper.xml	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	7907	02ba58382405a1d75be369213c16cc2ba99c6bee8a8a3fd2150e6f1394335bbe
+.guardian-work/before/src/main/java/pas/settings/service/impl/SettingsServiceImpl.java	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	13906	52d8f36c5ba738a56c96d63fee7643eb294e0fc739d8f88a34710d9a395d7b7a
+.guardian-work/before/src/main/java/pas/settings/web/SettingsController.java	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	10394	8395a6f1bb6a79df30009663f7f9d5f1322170c775c2af1326a96e973ac6c226
+.guardian-work/before/src/main/webapp/WEB-INF/jsp/setting/guardianNotificationSetting.jsp	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	8245	1fd1033661eead2a939e9d4f8ee6a70e318e5cfbca8c882e396567ebfd59be81
+.guardian-work/before/src/test/java/pas/settings/web/GuardianNotificationSettingTest.java	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	2444	ca1a3acb01b898cbcde3c1cd91941d37a6cb45f72e880e3b42522bf7992b4709
+.guardian-work/classes/pas/common/util/PrivacyMaskingUtilTest.class	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	896	c1740d430404aaf2d1482198d31609cc38cb99ccb10246751ad00c783c7632f1
+.guardian-work/classes/pas/login/service/impl/LoginUserTypeMappingTest.class	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	1820	0f2f6bc4233180fa1d60baf3d2d8c9b63d35366d3732b480f4936798a657b123
+.guardian-work/classes/pas/qna/service/impl/QnaDeviceAccessServiceTest.class	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	6395	45806588cbae67a15c3b75d4e782a0c174c0279d0728f2a07f29e121611a3c1f
+.guardian-work/classes/pas/registUser/service/RegistUserService.class	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	1323	3cac4653676b070d100100597f67967b37b9eeceb0adc455a397eaa96875bbaa
+.guardian-work/classes/pas/registUser/service/impl/GuardianConnectionWorkflowMapperTest.class	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	2750	8290547a5d1fcab5227208a32956804cd55c3b745824737db224c188066396a2
+.guardian-work/classes/pas/registUser/service/impl/RegistUserMapper.class	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	2078	afd6bb59ab79ecbbe822b4c80512429042a2cd92a043ebb8ad3e1d4f21642f32
+.guardian-work/classes/pas/registUser/service/impl/RegistUserProtectedUserMapperTest.class	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	2481	0dad0b5a6ff5ad4d1d234e5266cb6207e41fca29f5b29fc1fa0b2ff76e6cf3c3
+.guardian-work/classes/pas/registUser/service/impl/RegistUserServiceImpl.class	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	8336	d8e4a6c63c5ebe99a525958c32e89cc5828c89350a03541c344e0c20c526c0ab
+.guardian-work/classes/pas/settings/service/SettingsSerivce.class	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	1357	e2aae8b56201ae8c8ec1069d197d2a011b0def1535a146555407dd822dc7af76
+.guardian-work/classes/pas/settings/service/impl/GuardianNotificationMapperIntegrationTest.class	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	8516	4017cff0afa23ae16b89577b921441148a23c056651b432a53294ecbc88633c0
+.guardian-work/classes/pas/settings/service/impl/GuardianNotificationServiceTest.class	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	8237	5bf327c0b01647cb47c6fa4aae826d620b7c44d1ac3bc48af36658764c2edab3
+.guardian-work/classes/pas/settings/service/impl/SettingsMapper.class	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	2621	b5cf4ca640b84aa300b468fa21c7825654854bbf1d2312abe84800e6a1779073
+.guardian-work/classes/pas/settings/service/impl/SettingsServiceImpl.class	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	10909	33e84367861aa73df72dc58019ec8938fc334b936bbbc7eef4522ec99a9584bc
+.guardian-work/classes/pas/settings/web/GuardianInfoEditUiTest.class	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	2930	91f0b7c89ff7c31dfae67e5f533799ca5ba55fcf0c1ebaf7e12942e51451e68f
+.guardian-work/classes/pas/settings/web/GuardianNotificationSettingTest.class	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	2558	cf5f1e2194c302a0706829efe74ba7aee6b7aee101a49b6437acec5a105e7438
+.guardian-work/classes/pas/settings/web/ProtectedUserGuardianRequestUiTest.class	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	2410	61200f73d2c20d090da127915d47ddb58562f54473ce5dd2634d4e5d1b3cdba0
+.guardian-work/classes/pas/settings/web/ProtectedUserRequestPopupUiTest.class	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	3489	cacada69cd82e2c627517a229092f7f53b5af35069a63587fc77798859a263a7
+.guardian-work/classes/pas/settings/web/SettingsController.class	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	7750	b8a4be7c60ce50b0cd523dbd9cadb8c24c64ed181ba0e1d8e5c4350e00291769
+.guardian-work/classes/pas/settings/web/SettingsControllerTest.class	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	1431	986a8e9f41f0bd24888dfcaf79eb0b9d1d20dfa6ab24225dee7511114903d08d
+.guardian-work/classes/pas/user/service/impl/UserServiceImplTest.class	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	4136	9b4988e018ed275dee082f20d105fbd0d66fbd04510f7730abe8f999f00badb0
+.guardian-work/classes/pas/user/web/SignupUserTypeUiTest.class	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	2734	e5e3013dacc8a248047118713d9dd3cc9e9277819a6b98a6b3e67bcd2673ba3e
+.guardian-work/classes/pas_spring/EgovEnvCryptoAlgorithmCreateTest.class	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	1404	4a07f964bf8d0a0d03130257b4fc46638cfb45969caf9b563d58711488974041
+.guardian-work/classpath.txt	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	816	0db88e2b394b98261b9d30fc870db7c558f6b1827c6af228941e3b46b88a7c37
+.guardian-work/edit.ps1	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	9329	4b50a2d08fb7d819eca540684963e84f4aa3ee586bc09bb56900a978237825a3
+.guardian-work/files.json	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	692	0f14d8dfaca5c7071b3a3c123b570dcfb97354772f91fee5fc732d736829a9f3
+.guardian-work/notification-check.js	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	2298	9e135e11e2b2fa804f9c2d3305726ac8178d19bf40eb20ad2faf16390ab52e15
+.guardian-work/quiet-log4j.xml	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	96	14a3084a043ea177c1d656d45d6a4a43c24353aa03115d13465c9d1144d251bc
+.guardian-work/regression.txt	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	5474	def4681a170f664aa860f15ce9e58934b9b6bc0ec1229dabcdb745b0034f3933
+.guardian-work/revert-edit.ps1	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	6344	a6a6a8dbb1a210368fe7b72acc5c6a2c09b60d62f695475a3a9a1d81a01d92d5
+.guardian-work/revert/DATABASE/20260903_guardian_notification.sql	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	646	7e22efc95d679e86d1fc132961f13fd68267c1fa6183d91048cbcacc96f28b33
+.guardian-work/revert/DATABASE/20260903_guardian_notification_report.md	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	5134	6ad5afcd956cae5f792e4355eae60e33c1c39fc7a87866bc1e0dfb206e7bff05
+.guardian-work/revert/src/main/java/pas/settings/service/impl/SettingsMapper.java	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	2965	4f13a814a97a940320d525b1acefaaf3272e6bf473bb6529fe8a59ce7af0bbb4
+.guardian-work/revert/src/main/java/pas/settings/service/impl/SettingsMapper.xml	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	8298	f6c77bc86034acd2f49a270f1f070966c1e99200d63ae8e6abd2fdd7e7e4244d
+.guardian-work/revert/src/main/java/pas/settings/service/impl/SettingsServiceImpl.java	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	14098	d5fb9b4b739d93f4b9eaeadc2a06c8d6acd9a7c73c074e6c27441d7e6c8bf74b
+.guardian-work/revert/src/main/webapp/WEB-INF/jsp/setting/guardianNotificationSetting.jsp	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	5984	9996e0ce00a346a5abd761101513f8362e5e223c177a0d50e5fdfee3dc8252da
+.guardian-work/revert/src/test/java/pas/settings/service/impl/GuardianNotificationMapperIntegrationTest.java	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	5901	a43cdcfa1aebac6f14a8cd4a33f172741303028f153ad5605e0d47fda22f3ab7
+.guardian-work/revert/src/test/java/pas/settings/service/impl/GuardianNotificationServiceTest.java	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	6098	87877abd08c4db171bd74c4327c08879ff9eacfa4de9a5e580b6f7656a8546c8
+.guardian-work/revert/src/test/java/pas/settings/web/GuardianNotificationSettingTest.java	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	2439	c4eb60aec097e547830e95e1567cc7b7e4d2f7c2fc24cce1ded895ca2c1ae6d1
+.guardian-work/staged/DATABASE/20260903_guardian_notification.sql	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	2414	dda34f2d47bb5fe13431fff6886c7997811121c465a2fdcfbdaffedfbd2e5a56
+.guardian-work/staged/DATABASE/20260903_guardian_notification_report.md	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	8117	b2f6b57e75242dd19642e4c40eecd6b3a2361c02c2b08d077b7f707f56069541
+.guardian-work/staged/src/main/java/pas/registUser/service/impl/RegistUserMapper.java	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	2165	4aa2c597a2af3bc3c4da38c06aacbda56434277e966d0cf8d0f3af5cce214131
+.guardian-work/staged/src/main/java/pas/registUser/service/impl/RegistUserMapper.xml	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	5252	dd0b67f72586044c2c461884df133e89ae461b78cd66d4a6bf683b6124eeb6bc
+.guardian-work/staged/src/main/java/pas/registUser/service/impl/RegistUserServiceImpl.java	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	10525	94eb66db060b216cd611dfd3afcbf1ed2c6a779879f0cbaaebf24f019f5167b8
+.guardian-work/staged/src/main/java/pas/settings/service/SettingsSerivce.java	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	1752	9f5e33d3f2d539b8ed5c5e306431c08ce213474a8a7b55f96a059811f2f54b3a
+.guardian-work/staged/src/main/java/pas/settings/service/impl/SettingsMapper.java	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	2844	6554109093b74f8f219e947ae8ea34062328c6df101aa13188879dbdb5fc4a49
+.guardian-work/staged/src/main/java/pas/settings/service/impl/SettingsMapper.xml	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	8499	dd189f8a695d146b73640242a56b10d04a8a01324c052c929406b6c66d4765f7
+.guardian-work/staged/src/main/java/pas/settings/service/impl/SettingsServiceImpl.java	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	13701	ad0f4db9f74d6377fdc833d7cf97f01dc9fe2889253f540a3acdf90aedc94554
+.guardian-work/staged/src/main/java/pas/settings/web/SettingsController.java	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	10473	1ae936dc808aafd17a7318e9384442e24f1cb183f09bb2a7630b5194a36d3889
+.guardian-work/staged/src/main/webapp/WEB-INF/jsp/setting/guardianNotificationSetting.jsp	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	5067	6a969f01479973ceead2f05a211e60b7b92e9624ecfd2c779d94490816d4df73
+.guardian-work/staged/src/test/java/pas/settings/service/impl/GuardianNotificationMapperIntegrationTest.java	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	6387	acb60c37e25b36fea3fbd0db20f44eeabba42d17358ed7ce6c8bccfbe05a39be
+.guardian-work/staged/src/test/java/pas/settings/service/impl/GuardianNotificationServiceTest.java	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	5034	cc33f6f7958ee44bb1c90a705b127f2554eaf3af0396a1989745d69b27939234
+.guardian-work/staged/src/test/java/pas/settings/web/GuardianNotificationSettingTest.java	삭제 가능	Unrelated pas Spring/JSP/SQL scratch copies/classes; not included in Gradle/CI/tools	2348	9524f88ba71215c2d23495132819616973e7f9ba6a9fcd1330bed69fff5163b3
+.idea/.gitignore	유지	Tracked input/history; no proven safe deletion	50	e2e37ed60c50d8e41c42aa9f3505642a5f1689e67fb6bc7fe8a06dab09a0fa96
+.idea/AndroidProjectSystem.xml	유지	Tracked input/history; no proven safe deletion	217	2554dcd4cf39576ef664ed9813181dc0991445ae282578655e874b3a0aa4a0a5
+.idea/compiler.xml	유지	Tracked input/history; no proven safe deletion	174	aa6c5f3b39394975ec948a3297fa2b0b3108004e2ca87fbfabf9533c10da6d5d
+.idea/deploymentTargetSelector.xml	유지	Tracked input/history; no proven safe deletion	658	d4590f015d12e8c0b23ee65c84ad9cb340050a3802c34bbea5833400a84d6eef
+.idea/gradle.xml	유지	Tracked input/history; no proven safe deletion	639	cbeacf9c8f302a5859468988a0d5b5553c534c447771fa6efdc2a09f091f1cf4
+.idea/inspectionProfiles/Project_Default.xml	유지	Tracked input/history; no proven safe deletion	3709	d2216d6215a8d6007a043b985103e05b28eed4af1f2973b57b733481381cf85b
+.idea/markdown.xml	유지	Tracked input/history; no proven safe deletion	314	2b12098ca617f0c69d32662d0245090c4692e24391262523169e94d3593104cf
+.idea/misc.xml	유지	Tracked input/history; no proven safe deletion	409	a4fc9064f8ecc392fa265b19aaa98e493b32cd382d2030286b3308b8f99e329a
+.idea/runConfigurations.xml	유지	Tracked input/history; no proven safe deletion	980	e2320a40fad164ac31f7a7afd9765fd1608235d0b904b148ed243c573c94cb69
+.idea/vcs.xml	유지	Tracked input/history; no proven safe deletion	185	136f8b0a20e3e16f5b60e8505219c34746e1ec62c68433f4f8ec97eefe3aa038
+.kotlin/errors/errors-1780042057485.log	유지	Tracked input/history; no proven safe deletion	6448	e9496f8c6b732b3ac7e528b89972710d4a88ac5e76b25a49c13e28538ae7b7ff
+.kotlin/errors/errors-1780044155573.log	유지	Tracked input/history; no proven safe deletion	6979	23c69defcf9e14e95824c18f6a9c85e088cfdea3f27a251b7aba20af8a440470
+README.md	유지	Tracked input/history; no proven safe deletion	3914	a7a809b633221a7aea76250a837c525fbb7d2c5aae0ca3c339dd28e07f096985
+app/.gitignore	유지	Tracked input/history; no proven safe deletion	6	5c3174b74edc6f2b9e0743594b8bd3c7f31e4f4405758cc9872b3fe1de1d28b4
+app/build.gradle.kts	수정·통합	Separate test-app diagnostics/UI/capability responsibilities; remove proven unused dependencies	2711	a643abedf65f9b727f63267c9b5016cc42169622c66d76de317de201ddf38a5b
+app/proguard-rules.pro	유지	Tracked input/history; no proven safe deletion	770	48c84bd2ac064ce2665b62a6e7c0e87f3b4fe259708a76e16625c2b43e1bc078
+app/src/androidTest/assets/mlkit_validation/640px-shoes.jpg	유지	Tracked input/history; no proven safe deletion	41612	64fe924339d65ea0dfa25d662a6f5fcd033645c3fe2a45169aa5ff1e258f824d
+app/src/androidTest/assets/mlkit_validation/README.md	유지	Tracked input/history; no proven safe deletion	849	e6f1a6186044db7692ee8b9d16a80a049be2203b4f89734e3152651f033915a4
+app/src/androidTest/java/com/samin/objectdetection/ExampleInstrumentedTest.kt	유지	Tracked input/history; no proven safe deletion	700	ee122a996726ee44715307aab0d819872cfdffa14cde10580f8e05f5aede5ed6
+app/src/androidTest/java/com/samin/objectdetection/camera/CameraPreviewRuntimeTest.kt	유지	Tracked input/history; no proven safe deletion	6695	78742c3dceccb7557ed5e426aa798417ce9b5dc68782da06718557d5e81205b9
+app/src/androidTest/java/com/samin/objectdetection/camera/FrameBitmapBufferTest.kt	유지	Tracked input/history; no proven safe deletion	7919	c3457a27f820a8a8632f5cd01ea85a7cedb5c9b6fee9b8d8f35d23f1378a4a6f
+app/src/androidTest/java/com/samin/objectdetection/camera/RecognitionRoiInstrumentedTest.kt	유지	Tracked input/history; no proven safe deletion	4306	b25bc6ef43fba2b38b2cfcd5a28ec689538ee3f9b0baf74b80905a397feded4e
+app/src/androidTest/java/com/samin/objectdetection/camera/ReusableRoiPipelineTest.kt	유지	Tracked input/history; no proven safe deletion	6614	f99dcb70ca5ced47ce47636e7200d7a5ffffc2dfba0e61714adab792d0959694
+app/src/androidTest/java/com/samin/objectdetection/detector/DetectorCpuOptimizationTest.kt	유지	Tracked input/history; no proven safe deletion	9221	358d0c7e63bf7f77d22a39cad739bb4453b1f864f00bd2f44944a20681c649b9
+app/src/androidTest/java/com/samin/objectdetection/detector/DetectorGoldenTest.kt	유지	Tracked input/history; no proven safe deletion	6165	0c00df1abef9d0fb070b74943b446db48cf2570c9f4d20bfa691fc3e34b44d62
+app/src/androidTest/java/com/samin/objectdetection/detector/DetectorPreprocessingRegressionTest.kt	유지	Tracked input/history; no proven safe deletion	11554	934fc33b5e7459e1ed3677373eda275e21b49ad0f391f0bb3701895c1cd13e82
+app/src/androidTest/java/com/samin/objectdetection/detector/ElevenClassDetectorTest.kt	유지	Tracked input/history; no proven safe deletion	10323	5314b44987fc65b78c0e6e7abcce9518b069ffb638cd2a621ad101862359afac
+app/src/androidTest/java/com/samin/objectdetection/detector/InterpreterExecutionRegressionTest.kt	유지	Tracked input/history; no proven safe deletion	7218	f8ed1376061bab55c6988d6630f93577d2740acb8091563eb4bd21058b9bf794
+app/src/androidTest/java/com/samin/objectdetection/detector/ModelSelectionDetectorTest.kt	유지	Tracked input/history; no proven safe deletion	10107	2ac36e2a162fd51d1a76cabfc294e88f070f4911e4a0acb2e373ee4b61224153
+app/src/androidTest/java/com/samin/objectdetection/detector/YoloBottleneckBenchmarkTest.kt	유지	Tracked input/history; no proven safe deletion	9537	8a43d478bcc38ffd1e61198d6dbe08daea531d8b86bb7f9514aa15168b8dca18
+app/src/androidTest/java/com/samin/objectdetection/distance/DistancePipelineTest.kt	유지	Tracked input/history; no proven safe deletion	4794	69b18bf1f003e4db362b3bfaf781e0fc60b9cdfc4390733bac9c9f72dcff8efa
+app/src/androidTest/java/com/samin/objectdetection/evaluation/RecordingLogTest.kt	유지	Tracked input/history; no proven safe deletion	2873	9c8dddac21b0c88d9a38e245c662581597bb86270533f10c0f5dfd47a306bc1f
+app/src/androidTest/java/com/samin/objectdetection/metrics/BatteryDiagnosticsInstrumentedTest.kt	유지	Tracked input/history; no proven safe deletion	5837	5e3be1fc21e69be8d7ebc8a4f0928348cb640faf1b67fa0dadc4a3ee40c964f7
+app/src/androidTest/java/com/samin/objectdetection/metrics/SystemPerformanceDiagnosticsInstrumentedTest.kt	유지	Tracked input/history; no proven safe deletion	7300	bd7a976acf80b6f0cbb6446ddc357f16775325aae086fb0a65cdb8101c08ac3a
+app/src/androidTest/java/com/samin/objectdetection/mlkit/MlKitDiagnosticExportTest.kt	유지	Tracked input/history; no proven safe deletion	4363	8d6b84dcd1e51955549af8cadaffaf2211e5f7c7900f5bca0ce790c2f713cf10
+app/src/androidTest/java/com/samin/objectdetection/mlkit/MlKitInputBufferTest.kt	유지	Tracked input/history; no proven safe deletion	8344	6a79e9fbe69d41bc7e674a7e9da5b35b3ba4b43433f4362189e9864b34c54503
+app/src/androidTest/java/com/samin/objectdetection/mlkit/MlKitMainScreenLoggingTest.kt	유지	Tracked input/history; no proven safe deletion	12309	3fffccaf283e6f3c27af55ee2fab634b68f5861a64a0e91b0e54bc1d3d443f9e
+app/src/androidTest/java/com/samin/objectdetection/mlkit/MlKitModeChangeLifecycleTest.kt	유지	Tracked input/history; no proven safe deletion	10015	4b8382eb1a90b822b00a19513f26525430ee0483142b651b3a1eb3f1d4ccb5f5
+app/src/androidTest/java/com/samin/objectdetection/mlkit/MlKitModeComparisonTest.kt	유지	Tracked input/history; no proven safe deletion	4849	d893ac89c90ada7d9ebd9a7ec3712c70dd08644d8a37fa5b03563272c12b94dc
+app/src/androidTest/java/com/samin/objectdetection/mlkit/MlKitObjectDetectorTest.kt	유지	Tracked input/history; no proven safe deletion	19004	817c446c7f1abc5c01558463123cc184e1000aa12230209bf7e79a28c0065cc8
+app/src/androidTest/java/com/samin/objectdetection/mlkit/MlKitRuntimeTest.kt	유지	Tracked input/history; no proven safe deletion	9168	41d980771374d598e6aff943371cd5f47010b03ed907e3a745a1ed5e2b665613
+app/src/androidTest/java/com/samin/objectdetection/mlkit/MlKitSelectedModeSdkTest.kt	유지	Tracked input/history; no proven safe deletion	3802	73a9a607e35089a8f3abc16f27e9128ad41cbfd5851aba1cdf54ba52734169ba
+app/src/androidTest/java/com/samin/objectdetection/settings/MlKitLogControlsTest.kt	유지	Tracked input/history; no proven safe deletion	7408	d079e60ef64641403f121f34c803b5f0340e7c9a50a6273b6da31d04ed7abb74
+app/src/androidTest/java/com/samin/objectdetection/settings/SettingsActivityTest.kt	유지	Tracked input/history; no proven safe deletion	46389	e38f9aa9f556c8865a4b4d1c70ea753fcc64708e31f5aadef9daa06e84a9447a
+app/src/androidTest/java/com/samin/objectdetection/settings/SettingsLayoutWait.kt	유지	Tracked input/history; no proven safe deletion	1836	6dce3df4508f2df1a82f7ed5a1157bf9cc337805fa671019c6cfea257a1230c0
+app/src/androidTest/java/com/samin/objectdetection/settings/XnnpackRuntimeSettingsTest.kt	유지	Tracked input/history; no proven safe deletion	10739	2307794ea5534ca9a617bd2b86fabccd150d3a746026eed9b6a5f8f1ddefb1d0
+app/src/androidTest/java/com/samin/objectdetection/ui/BoundingBoxOverlayTest.kt	유지	Tracked input/history; no proven safe deletion	13931	c4b16ea5caf6a024ba07f42b41fbad66acf1315a4b3d5d67708fcfc1acaf6b87
+app/src/androidTest/java/com/samin/objectdetection/ui/MainScreenLoggingLayoutTest.kt	유지	Tracked input/history; no proven safe deletion	2754	90dfc769b419fd424d354a1830f63be8b3bb865ee76091a82a11ea43228be3be
+app/src/androidTest/java/com/samin/objectdetection/warning/output/WarningDiagnosticsTest.kt	유지	Tracked input/history; no proven safe deletion	8111	cee2ab16d5fcee077e8f67039f81da483c97b4c0ba054e8e3c14ea1bae8333b6
+app/src/debug/AndroidManifest.xml	유지	Tracked input/history; no proven safe deletion	214	eee8b5da29239f0c9930b04e9081989c99cf261915aeea91bc965aa78fec0320
+app/src/debug/assets/self_test/README.md	유지	Tracked input/history; no proven safe deletion	976	aec0dc1e7c6ff7831a867f10e1345b2736f72a1982b5d10540be6b687593059b
+app/src/debug/assets/self_test/known.png	유지	Tracked input/history; no proven safe deletion	874984	4b490aaf43c8209559bc4cc2d8d48fba1fd1e3fb1fb7112c5d5cfa9a1ee57c2e
+app/src/debug/java/com/samin/objectdetection/detector/DetectorSelfTestActivity.kt	유지	Tracked input/history; no proven safe deletion	2483	49df9a0339bd408be06adc3e5a2009447e561ebf9ea707bcafdc3cd1d43cb741
+app/src/main/AndroidManifest.xml	유지	Tracked input/history; no proven safe deletion	2486	ce3c325650aed06b9945625e3d5473659a4f5c469b74c9b0c414b51921d5f224
+app/src/main/assets/best_512.tflite	유지	Tracked input/history; no proven safe deletion	37931072	591509278b3a1fe114a0084d4841b948a93b637c22005b7becf06309cb906667
+app/src/main/assets/labels.txt	유지	Tracked input/history; no proven safe deletion	86	9ab5f02f9fd934807d5fd961009ac48e9887ebc14b5134439af0e7e279c04145
+app/src/main/assets/yolo11n_512.tflite	유지	Tracked input/history; no proven safe deletion	10599278	fa8f25724210a15c4259c82cbf8d87a4169d0ab7f1bb644a6620173aa52bae32
+app/src/main/java/com/samin/objectdetection/MainActivity.kt	수정·통합	Separate test-app diagnostics/UI/capability responsibilities; remove proven unused dependencies	96286	24dbfa600c779f233525cc5c5f0c5b6e7ea1541f97b94083248662e85a93cc12
+app/src/main/java/com/samin/objectdetection/camera/AnalyzerShutdown.kt	유지	Tracked input/history; no proven safe deletion	805	6c6ca584881dda79c29ede8867efc69dd2918c0c2a5fadbd7c99de32d857f7f6
+app/src/main/java/com/samin/objectdetection/camera/CameraController.kt	유지	Tracked input/history; no proven safe deletion	12035	3b57a8ddd5c65a16f92db923c8e3e79118ec525f4567ff59e782742de8adee0a
+app/src/main/java/com/samin/objectdetection/camera/DetectionConfig.kt	유지	Tracked input/history; no proven safe deletion	5026	cabfaee2a6b3cadca173c121515b454afa7fe6770fe30450c915ff6650f0a5a2
+app/src/main/java/com/samin/objectdetection/camera/FrameBitmapBuffer.kt	유지	Tracked input/history; no proven safe deletion	4828	7a36de1923e5c8056dceb0fbc9552bb63133065de2b07cf341dfffa68623f787
+app/src/main/java/com/samin/objectdetection/camera/ImageProxyExt.kt	수정·통합	Separate test-app diagnostics/UI/capability responsibilities; remove proven unused dependencies	3123	21e8d385d67ab0385fedd259d25ed3ae6fe67f4321d6bf6a3dd99112ec2b98fa
+app/src/main/java/com/samin/objectdetection/camera/RecognitionRoi.kt	유지	Tracked input/history; no proven safe deletion	2425	45be25b9bc023a1611e7c6bf417f8ebe92739ef18b5eabb04fd1ad5831b9edcc
+app/src/main/java/com/samin/objectdetection/detector/DetectionDebugRecorder.kt	유지	Tracked input/history; no proven safe deletion	8201	06c9105ce84d68c397796a405173a2dfd92232b703b61491dd8e1f1c1235a8d6
+app/src/main/java/com/samin/objectdetection/detector/DetectionDiagnostics.kt	유지	Tracked input/history; no proven safe deletion	2209	16ac352694de4e50ba8f30aadea1fbf47044850d739bead26f92ed6e99a81ccf
+app/src/main/java/com/samin/objectdetection/detector/DetectionResult.kt	유지	Tracked input/history; no proven safe deletion	2851	8c14c9a3da40ff15e27a4a55777cf01a7a47aa3899ac2f480398658d8e3e449b
+app/src/main/java/com/samin/objectdetection/detector/InferenceException.kt	유지	Tracked input/history; no proven safe deletion	415	e405d280dae3970cce2e1fa5fbaeb929eeb67d828175b7dba86e9b787e2aa3ca
+app/src/main/java/com/samin/objectdetection/detector/InferenceExecutionInfo.kt	유지	Tracked input/history; no proven safe deletion	1148	7158ebed1c9bb424e1ebf221f33a078d7c5a645115cf43a8943fa26fa5d65b50
+app/src/main/java/com/samin/objectdetection/detector/ModelAssets.kt	유지	Tracked input/history; no proven safe deletion	6215	8cd5ed208d18b454a46c9a65bd4816e0552c5d3e991b28563fb7da140f2da5f7
+app/src/main/java/com/samin/objectdetection/detector/ModelConfig.kt	유지	Tracked input/history; no proven safe deletion	1256	f142b80fdcc3c5912e68420f5a13176d725dcde98aecd8d815982e7f88a9310a
+app/src/main/java/com/samin/objectdetection/detector/VisionStyleYoloDetector.kt	유지	Tracked input/history; no proven safe deletion	39278	5c90f049b76ff29c14afce049aad78539d353a784eac1f2f2b7dad9f775026b4
+app/src/main/java/com/samin/objectdetection/detector/YoloClassOptions.kt	유지	Tracked input/history; no proven safe deletion	1040	b6e3da5f9d270a66082b9ea7a4798876a9ce9ab24bd20ca4156806beecf598a5
+app/src/main/java/com/samin/objectdetection/detector/YoloResizeTransform.kt	유지	Tracked input/history; no proven safe deletion	2382	603b2185f870412adc52e63be42edebdef42dc37fc58e7e7e9f67e80a2159152
+app/src/main/java/com/samin/objectdetection/detector/YoloTensorContract.kt	유지	Tracked input/history; no proven safe deletion	8744	d381888099f5d4900a39978914b2f5ee036f7fce432e649c4285d295cd088383
+app/src/main/java/com/samin/objectdetection/distance/Camera2DistanceGeometry.kt	삭제 가능	CameraController does not bind it; only its own declaration; no Manifest/XML/reflection lookup	7223	cff9f4fe65267f3366b773bab32b0974a46aeefb0cf1e26348484b03ad065dcf
+app/src/main/java/com/samin/objectdetection/distance/GroundPlaneDistanceEstimator.kt	유지	Estimator used by 9 JVM tests; settings/result/JSON depend on shared distance contract types	8206	811ec592b9456408901b47ba97d1d15ba5fd059d1797a36c3efaca357830adcb
+app/src/main/java/com/samin/objectdetection/dto/DetectionEvent.kt	확인 필요	No app caller; preserve pending Device App DTO contract decision	410	e97bf9f6086939a93e70ca272868d431037f264d7aa30662db3242799f5384fb
+app/src/main/java/com/samin/objectdetection/evaluation/DetectionFrameSnapshot.kt	유지	Tracked input/history; no proven safe deletion	2081	8f5e7eae4469d4eccf068936a6f1f7d311551dddb189cf0283bb3c1b136d5a63
+app/src/main/java/com/samin/objectdetection/evaluation/EvaluationDataRecorder.kt	유지	Tracked input/history; no proven safe deletion	26875	7a8c443104eae05c45d82a33a54f04580d38533e0631122c370705ecc7faf331
+app/src/main/java/com/samin/objectdetection/evaluation/EvaluationJson.kt	유지	Tracked input/history; no proven safe deletion	3512	ce856242c2198aab1dafa70b494b92c3da09038bc766cb7e1112e5db996448db
+app/src/main/java/com/samin/objectdetection/evaluation/FrameTraceJson.kt	유지	Tracked input/history; no proven safe deletion	1316	4fe3f93d4eeecc4d0734d4b875fa315d06c9b22d1cb9f00f1783f1a4e44188f4
+app/src/main/java/com/samin/objectdetection/evaluation/RecordingState.kt	유지	Tracked input/history; no proven safe deletion	1562	535f02249f2ce5b503de01e66d0d4cd29c1cb656feb3fb6f1f20825d28a8a56b
+app/src/main/java/com/samin/objectdetection/evaluation/ScreenRecordService.kt	유지	Tracked input/history; no proven safe deletion	17699	b2a3c0c03c9176181d7ab84e981fcdcb41853bfc068ed599b266208b6174d161
+app/src/main/java/com/samin/objectdetection/location/UserLocationTracker.kt	유지	Tracked input/history; no proven safe deletion	6144	632adab95731be7435d2a328d73c086ac3b6c8a00eadcb83b5b5506d41aab8a1
+app/src/main/java/com/samin/objectdetection/location/UserMotionState.kt	유지	Tracked input/history; no proven safe deletion	115	5d7d2b7084768515a19a94a5a6afb1aff9001939f3852f49b3a371104a7ab9c5
+app/src/main/java/com/samin/objectdetection/logging/OrderedLogWriter.kt	유지	Tracked input/history; no proven safe deletion	2422	8a67493716a1f5ab6c5ecdcb1efd6ce8876f94d2614ac4e31538573d8b5190db
+app/src/main/java/com/samin/objectdetection/metrics/AndroidBatteryMetricSource.kt	유지	Tracked input/history; no proven safe deletion	3200	448d6f44ef399846ddbba863e61b16126a2fbbdd94acdbc22329c3ba7014e47d
+app/src/main/java/com/samin/objectdetection/metrics/AndroidSystemMetricSource.kt	유지	Tracked input/history; no proven safe deletion	4934	d0677737951be738795c2ef1667d11ce4a9a47644714dbabd21d47145fa688f1
+app/src/main/java/com/samin/objectdetection/metrics/BatteryDiagnostics.kt	유지	Tracked input/history; no proven safe deletion	8809	9de289b6ab6634d83c3b663eebf3cdf2b2fb6a9860127dfbdccf7dedffd0ed7a
+app/src/main/java/com/samin/objectdetection/metrics/BatteryDischargeTracker.kt	유지	Tracked input/history; no proven safe deletion	7027	a4bf250dce334cdd480bbd6df239fed5d8c8202116e3078cd470a7da83229b26
+app/src/main/java/com/samin/objectdetection/metrics/DetectionMetricsCollector.kt	유지	Tracked input/history; no proven safe deletion	20075	665999b72b0830ed492030f877b005b4c262da14060e01d204bd2bae7ce5f3d5
+app/src/main/java/com/samin/objectdetection/metrics/FrameLatency.kt	유지	Tracked input/history; no proven safe deletion	6138	71ad5513aa916202532551da30df2e973eb981b80a79ab349625d866b720ffd4
+app/src/main/java/com/samin/objectdetection/metrics/FrameTrace.kt	유지	Tracked input/history; no proven safe deletion	2886	3051f29b28b843f4489ef149180ca0d7a8c1d528c738be75e814cf039d336391
+app/src/main/java/com/samin/objectdetection/metrics/PerformanceIntervalCollector.kt	유지	Tracked input/history; no proven safe deletion	5501	4c72c0e2fe88781e4a6830532410affce7d4feabd0c4c8c64893efb7423fbf6b
+app/src/main/java/com/samin/objectdetection/metrics/PerformanceLogFormatter.kt	유지	Tracked input/history; no proven safe deletion	22905	16e4a0597fefc030c0efc654d59fa32cab9b911c29160d0f02f0c4259921a92a
+app/src/main/java/com/samin/objectdetection/metrics/PerformanceLogRecorder.kt	유지	Tracked input/history; no proven safe deletion	7345	97775f565e7091cd04ff84c8f48321c88afa33c19c382c01a50a9fec33132a40
+app/src/main/java/com/samin/objectdetection/metrics/PerformanceLogSession.kt	유지	Tracked input/history; no proven safe deletion	6173	e3a3730dedc481a038ac19649ddbeeedb8c79126353b65faa826178e81cdcbfe
+app/src/main/java/com/samin/objectdetection/metrics/PerformanceTestWindow.kt	유지	Tracked input/history; no proven safe deletion	1008	0bb266236c3937f2f9413e8f3a9bf1c0fd5d5a011f484ad00363c4aa8f3d97a0
+app/src/main/java/com/samin/objectdetection/metrics/SystemPerformanceDiagnostics.kt	유지	Tracked input/history; no proven safe deletion	7029	0396a98a92a9113ce910be4388e1a99fb08edd9a7d4046a91856bc17c1896d62
+app/src/main/java/com/samin/objectdetection/mlkit/MlKitDetectionMode.kt	유지	Tracked input/history; no proven safe deletion	186	7af111d074883b63d904f2ec73564f189c1667737f6276eee1038191f71677fa
+app/src/main/java/com/samin/objectdetection/mlkit/MlKitDiagnosticLogRecorder.kt	유지	Tracked input/history; no proven safe deletion	15485	e547680f0c1fdad1d12de046071024af0b99e3e96e8928394e06b70b3e8dd79b
+app/src/main/java/com/samin/objectdetection/mlkit/MlKitDiagnosticLogs.kt	유지	Tracked input/history; no proven safe deletion	755	a465a70a8cb4817bfca1c5a4a0307b0cfbabe7ee6af04dc2b1dad71b7b71647c
+app/src/main/java/com/samin/objectdetection/mlkit/MlKitDiagnostics.kt	유지	Tracked input/history; no proven safe deletion	2235	6afc3a6387ce04eb8cd8048ed2afc3c8a448d9b5921d9410e68117d7e951a173
+app/src/main/java/com/samin/objectdetection/mlkit/MlKitInputBuffer.kt	유지	Tracked input/history; no proven safe deletion	3455	e528f5e5cbd4b9393e31a69b553eaeeb8d6fbac33c7468dfa1b3e34c2e7f034b
+app/src/main/java/com/samin/objectdetection/mlkit/MlKitObjectDetector.kt	유지	Tracked input/history; no proven safe deletion	5570	aba31e9fdcbe9b4c185ba6909f069c831f7838cc3db359e9ba69674d936fab34
+app/src/main/java/com/samin/objectdetection/model/DetectedObject.kt	유지	Tracked input/history; no proven safe deletion	1547	8f1d024616738856755b51f5ac9ae074f2b551c7ca21e6e3e911c16954eac058
+app/src/main/java/com/samin/objectdetection/model/DetectionCategory.kt	유지	Tracked input/history; no proven safe deletion	132	097e4da6da2ec9a2dca1daadc6fcd9c36b2ce250f8929af7f53f0c25152fb6f1
+app/src/main/java/com/samin/objectdetection/model/DetectionPriority.kt	유지	Tracked input/history; no proven safe deletion	116	97d395a8e472502398f5c1608d32b165664267f211f49c4010a7e321c2568c45
+app/src/main/java/com/samin/objectdetection/model/DetectionSource.kt	유지	Tracked input/history; no proven safe deletion	93	f8b0574c1b70ab95f1f4168e68a8d223bd6e041590574ef69a97a314ee62295e
+app/src/main/java/com/samin/objectdetection/motion/ApproachSpeedLevel.kt	유지	Tracked input/history; no proven safe deletion	130	817c6ce77cf337aa96033a96cccc0f5d9c5c927f72af2c07830d92c1e5c27f26
+app/src/main/java/com/samin/objectdetection/motion/MotionDirection.kt	유지	Tracked input/history; no proven safe deletion	127	4470612f509317f2b712021edd853ff9178ac3b4ef6dad7bf50ac55813e8ddd8
+app/src/main/java/com/samin/objectdetection/motion/ObjectMotionTracker.kt	유지	Tracked input/history; no proven safe deletion	12018	cfdc1258a13ed1a426d1e698f2e6772b886b90c2b3463ecf1e87811b4a34cd8c
+app/src/main/java/com/samin/objectdetection/motion/ObjectMovementState.kt	유지	Tracked input/history; no proven safe deletion	171	f0f56032156ab31e44489b30787e93938df57764a3ef27cfdc283826433d6941
+app/src/main/java/com/samin/objectdetection/motion/UserObjectRelation.kt	유지	Tracked input/history; no proven safe deletion	219	fa979744e24aa342cc0ff711454ed34a28ac3a39530e091a58e417653f10b731
+app/src/main/java/com/samin/objectdetection/pipeline/DetectionPipeline.kt	유지	Tracked input/history; no proven safe deletion	15656	c3a0423d932b395ef23a44a33bdd97e552df012ed8920cbdfdd0dea5d686c94f
+app/src/main/java/com/samin/objectdetection/pipeline/DetectionPipelineResult.kt	유지	Tracked input/history; no proven safe deletion	1071	572231b8e2d06e8a6c9bc344dc0dccd9f90e99c234e84badb2eb60817f31cd3c
+app/src/main/java/com/samin/objectdetection/policy/AdaptiveTemporalValidator.kt	유지	Tracked input/history; no proven safe deletion	1906	37e45e5287a92b8659248993415bfdc934f315276f6d402c6b9dc1c73b5038b2
+app/src/main/java/com/samin/objectdetection/policy/BollardGeometryValidator.kt	유지	Tracked input/history; no proven safe deletion	1462	51b311aec3d2f4e8e31837d2889f0b685740140a2948ad6ee261ddb2e0cb7593
+app/src/main/java/com/samin/objectdetection/policy/DetectionPolicy.kt	유지	Tracked input/history; no proven safe deletion	235	5983b191db3ad5cbe57f79d9c5572b2a59f32c0dc002ba840bee77e525db23fe
+app/src/main/java/com/samin/objectdetection/policy/ObjectCategory.kt	유지	Tracked input/history; no proven safe deletion	127	da716b757a728e780399402d783937b0b51614dc3fe393e00a4dad26c8a6c089
+app/src/main/java/com/samin/objectdetection/policy/ObjectTuningPolicy.kt	유지	Tracked input/history; no proven safe deletion	538	66b575e53e39bb74c64b811e1f73969067faf1d9ec341782197253c9d59f7dd2
+app/src/main/java/com/samin/objectdetection/policy/ObjectTuningPolicyRegistry.kt	유지	Tracked input/history; no proven safe deletion	7440	555dec9b41f0740b6912a3b7040f661e51b4e310cf362415c126863a98cb9099
+app/src/main/java/com/samin/objectdetection/policy/OverlayObjectFilter.kt	유지	Tracked input/history; no proven safe deletion	614	eec0af7d9daeb343c1005ffb250c153598692695c01908e5d6e83bd9223e1a87
+app/src/main/java/com/samin/objectdetection/policy/SmallBoxFilterPolicy.kt	유지	Tracked input/history; no proven safe deletion	4918	3fc53ddf76d9ddd47fbe49656a48ec552197835a25aa8cd530f391743b92fcfc
+app/src/main/java/com/samin/objectdetection/policy/WarningPriority.kt	유지	Tracked input/history; no proven safe deletion	134	50265b9ff737e8f2b6bfe4317bacc15a88b1fb9f3ea2f2550a915a1c444dc7a2
+app/src/main/java/com/samin/objectdetection/policy/YoloDefaultPolicyRegistry.kt	유지	Tracked input/history; no proven safe deletion	1909	1efe17e39314efa212b98f8cc735cdef7a4fb3cdc85cb353294c0bcc37e44c28
+app/src/main/java/com/samin/objectdetection/settings/AppSettings.kt	유지	Tracked input/history; no proven safe deletion	14026	0876c5c85ab5ba9ea616afc37bd81b43d82e8c7585315f042e4b4d1c5074f251
+app/src/main/java/com/samin/objectdetection/settings/AppSettingsStore.kt	유지	Tracked input/history; no proven safe deletion	20991	acd9bc8d2f40e17ad9b80bbef40294838805ae4d750bbf8107253fdc1357a754
+app/src/main/java/com/samin/objectdetection/settings/LogShareManager.kt	유지	Tracked input/history; no proven safe deletion	5371	d75d6190702cdee0bf654382d33091ea2d151e4112878a6c9b710a729e18ed67
+app/src/main/java/com/samin/objectdetection/settings/MlKitLogControls.kt	유지	Tracked input/history; no proven safe deletion	7545	96587f150472c8c297f69f56067a3d4026cd4eaa86584492e33c6c0837f93cee
+app/src/main/java/com/samin/objectdetection/settings/SettingsActivity.kt	수정·통합	Separate test-app diagnostics/UI/capability responsibilities; remove proven unused dependencies	54770	26adc0031c133bfdcd31bf33567160a35b97acd2fb9ca63e360916a454245584
+app/src/main/java/com/samin/objectdetection/tof/TofMeasurement.kt	유지	Explicitly protected external ToF source/sample/status extension contract	1063	9869e191d05e0d318c9d94569d98fe24f105ca0a0899b8ae91591f2bd99929c2
+app/src/main/java/com/samin/objectdetection/ui/BoundingBoxOverlay.kt	유지	Tracked input/history; no proven safe deletion	26557	8a150d56416782c7481c4964a2ebf26f1ae4ee3519927b8739087cf47ffed93d
+app/src/main/java/com/samin/objectdetection/ui/LatestUiUpdateDispatcher.kt	유지	Tracked input/history; no proven safe deletion	1088	b74044593d324b057468a052390f0e324ed703b55f1b8100291c7521db3a0743
+app/src/main/java/com/samin/objectdetection/ui/MainScreenView.kt	유지	Tracked input/history; no proven safe deletion	10516	a216f4a1e4d9044f7e97549d6e91922161065aeac8f4147f5e29d1b49d171279
+app/src/main/java/com/samin/objectdetection/ui/OverlayDebugMode.kt	유지	Tracked input/history; no proven safe deletion	101	65ba73d9270b5090e0625c018d166ac200fd702aed0da5b9b0e52b0c2723b08a
+app/src/main/java/com/samin/objectdetection/ui/OverlayFrameState.kt	유지	Tracked input/history; no proven safe deletion	2893	62b0b16b52a5e7c3dae763f6d7faa1937de1a112a39d7355d7a7c9c604fbffa3
+app/src/main/java/com/samin/objectdetection/ui/theme/Color.kt	삭제 가능	Compose template island; real screens use native Views; no outside caller/XML/reflection	299	4d6f1dcf22115243aa40fe42dd9f7f834a6903a23b978e1e3c3ae00c6d379304
+app/src/main/java/com/samin/objectdetection/ui/theme/Theme.kt	삭제 가능	Compose template island; real screens use native Views; no outside caller/XML/reflection	1765	dfcb310287f0c2deca069afe1d604014aa263e4b01442f554d0e0f045eba36aa
+app/src/main/java/com/samin/objectdetection/ui/theme/Type.kt	삭제 가능	Compose template island; real screens use native Views; no outside caller/XML/reflection	1027	52c7e6f90f765565b29899f867fc25ce164f72c142423776148c66afe059aa0b
+app/src/main/java/com/samin/objectdetection/warning/WarningCandidateSelector.kt	유지	Tracked input/history; no proven safe deletion	3301	89ac418bae495e2f8364fbd7b8e93883f2e0824eb9b0e352f6b2308047108703
+app/src/main/java/com/samin/objectdetection/warning/WarningCooldownManager.kt	유지	Tracked input/history; no proven safe deletion	1519	6ebbcfc5b69fe97c667f8bae75465ef9ad8123ddda64a6c2d13fac061faccf90
+app/src/main/java/com/samin/objectdetection/warning/WarningModels.kt	유지	Tracked input/history; no proven safe deletion	4640	4c094a13e8d628f202f5e23317ed0c702de536a7355873af94c9bb396d3c47e4
+app/src/main/java/com/samin/objectdetection/warning/WarningPolicy.kt	유지	Tracked input/history; no proven safe deletion	29732	b89f05eec88611bd3a6c380fc558aecd6717ec43afd8b135052d5ac6c796e6ef
+app/src/main/java/com/samin/objectdetection/warning/output/BeepWarningPlayer.kt	유지	Tracked input/history; no proven safe deletion	3700	cd7ca651437a79efd2930a8757c907d53ce6c7c4a96bc1a1bfa298ee5478c56a
+app/src/main/java/com/samin/objectdetection/warning/output/CompositeWarningPlayer.kt	삭제 가능	Composite implementation has no caller; keep WarningPlayer interface in its own file	1018	b57ec0108d2e74d4b7cada45d63d0424b1af81a2fb99dfdcf89ebb00d2375d6e
+app/src/main/java/com/samin/objectdetection/warning/output/TtsWarningPlayer.kt	유지	Tracked input/history; no proven safe deletion	6231	7b2540697c23d59f502cb8356d8698e848ee084d232a5deb7a4d11793cd8826c
+app/src/main/java/com/samin/objectdetection/warning/output/VibrationWarningPlayer.kt	유지	Tracked input/history; no proven safe deletion	3336	88c08d48f56a96fd0970aa73c26acbaedf7fb1e9f83a96958ea05fe3fccccebc
+app/src/main/java/com/samin/objectdetection/warning/output/WarningOutputController.kt	유지	Tracked input/history; no proven safe deletion	13542	6b6a829bdfff38b659a8bf09056a94974a1b0b47681ac79b891ffa9f63b9154c
+app/src/main/res/drawable/ic_launcher_background.xml	유지	Tracked input/history; no proven safe deletion	5776	38381d0d0a64770d992c98e5b5e492555690af40e2fc6ee59e5a1c2a7c0fdcde
+app/src/main/res/drawable/ic_launcher_foreground.xml	유지	Tracked input/history; no proven safe deletion	1731	6e3c1bb64d9bec079cf0030d867c58b064d2fb19ca6c5a691543c43134f64a2a
+app/src/main/res/mipmap-anydpi/ic_launcher.xml	유지	Tracked input/history; no proven safe deletion	348	e7c073fbec1a51a73f678b266a1cb207aa6468e3ea1504d24f43591f31d2b7c5
+app/src/main/res/mipmap-anydpi/ic_launcher_round.xml	유지	Tracked input/history; no proven safe deletion	348	e7c073fbec1a51a73f678b266a1cb207aa6468e3ea1504d24f43591f31d2b7c5
+app/src/main/res/mipmap-hdpi/ic_launcher.webp	유지	Tracked input/history; no proven safe deletion	1404	dd00996198640ed28fbc09cdcd7a3807cf8707f3eb255b659634da3ca6a6ff01
+app/src/main/res/mipmap-hdpi/ic_launcher_round.webp	유지	Tracked input/history; no proven safe deletion	2898	1ed73f5341a69d3b41c7e02e126803f50cc8c3284adf4bbb737f0c93577aef07
+app/src/main/res/mipmap-mdpi/ic_launcher.webp	유지	Tracked input/history; no proven safe deletion	982	846219e6f72fe9a6c104ca8919cbee36a101e7d2ff8da9da67b689a5888f060d
+app/src/main/res/mipmap-mdpi/ic_launcher_round.webp	유지	Tracked input/history; no proven safe deletion	1772	4e2c58b91de01130e6479e00cbbaaf6e77cd961dd2c8e303cf13cd077fa92632
+app/src/main/res/mipmap-xhdpi/ic_launcher.webp	유지	Tracked input/history; no proven safe deletion	1900	398340dad816fc9a6338cb151a8cf1e45b926f9bfb70628b24c4bd2523cc94d4
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.webp	유지	Tracked input/history; no proven safe deletion	3918	91b490aef86574901137f0a252272e1f1add99c1ad709e0696ed68929b88d261
+app/src/main/res/mipmap-xxhdpi/ic_launcher.webp	유지	Tracked input/history; no proven safe deletion	2884	58ae87fa0c5b5d1562d27fd648d2c061553fe20e3ed570bde588162d01ea7a27
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.webp	유지	Tracked input/history; no proven safe deletion	5914	3009fad079f5772f30ecd767f98924367fbe0f81c30048d672d4fda2d5ca7d12
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp	유지	Tracked input/history; no proven safe deletion	3844	f98fef5bc3bfe5b65692c40ad1cbae2bec4faf9f1b249c397626740db71b62d8
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp	유지	Tracked input/history; no proven safe deletion	7778	5faf033745c8c882c43bb1b372d4e4a5890caec63d9892a2e756c954108b85dc
+app/src/main/res/values/colors.xml	삭제 가능	No R.color, @color or dynamic resource lookup in app sources	387	31e0230ab2d96fa128a11705e85e590f3462745dc3c04bc851bc724a445921c1
+app/src/main/res/values/strings.xml	유지	Tracked input/history; no proven safe deletion	79	d57a33128f4aedaa76a0b6638463d4c6e1d181636daab7c1e4135a2abe002ecf
+app/src/main/res/values/themes.xml	유지	Tracked input/history; no proven safe deletion	161	7406c31490b2ef4408e0bf01528309d27b65e39f9afe36589c5d6c7e6e25305d
+app/src/main/res/xml/backup_rules.xml	유지	Tracked input/history; no proven safe deletion	490	facaaef2162be6dd86544a819278042729ed481c38933a410651b81424da7ea7
+app/src/main/res/xml/data_extraction_rules.xml	유지	Tracked input/history; no proven safe deletion	569	940f48fb2ba4d9ec5a55671126796fefa71661c0a5d7b434dc1e9be23da41690
+app/src/main/res/xml/file_paths.xml	유지	Tracked input/history; no proven safe deletion	173	33e94bca326be5bc478633f0c47ca46c2fe5eb7a8f52d0d5638e5ecd2d2703c6
+app/src/test/java/com/samin/objectdetection/ExampleUnitTest.kt	유지	Tracked input/history; no proven safe deletion	365	796bc56b835b4532441de3e9915c538c2b1ab34d637649b0ee8887c2bbd8b6ef
+app/src/test/java/com/samin/objectdetection/camera/AnalyzerShutdownTest.kt	유지	Tracked input/history; no proven safe deletion	1222	d236b328aa6d229fe996c4d14c46fdd31896d1c5e4b8deae6e9d8c20f9cd9f0f
+app/src/test/java/com/samin/objectdetection/camera/RecognitionRoiTest.kt	유지	Tracked input/history; no proven safe deletion	4215	da650125ce13146ff24276e0baa8a66e8fe1686f07124d632c7d32c07abc1532
+app/src/test/java/com/samin/objectdetection/detector/DetectionDebugFrameTest.kt	유지	Tracked input/history; no proven safe deletion	2448	3d4e6796b152d16cb7b667b0823f479f0e622abcc035c7319f7708e57928e5ca
+app/src/test/java/com/samin/objectdetection/detector/TwelveClassModelTest.kt	유지	Tracked input/history; no proven safe deletion	5508	ae3ba54ff3a7390120b9552bf8cc85809963e0012a3461019a9e3d6b08a7d715
+app/src/test/java/com/samin/objectdetection/detector/YoloResizeTransformTest.kt	유지	Tracked input/history; no proven safe deletion	3521	b6f29af08f1b2ebdd18ad5cabb23af533d4b08200f01c89eb3de7f1751a5acb4
+app/src/test/java/com/samin/objectdetection/detector/YoloTensorContractTest.kt	유지	Tracked input/history; no proven safe deletion	10919	c4eec39c40bef62f2f5f8337e687821684f4b66f94874aa098c447fdcf35dc09
+app/src/test/java/com/samin/objectdetection/distance/GroundPlaneDistanceEstimatorTest.kt	유지	Tracked input/history; no proven safe deletion	9189	5063ee6d227f5b70f0a153b7da4d8fb8426864e9aaa4a2dfadd8d6ba3b8d76f4
+app/src/test/java/com/samin/objectdetection/evaluation/DistanceJsonTest.kt	유지	Tracked input/history; no proven safe deletion	1704	391eed8c7e478e9423f6ad50c615130b4d7c8e2760a14e528774b955056a8ee6
+app/src/test/java/com/samin/objectdetection/evaluation/EvaluationJsonTest.kt	유지	Tracked input/history; no proven safe deletion	2564	435771ad7ffdc84ef9281089cf2904438d9ad760109e3fa06668e585236e0e89
+app/src/test/java/com/samin/objectdetection/evaluation/FrameTraceJsonTest.kt	유지	Tracked input/history; no proven safe deletion	1431	1e2c65781faf0d8453777163282505946c6fe32cb9be163d8719989fac46df60
+app/src/test/java/com/samin/objectdetection/evaluation/RecordingStateTest.kt	유지	Tracked input/history; no proven safe deletion	1612	f38b92bcf3c442feed1a5ba648fe5b0dd98662e4804433bd41ef4f41a5047430
+app/src/test/java/com/samin/objectdetection/logging/OrderedLogWriterTest.kt	유지	Tracked input/history; no proven safe deletion	2535	67aa5485d4d8f68bd8de0fc8f82be0c7678810e493d2eb4feb5adea82ede1f99
+app/src/test/java/com/samin/objectdetection/metrics/BatteryDiagnosticsTest.kt	유지	Tracked input/history; no proven safe deletion	7048	a5a42a5a4f9a43fda48cd31b67ad4e33505a85b84ce154a113a361cadd4c47ac
+app/src/test/java/com/samin/objectdetection/metrics/BatteryDischargeTrackerTest.kt	유지	Tracked input/history; no proven safe deletion	6962	a74bd1352b97d4ecda4432e12ba2bd1989c0c7faa12a4f274a60eebd8ddf793e
+app/src/test/java/com/samin/objectdetection/metrics/DetectionMetricsCollectorPerformanceTest.kt	유지	Tracked input/history; no proven safe deletion	2208	04fa242ddc8676a217e70929466cb0c2c8a1635a3c4418b55937512255969135
+app/src/test/java/com/samin/objectdetection/metrics/FrameLatencyTest.kt	유지	Tracked input/history; no proven safe deletion	11532	53d5bd6ee7472898267a90993c67c992f6ca001ad1ef2dcef0eda9b631cf0053
+app/src/test/java/com/samin/objectdetection/metrics/FrameRateMeterTest.kt	유지	Tracked input/history; no proven safe deletion	1403	ed85fd4f2b083130042de0a46f75419add8a4b82e925dbbb22e7b623d0ce7ef9
+app/src/test/java/com/samin/objectdetection/metrics/PerformanceIntervalCollectorTest.kt	유지	Tracked input/history; no proven safe deletion	5319	e99fecc62d7dd302db0eeefcda054951463eef742c613f46f9a8ebbe54ba8e0f
+app/src/test/java/com/samin/objectdetection/metrics/PerformanceLogFormatterTest.kt	유지	Tracked input/history; no proven safe deletion	7832	bf56fb171fca4d7eaf78c19fcc758878b2c65a3776e9289ee8968dd767c2a399
+app/src/test/java/com/samin/objectdetection/metrics/PerformanceLogSessionTest.kt	유지	Tracked input/history; no proven safe deletion	13476	44521e983cf4b4ab088b68a494e2faa512857c7a12e68f421087521e7a4611b0
+app/src/test/java/com/samin/objectdetection/metrics/PerformanceTestWindowTest.kt	유지	Tracked input/history; no proven safe deletion	1433	33aa576730f6724772bb7989baa75a2a8a58f77e493097c2056368d2bc7e0352
+app/src/test/java/com/samin/objectdetection/metrics/SystemPerformanceDiagnosticsTest.kt	유지	Tracked input/history; no proven safe deletion	8034	3d8adcbcdbb1344fce63ae177e5a1de1db67edc66d931578aab082f50243dd05
+app/src/test/java/com/samin/objectdetection/mlkit/MlKitDiagnosticLogRecorderTest.kt	유지	Tracked input/history; no proven safe deletion	17054	cb97d27f81197579d83577f35622d24455ca4eaa391e428bc1f9fd39487851fb
+app/src/test/java/com/samin/objectdetection/mlkit/MlKitDiagnosticsTest.kt	유지	Tracked input/history; no proven safe deletion	6065	76fe0dc97930a55a4953b013211b35e0241e2680f442c31e8ccb067bbefa9f60
+app/src/test/java/com/samin/objectdetection/policy/AdaptiveTemporalValidatorTest.kt	유지	Tracked input/history; no proven safe deletion	1149	9a4471f46c969551597a5a529677dbec5c1b9452d45933859536a6cb6820d54a
+app/src/test/java/com/samin/objectdetection/policy/BollardDetectionPolicyTest.kt	유지	Tracked input/history; no proven safe deletion	1750	f8a6d2bb150f466a55246fe8be5f41e9636c6d154e6dab1e84ca34b162c7665a
+app/src/test/java/com/samin/objectdetection/policy/BollardGeometryValidatorTest.kt	유지	Tracked input/history; no proven safe deletion	961	95700d1844b79de7c9d37e94faf39cd6287fd8f2fb4a21ca5a0a6a2e191c3689
+app/src/test/java/com/samin/objectdetection/policy/ElevenClassModelPolicyTest.kt	유지	Tracked input/history; no proven safe deletion	4099	fe974c37003526d81413bc29945a5f8656d8977da823f8b10c02744116acd26f
+app/src/test/java/com/samin/objectdetection/policy/NineClassModelPolicyTest.kt	유지	Tracked input/history; no proven safe deletion	6484	89e9b728f74f0e5ecde6ca44769a376364b2f5fc812b7411e81c40224444391b
+app/src/test/java/com/samin/objectdetection/policy/SmallBoxFilterPolicyTest.kt	유지	Tracked input/history; no proven safe deletion	1354	63cb5282664cc241a78e6009852bab11d85f83ee02b6fd7c3dfa50e25473ef5e
+app/src/test/java/com/samin/objectdetection/settings/AppSettingsTest.kt	유지	Tracked input/history; no proven safe deletion	15623	384882cfd55f4933054ee49871d2e6d8c0fd5ab57b67c607c5f3231b232d49f9
+app/src/test/java/com/samin/objectdetection/settings/CameraOnlySettingsMigrationTest.kt	유지	Tracked input/history; no proven safe deletion	1712	1e8c223f7a96e9e4cb3bc6a506adfab1d3983c8c3f3e926d31fd015b40ea330d
+app/src/test/java/com/samin/objectdetection/settings/DistanceSettingsTest.kt	유지	Tracked input/history; no proven safe deletion	2298	2acfb6f51ee094e3f0e57b181679c6b61a99e4d860180ede07bd998a117857fb
+app/src/test/java/com/samin/objectdetection/settings/ModelSelectionMigrationTest.kt	유지	Tracked input/history; no proven safe deletion	2646	34080b85865959f229725dba22e8c0ccd56120f3d0e133bb61e54fc9ee5e430a
+app/src/test/java/com/samin/objectdetection/ui/LatestUiUpdateDispatcherTest.kt	유지	Tracked input/history; no proven safe deletion	2249	557aa1f2edb4237dadfb047e05dce38045c64ca2b3f271d21b199bc731f3d6d7
+app/src/test/java/com/samin/objectdetection/ui/OverlayFrameStateTest.kt	유지	Tracked input/history; no proven safe deletion	6335	6788fb381698f1756e809976d1c6375246670770483159a86ca3480384825487
+app/src/test/java/com/samin/objectdetection/warning/CrowdDecisionEvaluatorTest.kt	유지	Tracked input/history; no proven safe deletion	2844	780a41fd284c314c288241f84dc34e8d1880907c5fa6cf8e8b5776ec86e34f80
+app/src/test/java/com/samin/objectdetection/warning/WarningCandidateSelectorCrowdTest.kt	유지	Tracked input/history; no proven safe deletion	3695	6057ee0f51e2cb9a1c8c91ffafc42fb69935605a8f3abcd5714cf5bc653f29b0
+app/src/test/java/com/samin/objectdetection/warning/WarningCooldownManagerTest.kt	유지	Tracked input/history; no proven safe deletion	839	8d7995a2ea04e2d71f7206cfbfce8ccc6b135d5ce3ce0b58a897cbf520b7f2d0
+app/src/test/java/com/samin/objectdetection/warning/WarningPolicyVehicleScenarioTest.kt	유지	Tracked input/history; no proven safe deletion	4239	52f3cc04a7a186b80f29caa0f4fd31564a31f30e961245fa90d67a81d4dadb0a
+arcore_depth.tar	확인 필요	Archive cannot be listed by tar; historical data origin uncertain, preserve	368912	4bcaa8eb6ef91974477f7f674d62f4d9b13cef437a9781c844013597dc77f463
+build.gradle.kts	수정·통합	Separate test-app diagnostics/UI/capability responsibilities; remove proven unused dependencies	220	95c37e12a88c0ca354b77f604c9b5ce7ed2791159ef520bc2ad2f2a937cae201
+docs/arcore-depth-accuracy-analysis-20261028.md	유지	Tracked input/history; no proven safe deletion	18113	247c0af579d8f8f252714ef8ad22b750894f3800bb3b697200703cbf235772ce
+docs/arcore-depth-log-management.md	유지	Tracked input/history; no proven safe deletion	12318	8034ae24f71bc68ec7c2866f7031eeac6d9a47a6c470fcd354513a8d9e589253
+docs/arcore-depth-test.md	유지	Tracked input/history; no proven safe deletion	18741	874aee562e205213ba27005ddf121f91be8c63461cca81fde064e8952df94b87
+docs/arcore-main-integration.md	유지	Tracked input/history; no proven safe deletion	21793	97184fc47d7ace71458152b858096d9dbb15459121bca43c1e2dae08cab8b2f0
+docs/arcore-yolo-experiment.md	유지	Tracked input/history; no proven safe deletion	16235	f6eda8eefe5c34afa3881b57fe445666182af4a05fa2226a2c2b3a412d6c3b97
+docs/battery-power-accuracy-20261019.md	유지	Tracked input/history; no proven safe deletion	17024	bbfb1b68a3086073a867206d71d55220cf39f5ef53eff06cd9ed0090e63428df
+docs/battery-thermal-diagnostics-20261015.md	유지	Tracked input/history; no proven safe deletion	20482	6e1d6016d9919cee36feee5880730c38e70b0381a443a94528381f59aa5b78b1
+docs/camera-preview-toggle-20261019.md	유지	Tracked input/history; no proven safe deletion	7834	43776e5c64b48515287d0e8d7542ecbab83157a6e6da4fbfbbf647dc6553fbe3
+docs/camerax-restoration-20261106.md	유지	Tracked input/history; no proven safe deletion	14195	98342692eb574d8879578ab8298ba02bd134dbbe2250a07ff6abb2c64de50dec
+docs/camerax-yolo-performance-analysis-20261106.md	유지	Tracked input/history; no proven safe deletion	51210	2998f50dc625c6c9bc9174ba85cabcc61ced9f3a6e7e5a19c82f8538b0d18986
+docs/detection-diagnostics.md	유지	Tracked input/history; no proven safe deletion	13404	d3e076ad0b01e042308a7dba504e8c651a8d8b099a892c7f9cba156f25d72c52
+docs/field-test-fixes.md	유지	Tracked input/history; no proven safe deletion	13663	6f34b98054547e9110b4482516f837bfcdfc891b146d89d8dcf6d41afe8f6b74
+docs/in_app_detection_settings.md	유지	Tracked input/history; no proven safe deletion	15134	14e2aeb6b4f3bea80cb1a8fdd1c6220aa898aa3066b8b93e80d30a405ef3c2f9
+docs/mlkit-detector-mode-comparison-20261023.md	유지	Tracked input/history; no proven safe deletion	15053	8fc1d721d247663d180967b72e357f75c8d434f98e7267fc3662de71ed573c46
+docs/mlkit-diagnostics-file-export-20261023.md	유지	Tracked input/history; no proven safe deletion	16921	11c0811f205edcef264cdcaa5a57049c63938107f904dbbe15209298dabd4a69
+docs/mlkit-main-screen-logging-and-validation-20261023.md	유지	Tracked input/history; no proven safe deletion	19925	e037cc5de8005218f1ee54b9d2dbeb589e82ef788d48e8f529683cd88751a09a
+docs/overlay-frame-freshness-20261019.md	유지	Tracked input/history; no proven safe deletion	18139	1fec1b2a39a61bdbf105bf5de662b7ce15f2069b14ced898d824f02fcc8cb7c5
+docs/performance-optimization-phase1-20261106.md	유지	Tracked input/history; no proven safe deletion	16573	a8b0e639b2420d5f5b1dbffb4ffef621d9b8f1c95e2301ddeb0633dfd044144b
+docs/performance-optimization-phase2-20261106.md	유지	Tracked input/history; no proven safe deletion	19942	721359b96ab344fb8af528624371cec7fa989abb80c1684f916f454337d1215b
+docs/performance-optimization-phase3-20261106.md	유지	Tracked input/history; no proven safe deletion	26305	1779bc39a3593d782439cdd1873c86fb0b487058102738074a286e61785d3411
+docs/recognition-roi-20261020.md	유지	Tracked input/history; no proven safe deletion	5222	7a6c06f5e6b2470d1895b0ef2ca1483e6d0c049681e2d73ea0d6ac9644c7b2dd
+docs/system-performance-diagnostics-20261013.md	유지	Tracked input/history; no proven safe deletion	20896	6e692e97001774d5de218ec5a05aa31502325fd36ab680579753a599d704a752
+docs/test-timer-20261020.md	유지	Tracked input/history; no proven safe deletion	3208	abb424b2265ceebf27805d78fda09f9c8ba1ecf659e5a9d0f92f12f48aa21cae
+docs/tflite-inference-correctness.md	유지	Tracked input/history; no proven safe deletion	14862	33e9328251da25087d1656e26ef7f5a05830a38e950a0346896bd4a1a20fe9fd
+docs/tflite-model-inspection.json	유지	Tracked input/history; no proven safe deletion	17697	75b7772c6d27459a307a84a159bf66f7116659573054585cf683935725fa56cd
+docs/timer-roi-validation-20261020.md	유지	Tracked input/history; no proven safe deletion	7126	ff4c90b4525a4c2872db0f6eb752e18197fd3da28f743149c83051406368573e
+docs/validation/battery-accuracy-build-20261019.txt	유지	Tracked input/history; no proven safe deletion	4528	dbc7f1650bfb2af6fdfa3784d491f3afa8244e8bcc13ad250be3ecea172865c3
+docs/validation/battery-accuracy-device-build-20261019.txt	유지	Tracked input/history; no proven safe deletion	5285	7f19766cb719cbecd87149ccc6fe6ca1d1437cdfeda62a55ff4c7f197e4d30bb
+docs/validation/battery-accuracy-device-raw-20261019.txt	유지	Tracked input/history; no proven safe deletion	1584	9b620a8a58505449f25f7e88554ed70aa98679b6b178333ee3bf99c5d0f6aa91
+docs/validation/battery-accuracy-device-tests-20261019.xml	유지	Tracked input/history; no proven safe deletion	1133	250f141602ce4cac4aa75914c70d54e4eb71701c1cfceeb76d2e5234c69cadfe
+docs/validation/battery-accuracy-final-build-20261019.txt	유지	Tracked input/history; no proven safe deletion	5058	91f21a78ef825e1e8598191a8a345887f2e5478506ed0449f12628080ac20746
+docs/validation/battery-accuracy-log-analysis-20261019.json	유지	Tracked input/history; no proven safe deletion	40585	efd66675a9853b511d4f7c62c110933955164971423e35090289af002d80af45
+docs/validation/battery-accuracy-python-20261019.txt	유지	Tracked input/history; no proven safe deletion	2319	0a887afe3af7105d603e4ead305909604b6737b1982170f86c195966fbeaf9f1
+docs/validation/battery-accuracy-results-20261019.json	유지	Tracked input/history; no proven safe deletion	1473	ae862667816703794082f84f5e776d6343a1bb90e96f1c20da4ab08d362249a1
+docs/validation/battery-thermal-analyzer-tests-20261015.txt	유지	Tracked input/history; no proven safe deletion	1221	838839d47fdd71b532930e122ee9c5081b1ba7c5b3c1090594fe365ba6946105
+docs/validation/battery-thermal-build-20261015.txt	유지	Tracked input/history; no proven safe deletion	4539	a42c112c284cae740259c5e39b902bccd3289e742d2e649dff567c91cfc54d63
+docs/validation/battery-thermal-device-analysis-20261015.json	유지	Tracked input/history; no proven safe deletion	15942	2a9b36e81d621668835f68e5359d2d577adb862d26c7cec5d95b78de2b11f9af
+docs/validation/battery-thermal-device-perf-off-20261015.txt	유지	Tracked input/history; no proven safe deletion	5375	073f3aa677dc9227ccc7630656d895cae1c7fc415390e439c4eee47937105542
+docs/validation/battery-thermal-device-perf-on1-20261015.txt	유지	Tracked input/history; no proven safe deletion	7989	221f5a126bdaa0919f432a9ef72eab76cf7cf007821f864ba637dae0ad301fd9
+docs/validation/battery-thermal-device-perf-on2-20261015.txt	유지	Tracked input/history; no proven safe deletion	7303	4540eb15e453216182a20b8198a49cd42e03c802004f03f9627f61e9088e8972
+docs/validation/battery-thermal-device-retest-20261015.txt	유지	Tracked input/history; no proven safe deletion	58036	6b8d170a19fef42b991afe65d938efc4e94d46a90d47ec46a5aa8125b277755c
+docs/validation/battery-thermal-device-samples-20261015.txt	유지	Tracked input/history; no proven safe deletion	3074	3fe0d8b7e97ac880347ccd50508d7a2252323f9c18bc142c76298d4d4a7388fa
+docs/validation/battery-thermal-device-samples-final-20261015.txt	유지	Tracked input/history; no proven safe deletion	3495	c8f31d03178a7632959ab863311a21d5eda86f679a821e52429a936a8d66b40a
+docs/validation/battery-thermal-device-tests-20261015.txt	유지	Tracked input/history; no proven safe deletion	14327	19fec10b7fe565a3e1b9cd4fb5635f7b58e128997cc2c8019f060b7f47aa71bc
+docs/validation/battery-thermal-final-tests-20261015.txt	유지	Tracked input/history; no proven safe deletion	55371	b6fa89ff89980fc88fb85ffa0e6edb787b0ce9f6428e79926d5a0c4717a1d613
+docs/validation/battery-thermal-test-popup-20261015.png	유지	Tracked input/history; no proven safe deletion	1894840	e1136b9ed923142ef826597dfbe53d1e1825838af16df645c6c0481d4ea223f5
+docs/validation/battery-thermal-ui-final-tests-20261015.txt	유지	Tracked input/history; no proven safe deletion	5131	d7cc5dfe3f0b50782645e898095ad9d98a314179a32ec7a6c3202193a6f030e7
+docs/validation/camera-preview-build-20261019.txt	유지	Tracked input/history; no proven safe deletion	5760	b97f4a985352f18854bb7676a07a0de1026373b974756c0680231f5c8aad147d
+docs/validation/camera-preview-camera-20261019.txt	유지	Tracked input/history; no proven safe deletion	2026	11fa683b1151b2bf3e18debed4654fb6d3f2e75aa371872f2049f72b1d5fcc99
+docs/validation/camera-preview-integration-20261019.xml	유지	Tracked input/history; no proven safe deletion	748	f7a1ed5288d3a6f0efef8df8fb71b60402e91824b7dd1cc40efc48c842a9f52b
+docs/validation/camera-preview-integration-build-20261019.txt	유지	Tracked input/history; no proven safe deletion	5042	ce6b151b6732c863030a74b094bdbc8a3a8231e69613c07f3ae5a3d8cbda6b75
+docs/validation/camera-preview-off-log-20261019.txt	유지	Tracked input/history; no proven safe deletion	44297	9ab08db5505f035c58697347be5aeaf63783e3b029e2121a56c49dfc34907f21
+docs/validation/camera-preview-on-log-20261019.txt	유지	Tracked input/history; no proven safe deletion	42907	ca581678738c77a00f99af443cb70bb503710856bb4a735f2baf8f5d7c7e1478
+docs/validation/camera-preview-results-20261019.json	유지	Tracked input/history; no proven safe deletion	2646	9373642d691626c5793e50d37c41d336686a9c85667563bd16d2d6993ea47f68
+docs/validation/camera-preview-suite-20261019.xml	유지	Tracked input/history; no proven safe deletion	4688	4e7376488f94edcb7f6e249f8b29ba5ce7ddeaeb8a3006d2a91307a71cf18af4
+docs/validation/camerax-dependency-20261106.txt	유지	Tracked input/history; no proven safe deletion	410	d799fe6ab69905938f87a9cba261dec1d54c15c7663c2eb1b7b8542f70743063
+docs/validation/camerax-gradle-20261106.txt	유지	Tracked input/history; no proven safe deletion	6734	fce33d5015256065ef594fe803eb405366fbed9ae9a4c5728f73b9f5b5615770
+docs/validation/camerax-static-20261106.txt	유지	Tracked input/history; no proven safe deletion	767	9010de28457402fe9b41c29f85039569fee6d2a97e911f02a11e27865ef74ea2
+docs/validation/model-selection-512-perf-20261020.txt	유지	Tracked input/history; no proven safe deletion	20970	0ca70024ed89943601a6e688a69ae20dbc4d84a63ee4badb40ab505d28c1b245
+docs/validation/model-selection-640-perf-20261020.txt	유지	Tracked input/history; no proven safe deletion	22418	116b9f5f29c018bac2937eb382ec6a6f0c74419d53615e5aa588ada0771c01cc
+docs/validation/model-selection-build-20261020.txt	유지	Tracked input/history; no proven safe deletion	4636	68338b3968f4d5d898c52131da5af3adb7af3d153d9102f01e36146a82044f07
+docs/validation/model-selection-models-20261020.json	유지	Tracked input/history; no proven safe deletion	2953	a452abc3ad785f120497f8ca899a30fd800a8597f86be838407724dac055ca7c
+docs/validation/model-selection-python-20261020.txt	유지	Tracked input/history; no proven safe deletion	116	df6daeb630aa6b774a8fd51e96a5364be51f48ef7602ba3526cda9c55869eb6f
+docs/validation/model-selection-results-20261020.json	유지	Tracked input/history; no proven safe deletion	31822	cbc37bda17faf7ced82b95115f5baa2bb69b5d49dd2c38e47ec7c263253c40ac
+docs/validation/model-selection-ui-20261020.txt	유지	Tracked input/history; no proven safe deletion	12611	b0aeabdf10c903ca700567862f7bca3952fb52550e2d5e044ce621fa95fd9c99
+docs/validation/overlay-frame-freshness-build-20261019.txt	유지	Tracked input/history; no proven safe deletion	5047	4a1e4810367fcce46e08f70a0f023c663101530bae0f0e7e8004394b2a8ac1a7
+docs/validation/overlay-frame-freshness-results-20261019.json	유지	Tracked input/history; no proven safe deletion	6532	a708fa5991456dcffa4b9140437b9ecf007bddc31b07fee0d8aeaf304b2a95ff
+docs/validation/performance-phase1-device-install-20261106.txt	유지	Tracked input/history; no proven safe deletion	76	7ed8077e18ea1232bc80f6cf16f0e955db5bfc14dab4220ae2251853311aa9fb
+docs/validation/performance-phase1-device-tests-20261106.txt	유지	Tracked input/history; no proven safe deletion	12220	72db8c55b3b6b2b3914d7bc3834247911bea9e3a3a94735b1f9a870058f7434d
+docs/validation/performance-phase1-gradle-20261106.txt	유지	Tracked input/history; no proven safe deletion	6680	13ae7cc89da28097c8f1835a74a3c85adfa2e309a565c94207a81fb48bfd8342
+docs/validation/performance-phase1-source-audit-20261106.txt	유지	Tracked input/history; no proven safe deletion	692	664dc2372244624cca2912f8e97d760d0a6c55e41657e92d578dc1c9b9909917
+docs/validation/performance-phase1-test-summary-20261106.txt	유지	Tracked input/history; no proven safe deletion	648	0aff366a2d77ea814fa568d4e93f08303a6123a511e25f6572921a90eebf9e2f
+docs/validation/performance-phase2-camera-awake-20261106.txt	유지	Tracked input/history; no proven safe deletion	2161	68cc3e29d275415af79fe57bb56eceb29ec121c6fc0efb5b3eae402aa4330f43
+docs/validation/performance-phase2-camera-failure-diagnostics-20261106.txt	유지	Tracked input/history; no proven safe deletion	1319	9dcd30f4a1b2c458888e75eeba7f6b7d1ec58310ed21d33be6c3ce72016d7bc1
+docs/validation/performance-phase2-camera-retry-20261106.txt	유지	Tracked input/history; no proven safe deletion	2199	c0f3353d13b54776189717032ace3064d5eb7c2fde2309b0d4ed9b8619636400
+docs/validation/performance-phase2-camera-retry-diagnostics-20261106.txt	유지	Tracked input/history; no proven safe deletion	382	9f569080a7c6fc8149fab369d5f47465cada62897d23b5e5fca91cc3c34b522d
+docs/validation/performance-phase2-camera-unlocked-20261106.txt	유지	Tracked input/history; no proven safe deletion	872	1b8b32da6778315407b37399e07d43e1a4e5442b542b2ecdfaad1ad543f1864e
+docs/validation/performance-phase2-device-install-20261106.txt	유지	Tracked input/history; no proven safe deletion	76	7ed8077e18ea1232bc80f6cf16f0e955db5bfc14dab4220ae2251853311aa9fb
+docs/validation/performance-phase2-device-tests-20261106.txt	유지	Tracked input/history; no proven safe deletion	26235	437cb1353e64a29b1bfe353e52bb87d4fe6dff77131ffccd5924a8867e79e947
+docs/validation/performance-phase2-gradle-20261106.txt	유지	Tracked input/history; no proven safe deletion	6746	87181fa6d06930fc6ae05b0c74e0bf26d3597e70bb6cd004883932c465b8288b
+docs/validation/performance-phase2-gradle-final-20261106.txt	유지	Tracked input/history; no proven safe deletion	5031	5929bd7984c63af6ce6b3d682cb183f1da6a87c04b5128ff667b68c9ab17965f
+docs/validation/performance-phase2-gradle-initial-20261106.txt	유지	Tracked input/history; no proven safe deletion	4164	939798f3d1c3bb995bd8725ac956f2c1cf2bb5652e6b2b5c5efb07f2eee0dedd
+docs/validation/performance-phase2-source-audit-20261106.txt	유지	Tracked input/history; no proven safe deletion	295	b80ca06e75174697efd67149146881763e7ea6029a74c1c34411387936c0102a
+docs/validation/performance-phase2-test-summary-20261106.txt	유지	Tracked input/history; no proven safe deletion	857	b4fed0c136c6aad07e6d6feb174847d0e761c410c9e26164e30d5c7e7b948c01
+docs/validation/performance-phase3-camera-unlocked-20261106.txt	유지	Tracked input/history; no proven safe deletion	871	1a04e5944eead1c1c045ebea9c0fedd40eb1f9c057ff6f3b2fc0c6fbfe25f1e8
+docs/validation/performance-phase3-device-install-20261106.txt	유지	Tracked input/history; no proven safe deletion	76	7ed8077e18ea1232bc80f6cf16f0e955db5bfc14dab4220ae2251853311aa9fb
+docs/validation/performance-phase3-device-tests-20261106.txt	유지	Tracked input/history; no proven safe deletion	27832	89fa27eb903aaa96f34e7e3c93d2e5363066afda9997d843925a3b076064de5b
+docs/validation/performance-phase3-gradle-20261106.txt	유지	Tracked input/history; no proven safe deletion	6735	0fcc14369fd86e46435346bb5f340cc16ddba0e8dd2eeab6d3bbc7ed9dd513ba
+docs/validation/performance-phase3-interpreter-probe-20261106.txt	유지	Tracked input/history; no proven safe deletion	766	08965163ba831d571fc2e1eb5de850594535058b5418769a3682022854cc656f
+docs/validation/performance-phase3-log-analysis-20261106.json	유지	Tracked input/history; no proven safe deletion	239080	91a6f936527d5ee7759609b6e4dd51d49dcb231c69d11644ee1d6633a76c2782
+docs/validation/performance-phase3-python-tests-20261106.txt	유지	Tracked input/history; no proven safe deletion	6384	0a12dcb20f4e7b5e84d99e5bfdb9f4fa21579aacb4a2d8bd7a5e38d41c386d47
+docs/validation/performance-phase3-runtime-inspection-20261106.txt	유지	Tracked input/history; no proven safe deletion	971	bab623b986f5cc81206acbf4a6923f44d7a0763b7833799ba26bf1abae4425e6
+docs/validation/performance-phase3-source-audit-20261106.txt	유지	Tracked input/history; no proven safe deletion	755	e0b8c47c498b3c6280fed0ad9a2257d750ee462099cca71305b1d1e1d0e909f4
+docs/validation/performance-phase3-test-summary-20261106.txt	유지	Tracked input/history; no proven safe deletion	467	49dd8d37877f774fa1591c357fff3248820b520881f3df796edf25ca4f111642
+docs/validation/system-diagnostics-device-20261013.txt	유지	Tracked input/history; no proven safe deletion	6256	6a802889906f90aa92eedee5dfdcea121742d068d8ce5a5eddfff99b6ef257a5
+docs/validation/timer-roi-auto-analysis-20261020.json	유지	Tracked input/history; no proven safe deletion	138139	36754f2f9b1f88b48383617ea1bda8f9f6ec04081bf026bfac9d5b63fc55c2da
+docs/validation/timer-roi-auto-off-4threads-20261020.txt	유지	Tracked input/history; no proven safe deletion	566029	c8ef4357be7df5790e71eedb5d2f834c782034a624832a032d11a7f272ad0823
+docs/validation/timer-roi-auto-on-1thread-20261020.txt	유지	Tracked input/history; no proven safe deletion	593427	6a5391fa73c4e5a085165a3c15a6c6c83a4f6c393115ce323b20c57e53f79074
+docs/validation/timer-roi-build-20261020.txt	유지	Tracked input/history; no proven safe deletion	4539	a70cfd9037d942be0905c421f8887cb120a449821980c38b46326e79fe3bbaf8
+docs/validation/timer-roi-camera-coordinates-20261020.txt	유지	Tracked input/history; no proven safe deletion	866	283c1f333c17293498045c37d924e0007949dfb34847d89335a4b4688769d841
+docs/validation/timer-roi-device-20261020.txt	유지	Tracked input/history; no proven safe deletion	10863	7ad8991edaf99a920e7babfc5ed5a778d94a919606f145f1c12f2479e58cae31
+docs/validation/timer-roi-device-animation-backup-20261020.json	유지	Tracked input/history; no proven safe deletion	118	c94c466d2029a98188984d621d057343480d22cd98e35230251e939cca73502d
+docs/validation/timer-roi-device-animation-retry-20261020.txt	유지	Tracked input/history; no proven safe deletion	35776	838fa06e2209c22bc95c2ab49b03dd12f1b887008fdecf4851f8a684c166386f
+docs/validation/timer-roi-device-auto-final-20261020.txt	유지	Tracked input/history; no proven safe deletion	95	5f98cf5b99d74563aa1981a66d2f657e633159294201382eb046090dd53d612b
+docs/validation/timer-roi-device-initial-20261020.xml	유지	Tracked input/history; no proven safe deletion	4048	53fd4d916d9378c16a746d92598da14034c3b4d1379804d9b1abc8863d4649d2
+docs/validation/timer-roi-device-ui-20261020.txt	유지	Tracked input/history; no proven safe deletion	166	4eae281af080571ab7b2372e855fd89e1628963702af8670ec12df2744475607
+docs/validation/timer-roi-final-build-20261020.txt	유지	Tracked input/history; no proven safe deletion	4637	bd5d4d0f2b25f73e58ebe68846e12a26b46110b036415cb1333c5e67508bf372
+docs/validation/timer-roi-manual-off-20261020.txt	유지	Tracked input/history; no proven safe deletion	42382	93a932bd8e09b1c01bb55cd1a0df45bf83880077dafa39e8e95a2a377b7daf50
+docs/validation/timer-roi-manual-on-20261020.txt	유지	Tracked input/history; no proven safe deletion	41355	c1022a700e941df52eb8de6d3f67322d2c255ff09d6b3c2737513e154026f0e9
+docs/validation/timer-roi-python-20261020.txt	유지	Tracked input/history; no proven safe deletion	116	3bef3bd33ddc50b3a969999e1bee964c09b93c6a183f674bc4b57d6636f41d97
+docs/validation/timer-roi-results-20261020.json	유지	Tracked input/history; no proven safe deletion	1290	698135fbc27c911fd31914fb1506c8c3671791b4e4250d763d8cbad5524d0eee
+docs/validation/timer-roi-unit-results-20261020.json	유지	Tracked input/history; no proven safe deletion	73	a7bb195a595d0ad357c3165de550a6bc1b10a9a566ef2a6bbf92261104f5e010
+docs/validation/yolo-eleven-class-instrumented-20261026.txt	유지	Tracked input/history; no proven safe deletion	34650	55a74f27317c920cc3d8f6625abfeaccd2b5ed6f754b6ba6d9bf38c310121e74
+docs/validation/yolo-eleven-class-model-inspection-20261026.json	유지	Tracked input/history; no proven safe deletion	25545	1c362cce70f2951852d0a7519ac2da4016a064247eaf0e9863560de045087d42
+docs/validation/yolo-eleven-class-recheck-20261026.txt	유지	Tracked input/history; no proven safe deletion	2433	e8afcfb2c51070f4fc763c5eba7af46e3194c8ccffd10e8aac00f90c01cdb035
+docs/validation/yolo-eleven-class-settings-20261026.txt	유지	Tracked input/history; no proven safe deletion	875	67f38146bdf014f2679da4c7ccd2bca97ff51f9053100abd16e9aed09a366422
+docs/validation/yolo-eleven-class-summary-20261026.json	유지	Tracked input/history; no proven safe deletion	1215	28c5c8baef8362b4a55551cdf5a1f0ddcb4b48f884847972afe38f4071b0d248
+docs/validation/yolo-long-run-analysis-20261015.json	유지	Tracked input/history; no proven safe deletion	141817	544f828f82cf06dce6af57ee5d341500a3db081f0fc96573ac2b6ee11598d539
+docs/validation/yolo-long-run-analyzer-tests-20261015.txt	유지	Tracked input/history; no proven safe deletion	1868	900371b7d7523cc303546d4d53af25f58c7e1232e749ec9c63e7a630c37a2162
+docs/validation/yolo-long-run-build-tests-20261015.txt	유지	Tracked input/history; no proven safe deletion	4603	3f9e2dc3b2af0c82bb199e0d1be167714a84b7f3bce69333088ed894eef7d25a
+docs/validation/yolo-longrun-measurement-setup-20261026.json	유지	Tracked input/history; no proven safe deletion	3613	29fd9aa647a2363ebd7c2a56cb40c3de68bada250f8c515e0e718893c81a7ffc
+docs/validation/yolo-next-optimization-baseline-tests-20261015.txt	유지	Tracked input/history; no proven safe deletion	6890	2a2e92b4eeb2e92f84e2d330a4b355dfca1b17feb06aa5786276cafbe429e251
+docs/validation/yolo-next-optimization-benchmark-20261015.txt	유지	Tracked input/history; no proven safe deletion	14481	34fefa35f1b89e0355b72b828e20ad882c419e2b680e3eb5024f0f82a8fe4514
+docs/validation/yolo-next-optimization-detector-tests-20261015.txt	유지	Tracked input/history; no proven safe deletion	9158	d2b62590ff66ebe657876089df9c4a61b471bf1d529d320ad839b7655f0a6d11
+docs/validation/yolo-next-optimization-results-20261015.json	유지	Tracked input/history; no proven safe deletion	11066	64f78d911ba7df13f9fedd8faf064b28195ee2b4936f2b53fdbd668bbeed13d3
+docs/validation/yolo-next-optimization-settings-tests-20261015.txt	유지	Tracked input/history; no proven safe deletion	9071	8ecac17faa7a6fd651896fc09061a2d0cd4a8ae5f8f061113b581b6355e1ba9b
+docs/validation/yolo-two-model-android-initial-summary-20261109.json	유지	Tracked input/history; no proven safe deletion	4966	9e8f37fda12219263a9f24b689541c77c98f8d38665120c6135306237ad71fa6
+docs/validation/yolo-two-model-android-retry-20261109.txt	유지	Tracked input/history; no proven safe deletion	4508	f57594b37c1771293d03216a0eb4b888133f2c6442a722eb96cd7ed7a3d200a9
+docs/validation/yolo-two-model-android-tests-20261109.txt	유지	Tracked input/history; no proven safe deletion	18137	d2242b8846b7d2247f7a4a3b21d2998215f3fef253e2e221663089ea9bb156b4
+docs/validation/yolo-two-model-apk-20261109.json	유지	Tracked input/history; no proven safe deletion	707	b23320b20f2a2d842e8d8244de89571a91b2e3074ae9e464902c669a55dd2ef3
+docs/validation/yolo-two-model-contract-tests-20261109.txt	유지	Tracked input/history; no proven safe deletion	757	08528bf6ea2fa79b27ce6a1aa86fd059947343358cc663aa2c85df3acf5a6c99
+docs/validation/yolo-two-model-devices-20261109.txt	유지	Tracked input/history; no proven safe deletion	148	b61ee3a5b06716d93999efd65e890f1f497d323809e8266d0b8b47727e890705
+docs/validation/yolo-two-model-emulator-20261109.txt	유지	Tracked input/history; no proven safe deletion	15178	53b16875f1727fae853cead7dd57379a58a6602a3937cfff4dc5820b481aee3d
+docs/validation/yolo-two-model-gradle-20261109.txt	유지	Tracked input/history; no proven safe deletion	5145	7c924346fb6ff5992da3b8f04d0e315ef9700cfdf3b7a0cbc5ba634813d81b44
+docs/validation/yolo-two-model-host-smoke-20261109.json	유지	Tracked input/history; no proven safe deletion	3799	b52a22dd498fea21c726673d6e089fd038335d923b30e5b8c213e1db614852a0
+docs/validation/yolo-two-model-host-yolo11n-20261109.txt	유지	Tracked input/history; no proven safe deletion	870	6326f6aad8757a136a46106d07287fcc0b907d17981b85bf8e84548a12313717
+docs/validation/yolo-two-model-host-yolo11s-20261109.txt	유지	Tracked input/history; no proven safe deletion	870	7c846f9b88912c1d704eb7f6774b1056ac6044723a1512c2e96b7ecd48c40930
+docs/validation/yolo-two-model-inspection-20261109.json	유지	Tracked input/history; no proven safe deletion	26352	ea448a71e9e469ec44e3e09d08e8690aadc1396d333e1292c993b352b03a3b65
+docs/validation/yolo-two-model-perfetto-tests-20261109.txt	유지	Tracked input/history; no proven safe deletion	1337	f3ea3469631a27e2ee4cf90b0c37d2b5988e2d471b29d608de6f9799a702e0bb
+docs/validation/yolo-two-model-python-tests-20261109.txt	유지	Tracked input/history; no proven safe deletion	7894	ea1ae6de09992b0d5861d96077aca8f485dcf4162aec1994d2ff2dca316cfa2f
+docs/validation/yolo-two-model-test-summary-20261109.json	유지	Tracked input/history; no proven safe deletion	6617	9dec57c7c45b5d061d79c1620d486e5d92220d7a91a1684782ea8c61f0c4e6b8
+docs/validation/yolo-v2-gradle-20261103.txt	유지	Tracked input/history; no proven safe deletion	4550	cd199e1b9204bb8a468395c5bec522cba1752d63829dd4ec6406207663164cdd
+docs/validation/yolo-v2-instrumented-20261103.txt	유지	Tracked input/history; no proven safe deletion	28618	1f914d28bed09473965ea40131693b52a0198628937bd5a8e22ea7caea7b256c
+docs/validation/yolo-v2-model-tests-20261103.txt	유지	Tracked input/history; no proven safe deletion	739	a8dae0a40911765a3555f49ee3139c7a2b700d6f73e74221a8813bce2b997d05
+docs/validation/yolo-v2-performance-log-tests-20261103.txt	유지	Tracked input/history; no proven safe deletion	2526	fa7d0821a3822fba500d619ee8290b0e32e9d34d8e89fad61d8d85ff09a79413
+docs/validation/yolo-v2-preview-analysis-20261103.json	유지	Tracked input/history; no proven safe deletion	33363	3907b3ab82ae46b791d1eac1b29fe5e32a17738603916982fcf059a8b9472fc1
+docs/validation/yolo-v2-preview-off-performance-20261103.txt	유지	Tracked input/history; no proven safe deletion	99594	5a5167206c937ba99dd436e7ed0236cf027efbb774b555473587ba1cba80dd9a
+docs/validation/yolo-v2-preview-on-performance-20261103.txt	유지	Tracked input/history; no proven safe deletion	97189	5eb9e56148af78316feb05df63618ac0a7a29cc59ed98f36ef957435fb8c0491
+docs/validation/yolo-v2-twelve-class-model-inspection-20261103.json	유지	Tracked input/history; no proven safe deletion	38470	aa07e0bd3e5c8da823bd5836233c6c5d2200739d77845fde946a20e91123526d
+docs/validation/yolo-v2-unit-tests-20261103.json	유지	Tracked input/history; no proven safe deletion	9552	8d616ae41ce1f0f4e8e4a3e035c05cadd116a84b9e4995e0a0f2075a825cab3f
+docs/xnnpack-settings-implementation-20261014.md	유지	Tracked input/history; no proven safe deletion	10521	656e0c3d89a82dfae694a7c4a415536b77fd4a2fb815322d9a06625d14edbb92
+docs/yolo-eleven-class-migration-20261026.md	유지	Tracked input/history; no proven safe deletion	10835	5d65f34b72fb9cd6a61ab2ccb0ffbf53799461430bbdec155807dd18ca6b3119
+docs/yolo-ground-plane-distance.md	유지	Tracked input/history; no proven safe deletion	13721	4bcd01aaaa892fcd1b3e73c28c390167613d5c3aa705836c966d7c12da317ce1
+docs/yolo-inference-bottleneck-analysis-20261014.md	유지	Tracked input/history; no proven safe deletion	33323	7911a89ea55f3a433f0bf396bdb4678fd6767bc2d2f669779966a4e227d4bf29
+docs/yolo-inference-instrumentation-p0-20261021.md	유지	Tracked input/history; no proven safe deletion	27354	2d5083bf72c01d0bad339bd4cb65a40b4d99a1f9736d439969c761bd22ea169d
+docs/yolo-inference-next-optimization-20261015.md	유지	Tracked input/history; no proven safe deletion	38566	353a547b970f4945cbc2d748c91c4bb93e9dc799e59b748695105bc10093b2bf
+docs/yolo-inference-optimization-20261014.md	유지	Tracked input/history; no proven safe deletion	15099	1500af75bc76588a42bb9eb396fcb16342508c2e68e9b17304d58094f9e6deef
+docs/yolo-inference-optimization-analysis-20261020.md	유지	Tracked input/history; no proven safe deletion	66638	60b97055a901102174d5b35fecef310b787a6975659ccc7239955ec7a2898903
+docs/yolo-long-run-performance-analysis-20261015.md	유지	Tracked input/history; no proven safe deletion	13250	9673501cd992aea074bc57cb11418b5c35fe7883c876994f98f481b87af7930a
+docs/yolo-longrun-measurement-setup-20261026.md	유지	Tracked input/history; no proven safe deletion	21469	480a7cd71b17e8e3b0b41549b3c3d236b9b68dbd1238349c02a27613f5a120c0
+docs/yolo-longrun-performance-degradation-20261026.md	유지	Tracked input/history; no proven safe deletion	53884	81bb749428e8690b2c948fb7142694d58fcdca066bee435212205201d5cb1720
+docs/yolo-mlkit-bitmap-optimization-p1-20261022.md	유지	Tracked input/history; no proven safe deletion	22653	345c034002e06b656759e64c22a54aa91a1bc948f2a5c097c00d5e2f972cdb94
+docs/yolo-mlkit-detection-visibility-analysis-20261023.md	유지	Tracked input/history; no proven safe deletion	23427	c946b6091b94c72834997a19d3c35fc71cd564b9c190c219d57b55b2b05dd39c
+docs/yolo-model-inspection-20261015.json	유지	Tracked input/history; no proven safe deletion	12759	dff58120787908f594765de1edc318f593d1433f451c20c62a2587ee44130264
+docs/yolo-model-selection-20261020.md	유지	Tracked input/history; no proven safe deletion	8675	8fb1abd1254f2063f756e0cf2e16dbcc7269c89a2d5df3ce23c58df088bc15ea
+docs/yolo-output-parsing-regression-analysis-20261022.md	유지	Tracked input/history; no proven safe deletion	43791	dfe5ad4e695e67c519d58464ee987033e408adc99dbe597dbd122e66b4134789
+docs/yolo-p0-aba-test-plan-20261022.md	유지	Tracked input/history; no proven safe deletion	27396	a2f0fcec1e63acb57580ed725a982ba5d66959ee6aa753d2ef5b1ff57f7f67c7
+docs/yolo-realtime-performance-analysis-20261013.md	유지	Tracked input/history; no proven safe deletion	40285	73da68c5ed2d6730c39933925e94f88d715db7e5a96e2fddc8b74cffb88acaf2
+docs/yolo-two-model-cleanup-20261109.md	유지	Tracked input/history; no proven safe deletion	6453	118081e550cb71cff569b1903f138314c1b2667934ae1c822fd306af75e28f4f
+docs/yolo-v2-twelve-class-migration-20261103.md	유지	Tracked input/history; no proven safe deletion	16553	38e5d1cb1f4db730c96159937035e8f1853f3c29f57fa832b600abc56a460993
+docs/yolo11s-nine-class-migration.md	유지	Tracked input/history; no proven safe deletion	9996	0357b450d1b4fe71ce95cbb1fd8168f46641e6114ddde721ac507df9e3129ee9
+gradle.properties	유지	Tracked input/history; no proven safe deletion	840	c1863a953626d28f6f0e8461ef8d9d6d2488ace306360a578b19c7a6e0ffc1dc
+gradle/gradle-daemon-jvm.properties	유지	Tracked input/history; no proven safe deletion	1150	a95e08f57e1bc6594d223f4116e0d1f53162096356f5f1381d0ebce078ecd02a
+gradle/libs.versions.toml	수정·통합	Separate test-app diagnostics/UI/capability responsibilities; remove proven unused dependencies	1983	99281cd02b935ac4c1ba09cc44e0d4ee71253e0391fa045f42c5b30883165664
+gradle/wrapper/gradle-wrapper.jar	유지	Tracked input/history; no proven safe deletion	45457	76805e32c009c0cf0dd5d206bddc9fb22ea42e84db904b764f3047de095493f3
+gradle/wrapper/gradle-wrapper.properties	유지	Tracked input/history; no proven safe deletion	378	1cd8b60afd531daa45a59938f7542d5e89c94c4e7beb48722816744f9489793c
+gradlew	유지	Tracked input/history; no proven safe deletion	8979	8cd81d7a40a14119b8e9e64647e02822b3511e9e4a536ab92c88daa3b0e170bc
+gradlew.bat	유지	Tracked input/history; no proven safe deletion	2937	1d297e00bd21de3ace22b4d7f2de1f9dfa858883d66bbf7c1ccbecccec8f4f3b
+hs_err_pid21060.log	삭제 가능	Generated JVM native-memory crash dump; no build/runtime/tool consumer	16492	f160e3d27c7923206d1093ebf9c3836d1fbcbc836fa2606c084dae3ad2576a8c
+mlkit_diagnostics.txt	수정·통합	Historical ML Kit raw log: relocate byte-for-byte into docs/validation	203440	d84e46fa69dc1ce5d218bc29b487898d08783c5c8542a0954d3762a54082fb6e
+settings.gradle.kts	수정·통합	Separate test-app diagnostics/UI/capability responsibilities; remove proven unused dependencies	652	d7c7447601feb584373c32fc8dbddf4e2aa8f27bce69c04f2bd8b5dc4802b3d7
+tools/analyze_depth_accuracy.py	유지	Tracked input/history; no proven safe deletion	7165	d1f5a8f6d949e0f2d8cef6554c8efb8747c9b9f9fd300f63a6735a4ade456b00
+tools/analyze_performance_logs.py	유지	Tracked input/history; no proven safe deletion	27947	40e3c863037440bf1015d7640afd14dda2764d11c0004ec6b90fc2d8add290b8
+tools/analyze_yolo_phase3.py	유지	Tracked input/history; no proven safe deletion	3844	3a76c4a7ff045a4c57dd013d60312d245d5198f37b0966094df300e5038de464
+tools/compare_tflite_golden.py	유지	Tracked input/history; no proven safe deletion	8620	6c6f4b029ff1aa4d9016052fdaeb0b62c24970b45ee467fe211ff9aeb3e51be6
+tools/inspect_tflite.py	유지	Tracked input/history; no proven safe deletion	5382	d00b87991f3fd6e386ed8748bee304d7c3d84b47b4376cfe3a4172b5d1588f34
+tools/perfetto/Common.ps1	유지	Tracked input/history; no proven safe deletion	4829	00f58dcb323fb4daeeadce6363453ebfc6e02f452e602abc66cf483d64ddfdff
+tools/perfetto/Prepare-YoloMeasurement.ps1	유지	Tracked input/history; no proven safe deletion	2432	38d777b9344fb1c3e53d26cb47c50a43e432a8b2f6837edc158debbfc90ea3c3
+tools/perfetto/Start-YoloMeasurement.ps1	유지	Tracked input/history; no proven safe deletion	9070	bfeb042a1cc1e09716b90cadca238e29942a50a8665569f16418afbe6d2fa4e0
+tools/perfetto/Test-YoloMeasurement.ps1	유지	Tracked input/history; no proven safe deletion	5451	3cedbd29540cad1b0a31d3974112455ae425cbe309b4265ec8d6985c98474bea
+tools/perfetto/conditions-template.txt	유지	Tracked input/history; no proven safe deletion	1363	6333aa84e2094a0322a15a96dbcb0da7aeb1eb2c413f543c65930273bf520534
+tools/perfetto/inspect-yolo.sql	유지	Tracked input/history; no proven safe deletion	2225	1a78f41df56ca4b9636a27745c1bb0a5dc3214cda3a416feb1dce42df6c0047f
+tools/perfetto/test_yolo_measurement.py	유지	Tracked input/history; no proven safe deletion	4993	4016424d93d80bf02b1ff0909ca1b700883d0a421ead20fe90e5989f9e297b11
+tools/perfetto/yolo-short.pbtxt	유지	Tracked input/history; no proven safe deletion	933	d107dd15bebf43a6649d86480d470bf360d862ab83fd3921dd1d7b88b9083291
+tools/perfetto/yolo_measurement.py	유지	Tracked input/history; no proven safe deletion	15978	76953f2801f05e5d347a3086eb3b905b3e75075c0983d11d45c43043e7b34f26
+tools/requirements-golden.txt	유지	Tracked input/history; no proven safe deletion	65	29d8ff8142a7f01fe3487560dac3e920ca34b1d9b9ad3b6fa2bca09abf8c98d2
+tools/test_analyze_performance_logs.py	유지	Tracked input/history; no proven safe deletion	12989	7175ab2f37ff1ceca5b428eef67613c48ef6f17b76c0a96f946e57d49f5ab700
+tools/test_analyze_yolo_phase3.py	유지	Tracked input/history; no proven safe deletion	3614	3333a2aec6aceac0b078959aab4c7ca784507779c836f229e7afb3d8d8f2abb7
+tools/test_depth_accuracy.py	유지	Tracked input/history; no proven safe deletion	3144	42722041f2e6b92821fc84b8e86b8b2db87b62cff46442e4f2bfe03004a7b5ec
+tools/test_latency_analysis.py	유지	Tracked input/history; no proven safe deletion	11171	fa9d73539b4b8861c471d08c094a7c59a9e74ca285e16b3016131f47c1df6277
+tools/test_yolo_model_contract.py	유지	Tracked input/history; no proven safe deletion	5637	b62e2e81868c8e526f06c8c9b092332f806963030d91949cc54d2a1968824be8

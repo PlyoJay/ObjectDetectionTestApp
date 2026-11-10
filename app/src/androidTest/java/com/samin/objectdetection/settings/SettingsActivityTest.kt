@@ -411,7 +411,7 @@ class SettingsActivityTest {
 
     @Test fun everyExistingControlIsReachableInItsCategory() {
         launch()
-        assertEquals(77, CATEGORY_FIELDS.values.sumOf { it.size })
+        assertEquals(96, CATEGORY_FIELDS.values.sumOf { it.size })
         scenario!!.onActivity { activity ->
             fun labels(view: View): List<String> = listOfNotNull(view.tag as? String) +
                 if (view is ViewGroup) (0 until view.childCount).flatMap { labels(view.getChildAt(it)) } else emptyList()
@@ -748,10 +748,15 @@ class SettingsActivityTest {
     }
 
     companion object {
+        private val CLASS_FIELDS = listOf(
+            "bollard", "person", "bicycle", "car", "motorcycle", "bus", "truck", "stop sign", "bench",
+            "cat", "dog", "cardboard_box"
+        ).flatMapIndexed { index, label -> listOf("$index: $label 탐지", "$label Confidence") }
+
         private val CATEGORY_FIELDS = linkedMapOf(
             "카메라 및 입력" to listOf("카메라 화면 표시 (Preview)", "Detect Interval (ms)", "Center Square ROI (OFF = Full Frame)", "Resize Mode", "요청 Camera Resolution",
                 "인식 영역 크롭 사용", "상단 크롭 (%)", "하단 크롭 (%)", "왼쪽 크롭 (%)", "오른쪽 크롭 (%)", "Preview 인식 영역 표시"),
-            "YOLO 모델 및 추론" to listOf("모델 선택", "Confidence Threshold", "NMS Threshold", "Interpreter Thread Count", "XNNPACK 사용", "Max Candidates"),
+            "YOLO 모델 및 추론" to listOf("모델 선택", "Confidence Threshold", "NMS Threshold", "Interpreter Thread Count", "XNNPACK 사용", "Max Candidates") + CLASS_FIELDS,
             "탐지 필터 및 경고" to listOf(
                 "Size Filter Mode", "Geometry Filter", "Min Box Area Ratio", "Min Box Width Ratio", "Min Box Height Ratio",
                 "Bollard Min Area Ratio", "Bollard Max Width/Height", "Adaptive Temporal", "Temporal Immediate Confidence",

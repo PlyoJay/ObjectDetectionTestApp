@@ -1,7 +1,6 @@
 package com.samin.objectdetection.camera
 
 import android.graphics.Bitmap
-import android.graphics.Matrix
 import android.util.Log
 import android.os.SystemClock
 import androidx.core.os.trace
@@ -54,22 +53,4 @@ internal fun ImageProxy.toBitmapSafe(rotationBuffer: FrameBitmapBuffer, enableDi
         // output belongs to rotationBuffer. Failed conversion/timing callbacks retain neither source.
         if (!returnedSource) converted?.let { if (!it.isRecycled) it.recycle() }
     }
-}
-
-fun Bitmap.rotate(degrees: Float): Bitmap {
-    if (degrees == 0f) return this
-
-    val matrix = Matrix().apply {
-        postRotate(degrees)
-    }
-
-    return Bitmap.createBitmap(
-        this,
-        0,
-        0,
-        this.width,
-        this.height,
-        matrix,
-        true
-    )
 }

@@ -3,7 +3,6 @@ package com.samin.objectdetection.ui
 import android.graphics.Rect
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import androidx.test.core.app.ActivityScenario
 import com.samin.objectdetection.settings.SettingsActivity
 import org.junit.Assert.*

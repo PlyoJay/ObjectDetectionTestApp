@@ -36,19 +36,13 @@ import androidx.core.view.doOnLayout
 import com.samin.objectdetection.camera.SizeFilterMode
 import com.samin.objectdetection.camera.YoloResizeMode
 import com.samin.objectdetection.camera.RecognitionRoi
-import com.samin.objectdetection.detector.ModelAssets
 import com.samin.objectdetection.detector.YoloModel
 import com.samin.objectdetection.detector.ModelConfig
 import com.samin.objectdetection.detector.YoloClassOptions
 import com.samin.objectdetection.mlkit.MlKitDetectionMode
-import com.samin.objectdetection.detector.ModelIdentity
 import com.samin.objectdetection.ui.OverlayDebugMode
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import java.util.Locale
 
 class SettingsActivity : ComponentActivity() {
@@ -72,7 +66,7 @@ class SettingsActivity : ComponentActivity() {
     private lateinit var modelInfo: TextView
     private lateinit var applyButton: Button
     private var modelInfoJob: Job? = null
-    private val modelInspectionMutex = Mutex()
+    private val modelInspector by lazy { SettingsModelInspector(this) }
     private val modelDescriptions = mutableMapOf<YoloModel, String>()
     private var describedModel: YoloModel? = null
     private var applying = false
@@ -300,21 +294,13 @@ class SettingsActivity : ComponentActivity() {
         modelDescriptions[model]?.let { modelInfo.text = it; return }
         modelInfo.text = "Model: ${model.assetName}\nInput / Output / SHA256: 확인 중…"
         modelInfoJob = lifecycleScope.launch {
-            val result = withContext(Dispatchers.IO) {
-                modelInspectionMutex.withLock {
-                    runCatching { ModelAssets.inspect(this@SettingsActivity, model).description() }
-                }
-            }
+            val result = modelInspector.inspect(model).map { it.settingsDescription() }
             if (selectedModel() == model) {
                 modelInfo.text = result.getOrElse { "Model: ${model.assetName}\n모델 로딩 실패: ${it.message}" }
                 result.getOrNull()?.let { modelDescriptions[model] = it }
             }
         }
     }
-
-    private fun ModelIdentity.description() = "Model: $assetName\n입력 크기: ${inputWidth}×$inputHeight\n" +
-        "Input: $inputShape ($inputType)\nOutput: $outputShape ($outputType)\n" +
-        "클래스 ($classCount): ${com.samin.objectdetection.detector.ModelConfig.labelsFor(assetName).joinToString()}\nSHA256: $sha256"
 
     private fun buildCameraSection(parent: LinearLayout) {
         section(parent, "카메라 / 전처리")
@@ -588,12 +574,8 @@ class SettingsActivity : ComponentActivity() {
         applyButton.isEnabled = false
         lifecycleScope.launch {
             // Validate the asset and requested native options before changing durable settings.
-            val result = withContext(Dispatchers.IO) {
-                modelInspectionMutex.withLock {
-                    runCatching { ModelAssets.inspect(this@SettingsActivity, value.yolo.model,
-                        value.yolo.interpreterThreadCount, value.yolo.useXnnpack) }
-                }
-            }
+            val result = modelInspector.inspect(value.yolo.model,
+                value.yolo.interpreterThreadCount, value.yolo.useXnnpack)
             applying = false
             applyButton.isEnabled = true
             result.onSuccess {

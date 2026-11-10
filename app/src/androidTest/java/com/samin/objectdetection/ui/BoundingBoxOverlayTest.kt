@@ -54,7 +54,7 @@ class BoundingBoxOverlayTest {
     }
 
     @Test fun longLabelsStayInsideScreenAndAvoidEachOther() = instrumentation.runOnMainSync {
-        val view = overlay()
+        val view = overlay().apply { setDebugMode(OverlayDebugMode.SIMPLE) }
         try {
             view.configure(true, true, false, true, false, 1500)
             val boxes = listOf(DetectionResult("very long bollard label", .9f, 160f, 1f, 199f, 65f, estimatedDistanceMeters = 123.4f),

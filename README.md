@@ -10,6 +10,8 @@ Retired 640/11-class selections, missing selections and unknown model names
 recover to YOLO11s while preserving other settings and custom presets.
 Cat/dog/cardboard_box are displayed and counted without enabling warning outputs.
 See [two-model registration and validation](docs/yolo-two-model-cleanup-20261109.md).
+See [pre-port cleanup and Device App reuse order](docs/code-cleanup-20261110.md)
+for retained features, removal evidence, and current verification results.
 
 CameraX is the only camera source. The pipeline retains ROI, Letterbox, YOLO,
 postprocessing and Overlay, with ML Kit using the same camera frames and ROI.

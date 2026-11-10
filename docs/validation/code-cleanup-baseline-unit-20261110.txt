@@ -1,0 +1,42 @@
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:generateDebugBuildConfig
+> Task :app:generateDebugResources
+> Task :app:packageDebugResources
+> Task :app:processDebugNavigationResources
+> Task :app:javaPreCompileDebug
+> Task :app:parseDebugLocalResources
+> Task :app:generateDebugRFile
+> Task :app:checkDebugAarMetadata
+> Task :app:mapDebugSourceSetPaths
+> Task :app:compileDebugNavigationResources
+> Task :app:mergeDebugResources
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
+> Task :app:processDebugManifestForPackage
+> Task :app:processDebugResources
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileDebugUnitTest
+> Task :app:compileDebugKotlin
+w: file:///D:/develop/Projects/TestProjects/ObjectDetection/app/src/main/java/com/samin/objectdetection/camera/ImageProxyExt.kt:29:22 'fun <T> trace(sectionName: String, block: () -> T): T' is deprecated. Use androidx.tracing.Trace instead.
+w: file:///D:/develop/Projects/TestProjects/ObjectDetection/app/src/main/java/com/samin/objectdetection/camera/ImageProxyExt.kt:36:13 'fun <T> trace(sectionName: String, block: () -> T): T' is deprecated. Use androidx.tracing.Trace instead.
+w: file:///D:/develop/Projects/TestProjects/ObjectDetection/app/src/main/java/com/samin/objectdetection/detector/VisionStyleYoloDetector.kt:208:30 'fun <T> trace(sectionName: String, block: () -> T): T' is deprecated. Use androidx.tracing.Trace instead.
+w: file:///D:/develop/Projects/TestProjects/ObjectDetection/app/src/main/java/com/samin/objectdetection/detector/VisionStyleYoloDetector.kt:285:17 'fun <T> trace(sectionName: String, block: () -> T): T' is deprecated. Use androidx.tracing.Trace instead.
+w: file:///D:/develop/Projects/TestProjects/ObjectDetection/app/src/main/java/com/samin/objectdetection/detector/VisionStyleYoloDetector.kt:344:9 'fun <T> trace(sectionName: String, block: () -> T): T' is deprecated. Use androidx.tracing.Trace instead.
+w: file:///D:/develop/Projects/TestProjects/ObjectDetection/app/src/main/java/com/samin/objectdetection/detector/VisionStyleYoloDetector.kt:347:9 'fun <T> trace(sectionName: String, block: () -> T): T' is deprecated. Use androidx.tracing.Trace instead.
+w: file:///D:/develop/Projects/TestProjects/ObjectDetection/app/src/main/java/com/samin/objectdetection/mlkit/MlKitObjectDetector.kt:39:25 'fun <T> trace(sectionName: String, block: () -> T): T' is deprecated. Use androidx.tracing.Trace instead.
+
+> Task :app:compileDebugJavaWithJavac
+> Task :app:bundleDebugClassesToRuntimeJar
+> Task :app:bundleDebugClassesToCompileJar
+> Task :app:processDebugJavaRes
+> Task :app:compileDebugUnitTestKotlin
+> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:processDebugUnitTestJavaRes
+> Task :app:testDebugUnitTest
+
+BUILD SUCCESSFUL in 58s
+26 actionable tasks: 26 executed
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.4.1/userguide/configuration_cache_enabling.html

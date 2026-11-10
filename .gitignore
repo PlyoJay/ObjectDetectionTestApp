@@ -16,3 +16,12 @@ local.properties
 .venv/
 /golden_runs/
 __pycache__/
+# Local compiler/IDE state and unrelated scratch work
+/.kotlin/
+/.guardian-work/
+/.idea/deploymentTargetSelector.xml
+# Device exports and crash dumps belong in docs/validation only when deliberately archived
+/hs_err_pid*.log
+/mlkit_diagnostics.txt
+/arcore_depth.tar
+/arcore_depth_export/

@@ -1,0 +1,57 @@
+{
+  "jvmSuites": 41,
+  "jvm": {
+    "tests": 212,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "lint": {
+    "Warning": 185
+  },
+  "lintChanges": {
+    "GradleDependency": {
+      "before": 2,
+      "after": 1
+    },
+    "ObsoleteSdkInt": {
+      "before": 12,
+      "after": 11
+    },
+    "UnusedResources": {
+      "before": 7,
+      "after": 0
+    },
+    "UseTomlInstead": {
+      "before": 10,
+      "after": 8
+    }
+  },
+  "apkModels": [
+    {
+      "asset": "best_512.tflite",
+      "sha256": "591509278b3a1fe114a0084d4841b948a93b637c22005b7becf06309cb906667",
+      "matchesSource": true,
+      "stored": true
+    },
+    {
+      "asset": "yolo11n_512.tflite",
+      "sha256": "fa8f25724210a15c4259c82cbf8d87a4169d0ab7f1bb644a6620173aa52bae32",
+      "matchesSource": true,
+      "stored": true
+    },
+    {
+      "asset": "labels.txt",
+      "sha256": "9ab5f02f9fd934807d5fd961009ac48e9887ebc14b5134439af0e7e279c04145",
+      "matchesSource": true,
+      "stored": false
+    }
+  ],
+  "finalLintAfterTestFixes": {
+    "Warning": 185
+  },
+  "androidUniqueFinalCases": 86,
+  "androidFailuresRemaining": 0,
+  "androidSingleFullSuiteRun": false,
+  "androidDetail": "code-cleanup-device-summary-20261110.json"
+}

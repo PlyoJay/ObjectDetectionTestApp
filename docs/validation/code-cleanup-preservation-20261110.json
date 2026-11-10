@@ -1,0 +1,328 @@
+{
+  "protectedFiles": [
+    {
+      "path": "app/src/main/assets/best_512.tflite",
+      "unchanged": true,
+      "sha256": "591509278b3a1fe114a0084d4841b948a93b637c22005b7becf06309cb906667"
+    },
+    {
+      "path": "app/src/main/assets/labels.txt",
+      "unchanged": true,
+      "sha256": "9ab5f02f9fd934807d5fd961009ac48e9887ebc14b5134439af0e7e279c04145"
+    },
+    {
+      "path": "app/src/main/assets/yolo11n_512.tflite",
+      "unchanged": true,
+      "sha256": "fa8f25724210a15c4259c82cbf8d87a4169d0ab7f1bb644a6620173aa52bae32"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/detector/DetectionDebugRecorder.kt",
+      "unchanged": true,
+      "sha256": "06c9105ce84d68c397796a405173a2dfd92232b703b61491dd8e1f1c1235a8d6"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/detector/DetectionDiagnostics.kt",
+      "unchanged": true,
+      "sha256": "16ac352694de4e50ba8f30aadea1fbf47044850d739bead26f92ed6e99a81ccf"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/detector/DetectionResult.kt",
+      "unchanged": true,
+      "sha256": "8c14c9a3da40ff15e27a4a55777cf01a7a47aa3899ac2f480398658d8e3e449b"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/detector/InferenceException.kt",
+      "unchanged": true,
+      "sha256": "e405d280dae3970cce2e1fa5fbaeb929eeb67d828175b7dba86e9b787e2aa3ca"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/detector/InferenceExecutionInfo.kt",
+      "unchanged": true,
+      "sha256": "7158ebed1c9bb424e1ebf221f33a078d7c5a645115cf43a8943fa26fa5d65b50"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/detector/ModelAssets.kt",
+      "unchanged": true,
+      "sha256": "8cd5ed208d18b454a46c9a65bd4816e0552c5d3e991b28563fb7da140f2da5f7"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/detector/ModelConfig.kt",
+      "unchanged": true,
+      "sha256": "f142b80fdcc3c5912e68420f5a13176d725dcde98aecd8d815982e7f88a9310a"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/detector/VisionStyleYoloDetector.kt",
+      "unchanged": true,
+      "sha256": "5c90f049b76ff29c14afce049aad78539d353a784eac1f2f2b7dad9f775026b4"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/detector/YoloClassOptions.kt",
+      "unchanged": true,
+      "sha256": "b6e3da5f9d270a66082b9ea7a4798876a9ce9ab24bd20ca4156806beecf598a5"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/detector/YoloResizeTransform.kt",
+      "unchanged": true,
+      "sha256": "603b2185f870412adc52e63be42edebdef42dc37fc58e7e7e9f67e80a2159152"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/detector/YoloTensorContract.kt",
+      "unchanged": true,
+      "sha256": "d381888099f5d4900a39978914b2f5ee036f7fce432e649c4285d295cd088383"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/location/UserLocationTracker.kt",
+      "unchanged": true,
+      "sha256": "632adab95731be7435d2a328d73c086ac3b6c8a00eadcb83b5b5506d41aab8a1"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/location/UserMotionState.kt",
+      "unchanged": true,
+      "sha256": "5d7d2b7084768515a19a94a5a6afb1aff9001939f3852f49b3a371104a7ab9c5"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/metrics/AndroidBatteryMetricSource.kt",
+      "unchanged": true,
+      "sha256": "448d6f44ef399846ddbba863e61b16126a2fbbdd94acdbc22329c3ba7014e47d"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/metrics/AndroidSystemMetricSource.kt",
+      "unchanged": true,
+      "sha256": "d0677737951be738795c2ef1667d11ce4a9a47644714dbabd21d47145fa688f1"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/metrics/BatteryDiagnostics.kt",
+      "unchanged": true,
+      "sha256": "9de289b6ab6634d83c3b663eebf3cdf2b2fb6a9860127dfbdccf7dedffd0ed7a"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/metrics/BatteryDischargeTracker.kt",
+      "unchanged": true,
+      "sha256": "a4bf250dce334cdd480bbd6df239fed5d8c8202116e3078cd470a7da83229b26"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/metrics/DetectionMetricsCollector.kt",
+      "unchanged": true,
+      "sha256": "665999b72b0830ed492030f877b005b4c262da14060e01d204bd2bae7ce5f3d5"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/metrics/FrameLatency.kt",
+      "unchanged": true,
+      "sha256": "71ad5513aa916202532551da30df2e973eb981b80a79ab349625d866b720ffd4"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/metrics/FrameTrace.kt",
+      "unchanged": true,
+      "sha256": "3051f29b28b843f4489ef149180ca0d7a8c1d528c738be75e814cf039d336391"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/metrics/PerformanceIntervalCollector.kt",
+      "unchanged": true,
+      "sha256": "4c72c0e2fe88781e4a6830532410affce7d4feabd0c4c8c64893efb7423fbf6b"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/metrics/PerformanceLogFormatter.kt",
+      "unchanged": true,
+      "sha256": "16e4a0597fefc030c0efc654d59fa32cab9b911c29160d0f02f0c4259921a92a"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/metrics/PerformanceLogRecorder.kt",
+      "unchanged": true,
+      "sha256": "97775f565e7091cd04ff84c8f48321c88afa33c19c382c01a50a9fec33132a40"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/metrics/PerformanceLogSession.kt",
+      "unchanged": true,
+      "sha256": "e3a3730dedc481a038ac19649ddbeeedb8c79126353b65faa826178e81cdcbfe"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/metrics/PerformanceTestWindow.kt",
+      "unchanged": true,
+      "sha256": "0bb266236c3937f2f9413e8f3a9bf1c0fd5d5a011f484ad00363c4aa8f3d97a0"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/metrics/SystemPerformanceDiagnostics.kt",
+      "unchanged": true,
+      "sha256": "0396a98a92a9113ce910be4388e1a99fb08edd9a7d4046a91856bc17c1896d62"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/mlkit/MlKitDetectionMode.kt",
+      "unchanged": true,
+      "sha256": "7af111d074883b63d904f2ec73564f189c1667737f6276eee1038191f71677fa"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/mlkit/MlKitDiagnosticLogRecorder.kt",
+      "unchanged": true,
+      "sha256": "e547680f0c1fdad1d12de046071024af0b99e3e96e8928394e06b70b3e8dd79b"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/mlkit/MlKitDiagnosticLogs.kt",
+      "unchanged": true,
+      "sha256": "a465a70a8cb4817bfca1c5a4a0307b0cfbabe7ee6af04dc2b1dad71b7b71647c"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/mlkit/MlKitDiagnostics.kt",
+      "unchanged": true,
+      "sha256": "6afc3a6387ce04eb8cd8048ed2afc3c8a448d9b5921d9410e68117d7e951a173"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/mlkit/MlKitInputBuffer.kt",
+      "unchanged": true,
+      "sha256": "e528f5e5cbd4b9393e31a69b553eaeeb8d6fbac33c7468dfa1b3e34c2e7f034b"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/mlkit/MlKitObjectDetector.kt",
+      "unchanged": true,
+      "sha256": "aba31e9fdcbe9b4c185ba6909f069c831f7838cc3db359e9ba69674d936fab34"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/model/DetectedObject.kt",
+      "unchanged": true,
+      "sha256": "8f1d024616738856755b51f5ac9ae074f2b551c7ca21e6e3e911c16954eac058"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/model/DetectionCategory.kt",
+      "unchanged": true,
+      "sha256": "097e4da6da2ec9a2dca1daadc6fcd9c36b2ce250f8929af7f53f0c25152fb6f1"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/model/DetectionPriority.kt",
+      "unchanged": true,
+      "sha256": "97d395a8e472502398f5c1608d32b165664267f211f49c4010a7e321c2568c45"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/model/DetectionSource.kt",
+      "unchanged": true,
+      "sha256": "f8b0574c1b70ab95f1f4168e68a8d223bd6e041590574ef69a97a314ee62295e"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/motion/ApproachSpeedLevel.kt",
+      "unchanged": true,
+      "sha256": "817c6ce77cf337aa96033a96cccc0f5d9c5c927f72af2c07830d92c1e5c27f26"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/motion/MotionDirection.kt",
+      "unchanged": true,
+      "sha256": "4470612f509317f2b712021edd853ff9178ac3b4ef6dad7bf50ac55813e8ddd8"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/motion/ObjectMotionTracker.kt",
+      "unchanged": true,
+      "sha256": "cfdc1258a13ed1a426d1e698f2e6772b886b90c2b3463ecf1e87811b4a34cd8c"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/motion/ObjectMovementState.kt",
+      "unchanged": true,
+      "sha256": "f0f56032156ab31e44489b30787e93938df57764a3ef27cfdc283826433d6941"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/motion/UserObjectRelation.kt",
+      "unchanged": true,
+      "sha256": "fa979744e24aa342cc0ff711454ed34a28ac3a39530e091a58e417653f10b731"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/pipeline/DetectionPipeline.kt",
+      "unchanged": true,
+      "sha256": "c3a0423d932b395ef23a44a33bdd97e552df012ed8920cbdfdd0dea5d686c94f"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/pipeline/DetectionPipelineResult.kt",
+      "unchanged": true,
+      "sha256": "572231b8e2d06e8a6c9bc344dc0dccd9f90e99c234e84badb2eb60817f31cd3c"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/policy/AdaptiveTemporalValidator.kt",
+      "unchanged": true,
+      "sha256": "37e45e5287a92b8659248993415bfdc934f315276f6d402c6b9dc1c73b5038b2"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/policy/BollardGeometryValidator.kt",
+      "unchanged": true,
+      "sha256": "51b311aec3d2f4e8e31837d2889f0b685740140a2948ad6ee261ddb2e0cb7593"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/policy/DetectionPolicy.kt",
+      "unchanged": true,
+      "sha256": "5983b191db3ad5cbe57f79d9c5572b2a59f32c0dc002ba840bee77e525db23fe"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/policy/ObjectCategory.kt",
+      "unchanged": true,
+      "sha256": "da716b757a728e780399402d783937b0b51614dc3fe393e00a4dad26c8a6c089"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/policy/ObjectTuningPolicy.kt",
+      "unchanged": true,
+      "sha256": "66b575e53e39bb74c64b811e1f73969067faf1d9ec341782197253c9d59f7dd2"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/policy/ObjectTuningPolicyRegistry.kt",
+      "unchanged": true,
+      "sha256": "555dec9b41f0740b6912a3b7040f661e51b4e310cf362415c126863a98cb9099"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/policy/OverlayObjectFilter.kt",
+      "unchanged": true,
+      "sha256": "eec0af7d9daeb343c1005ffb250c153598692695c01908e5d6e83bd9223e1a87"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/policy/SmallBoxFilterPolicy.kt",
+      "unchanged": true,
+      "sha256": "3fc53ddf76d9ddd47fbe49656a48ec552197835a25aa8cd530f391743b92fcfc"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/policy/WarningPriority.kt",
+      "unchanged": true,
+      "sha256": "50265b9ff737e8f2b6bfe4317bacc15a88b1fb9f3ea2f2550a915a1c444dc7a2"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/policy/YoloDefaultPolicyRegistry.kt",
+      "unchanged": true,
+      "sha256": "1efe17e39314efa212b98f8cc735cdef7a4fb3cdc85cb353294c0bcc37e44c28"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/tof/TofMeasurement.kt",
+      "unchanged": true,
+      "sha256": "9869e191d05e0d318c9d94569d98fe24f105ca0a0899b8ae91591f2bd99929c2"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/camera/CameraController.kt",
+      "unchanged": true,
+      "sha256": "3b57a8ddd5c65a16f92db923c8e3e79118ec525f4567ff59e782742de8adee0a"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/camera/FrameBitmapBuffer.kt",
+      "unchanged": true,
+      "sha256": "7a36de1923e5c8056dceb0fbc9552bb63133065de2b07cf341dfffa68623f787"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/camera/RecognitionRoi.kt",
+      "unchanged": true,
+      "sha256": "45be25b9bc023a1611e7c6bf417f8ebe92739ef18b5eabb04fd1ad5831b9edcc"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/camera/AnalyzerShutdown.kt",
+      "unchanged": true,
+      "sha256": "6c6ca584881dda79c29ede8867efc69dd2918c0c2a5fadbd7c99de32d857f7f6"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/camera/DetectionConfig.kt",
+      "unchanged": true,
+      "sha256": "cabfaee2a6b3cadca173c121515b454afa7fe6770fe30450c915ff6650f0a5a2"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/settings/AppSettings.kt",
+      "unchanged": true,
+      "sha256": "0876c5c85ab5ba9ea616afc37bd81b43d82e8c7585315f042e4b4d1c5074f251"
+    },
+    {
+      "path": "app/src/main/java/com/samin/objectdetection/settings/AppSettingsStore.kt",
+      "unchanged": true,
+      "sha256": "acd9bc8d2f40e17ad9b80bbef40294838805ae4d750bbf8107253fdc1357a754"
+    }
+  ],
+  "allProtectedFilesUnchanged": true,
+  "mainProcessBitmapUnchanged": true,
+  "snapshotFactoryBodyUnchanged": true,
+  "warningDiagnosticsBodyUnchangedExceptExplicitGateParameter": true
+}

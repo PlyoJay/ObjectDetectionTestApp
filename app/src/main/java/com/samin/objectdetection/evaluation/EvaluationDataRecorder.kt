@@ -21,11 +21,9 @@ import com.samin.objectdetection.metrics.FrameTrace
 import com.samin.objectdetection.logging.OrderedLogWriter
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.BufferedWriter
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import java.io.OutputStreamWriter
 import java.util.Locale
 import java.util.concurrent.CompletableFuture
 

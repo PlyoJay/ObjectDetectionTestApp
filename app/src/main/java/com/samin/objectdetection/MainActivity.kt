@@ -9,18 +9,12 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
 import android.util.Log
 import android.view.View
 import android.widget.Toast
-import android.widget.ArrayAdapter
-import android.widget.EditText
-import android.widget.LinearLayout
-import android.widget.Spinner
-import android.widget.Switch
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
@@ -63,7 +57,9 @@ import com.samin.objectdetection.ui.OverlayDebugMode
 import com.samin.objectdetection.settings.AppSettings
 import com.samin.objectdetection.settings.AppSettingsStore
 import com.samin.objectdetection.settings.SettingsActivity
-import com.samin.objectdetection.settings.SettingsPresets
+import com.samin.objectdetection.settings.showQuickSettingsDialog
+import com.samin.objectdetection.evaluation.buildEvaluationSnapshot
+import com.samin.objectdetection.warning.output.WarningDiagnostics
 import com.samin.objectdetection.settings.AppSettingsCodec
 import com.samin.objectdetection.settings.LogShareManager
 import com.samin.objectdetection.warning.CrowdDecision
@@ -529,49 +525,10 @@ class MainActivity : ComponentActivity() {
             Toast.makeText(this, "진행 중인 측정 세션을 종료한 뒤 설정을 변경하세요.", Toast.LENGTH_LONG).show()
             return
         }
-        val content = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(40, 12, 40, 0)
+        showQuickSettingsDialog(this, appSettings) { updated ->
+            settingsStore.saveApplied(updated)
+            restartForSettings()
         }
-        val mode = Spinner(this).apply {
-            adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item,
-                com.samin.objectdetection.camera.YoloResizeMode.entries.map { it.name })
-            setSelection(com.samin.objectdetection.camera.YoloResizeMode.entries.indexOf(appSettings.yolo.resizeMode))
-            isEnabled = !appSettings.camera.recognitionRoi.enabled
-        }
-        val confidence = EditText(this).apply {
-            hint = "Confidence (0..1)"
-            setText(appSettings.yolo.confidenceThreshold.toString())
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
-        }
-        val geometry = Switch(this).apply { text = "Geometry Filter"; isChecked = appSettings.filters.geometryFilterEnabled }
-        val mlKit = Switch(this).apply { text = "ML Kit"; isChecked = appSettings.mlKit.enabled }
-        content.addView(android.widget.TextView(this).apply { text = "현재 프리셋: ${appSettings.presetName}" })
-        content.addView(mode); content.addView(confidence); content.addView(geometry); content.addView(mlKit)
-        content.addView(android.widget.TextView(this).apply { text = "적용을 누르기 전에는 실행 중 설정이 바뀌지 않습니다." })
-        AlertDialog.Builder(this)
-            .setTitle("빠른 설정")
-            .setView(content)
-            .setNegativeButton("취소", null)
-            .setPositiveButton("적용") { _, _ ->
-                val threshold = confidence.text.toString().toFloatOrNull()
-                if (threshold == null || threshold !in 0f..1f) {
-                    Toast.makeText(this, "Confidence는 0~1이어야 합니다.", Toast.LENGTH_LONG).show()
-                    return@setPositiveButton
-                }
-                val updated = appSettings.copy(
-                    presetName = SettingsPresets.CUSTOM,
-                    yolo = appSettings.yolo.copy(
-                        resizeMode = com.samin.objectdetection.camera.YoloResizeMode.valueOf(mode.selectedItem.toString()),
-                        confidenceThreshold = threshold
-                    ),
-                    filters = appSettings.filters.copy(geometryFilterEnabled = geometry.isChecked),
-                    mlKit = appSettings.mlKit.copy(enabled = mlKit.isChecked)
-                )
-                settingsStore.saveApplied(updated)
-                restartForSettings()
-            }
-            .show()
     }
 
     /** Stop old frames and release their Interpreter before a new Activity can create another. */
@@ -1051,51 +1008,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun buildEvaluationSnapshot(
-        bitmap: Bitmap,
-        copyBitmap: Boolean,
-        detections: List<DetectionResult>,
-        evaluationDetections: List<DetectionResult>,
-        frameTimestampMs: Long,
-        roi: Rect,
-        rawDetectionCount: Int,
-        visibleDetectionCount: Int,
-        warningDetectionCount: Int,
-        topDetection: DetectionResult?,
-        selectedWarningCandidate: WarningCandidate?,
-        inferenceTimeMs: Long,
-        fps: Int,
-        userLocationSnapshot: com.samin.objectdetection.location.UserLocationSnapshot,
-        stageCounts: com.samin.objectdetection.detector.DetectionStageCounts?,
-        rawCoordinateMin: Float?,
-        rawCoordinateMax: Float?,
-        trace: FrameTrace,
-        rates: FrameRateMeter.Rates
-    ): DetectionFrameSnapshot {
-        return DetectionFrameSnapshot(
-            bitmap = if (copyBitmap) bitmap.copy(Bitmap.Config.ARGB_8888, false) else bitmap,
-            detections = detections,
-            evaluationDetections = evaluationDetections,
-            frameTimestampMs = frameTimestampMs,
-            imageWidth = bitmap.width,
-            imageHeight = bitmap.height,
-            roiApplied = roi.left != 0 || roi.top != 0 || roi.right != bitmap.width || roi.bottom != bitmap.height,
-            roi = Rect(roi),
-            rawDetectionCount = rawDetectionCount,
-            visibleDetectionCount = visibleDetectionCount,
-            warningDetectionCount = warningDetectionCount,
-            topDetection = topDetection,
-            selectedWarningCandidate = selectedWarningCandidate,
-            inferenceTimeMs = inferenceTimeMs,
-            fps = fps,
-            userLocationSnapshot = userLocationSnapshot,
-            stageCounts = stageCounts,
-            rawCoordinateMin = rawCoordinateMin,
-            rawCoordinateMax = rawCoordinateMax,
-            trace = trace, analyzerFps = rates.analyzerFps, inferenceFps = rates.inferenceFps
-        )
-    }
-
     private fun captureEvaluationFrame() {
         captureRequested.set(true)
         Toast.makeText(this, "다음 분석 프레임을 저장합니다.", Toast.LENGTH_SHORT).show()
@@ -1403,95 +1315,21 @@ class MainActivity : ComponentActivity() {
         if (detectionConfig.enableDetectorDiagnostics) Log.d(tag, message())
     }
 
+    // Keep these entry points for the existing instrumentation reflection contract.
     private fun logSelectedWarningCandidate(
-        candidate: WarningCandidate?,
-        cooldownPassed: Boolean,
-        vibrationExecuted: Boolean,
-        beepExecuted: Boolean,
-        ttsExecuted: Boolean
-    ) {
-        if (!detectionConfig.enableDetectorDiagnostics) return
-        if (candidate == null) {
-            Log.d(WARNING_SELECTED_TAG, "[WarningSelected] none")
-            return
-        }
-
-        Log.d(
-            WARNING_SELECTED_TAG,
-            "[WarningSelected]\n" +
-                "label=${candidate.label}\n" +
-                "category=${candidate.category}\n" +
-                "priority=${candidate.priority}\n" +
-                "proximityLevel=${candidate.proximityLevel}\n" +
-                "horizontalPosition=${candidate.horizontalPosition}\n" +
-                "riskLevel=${candidate.riskLevel}\n" +
-                "motionDirection=${candidate.motionDirection}\n" +
-                "warningScenario=${candidate.warningScenario}\n" +
-                "message=${candidate.feedback.message}\n" +
-                "beepLevel=${candidate.feedback.beepLevel}\n" +
-                "vibrationLevel=${candidate.feedback.vibrationLevel}\n" +
-                "voiceLevel=${candidate.feedback.voiceLevel}\n" +
-                "cooldownPassed=$cooldownPassed\n" +
-                "vibrationExecuted=$vibrationExecuted\n" +
-                "beepExecuted=$beepExecuted\n" +
-                "ttsExecuted=$ttsExecuted\n" +
-                "shouldNotify=${candidate.feedback.shouldNotify}"
-        )
-    }
+        candidate: WarningCandidate?, cooldownPassed: Boolean, vibrationExecuted: Boolean,
+        beepExecuted: Boolean, ttsExecuted: Boolean
+    ) = WarningDiagnostics.logSelectedWarningCandidate(detectionConfig.enableDetectorDiagnostics,
+        candidate, cooldownPassed, vibrationExecuted, beepExecuted, ttsExecuted)
 
     private fun logWarningOutput(
-        candidate: WarningCandidate?,
-        cooldownPassed: Boolean,
-        vibrationExecuted: Boolean,
-        beepExecuted: Boolean,
-        ttsExecuted: Boolean,
-        ttsSkippedReason: String?
-    ) {
-        if (!detectionConfig.enableDetectorDiagnostics) return
-        if (candidate == null) {
-            Log.d(WARNING_OUTPUT_TAG, "[WarningOutput] none")
-            return
-        }
+        candidate: WarningCandidate?, cooldownPassed: Boolean, vibrationExecuted: Boolean,
+        beepExecuted: Boolean, ttsExecuted: Boolean, ttsSkippedReason: String?
+    ) = WarningDiagnostics.logWarningOutput(detectionConfig.enableDetectorDiagnostics,
+        candidate, cooldownPassed, vibrationExecuted, beepExecuted, ttsExecuted, ttsSkippedReason)
 
-        Log.d(
-            WARNING_OUTPUT_TAG,
-            "[WarningOutput]\n" +
-                "label=${candidate.label}\n" +
-                "category=${candidate.category}\n" +
-                "priority=${candidate.priority}\n" +
-                "proximityLevel=${candidate.proximityLevel}\n" +
-                "horizontalPosition=${candidate.horizontalPosition}\n" +
-                "riskLevel=${candidate.riskLevel}\n" +
-                "motionDirection=${candidate.motionDirection}\n" +
-                "warningScenario=${candidate.warningScenario}\n" +
-                "message=${candidate.feedback.message}\n" +
-                "vibrationLevel=${candidate.feedback.vibrationLevel}\n" +
-                "vibrationExecuted=$vibrationExecuted\n" +
-                "beepLevel=${candidate.feedback.beepLevel}\n" +
-                "beepExecuted=$beepExecuted\n" +
-                "voiceLevel=${candidate.feedback.voiceLevel}\n" +
-                "ttsExecuted=$ttsExecuted\n" +
-                "ttsSkippedReason=${ttsSkippedReason ?: "none"}\n" +
-                "cooldown=$cooldownPassed"
-        )
-    }
-
-    private fun logCrowdDecision(
-        crowdDecision: CrowdDecision,
-        cooldownPassed: Boolean
-    ) {
-        if (!detectionConfig.enableDetectorDiagnostics) return
-        Log.d(
-            CROWD_DECISION_TAG,
-            "[CrowdDecision] " +
-                "totalPersonCount=${crowdDecision.totalPersonCount}, " +
-                "centerPersonCount=${crowdDecision.centerPersonCount}, " +
-                "nearPersonCount=${crowdDecision.nearPersonCount}, " +
-                "crowdLevel=${crowdDecision.crowdLevel}, " +
-                "message=${crowdDecision.message}, " +
-                "cooldownPassed=$cooldownPassed"
-        )
-    }
+    private fun logCrowdDecision(crowdDecision: CrowdDecision, cooldownPassed: Boolean) =
+        WarningDiagnostics.logCrowdDecision(detectionConfig.enableDetectorDiagnostics, crowdDecision, cooldownPassed)
 
     private fun logWarningPolicyOverlayMismatch() {
         val policyLabelsMissingFromOverlay = YoloDefaultPolicyRegistry.getAll()
@@ -1752,9 +1590,6 @@ class MainActivity : ComponentActivity() {
         private const val DETECTOR_TYPE = "VisionStyleYoloDetector"
         private const val DETECTION_TIMING_TAG = "DetectionTiming"
         private const val WARNING_FEEDBACK_TAG = "GotoroWarning"
-        private const val WARNING_SELECTED_TAG = "GotoroWarning"
-        private const val WARNING_OUTPUT_TAG = "GotoroWarning"
-        private const val CROWD_DECISION_TAG = "GotoroCrowd"
         private const val VIBRATION_OUTPUT_TAG = "GotoroVibration"
         private const val BEEP_OUTPUT_TAG = "GotoroBeep"
         private const val TTS_OUTPUT_TAG = "GotoroTts"
